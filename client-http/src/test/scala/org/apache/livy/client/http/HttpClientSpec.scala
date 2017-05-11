@@ -37,7 +37,7 @@ import org.scalatra.servlet.ScalatraListener
 import org.apache.livy._
 import org.apache.livy.client.common.{BufferUtils, Serializer}
 import org.apache.livy.client.common.HttpMessages._
-import org.apache.livy.server.WebServer
+import org.apache.livy.server.{AccessManager, WebServer}
 import org.apache.livy.server.interactive.{InteractiveSession, InteractiveSessionServlet}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{InteractiveSessionManager, SessionState, Spark}

@@ -1,13 +1,12 @@
 /*
- * Licensed to Cloudera, Inc. under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  Cloudera, Inc. licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +15,9 @@
  * limitations under the License.
  */
 
-package com.cloudera.livy.server
+package org.apache.livy.server
 
-import com.cloudera.livy.{LivyConf, Logging}
+import org.apache.livy.{LivyConf, Logging}
 
 private[livy] class AccessManager(conf: LivyConf) extends Logging {
   private val aclsOn = conf.getBoolean(LivyConf.ACCESS_CONTROL_ENABLED)
@@ -34,12 +33,12 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
   private val modifyAcls = (superUsers ++ modifyUsers).toSet
   private val superAcls = superUsers.toSet
 
-  {
+  if (aclsOn) {
     // Livy will load AccessFilter if acls is on. In this case if configured users (view users,
     // modify users, super users) are not in the allowed user list, then AccessFilter check will
     // be failed, so all these configured users should be included in the allowed users.
     val notAllowedSuperUsers = superUsers.filter(!isUserAllowed(_))
-    if (notAllowedSuperUsers.nonEmpty && aclsOn) {
+    if (notAllowedSuperUsers.nonEmpty) {
       throw new IllegalArgumentException(
         s"Users ${notAllowedSuperUsers.mkString(", ")} configured in " +
         s"${LivyConf.SUPERUSERS.key} are not fully included in " +
@@ -47,7 +46,7 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
     }
 
     val notAllowedViewUsers = viewUsers.filter(!isUserAllowed(_))
-    if (notAllowedViewUsers.nonEmpty && aclsOn) {
+    if (notAllowedViewUsers.nonEmpty) {
       throw new IllegalArgumentException(
         s"Users ${notAllowedViewUsers.mkString(", ")} configured in " +
         s"${LivyConf.ACCESS_CONTROL_VIEW_USERS.key} are not fully included in " +
@@ -55,7 +54,7 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
     }
 
    val notAllowedModifyUsers = modifyUsers.filter(!isUserAllowed(_))
-    if (notAllowedModifyUsers.nonEmpty && aclsOn) {
+    if (notAllowedModifyUsers.nonEmpty) {
       throw new IllegalArgumentException(
         s"Users ${notAllowedViewUsers.mkString(", ")} configured in " +
         s"${LivyConf.ACCESS_CONTROL_MODIFY_USERS.key} are not fully included in " +
@@ -110,7 +109,8 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    */
   def isUserAllowed(user: String): Boolean = {
     debug(s"user=$user aclsOn=$aclsOn, allowedUsers=${allowedUsers.mkString(", ")}")
-    if (!aclsOn || allowedUsers.contains(user) || allowedUsers.contains(WILDCARD_ACL)) {
+    if (!aclsOn || user == null || allowedUsers.contains(user) ||
+      allowedUsers.contains(WILDCARD_ACL)) {
       true
     } else {
       false

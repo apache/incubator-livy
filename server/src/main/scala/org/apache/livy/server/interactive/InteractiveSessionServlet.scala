@@ -28,22 +28,12 @@ import org.json4s.jackson.Json4sScalaModule
 import org.scalatra._
 import org.scalatra.servlet.FileUploadSupport
 
-<<<<<<< HEAD:server/src/main/scala/org/apache/livy/server/interactive/InteractiveSessionServlet.scala
 import org.apache.livy.{ExecuteRequest, JobHandle, LivyConf, Logging}
 import org.apache.livy.client.common.HttpMessages
 import org.apache.livy.client.common.HttpMessages._
-import org.apache.livy.rsc.driver.Statement
-import org.apache.livy.server.SessionServlet
+import org.apache.livy.server.{AccessManager, SessionServlet}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
-=======
-import com.cloudera.livy.{ExecuteRequest, JobHandle, LivyConf, Logging}
-import com.cloudera.livy.client.common.HttpMessages
-import com.cloudera.livy.client.common.HttpMessages._
-import com.cloudera.livy.server.{AccessManager, SessionServlet}
-import com.cloudera.livy.server.recovery.SessionStore
-import com.cloudera.livy.sessions._
->>>>>>> cdb805f... Improve the ACLs in Livy:server/src/main/scala/com/cloudera/livy/server/interactive/InteractiveSessionServlet.scala
 
 object InteractiveSessionServlet extends Logging
 
