@@ -15,28 +15,43 @@
  limitations under the License.
 -->
 
-<h4 id="batches-header" class="sessions-template">Batch Sessions</h4>
+<h4 id="statements-header" class="statements-template">Statements</h4>
 
-<table id="batches-table" class="table table-striped sessions-table sessions-template">
-  <thead class="sessions-table-head">
+<table id="statements-table" class="table table-striped statements-table statements-template">
+  <thead class="statements-table-head">
   <tr>
-    <th>Batch Id</th>
     <th>
-      <span data-toggle="tooltip"
-            title="Spark Application Id for this session.
-            If available, links to Spark Application Web UI">
-        Application Id
+      <span>
+        Id
       </span>
     </th>
     <th>
       <span data-toggle="tooltip"
-            title="Session State (not_started, starting, idle, busy,
-            shutting_down, error, dead, success)">
-        State
+            title="Current State (waiting, running, [output] available,
+            error, cancelling, cancelled)">
+        Execution State
+      </span>
+    </th>
+    <th>
+      <span data-toggle="tooltip" title="Percent of known tasks completed">
+        Progress
+      </span>
+    </th>
+    <th>
+      <span data-toggle="tooltip"
+            title="On completion ok or error, blank otherwise">
+        Execution Status
+      </span>
+    </th>
+    <th>
+      <span data-toggle="tooltip"
+            title="Statement output if available (an empty code box means no statement output).
+            Displays error stacktrace in case of an error.">
+        Output
       </span>
     </th>
   </tr>
   </thead>
-  <tbody class="sessions-table-body">
+  <tbody class="statements-table-body">
   </tbody>
 </table>

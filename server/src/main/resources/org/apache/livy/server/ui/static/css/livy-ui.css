@@ -18,3 +18,11 @@
 body {
   padding-top: 20px;
 }
+
+td pre, td .progress {
+  margin: 0;
+}
+
+.session-summary {
+  margin: 20px 0;
+}

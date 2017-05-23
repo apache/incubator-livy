@@ -21,7 +21,12 @@
        class="table table-striped sessions-table sessions-template">
   <thead class="sessions-table-head">
   <tr>
-    <th>Session Id</th>
+    <th>
+      <span data-toggle="tooltip"
+            title="Livy Interactive Session Id for this session. Links to the Session Summary Page">
+        Session Id
+      </span>
+    </th>
     <th>
       <span data-toggle="tooltip"
             title="Spark Application Id for this session.
@@ -50,6 +55,11 @@
             title="Session State (not_started, starting, idle, busy,
             shutting_down, error, dead, success)">
         State
+      </span>
+    </th>
+    <th>
+      <span data-toggle="tooltip" title="Link to YARN driver log if available">
+        Logs
       </span>
     </th>
   </tr>

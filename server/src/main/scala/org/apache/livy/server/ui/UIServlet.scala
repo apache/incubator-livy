@@ -24,53 +24,88 @@ import org.scalatra.ScalatraServlet
 class UIServlet extends ScalatraServlet {
   before() { contentType = "text/html" }
 
-  def getHeader(title: String): Seq[Node] =
+  sealed trait Page { val name: String }
+  private case class SimplePage(name: String) extends Page
+  private case class AllSessionsPage(name: String = "Sessions") extends Page
+  private case class SessionPage(id: Int) extends Page {
+    val name: String = "Session " + id
+  }
+
+  private def getHeader(pageName: String): Seq[Node] =
     <head>
-      <link rel="stylesheet" href="/static/bootstrap.min.css" type="text/css"/>
-      <link rel="stylesheet" href="/static/dataTables.bootstrap.min.css" type="text/css"/>
-      <link rel="stylesheet" href="/static/livy-ui.css" type="text/css"/>
-      <script src="/static/jquery-3.2.1.min.js"></script>
-      <script src="/static/bootstrap.min.js"></script>
-      <script src="/static/jquery.dataTables.min.js"></script>
-      <script src="/static/dataTables.bootstrap.min.js"></script>
-      <script src="/static/all-sessions.js"></script>
-      <title>{title}</title>
+      <link rel="stylesheet" href="/static/css/bootstrap.min.css" type="text/css"/>
+      <link rel="stylesheet" href="/static/css/dataTables.bootstrap.min.css" type="text/css"/>
+      <link rel="stylesheet" href="/static/css/livy-ui.css" type="text/css"/>
+      <script src="/static/js/jquery-3.2.1.min.js"></script>
+      <script src="/static/js/bootstrap.min.js"></script>
+      <script src="/static/js/jquery.dataTables.min.js"></script>
+      <script src="/static/js/dataTables.bootstrap.min.js"></script>
+      <script src="/static/js/livy-ui.js"></script>
+      <title>Livy - {pageName}</title>
     </head>
 
-  def navBar(pageName: String): Seq[Node] =
+  private def wrapNavTabs(tabs: Seq[Node]): Seq[Node] =
     <nav class="navbar navbar-default">
       <div class="container-fluid">
         <div class="navbar-header">
-          <a class="navbar-brand" href="#">
-            <img alt="Livy" src="/static/livy-mini-logo.png"/>
+          <a class="navbar-brand" href="/ui">
+            <img alt="Livy" src="/static/img/livy-mini-logo.png"/>
           </a>
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-            <li><a href="#">{pageName}</a></li>
+            {tabs}
           </ul>
         </div>
       </div>
     </nav>
 
-  def createPage(pageName: String, pageContents: Seq[Node]): Seq[Node] =
+  private def getNavBar(page: Page): Seq[Node] = {
+    val tabs: Seq[Node] = page match {
+      case _: AllSessionsPage => <li class="active"><a href="#">Sessions</a></li>
+      case pageInfo: SessionPage => {
+        <li><a href="/ui">Sessions</a></li> ++
+          <li class="active"><a href="#">{pageInfo.name}</a></li>
+      }
+      case _ => Seq.empty
+    }
+    wrapNavTabs(tabs)
+  }
+
+  private def createPage(pageInfo: Page, pageContents: Seq[Node]): Seq[Node] =
     <html>
-      {getHeader("Livy - " + pageName)}
+      {getHeader(pageInfo.name)}
       <body>
         <div class="container">
-          {navBar(pageName)}
+          {getNavBar(pageInfo)}
           {pageContents}
         </div>
       </body>
     </html>
+
+  notFound {
+    createPage(SimplePage("404"), <h3>404 No Such Page</h3>)
+  }
 
   get("/") {
     val content =
       <div id="all-sessions">
         <div id="interactive-sessions"></div>
         <div id="batches"></div>
+        <script src="/static/js/all-sessions.js"></script>
       </div>
 
-    createPage("Sessions", content)
+    createPage(AllSessionsPage(), content)
+  }
+
+  get("/session/:id") {
+    val content =
+      <div id="session-page">
+        <div id="session-summary"></div>
+        <div id="session-statements"></div>
+        <script src="/static/js/session.js"></script>
+      </div>
+
+    createPage(SessionPage(params("id").toInt), content)
   }
 }
