@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-body {
-  padding: 15px 0;
+function getLogPath(type, id) {
+  if (type == "session") {
+    return "/sessions/" + id + "/log";
+  } else if (type == "batch") {
+    return "/batches/" + id + "/log";
+  } else {
+    return "";
+  }
 }
 
-pre {
-  font-size: 12px;
-  line-height: 18px;
-  padding: 6px;
-  margin: 0;
-  word-break: break-word;
-  white-space: pre-wrap;
-}
+$(document).ready(function () {
+  var pathArr = getPathArray();
+  var type = pathArr.shift();
+  var id = pathArr.shift();
 
-td .progress {
-  margin: 0;
-}
-
-#session-summary {
-  margin: 20px 0;
-}
+  $.getJSON(location.origin + getLogPath(type, id), {from: 0, size: 100}, function(response) {
+    if (response) {
+      $("#session-log").append(preWrap(response.log.join("\n")));
+    }
+  });
+});

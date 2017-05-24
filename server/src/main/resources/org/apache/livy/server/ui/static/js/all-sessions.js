@@ -25,7 +25,7 @@ function loadSessionsTable(sessions) {
         tdWrap(session.proxyUser) +
         tdWrap(session.kind) +
         tdWrap(session.state) +
-        tdWrap(driverLogLink(session)) +
+        tdWrap(logLinks(session, "session")) +
        "</tr>"
     );
   });
@@ -38,7 +38,7 @@ function loadBatchesTable(sessions) {
         tdWrap(session.id) +
         tdWrap(appIdLink(session)) +
         tdWrap(session.state) +
-        tdWrap(driverLogLink(session)) +
+        tdWrap(logLinks(session, "batch")) +
        "</tr>"
     );
   });
