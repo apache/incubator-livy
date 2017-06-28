@@ -18,11 +18,21 @@
 #
 
 # Utility for creating well-formed pull request merges and pushing them to Apache.
-#   usage: ./merge_livy_pr.py    (see config env vars below)
 #
 # This utility assumes you already have local a incubator-livy git folder and that you
 # have added remotes corresponding to both (i) the github apache incubator-livy
 # mirror and (ii) the apache git repo.
+#
+# 1. Adding github apache incubator-livy mirror remote to your local repo with name "apache-github"
+#    (for example) using "git remote add apache-github ...".
+# 2. Adding apache incubator-livy remote to your local repo with name "apache" (for example) using
+#    "git remote add apache ..."
+# 3. Invoke this script from LIVY_HOME (./dev/merge_livy_pr.py) and follow the prompted steps.
+# 4. If you want to handle the associated JIRA, JIRA_USERNAME and JIRA_PASSWORD should be set.
+#
+#   usage: ./merge_livy_pr.py    (see config env vars below)
+#
+
 
 import json
 import os
