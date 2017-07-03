@@ -13,8 +13,14 @@ conf/*
 **/target/**
 **/bootstrap.min.css
 **/bootstrap.min.js
+**/dataTables.bootstrap.min.css
+**/dataTables.bootstrap.min.js
+**/jquery.dataTables.min.js
 **/jquery-3.2.1.min.js
 **/livy_python_api.egg-info/*
 **/*.txt
 **/MANIFEST.in
 **/setup.cfg
+**/derby.log
+**/metastore_db/**
+**/.eggs/**
