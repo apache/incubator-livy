@@ -39,14 +39,14 @@ requirements = [
 
 setup(
     name='livy-python-api',
-    version="0.4.0-SNAPSHOT",
+    version="0.4.0-incubating-SNAPSHOT",
     packages=["livy", "livy-tests"],
     package_dir={
         "": "src/main/python",
         "livy-tests": "src/test/python/livy-tests",
     },
-    url='https://github.com/cloudera/livy',
-    author_email='livy-user@cloudera.org',
+    url='https://github.com/apache/incubator-livy',
+    author_email='user@livy.incubator.apache.org',
     license='Apache License, Version 2.0',
     description=DESCRIPTION,
     platforms=['any'],

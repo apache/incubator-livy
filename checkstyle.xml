@@ -102,7 +102,7 @@
     <module name="ImportOrder">
       <property name="separated" value="true"/>
       <property name="ordered" value="true"/>
-      <property name="groups" value="/^javax?\./,scala,*,com.cloudera.livy"/>
+      <property name="groups" value="/^javax?\./,scala,*,org.apache.livy"/>
     </module>
     <module name="MethodParamPad"/>
     <module name="AnnotationLocation">
