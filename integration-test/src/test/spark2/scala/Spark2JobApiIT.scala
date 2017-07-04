@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.cloudera.livy.test
+package org.apache.livy.test
 
 import java.io.File
 import java.net.URI
@@ -26,11 +26,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.scalatest.BeforeAndAfterAll
 
-import com.cloudera.livy._
-import com.cloudera.livy.client.common.HttpMessages._
-import com.cloudera.livy.sessions.SessionKindModule
-import com.cloudera.livy.test.framework.BaseIntegrationTestSuite
-import com.cloudera.livy.test.jobs.spark2._
+import org.apache.livy._
+import org.apache.livy.client.common.HttpMessages._
+import org.apache.livy.sessions.SessionKindModule
+import org.apache.livy.test.framework.BaseIntegrationTestSuite
+import org.apache.livy.test.jobs.spark2._
 
 class Spark2JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logging {
 

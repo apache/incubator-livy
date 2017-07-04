@@ -92,7 +92,7 @@ start_livy_server() {
     LIVY_CLASSPATH="$LIVY_CLASSPATH:$YARN_CONF_DIR"
   fi
 
-  command="$RUNNER $LIVY_SERVER_JAVA_OPTS -cp $LIVY_CLASSPATH:$CLASSPATH com.cloudera.livy.server.LivyServer"
+  command="$RUNNER $LIVY_SERVER_JAVA_OPTS -cp $LIVY_CLASSPATH:$CLASSPATH org.apache.livy.server.LivyServer"
 
   if [ $1 = "old" ]; then
     exec $command
