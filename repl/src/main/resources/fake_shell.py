@@ -174,7 +174,7 @@ class PySparkJobProcessorImpl(object):
         return os.path.join(job_context.get_local_tmp_dir_path(), '__livy__')
 
     class Scala:
-        extends = ['com.cloudera.livy.repl.PySparkJobProcessor']
+        extends = ['org.apache.livy.repl.PySparkJobProcessor']
 
 
 class ExecutionError(Exception):

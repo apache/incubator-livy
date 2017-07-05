@@ -122,8 +122,8 @@
       <parameter name="groups">java,scala,3rdParty,livy</parameter>
       <parameter name="group.java">javax?\..*</parameter>
       <parameter name="group.scala">scala\..*</parameter>
-      <parameter name="group.3rdParty">(?!com\.cloudera.livy\.).*</parameter>
-      <parameter name="group.livy">com\.cloudera\.livy\..*</parameter>
+      <parameter name="group.3rdParty">(?!org\.apache.livy\.).*</parameter>
+      <parameter name="group.livy">org\.apache\.livy\..*</parameter>
     </parameters>
   </check>
 
