@@ -1,13 +1,12 @@
 #
-# Licensed to Cloudera, Inc. under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  Cloudera, Inc. licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,14 +39,14 @@ requirements = [
 
 setup(
     name='livy-python-api',
-    version="0.4.0-SNAPSHOT",
+    version="0.4.0-incubating-SNAPSHOT",
     packages=["livy", "livy-tests"],
     package_dir={
         "": "src/main/python",
         "livy-tests": "src/test/python/livy-tests",
     },
-    url='https://github.com/cloudera/livy',
-    author_email='livy-user@cloudera.org',
+    url='https://github.com/apache/incubator-livy',
+    author_email='user@livy.incubator.apache.org',
     license='Apache License, Version 2.0',
     description=DESCRIPTION,
     platforms=['any'],

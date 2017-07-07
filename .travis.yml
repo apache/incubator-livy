@@ -11,7 +11,7 @@ env:
   - MVN_FLAG='-Pspark-2.1 -DskipITs'
 
 jdk:
-  - oraclejdk7
+  - openjdk7
 
 addons:
   apt:
@@ -30,8 +30,8 @@ before_install:
   - sudo apt-get -y install python3-pip python-dev
   - sudo apt-get -y install libkrb5-dev
   - sudo apt-get -y remove python-setuptools
-  - pip install --user --upgrade pip setuptools
-  - pip3 install --user --upgrade pip setuptools
+  - pip install --user --upgrade pip "setuptools < 36"
+  - pip3 install --user --upgrade pip "setuptools < 36"
   - pip install --user codecov cloudpickle
   - pip3 install --user cloudpickle
 

@@ -1,13 +1,12 @@
 /*
- * Licensed to Cloudera, Inc. under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  Cloudera, Inc. licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.cloudera.livy.test
+package org.apache.livy.test
 
 import java.io.File
 import java.net.URI
@@ -27,11 +26,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.scalatest.BeforeAndAfterAll
 
-import com.cloudera.livy._
-import com.cloudera.livy.client.common.HttpMessages._
-import com.cloudera.livy.sessions.SessionKindModule
-import com.cloudera.livy.test.framework.BaseIntegrationTestSuite
-import com.cloudera.livy.test.jobs.spark2._
+import org.apache.livy._
+import org.apache.livy.client.common.HttpMessages._
+import org.apache.livy.sessions.SessionKindModule
+import org.apache.livy.test.framework.BaseIntegrationTestSuite
+import org.apache.livy.test.jobs.spark2._
 
 class Spark2JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logging {
 

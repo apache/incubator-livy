@@ -190,7 +190,7 @@ And add the Livy client dependency:
 
 To be able to compile code that uses Spark APIs, also add the correspondent Spark dependencies.
 
-To run Spark jobs within your applications, extend ``com.cloudera.livy.Job`` and implement
+To run Spark jobs within your applications, extend ``org.apache.livy.Job`` and implement
 the functionality you need. Here's an example job that calculates an approximate value for Pi:
 
 .. code:: java
@@ -913,6 +913,8 @@ A statement represents the result of an execution statement.
 | name   | description          | type                |
 +========+======================+=====================+
 | id     | The statement id     | integer             |
++--------+----------------------+---------------------+
+| code   | The execution code   | string              |
 +--------+----------------------+---------------------+
 | state  | The execution state  | statement state     |
 +--------+----------------------+---------------------+
