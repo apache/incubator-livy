@@ -18,6 +18,7 @@
 package org.apache.livy.server
 
 import org.scalatest.{FunSuite, Matchers}
+
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
 
 class AccessManagerSuite extends FunSuite with Matchers with LivyBaseUnitTestSuite {
