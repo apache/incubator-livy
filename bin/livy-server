@@ -49,6 +49,11 @@ pid="$LIVY_PID_DIR/livy-$LIVY_IDENT_STRING-server.pid"
 livy_rotate_log() {
   log=$1
   num=$LIVY_MAX_LOG_FILES
+
+  if [ $LIVY_MAX_LOG_FILES -lt 1 ]; then
+    num=5
+  fi
+
   if [ -f "$log" ]; then # rotate logs
 	while [ $num -gt 1 ]; do
 	  prev=`expr $num - 1`
