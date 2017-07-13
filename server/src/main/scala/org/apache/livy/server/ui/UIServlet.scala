@@ -76,7 +76,7 @@ class UIServlet extends ScalatraServlet {
     <html>
       {getHeader(pageInfo.name)}
       <body>
-        <div class="container">
+        <div class="container-fluid">
           {getNavBar(pageInfo)}
           {pageContents}
         </div>

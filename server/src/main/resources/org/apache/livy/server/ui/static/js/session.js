@@ -67,6 +67,7 @@ function loadStatementsTable(statements) {
     $("#session-statements .statements-table-body").append(
       "<tr>" +
         tdWrap(statement.id) +
+        tdWrap(preWrap(statement.code)) +
         tdWrap(statement.state) +
         tdWrap(progressBar(statement.progress)) +
         tdWrap(statement.output ? statement.output.status : "") +

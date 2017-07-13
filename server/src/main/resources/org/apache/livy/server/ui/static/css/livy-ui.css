@@ -16,10 +16,19 @@
  */
 
 body {
-  padding-top: 20px;
+  padding-top: 15px;
 }
 
-td pre, td .progress {
+pre {
+  font-size: 12px;
+  line-height: 18px;
+  padding: 6px;
+  margin: 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+td .progress {
   margin: 0;
 }
 
