@@ -17,6 +17,7 @@ conf/*
 **/dataTables.bootstrap.min.js
 **/jquery.dataTables.min.js
 **/jquery-3.2.1.min.js
+**/fonts/**
 **/livy_python_api.egg-info/*
 **/*.txt
 **/MANIFEST.in
