@@ -129,7 +129,7 @@ class LivyServer extends Logging {
     val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)
 
     server = new WebServer(livyConf, host, port)
-    server.context.setResourceBase("src/main/com/cloudera/livy/server")
+    server.context.setResourceBase("src/main/org/apache/livy/server")
 
     val livyVersionServlet = new JsonServlet {
       before() { contentType = "application/json" }

@@ -15,29 +15,17 @@
  * limitations under the License.
  */
 
-function appIdLink(session) {
-  var appUiUrl = session.appInfo.sparkUiUrl;
-  if (appUiUrl != null) {
-    return '<a href="' + appUiUrl + '">' + session.appId + "</a>";
-  } else {
-    return session.appId;
-  }
-}
-
-function tdWrap(str) {
-  return "<td>" + str + "</td>";
-}
-
 function loadSessionsTable(sessions) {
   $.each(sessions, function(index, session) {
     $("#interactive-sessions .sessions-table-body").append(
       "<tr>" +
-        tdWrap(session.id) +
+        tdWrap(uiLink("session/" + session.id, session.id)) +
         tdWrap(appIdLink(session)) +
         tdWrap(session.owner) +
         tdWrap(session.proxyUser) +
         tdWrap(session.kind) +
         tdWrap(session.state) +
+        tdWrap(driverLogLink(session)) +
        "</tr>"
     );
   });
@@ -50,6 +38,7 @@ function loadBatchesTable(sessions) {
         tdWrap(session.id) +
         tdWrap(appIdLink(session)) +
         tdWrap(session.state) +
+        tdWrap(driverLogLink(session)) +
        "</tr>"
     );
   });
@@ -59,13 +48,9 @@ var numSessions = 0;
 var numBatches = 0;
 
 $(document).ready(function () {
-  $.extend( $.fn.dataTable.defaults, {
-    stateSave: true,
-  });
-
   var sessionsReq = $.getJSON(location.origin + "/sessions", function(response) {
     if (response && response.total > 0) {
-      $("#interactive-sessions").load("/static/sessions-table.html .sessions-template", function() {
+      $("#interactive-sessions").load("/static/html/sessions-table.html .sessions-template", function() {
         loadSessionsTable(response.sessions);
         $("#interactive-sessions-table").DataTable();
         $('#interactive-sessions [data-toggle="tooltip"]').tooltip();
@@ -76,7 +61,7 @@ $(document).ready(function () {
 
   var batchesReq = $.getJSON(location.origin + "/batches", function(response) {
     if (response && response.total > 0) {
-      $("#batches").load("/static/batches-table.html .sessions-template", function() {
+      $("#batches").load("/static/html/batches-table.html .sessions-template", function() {
         loadBatchesTable(response.sessions);
         $("#batches-table").DataTable();
         $('#batches [data-toggle="tooltip"]').tooltip();

@@ -15,45 +15,49 @@
  limitations under the License.
 -->
 
-<h4 id="interactive-sessions-header" class="sessions-template">Interactive Sessions</h4>
+<h4 id="statements-header" class="statements-template">Statements</h4>
 
-<table id="interactive-sessions-table"
-       class="table table-striped sessions-table sessions-template">
-  <thead class="sessions-table-head">
+<table id="statements-table" class="table table-striped statements-table statements-template">
+  <thead class="statements-table-head">
   <tr>
-    <th>Session Id</th>
     <th>
-      <span data-toggle="tooltip"
-            title="Spark Application Id for this session.
-            If available, links to Spark Application Web UI">
-        Application Id
-      </span>
-    </th>
-    <th>
-      <span data-toggle="tooltip" title="Remote user who submitted this session">
-        Owner
-      </span>
-    </th>
-    <th>
-      <span data-toggle="tooltip" title="User to impersonate when running">
-        Proxy User
+      <span>
+        Id
       </span>
     </th>
     <th>
       <span data-toggle="tooltip"
-            title="Session kind (spark, pyspark, pyspark3, or sparkr)">
-        Session Kind
+            title="The statement code to be executed">
+        Execution Code
       </span>
     </th>
     <th>
       <span data-toggle="tooltip"
-            title="Session State (not_started, starting, idle, busy,
-            shutting_down, error, dead, success)">
-        State
+            title="Current State (waiting, running, [output] available,
+            error, cancelling, cancelled)">
+        Execution State
+      </span>
+    </th>
+    <th>
+      <span data-toggle="tooltip" title="Percent of known tasks completed">
+        Progress
+      </span>
+    </th>
+    <th>
+      <span data-toggle="tooltip"
+            title="On completion ok or error, blank otherwise">
+        Execution Status
+      </span>
+    </th>
+    <th>
+      <span data-toggle="tooltip"
+            title="Statement output if available (an empty code box means no statement output).
+            Displays error stacktrace in case of an error.">
+        Output
       </span>
     </th>
   </tr>
   </thead>
-  <tbody class="sessions-table-body">
+  <tbody class="statements-table-body">
   </tbody>
 </table>
