@@ -125,7 +125,7 @@ class SessionServletSpec extends BaseSessionServletSpec[Session, RecoveryMetadat
       }
     }
 
-    it("should allow non-owners from modifying sessions") {
+    it("should allow non-owners to modify sessions") {
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         delete(res.id, bobHeaders, SC_OK)
       }

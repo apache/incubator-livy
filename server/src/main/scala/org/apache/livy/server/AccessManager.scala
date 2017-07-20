@@ -45,7 +45,7 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    */
   def checkViewPermissions(user: String): Boolean = {
     debug(s"user=$user aclsOn=$aclsOn viewAcls=${viewAcls.mkString(", ")}")
-    if (!aclsOn || user == null || viewAcls.contains(user) || viewAcls.contains(WILDCARD_ACL)) {
+    if (!aclsOn || user == null || viewAcls.contains(WILDCARD_ACL) || viewAcls.contains(user)) {
       true
     } else {
       false
@@ -57,7 +57,7 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    */
   def checkModifyPermissions(user: String): Boolean = {
     debug(s"user=$user aclsOn=$aclsOn modifyAcls=${modifyAcls.mkString(", ")}")
-    if (!aclsOn || user == null || modifyAcls.contains(user) || modifyAcls.contains(WILDCARD_ACL)) {
+    if (!aclsOn || user == null || modifyAcls.contains(WILDCARD_ACL) || modifyAcls.contains(user)) {
       true
     } else {
       false
@@ -70,7 +70,7 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    */
   def checkSuperUser(user: String): Boolean = {
     debug(s"user=$user aclsOn=$aclsOn superAcls=${superAcls.mkString(", ")}")
-    if (user == null || superUsers.contains(user) || superUsers.contains(WILDCARD_ACL)) {
+    if (user == null || superUsers.contains(WILDCARD_ACL) || superUsers.contains(user)) {
       true
     } else {
       false
@@ -82,8 +82,8 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    */
   def isUserAllowed(user: String): Boolean = {
     debug(s"user=$user aclsOn=$aclsOn, allowedAcls=${allowedAcls.mkString(", ")}")
-    if (!aclsOn || user == null || allowedAcls.contains(user) ||
-      allowedAcls.contains(WILDCARD_ACL)) {
+    if (!aclsOn || user == null || allowedAcls.contains(WILDCARD_ACL) ||
+      allowedAcls.contains(user)) {
       true
     } else {
       false
