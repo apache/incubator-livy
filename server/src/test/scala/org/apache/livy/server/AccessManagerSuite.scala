@@ -27,6 +27,7 @@ class AccessManagerSuite extends FunSuite with Matchers with LivyBaseUnitTestSui
   private val viewUsers = Seq("user1", "user2", "user3")
   private val modifyUsers = Seq("user4", "user5")
   private val superUsers = Seq("user6", "user7")
+  private val allowedUsers = Seq("user8", "user9")
 
   test("access permission") {
     val conf = new LivyConf()
@@ -42,6 +43,7 @@ class AccessManagerSuite extends FunSuite with Matchers with LivyBaseUnitTestSui
     viewUsers.foreach { u => accessManager.checkViewPermissions(u) should be (true) }
     modifyUsers.foreach { u => accessManager.checkViewPermissions(u) should be (true) }
     superUsers.foreach { u => accessManager.checkViewPermissions(u) should be (true) }
+    allowedUsers.foreach { u => accessManager.checkViewPermissions(u) should be (false) }
 
     accessManager.checkViewPermissions(null) should be (true)
     accessManager.checkViewPermissions("user8") should be (false)
@@ -50,6 +52,7 @@ class AccessManagerSuite extends FunSuite with Matchers with LivyBaseUnitTestSui
     viewUsers.foreach { u => accessManager.checkModifyPermissions(u) should be (false) }
     modifyUsers.foreach { u => accessManager.checkModifyPermissions(u) should be (true) }
     superUsers.foreach { u => accessManager.checkModifyPermissions(u) should be (true) }
+    allowedUsers.foreach { u => accessManager.checkModifyPermissions(u) should be (false) }
 
     accessManager.checkModifyPermissions(null) should be (true)
     accessManager.checkModifyPermissions("user8") should be (false)
@@ -58,6 +61,7 @@ class AccessManagerSuite extends FunSuite with Matchers with LivyBaseUnitTestSui
     viewUsers.foreach { u => accessManager.checkSuperUser(u) should be (false) }
     modifyUsers.foreach { u => accessManager.checkSuperUser(u) should be (false) }
     superUsers.foreach { u => accessManager.checkSuperUser(u) should be (true) }
+    allowedUsers.foreach { u => accessManager.checkSuperUser(u) should be (false) }
 
     accessManager.checkSuperUser(null) should be (true)
     accessManager.checkSuperUser("user8") should be (false)
@@ -102,19 +106,14 @@ class AccessManagerSuite extends FunSuite with Matchers with LivyBaseUnitTestSui
       .set(ACCESS_CONTROL_VIEW_USERS, viewUsers.mkString(","))
       .set(ACCESS_CONTROL_MODIFY_USERS, modifyUsers.mkString(","))
       .set(SUPERUSERS, superUsers.mkString(","))
-      .set(ACCESS_CONTROL_ALLOWED_USERS, "user1,user4,user6")
+      .set(ACCESS_CONTROL_ALLOWED_USERS, allowedUsers.mkString(","))
 
-    // AccessManager will throw an exception if acls in on but not all the configured users are
-    // in the allowed list.
-    intercept[IllegalArgumentException](new AccessManager(conf))
-
-    // If acls is off, then allowed user check will not be enabled.
-    conf.set(ACCESS_CONTROL_ENABLED, false)
     val accessManager = new AccessManager(conf)
     viewUsers.foreach { u => accessManager.isUserAllowed(u) should be (true) }
     modifyUsers.foreach { u => accessManager.isUserAllowed(u) should be (true) }
     superUsers.foreach { u => accessManager.isUserAllowed(u) should be (true) }
+    allowedUsers.foreach { u => accessManager.isUserAllowed(u) should be (true) }
 
-    accessManager.isUserAllowed("anyUser") should be (true)
+    accessManager.isUserAllowed("anyUser") should be (false)
   }
 }

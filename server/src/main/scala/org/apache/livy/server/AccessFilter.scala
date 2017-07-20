@@ -20,7 +20,7 @@ package org.apache.livy.server
 import javax.servlet._
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
-class AccessFilter(accessManager: AccessManager) extends Filter {
+private[livy] class AccessFilter(accessManager: AccessManager) extends Filter {
 
   override def init(filterConfig: FilterConfig): Unit = {}
 

@@ -32,40 +32,13 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
   private val viewAcls = (superUsers ++ modifyUsers ++ viewUsers).toSet
   private val modifyAcls = (superUsers ++ modifyUsers).toSet
   private val superAcls = superUsers.toSet
-
-  if (aclsOn) {
-    // Livy will load AccessFilter if acls is on. In this case if configured users (view users,
-    // modify users, super users) are not in the allowed user list, then AccessFilter check will
-    // be failed, so all these configured users should be included in the allowed users.
-    val notAllowedSuperUsers = superUsers.filter(!isUserAllowed(_))
-    if (notAllowedSuperUsers.nonEmpty) {
-      throw new IllegalArgumentException(
-        s"Users ${notAllowedSuperUsers.mkString(", ")} configured in " +
-        s"${LivyConf.SUPERUSERS.key} are not fully included in " +
-        s"${LivyConf.ACCESS_CONTROL_ALLOWED_USERS.key}, you should added them to the allowed user")
-    }
-
-    val notAllowedViewUsers = viewUsers.filter(!isUserAllowed(_))
-    if (notAllowedViewUsers.nonEmpty) {
-      throw new IllegalArgumentException(
-        s"Users ${notAllowedViewUsers.mkString(", ")} configured in " +
-        s"${LivyConf.ACCESS_CONTROL_VIEW_USERS.key} are not fully included in " +
-        s"${LivyConf.ACCESS_CONTROL_ALLOWED_USERS.key}, you should added them to the allowed user")
-    }
-
-   val notAllowedModifyUsers = modifyUsers.filter(!isUserAllowed(_))
-    if (notAllowedModifyUsers.nonEmpty) {
-      throw new IllegalArgumentException(
-        s"Users ${notAllowedViewUsers.mkString(", ")} configured in " +
-        s"${LivyConf.ACCESS_CONTROL_MODIFY_USERS.key} are not fully included in " +
-        s"${LivyConf.ACCESS_CONTROL_ALLOWED_USERS.key}, you should added them to the allowed user")
-    }
-  }
+  private val allowedAcls = (superUsers ++ modifyUsers ++ viewUsers ++ allowedUsers).toSet
 
   info(s"AccessControlManager acls ${if (aclsOn) "enabled" else "disabled"};" +
     s"users with view permission: ${viewUsers.mkString(", ")};" +
     s"users with modify permission: ${modifyUsers.mkString(", ")};" +
-    s"users with super permission: ${superUsers.mkString(", ")}")
+    s"users with super permission: ${superUsers.mkString(", ")};" +
+    s"other allowed users: ${allowedUsers.mkString(", ")}")
 
   /**
    * Check whether the given user has view access to the REST APIs.
@@ -108,9 +81,9 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    * Check whether the given user has the permission to access REST APIs.
    */
   def isUserAllowed(user: String): Boolean = {
-    debug(s"user=$user aclsOn=$aclsOn, allowedUsers=${allowedUsers.mkString(", ")}")
-    if (!aclsOn || user == null || allowedUsers.contains(user) ||
-      allowedUsers.contains(WILDCARD_ACL)) {
+    debug(s"user=$user aclsOn=$aclsOn, allowedAcls=${allowedAcls.mkString(", ")}")
+    if (!aclsOn || user == null || allowedAcls.contains(user) ||
+      allowedAcls.contains(WILDCARD_ACL)) {
       true
     } else {
       false
