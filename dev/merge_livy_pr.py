@@ -310,31 +310,38 @@ def resolve_jira_issues(title, merge_branches, comment):
 
 def standardize_jira_ref(text):
     """
-    Standardize the LIVY-XXXX. prefix
-    Converts "[LIVY-XXX] Issue", "LIVY-XXX Issue", "LIVY XXX: Issue" or "LIVY-XXX: Issue" to
-    "LIVY-XXX. Issue"
+    Standardize the [LIVY-XXXXX] [MODULE] prefix
+    Converts "[LIVY-XXX][repl] Issue", "[Repl] LIVY-XXX. Issue" or "LIVY XXX [REPL]: Issue" to
+    "[LIVY-XXX][REPL] Issue"
     """
     jira_refs = []
     components = []
 
     # If the string is compliant, no need to process any further
-    if (re.search(r'^LIVY-[0-9]{3,6}\. \S+', text)):
+    if (re.search(r'^\[LIVY-[0-9]{3,6}\](\[[A-Z0-9_\s,]+\] )+\S+', text)):
         return text
 
     # Extract JIRA ref(s):
     pattern = re.compile(r'(LIVY[-\s]*[0-9]{3,6})+', re.IGNORECASE)
     for ref in pattern.findall(text):
         # Add brackets, replace spaces with a dash, & convert to uppercase
-        jira_refs.append(re.sub(r'\s+', '-', ref.upper()))
+        jira_refs.append('[' + re.sub(r'\s+', '-', ref.upper()) + ']')
         text = text.replace(ref, '')
+
+    # Extract livy component(s):
+    # Look for alphanumeric chars, spaces, dashes, periods, and/or commas
+    pattern = re.compile(r'(\[[\w\s,-\.]+\])', re.IGNORECASE)
+    for component in pattern.findall(text):
+        components.append(component.upper())
+        text = text.replace(component, '')
 
     # Cleanup any remaining symbols:
     pattern = re.compile(r'^\W+(.*)', re.IGNORECASE)
     if (pattern.search(text) is not None):
         text = pattern.search(text).groups()[0]
 
-    # Assemble full text (JIRA ref(s), remaining text)
-    clean_text = ''.join(jira_refs).strip() + ". " + text.strip()
+    # Assemble full text (JIRA ref(s), module(s), remaining text)
+    clean_text = ''.join(jira_refs).strip() + ''.join(components).strip() + " " + text.strip()
 
     # Replace multiple spaces with a single space, e.g. if no jira refs and/or components were
     # included
