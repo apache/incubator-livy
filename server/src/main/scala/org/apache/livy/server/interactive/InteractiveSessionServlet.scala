@@ -31,8 +31,7 @@ import org.scalatra.servlet.FileUploadSupport
 import org.apache.livy.{ExecuteRequest, JobHandle, LivyConf, Logging}
 import org.apache.livy.client.common.HttpMessages
 import org.apache.livy.client.common.HttpMessages._
-import org.apache.livy.rsc.driver.Statement
-import org.apache.livy.server.SessionServlet
+import org.apache.livy.server.{AccessManager, SessionServlet}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
 
@@ -41,8 +40,9 @@ object InteractiveSessionServlet extends Logging
 class InteractiveSessionServlet(
     sessionManager: InteractiveSessionManager,
     sessionStore: SessionStore,
-    livyConf: LivyConf)
-  extends SessionServlet(sessionManager, livyConf)
+    livyConf: LivyConf,
+    accessManager: AccessManager)
+  extends SessionServlet(sessionManager, livyConf, accessManager)
   with SessionHeartbeatNotifier[InteractiveSession, InteractiveRecoveryMetadata]
   with FileUploadSupport
 {
@@ -66,7 +66,7 @@ class InteractiveSessionServlet(
       session: InteractiveSession,
       req: HttpServletRequest): Any = {
     val logs =
-      if (hasAccess(session.owner, req)) {
+      if (hasViewAccess(session.owner, req)) {
         Option(session.logLines())
           .map { lines =>
             val size = 10
@@ -85,21 +85,21 @@ class InteractiveSessionServlet(
   }
 
   post("/:id/stop") {
-    withSession { session =>
+    withModifyAccessSession { session =>
       Await.ready(session.stop(), Duration.Inf)
       NoContent()
     }
   }
 
   post("/:id/interrupt") {
-    withSession { session =>
+    withModifyAccessSession { session =>
       Await.ready(session.interrupt(), Duration.Inf)
       Ok(Map("msg" -> "interrupted"))
     }
   }
 
   get("/:id/statements") {
-    withSession { session =>
+    withViewAccessSession { session =>
       val statements = session.statements
       val from = params.get("from").map(_.toInt).getOrElse(0)
       val size = params.get("size").map(_.toInt).getOrElse(statements.length)
@@ -112,7 +112,7 @@ class InteractiveSessionServlet(
   }
 
   val getStatement = get("/:id/statements/:statementId") {
-    withSession { session =>
+    withViewAccessSession { session =>
       val statementId = params("statementId").toInt
 
       session.getStatement(statementId).getOrElse(NotFound("Statement not found"))
@@ -120,7 +120,7 @@ class InteractiveSessionServlet(
   }
 
   jpost[ExecuteRequest]("/:id/statements") { req =>
-    withSession { session =>
+    withModifyAccessSession { session =>
       val statement = session.executeStatement(req)
 
       Created(statement,
@@ -132,7 +132,7 @@ class InteractiveSessionServlet(
   }
 
   post("/:id/statements/:statementId/cancel") {
-    withSession { session =>
+    withModifyAccessSession { session =>
       val statementId = params("statementId")
       session.cancelStatement(statementId.toInt)
       Ok(Map("msg" -> "canceled"))
@@ -143,14 +143,14 @@ class InteractiveSessionServlet(
   // has access to the session, so even though it returns the same data, it behaves differently
   // from get("/:id").
   post("/:id/connect") {
-    withSession { session =>
+    withModifyAccessSession { session =>
       session.recordActivity()
       Ok(clientSessionView(session, request))
     }
   }
 
   jpost[SerializedJob]("/:id/submit-job") { req =>
-    withSession { session =>
+    withModifyAccessSession { session =>
       try {
       require(req.job != null && req.job.length > 0, "no job provided.")
       val jobId = session.submitJob(req.job)
@@ -164,7 +164,7 @@ class InteractiveSessionServlet(
   }
 
   jpost[SerializedJob]("/:id/run-job") { req =>
-    withSession { session =>
+    withModifyAccessSession { session =>
       require(req.job != null && req.job.length > 0, "no job provided.")
       val jobId = session.runJob(req.job)
       Created(new JobStatus(jobId, JobHandle.State.SENT, null, null))
@@ -172,7 +172,7 @@ class InteractiveSessionServlet(
   }
 
   post("/:id/upload-jar") {
-    withSession { lsession =>
+    withModifyAccessSession { lsession =>
       fileParams.get("jar") match {
         case Some(file) =>
           lsession.addJar(file.getInputStream, file.name)
@@ -183,7 +183,7 @@ class InteractiveSessionServlet(
   }
 
   post("/:id/upload-pyfile") {
-    withSession { lsession =>
+    withModifyAccessSession { lsession =>
       fileParams.get("file") match {
         case Some(file) =>
           lsession.addJar(file.getInputStream, file.name)
@@ -194,7 +194,7 @@ class InteractiveSessionServlet(
   }
 
   post("/:id/upload-file") {
-    withSession { lsession =>
+    withModifyAccessSession { lsession =>
       fileParams.get("file") match {
         case Some(file) =>
           lsession.addFile(file.getInputStream, file.name)
@@ -205,13 +205,13 @@ class InteractiveSessionServlet(
   }
 
   jpost[AddResource]("/:id/add-jar") { req =>
-    withSession { lsession =>
+    withModifyAccessSession { lsession =>
       addJarOrPyFile(req, lsession)
     }
   }
 
   jpost[AddResource]("/:id/add-pyfile") { req =>
-    withSession { lsession =>
+    withModifyAccessSession { lsession =>
       lsession.kind match {
         case PySpark() | PySpark3() => addJarOrPyFile(req, lsession)
         case _ => BadRequest("Only supported for pyspark sessions.")
@@ -220,21 +220,21 @@ class InteractiveSessionServlet(
   }
 
   jpost[AddResource]("/:id/add-file") { req =>
-    withSession { lsession =>
+    withModifyAccessSession { lsession =>
       val uri = new URI(req.uri)
       lsession.addFile(uri)
     }
   }
 
   get("/:id/jobs/:jobid") {
-    withSession { lsession =>
+    withViewAccessSession { lsession =>
       val jobId = params("jobid").toLong
       Ok(lsession.jobStatus(jobId))
     }
   }
 
   post("/:id/jobs/:jobid/cancel") {
-    withSession { lsession =>
+    withModifyAccessSession { lsession =>
       val jobId = params("jobid").toLong
       lsession.cancelJob(jobId)
     }

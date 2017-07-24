@@ -107,3 +107,19 @@
 
 # If the Livy Web UI should be included in the Livy Server. Enabled by default.
 # livy.ui.enabled = true
+
+# Whether to enable Livy server access control, if it is true then all the income requests will
+# be checked if the requested user has permission.
+# livy.server.access-control.enabled = false
+
+# Allowed users to access Livy, by default any user is allowed to access Livy. If user want to
+# limit who could access Livy, user should list all the permitted users with comma separated.
+# livy.server.access-control.allowed-users = *
+
+# A list of users with comma separated has the permission to change other user's submitted
+# session, like submitting statements, deleting session.
+# livy.server.access-control.modify-users =
+
+# A list of users with comma separated has the permission to view other user's infomation, like
+# submitted session state, statement results.
+# livy.server.access-control.view-users =

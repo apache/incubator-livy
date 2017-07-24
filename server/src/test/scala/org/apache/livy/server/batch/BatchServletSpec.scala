@@ -29,7 +29,7 @@ import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
 
 import org.apache.livy.Utils
-import org.apache.livy.server.BaseSessionServletSpec
+import org.apache.livy.server.{AccessManager, BaseSessionServletSpec}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{BatchSessionManager, SessionState}
 import org.apache.livy.utils.AppInfo
@@ -54,10 +54,12 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
   override def createServlet(): BatchSessionServlet = {
     val livyConf = createConf()
     val sessionStore = mock[SessionStore]
+    val accessManager = new AccessManager(livyConf)
     new BatchSessionServlet(
       new BatchSessionManager(livyConf, sessionStore, Some(Seq.empty)),
       sessionStore,
-      livyConf)
+      livyConf,
+      accessManager)
   }
 
   describe("Batch Servlet") {
