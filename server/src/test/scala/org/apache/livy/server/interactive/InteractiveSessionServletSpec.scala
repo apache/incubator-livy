@@ -34,6 +34,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.apache.livy.{ExecuteRequest, LivyConf}
 import org.apache.livy.client.common.HttpMessages.SessionInfo
 import org.apache.livy.rsc.driver.{Statement, StatementState}
+import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
 import org.apache.livy.utils.AppInfo
@@ -44,8 +45,9 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
 
   class MockInteractiveSessionServlet(
       sessionManager: InteractiveSessionManager,
-      conf: LivyConf)
-    extends InteractiveSessionServlet(sessionManager, mock[SessionStore], conf) {
+      conf: LivyConf,
+      accessManager: AccessManager)
+    extends InteractiveSessionServlet(sessionManager, mock[SessionStore], conf, accessManager) {
 
     private var statements = IndexedSeq[Statement]()
 
@@ -91,7 +93,8 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
   override def createServlet(): InteractiveSessionServlet = {
     val conf = createConf()
     val sessionManager = new InteractiveSessionManager(conf, mock[SessionStore], Some(Seq.empty))
-    new MockInteractiveSessionServlet(sessionManager, conf)
+    val accessManager = new AccessManager(conf)
+    new MockInteractiveSessionServlet(sessionManager, conf, accessManager)
   }
 
   it("should setup and tear down an interactive session") {

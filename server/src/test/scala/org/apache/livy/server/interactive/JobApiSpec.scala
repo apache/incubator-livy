@@ -33,7 +33,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.apache.livy.{Job, JobHandle}
 import org.apache.livy.client.common.{BufferUtils, Serializer}
 import org.apache.livy.client.common.HttpMessages._
-import org.apache.livy.server.RemoteUserOverride
+import org.apache.livy.server.{AccessManager, RemoteUserOverride}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{InteractiveSessionManager, SessionState}
 import org.apache.livy.test.jobs.{Echo, GetCurrentUser}
@@ -48,7 +48,9 @@ class JobApiSpec extends BaseInteractiveServletSpec {
     val conf = createConf()
     val sessionStore = mock[SessionStore]
     val sessionManager = new InteractiveSessionManager(conf, sessionStore, Some(Seq.empty))
-    new InteractiveSessionServlet(sessionManager, sessionStore, conf) with RemoteUserOverride
+    val accessManager = new AccessManager(conf)
+    new InteractiveSessionServlet(sessionManager, sessionStore, conf, accessManager)
+      with RemoteUserOverride
   }
 
   def withSessionId(desc: String)(fn: (Int) => Unit): Unit = {
