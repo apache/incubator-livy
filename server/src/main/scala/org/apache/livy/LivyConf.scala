@@ -167,6 +167,12 @@ object LivyConf {
     Entry("livy.server.thrift.delegation.token.max-lifetime", "7d")
   val THRIFT_DELEGATION_TOKEN_RENEW_INTERVAL =
     Entry("livy.server.thrift.delegation.token.renew-interval", "1d")
+  // Ldap properties
+  val AUTH_LDAP_URL = Entry("livy.server.auth.ldap.url", null)
+  val AUTH_LDAP_BASE_DN = Entry("livy.server.auth.ldap.base-dn", null)
+  val AUTH_LDAP_USERNAME_DOMAIN = Entry("livy.server.auth.ldap.username-domain", null)
+  val AUTH_LDAP_ENABLE_START_TLS = Entry("livy.server.auth.ldap.enable-start-tls", "false")
+  val AUTH_LDAP_SECURITY_AUTH = Entry("livy.server.auth.ldap.security-authentication", "simple")
 
   /**
    * Recovery mode of Livy. Possible values:
