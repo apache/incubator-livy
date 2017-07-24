@@ -46,13 +46,7 @@ import org.apache.livy.LivyClient;
 import org.apache.livy.LivyClientBuilder;
 import org.apache.livy.client.common.Serializer;
 import org.apache.livy.rsc.rpc.RpcException;
-import org.apache.livy.test.jobs.Echo;
-import org.apache.livy.test.jobs.Failure;
-import org.apache.livy.test.jobs.FileReader;
-import org.apache.livy.test.jobs.GetCurrentUser;
-import org.apache.livy.test.jobs.SQLGetTweets;
-import org.apache.livy.test.jobs.Sleeper;
-import org.apache.livy.test.jobs.SmallCount;
+import org.apache.livy.test.jobs.*;
 import static org.apache.livy.rsc.RSCConf.Entry.*;
 
 public class TestSparkClient {
