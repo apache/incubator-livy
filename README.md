@@ -17,8 +17,12 @@ programs in a Spark context that runs locally or in
 please check out the [Contributing](http://livy.incubator.apache.org/community#Contributing)
 section on the [Community](http://livy.incubator.apache.org/community) page of our website.
 
+## Online Documentation
 
-## Prerequisites
+Guides and documentation on getting started using Livy, example code snippets, and Livy API
+documentation can be found at [livy.incubator.apache.org](http://livy.incubator.apache.org).
+
+## Before Building Livy
 
 To build Livy, you will need:
 
@@ -76,8 +80,3 @@ Livy does not need to match the version used to build Livy. Livy internally uses
 mitigate the gaps between different Spark versions, also Livy package itself does not
 contain a Spark distribution, so it will work with any supported version of Spark (Spark 1.6+)
 without needing to rebuild against specific version of Spark.
-
-## Documentation
-
-More information can be found at [livy.incubator.apache.org](http://livy.incubator.apache.org),
-including how to get started using Livy, example code snippets, and API documentation.
