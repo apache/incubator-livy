@@ -264,12 +264,15 @@ class LivyServer extends Logging {
       case authType @ LdapAuthenticationHandlerImpl.TYPE =>
         val holder = new FilterHolder(new AuthenticationFilter())
         holder.setInitParameter(AuthenticationFilter.AUTH_TYPE, authType)
-        Option(livyConf.get(LivyConf.AUTH_LDAP_URL)).foreach(url =>
-          holder.setInitParameter(LdapAuthenticationHandlerImpl.PROVIDER_URL, url))
-        Option(livyConf.get(LivyConf.AUTH_LDAP_USERNAME_DOMAIN)).foreach(domain =>
-          holder.setInitParameter(LdapAuthenticationHandlerImpl.LDAP_BIND_DOMAIN, domain))
-        Option(livyConf.get(LivyConf.AUTH_LDAP_BASE_DN)).foreach(baseDN =>
-          holder.setInitParameter(LdapAuthenticationHandlerImpl.BASE_DN, baseDN))
+        Option(livyConf.get(LivyConf.AUTH_LDAP_URL)).foreach { url =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.PROVIDER_URL, url)
+        }
+        Option(livyConf.get(LivyConf.AUTH_LDAP_USERNAME_DOMAIN)).foreach { domain =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.LDAP_BIND_DOMAIN, domain)
+        }
+        Option(livyConf.get(LivyConf.AUTH_LDAP_BASE_DN)).foreach { baseDN =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.BASE_DN, baseDN)
+        }
         holder.setInitParameter(LdapAuthenticationHandlerImpl.SECURITY_AUTHENTICATION,
           livyConf.get(LivyConf.AUTH_LDAP_SECURITY_AUTH))
         holder.setInitParameter(LdapAuthenticationHandlerImpl.ENABLE_START_TLS,
