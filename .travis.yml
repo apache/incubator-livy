@@ -13,7 +13,7 @@ env:
   - MVN_FLAG='-Pspark-2.2 -DskipITs'
 
 jdk:
-  - openjdk8
+  - oraclejdk8
 
 addons:
   apt:
