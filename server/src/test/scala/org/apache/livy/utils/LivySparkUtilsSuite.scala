@@ -61,6 +61,7 @@ class LivySparkUtilsSuite extends FunSuite with Matchers with LivyBaseUnitTestSu
     testSparkVersion("2.0")
     testSparkVersion("2.1.0")
     testSparkVersion("2.1.1")
+    testSparkVersion("2.2.0")
   }
 
   test("should not support Spark older than 1.6") {
@@ -136,5 +137,6 @@ class LivySparkUtilsSuite extends FunSuite with Matchers with LivyBaseUnitTestSu
     sparkScalaVersion(formatSparkVersion("2.0.0"), None, livyConf) shouldBe "2.11"
     sparkScalaVersion(formatSparkVersion("2.0.1"), None, livyConf) shouldBe "2.11"
     sparkScalaVersion(formatSparkVersion("2.1.0"), None, livyConf) shouldBe "2.11"
+    sparkScalaVersion(formatSparkVersion("2.2.0"), None, livyConf) shouldBe "2.11"
   }
 }

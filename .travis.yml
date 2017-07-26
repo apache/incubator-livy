@@ -6,12 +6,14 @@ env:
   - MVN_FLAG='-Pspark-1.6 -DskipTests'
   - MVN_FLAG='-Pspark-2.0 -DskipTests'
   - MVN_FLAG='-Pspark-2.1 -DskipTests'
+  - MVN_FLAG='-Pspark-2.2 -DskipTests'
   - MVN_FLAG='-Pspark-1.6 -DskipITs'
   - MVN_FLAG='-Pspark-2.0 -DskipITs'
   - MVN_FLAG='-Pspark-2.1 -DskipITs'
+  - MVN_FLAG='-Pspark-2.2 -DskipITs'
 
 jdk:
-  - openjdk7
+  - oraclejdk8
 
 addons:
   apt:
