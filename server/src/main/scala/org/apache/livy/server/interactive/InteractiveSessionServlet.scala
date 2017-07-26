@@ -157,7 +157,6 @@ class InteractiveSessionServlet(
       Created(new JobStatus(jobId, JobHandle.State.SENT, null, null))
       } catch {
         case e: Throwable =>
-          e.printStackTrace()
         throw e
       }
     }
