@@ -17,6 +17,7 @@
 
 package org.apache.livy.rsc.driver;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -47,7 +48,13 @@ public final class RSCDriverBootstrapper {
 
     case 1:
       props = new Properties();
-      Reader r = new InputStreamReader(new FileInputStream(args[0]), UTF_8);
+      File propertyFile = new File(args[0]);
+      String fileName = propertyFile.getName();
+      if (!fileName.startsWith("livyConf") && fileName.endsWith("properties")) {
+        throw new IllegalArgumentException("File name " + fileName + "is not a legal file name.");
+      }
+
+      Reader r = new InputStreamReader(new FileInputStream(propertyFile), UTF_8);
       try {
         props.load(r);
       } finally {

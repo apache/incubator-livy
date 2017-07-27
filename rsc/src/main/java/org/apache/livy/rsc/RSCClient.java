@@ -331,7 +331,7 @@ public class RSCClient implements LivyClient {
 
         @Override
         public void onFailure(Throwable error) throws Exception {
-          error.printStackTrace();
+          LOG.error("RPC error.", error);
           promise.tryFailure(error);
         }
       });
