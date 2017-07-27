@@ -3,30 +3,18 @@
 Livy provides a programmatic Java/Scala and Python API that allows applications to run code inside
 Spark without having to maintain a local Spark context. Here shows how to use the Java API.
 
-Add the Cloudera repository to your application's POM:
-
-```xml
-<repositories>
-  <repository>
-    <id>cloudera.repo</id>
-    <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
-    <name>Cloudera Repositories</name>
-    <snapshots>
-      <enabled>false</enabled>
-    </snapshots>
-  </repository>
-</repositories>
-```
-
-And add the Livy client dependency:
+Add the Livy client dependency to your application's POM:
 
 ```xml
 <dependency>
-  <groupId>com.cloudera.livy</groupId>
+  <groupId>org.apache.livy</groupId>
   <artifactId>livy-client-http</artifactId>
-  <version>0.2.0</version>
+  <version>0.4.0-SNAPSHOT</version>
 </dependency>
 ```
+
+Note: Until Livy's first Apache release you will have to
+install the livy artifacts locally using `mvn install`.
 
 To be able to compile code that uses Spark APIs, also add the correspondent Spark dependencies.
 
@@ -39,7 +27,7 @@ import java.util.*;
 import org.apache.spark.api.java.*;
 import org.apache.spark.api.java.function.*;
 
-import com.cloudera.livy.*;
+import org.apache.livy.*;
 
 public class PiJob implements Job<Double>, Function<Integer, Integer>,
   Function2<Integer, Integer, Integer> {
