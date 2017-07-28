@@ -25,14 +25,19 @@ function getLogPath(type, id) {
   }
 }
 
+function parseLog(logLines) {
+  // TODO: Separate out stdout, stderr, and YARN Diagnostics into different viewers
+  return preWrap(logLines.join("\n"));
+}
+
 $(document).ready(function () {
   var pathArr = getPathArray();
   var type = pathArr.shift();
   var id = pathArr.shift();
 
-  $.getJSON(location.origin + getLogPath(type, id), {from: 0, size: 100}, function(response) {
+  $.getJSON(location.origin + getLogPath(type, id), {size: -1}, function(response) {
     if (response) {
-      $("#session-log").append(preWrap(response.log.join("\n")));
+      $("#session-log").append(parseLog(response.log));
     }
   });
 });

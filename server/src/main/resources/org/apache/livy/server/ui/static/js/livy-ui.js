@@ -49,6 +49,7 @@ function driverLogLink(session) {
     return "";
   }
 }
+
 function logLinks(session, kind) {
   var sessionLog = divWrap(uiLink(kind + "/" + session.id + "/log", "session"));
   var driverLog =  divWrap(driverLogLink(session));

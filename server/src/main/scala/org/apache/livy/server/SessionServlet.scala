@@ -230,8 +230,11 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   private def serializeLogs(session: S, fromOpt: Option[Int], sizeOpt: Option[Int]) = {
     val lines = session.logLines()
 
-    val size = sizeOpt.getOrElse(100)
+    var size = sizeOpt.getOrElse(100)
     var from = fromOpt.getOrElse(-1)
+    if (size < 0) {
+      size = lines.length
+    }
     if (from < 0) {
       from = math.max(0, lines.length - size)
     }
