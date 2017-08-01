@@ -28,6 +28,11 @@ pre {
   white-space: pre-wrap;
 }
 
+#session-log pre {
+  max-height: 80%;
+  overflow: scroll;
+}
+
 td .progress {
   margin: 0;
 }
