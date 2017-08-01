@@ -33,6 +33,10 @@ pre {
   overflow: scroll;
 }
 
+#session-log h4 div {
+  display: inline-block;
+}
+
 td .progress {
   margin: 0;
 }

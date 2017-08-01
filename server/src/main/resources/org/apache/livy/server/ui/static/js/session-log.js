@@ -25,6 +25,13 @@ function getLogPath(type, id) {
   }
 }
 
+function logHeader(name) {
+  return "<h4><div data-toggle='tooltip' data-placement='right' "
+    + "title='Only the most recent log lines are displayed "
+    + "(max log lines is set by the livy.cache-log.size config)'>"
+    + name + "</div></h4>";
+}
+
 function parseLog(logLines) {
   // display non-standard log formats
   if (!logLines[0].startsWith("stdout")) {
@@ -47,11 +54,11 @@ function parseLog(logLines) {
     }
   }
 
-  var stdoutLog = "<h4>stdout</h4>" + preWrap(stdoutLines.join("\n"));
-  var stderrLog = "<h4>stderr</h4>" + preWrap(stderrLines.join("\n"));
+  var stdoutLog = logHeader("stdout") + preWrap(stdoutLines.join("\n"));
+  var stderrLog = logHeader("stderr") + preWrap(stderrLines.join("\n"));
   var yarnDiagLog = "";
   if (yarnDiagLines != null) {
-    var yarnDiagLog = "<h4>YARN Diagnostics</h4>" + preWrap(yarnDiagLines.join("\n"));
+    yarnDiagLog = "<h4>YARN Diagnostics</h4>" + preWrap(yarnDiagLines.join("\n"));
   }
 
   return stdoutLog + stderrLog + yarnDiagLog;
@@ -65,6 +72,7 @@ $(document).ready(function () {
   $.getJSON(location.origin + getLogPath(type, id), {size: -1}, function(response) {
     if (response) {
       $("#session-log").append(parseLog(response.log));
+      $('#session-log [data-toggle="tooltip"]').tooltip();
       $("#session-log pre").each(function () {
           $(this).scrollTop($(this)[0].scrollHeight);
       });
