@@ -26,7 +26,7 @@ function getLogPath(type, id) {
 }
 
 function parseLog(logLines) {
-  // TODO: Separate out stdout, stderr, and YARN Diagnostics into different viewers
+  // TODO: [LIVY-387]: Separate out stdout, stderr, and YARN Diagnostics into different viewers
   return preWrap(logLines.join("\n"));
 }
 
