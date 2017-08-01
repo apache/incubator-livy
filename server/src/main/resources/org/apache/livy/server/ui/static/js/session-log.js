@@ -15,23 +15,29 @@
  * limitations under the License.
  */
 
-body {
-  padding: 15px 0;
+function getLogPath(type, id) {
+  if (type == "session") {
+    return "/sessions/" + id + "/log";
+  } else if (type == "batch") {
+    return "/batches/" + id + "/log";
+  } else {
+    return "";
+  }
 }
 
-pre {
-  font-size: 12px;
-  line-height: 18px;
-  padding: 6px;
-  margin: 0;
-  word-break: break-word;
-  white-space: pre-wrap;
+function parseLog(logLines) {
+  // TODO: [LIVY-387]: Separate out stdout, stderr, and YARN Diagnostics into different viewers
+  return preWrap(logLines.join("\n"));
 }
 
-td .progress {
-  margin: 0;
-}
+$(document).ready(function () {
+  var pathArr = getPathArray();
+  var type = pathArr.shift();
+  var id = pathArr.shift();
 
-#session-summary {
-  margin: 20px 0;
-}
+  $.getJSON(location.origin + getLogPath(type, id), {size: -1}, function(response) {
+    if (response) {
+      $("#session-log").append(parseLog(response.log));
+    }
+  });
+});

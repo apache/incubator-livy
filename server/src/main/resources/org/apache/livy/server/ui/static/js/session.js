@@ -57,7 +57,7 @@ function appendSummary(session) {
       sumWrap("Proxy User", session.proxyUser) +
       sumWrap("Session Kind", session.kind) +
       sumWrap("State", session.state) +
-      sumWrap("Logs", driverLogLink(session)) +
+      sumWrap("Logs", logLinks(session, "session")) +
     "</ul>"
   );
 }

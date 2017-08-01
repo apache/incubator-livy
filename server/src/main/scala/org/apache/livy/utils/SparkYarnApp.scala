@@ -192,7 +192,7 @@ class SparkYarnApp private[utils] (
   private def getYarnDiagnostics(appReport: ApplicationReport): IndexedSeq[String] = {
     Option(appReport.getDiagnostics)
       .filter(_.nonEmpty)
-      .map[IndexedSeq[String]]("YARN Diagnostics:" +: _.split("\n"))
+      .map[IndexedSeq[String]](_.split("\n"))
       .getOrElse(IndexedSeq.empty)
   }
 
