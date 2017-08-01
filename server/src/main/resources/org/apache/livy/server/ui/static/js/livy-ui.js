@@ -46,8 +46,14 @@ function driverLogLink(session) {
   if (driverLogUrl != null) {
     return anchorLink(driverLogUrl, "driver");
   } else {
-    return;
+    return "";
   }
+}
+
+function logLinks(session, kind) {
+  var sessionLog = divWrap(uiLink(kind + "/" + session.id + "/log", "session"));
+  var driverLog =  divWrap(driverLogLink(session));
+  return sessionLog + driverLog;
 }
 
 function appIdLink(session) {
@@ -69,6 +75,10 @@ function tdWrap(val) {
 
 function preWrap(inner) {
   return "<pre>" + escapeHtml(inner) + "</pre>";
+}
+
+function divWrap(inner) {
+  return "<div>" + inner + "</div>";
 }
 
 function progressBar(double) {

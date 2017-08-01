@@ -30,6 +30,10 @@ class UIServlet extends ScalatraServlet {
   private case class SessionPage(id: Int) extends Page {
     val name: String = "Session " + id
   }
+  private case class LogPage(sessionType: String, id: Int) extends Page {
+    val sessionName: String = sessionType + " " + id
+    val name: String = sessionName + " Log"
+  }
 
   private def getHeader(pageName: String): Seq[Node] =
     <head>
@@ -63,9 +67,15 @@ class UIServlet extends ScalatraServlet {
   private def getNavBar(page: Page): Seq[Node] = {
     val tabs: Seq[Node] = page match {
       case _: AllSessionsPage => <li class="active"><a href="#">Sessions</a></li>
-      case pageInfo: SessionPage => {
+      case sessionPage: SessionPage => {
         <li><a href="/ui">Sessions</a></li> ++
-          <li class="active"><a href="#">{pageInfo.name}</a></li>
+          <li class="active"><a href="#">{sessionPage.name}</a></li>
+      }
+      case logPage: LogPage => {
+        val sessionLink = if (logPage.sessionType == "Session") "/ui/session/" + logPage.id else "#"
+        <li><a href="/ui">Sessions</a></li> ++
+          <li><a href={sessionLink}>{logPage.sessionName}</a></li> ++
+          <li class="active"><a href="#">Log</a></li>
       }
       case _ => Seq.empty
     }
@@ -107,5 +117,23 @@ class UIServlet extends ScalatraServlet {
       </div>
 
     createPage(SessionPage(params("id").toInt), content)
+  }
+
+  private def getLogPage(page: LogPage): Seq[Node] = {
+    val content =
+      <div id="log-page">
+        <div id="session-log"></div>
+        <script src="/static/js/session-log.js"></script>
+      </div>
+
+    createPage(page, content)
+  }
+
+  get("/session/:id/log") {
+    getLogPage(LogPage("Session", params("id").toInt))
+  }
+
+  get("/batch/:id/log") {
+    getLogPage(LogPage("Batch", params("id").toInt))
   }
 }
