@@ -28,8 +28,8 @@ package object scalaapi {
    *  @constructor Creates a Scala client.
    *  @param livyJavaClient  the Java client of Livy.
    *  {{{
-   *     import com.cloudera.livy._
-   *     import com.cloudera.livy.scalaapi._
+   *     import org.apache.livy._
+   *     import org.apache.livy.scalaapi._
    *     val url = "http://example.com"
    *     val livyJavaClient = new LivyClientBuilder(false).setURI(new URI(url))).build()
    *     val livyScalaClient = livyJavaClient.asScalaClient

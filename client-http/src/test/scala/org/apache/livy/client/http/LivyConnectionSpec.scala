@@ -64,7 +64,7 @@ class LivyConnectionSpec extends FunSpecLike with BeforeAndAfterAll with LivyBas
 
       val server = new WebServer(livyConf, "0.0.0.0", 0)
       server.context.setSecurityHandler(basicAuth(username, password, "realm"))
-      server.context.setResourceBase("src/main/com/cloudera/livy/server")
+      server.context.setResourceBase("src/main/org/apache/livy/server")
       server.context.setInitParameter(ScalatraListener.LifeCycleKey,
         classOf[HttpClientTestBootstrap].getCanonicalName)
       server.context.addEventListener(new ScalatraListener)

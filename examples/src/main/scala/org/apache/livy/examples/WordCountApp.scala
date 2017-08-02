@@ -181,7 +181,7 @@ object WordCountApp {
    * Example execution:
    * scala -cp /pathTo/livy-api-*version*.jar:/pathTo/livy-client-http-*version*.jar:
    * /pathTo/livy-examples-*version*.jar:/pathTo/livy-scala-api-*version*.jar
-   * com.cloudera.livy.examples.WordCountApp http://livy-host:8998 /outputFilePath
+   * org.apache.livy.examples.WordCountApp http://livy-host:8998 /outputFilePath
    * host=myhost port=8080
    */
   def main(args: Array[String]): Unit = {

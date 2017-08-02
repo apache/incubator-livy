@@ -19,7 +19,7 @@ package org.apache.livy.server
 
 /**
  * This enum defines Livy's API versions.
- * [[com.cloudera.livy.server.AbstractApiVersioningSupport]] uses this for API version checking.
+ * [[org.apache.livy.server.AbstractApiVersioningSupport]] uses this for API version checking.
  *
  * Version is defined as <major version>.<minor version>.
  * When making backward compatible change (adding methods/fields), bump minor version.
