@@ -51,6 +51,7 @@ function parseLog(logLines) {
     } else if (logLines[i].startsWith("\nYARN Diagnostics")) {
       stderrLines = logLines.slice(stderrIndex + 1, i);
       yarnDiagLines = logLines.slice(i + 1, logLines.length);
+      break;
     }
   }
 
