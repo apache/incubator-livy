@@ -93,6 +93,8 @@ trait SparkContextInitializer extends Logging {
         spark = builder.getClass.getMethod("getOrCreate").invoke(builder)
         info("Created Spark session (with Hive support).")
       } else {
+        builder.getClass.getMethod("config", classOf[String], classOf[String])
+          .invoke(builder, "spark.sql.catalogImplementation", "in-memory")
         spark = builder.getClass.getMethod("getOrCreate").invoke(builder)
         info("Created Spark session.")
       }
