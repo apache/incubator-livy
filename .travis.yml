@@ -3,17 +3,25 @@ dist: trusty
 language: scala
 
 env:
-  - MVN_FLAG='-Pspark-1.6 -DskipTests'
-  - MVN_FLAG='-Pspark-2.0 -DskipTests'
-  - MVN_FLAG='-Pspark-2.1 -DskipTests'
-  - MVN_FLAG='-Pspark-2.2 -DskipTests'
-  - MVN_FLAG='-Pspark-1.6 -DskipITs'
-  - MVN_FLAG='-Pspark-2.0 -DskipITs'
-  - MVN_FLAG='-Pspark-2.1 -DskipITs'
-  - MVN_FLAG='-Pspark-2.2 -DskipITs'
+  matrix:
+    - MVN_FLAG='-Pspark-1.6 -DskipTests'
+    - MVN_FLAG='-Pspark-2.0 -DskipTests'
+    - MVN_FLAG='-Pspark-2.1 -DskipTests'
+    - MVN_FLAG='-Pspark-1.6 -DskipITs'
+    - MVN_FLAG='-Pspark-2.0 -DskipITs'
+    - MVN_FLAG='-Pspark-2.1 -DskipITs'
+
+matrix:
+  include:
+      # Spark 2.2 will only be verified using JDK8
+    - env: MVN_FLAG='-Pspark-2.2 -DskipTests'
+      jdk: oraclejdk8
+    - env: MVN_FLAG='-Pspark-2.2 -DskipITs'
+      jdk: oraclejdk8
+
 
 jdk:
-  - oraclejdk8
+  - openjdk7
 
 addons:
   apt:
