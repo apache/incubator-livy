@@ -28,12 +28,49 @@
   <name>livy-main</name>
   <description>livy-main</description>
 
+  <url>http://livy.incubating.apache.org/</url>
+
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
       <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
     </license>
   </licenses>
+
+  <scm>
+    <connection>scm:git:git@github.com:apache/incubator-livy.git</connection>
+    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-livy.git</developerConnection>
+    <url>scm:git:git@github.com:apache/incubator-livy.git</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <issueManagement>
+    <system>JIRA</system>
+    <url>https://issues.apache.org/jira/browse/LIVY</url>
+  </issueManagement>
+
+  <mailingLists>
+    <mailingList>
+      <name>Dev Mailing List</name>
+      <post>dev@livy.incubating.apache.org</post>
+      <subscribe>dev-subscribe@livy.incubating.apache.org</subscribe>
+      <unsubscribe>dev-unsubscribe@livy.incubating.apache.org</unsubscribe>
+    </mailingList>
+
+    <mailingList>
+      <name>User Mailing List</name>
+      <post>user@livy.incubating.apache.org</post>
+      <subscribe>user-subscribe@livy.incubating.apache.org</subscribe>
+      <unsubscribe>user-unsubscribe@livy.incubating.apache.org</unsubscribe>
+    </mailingList>
+
+    <mailingList>
+      <name>Commits Mailing List</name>
+      <post>commits@livy.incubating.apache.org</post>
+      <subscribe>commits-subscribe@livy.incubating.apache.org</subscribe>
+      <unsubscribe>commits-unsubscribe@livy.incubating.apache.org</unsubscribe>
+    </mailingList>
+  </mailingLists>
 
   <properties>
     <hadoop.version>2.7.3</hadoop.version>
@@ -107,11 +144,32 @@
     <MaxPermGen>512m</MaxPermGen>
     <CodeCacheSize>512m</CodeCacheSize>
 
-    <!-- Where to deploy artifacts. -->
-    <repository.root>http://maven.jenkins.cloudera.com:8081/artifactory</repository.root>
   </properties>
 
   <repositories>
+    <repository>
+      <id>central</id>
+      <!-- This should be at top, it makes maven try the central repo first and then others and hence faster dep resolution -->
+      <name>Maven Repository</name>
+      <url>https://repo1.maven.org/maven2</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>apache-repo</id>
+      <name>Apache Repository</name>
+      <url>https://repository.apache.org/content/repositories/releases</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
     <repository>
       <id>cdh.repo</id>
       <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
@@ -130,17 +188,6 @@
       <releases>
         <enabled>false</enabled>
       </releases>
-    </repository>
-    <repository>
-      <id>apache-repo</id>
-      <name>Apache Repository</name>
-      <url>https://repository.apache.org/content/repositories/releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
     </repository>
     <repository>
       <id>repository.jboss.org</id>
