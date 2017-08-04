@@ -1,6 +1,5 @@
 .rat-excludes
 logs/*
-conf/*
 **/*.conf
 **/*.json
 **/*.md
