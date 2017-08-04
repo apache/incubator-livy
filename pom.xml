@@ -24,16 +24,21 @@
   <artifactId>livy-main</artifactId>
   <version>0.4.0-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
-
-  <name>livy-main</name>
-  <description>livy-main</description>
-
+  <name>Livy Project Parent POM</name>
+  <description>Livy Project</description>
   <url>http://livy.incubating.apache.org/</url>
+
+  <parent>
+    <groupId>org.apache</groupId>
+    <artifactId>apache</artifactId>
+    <version>18</version>
+  </parent>
 
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
       <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
     </license>
   </licenses>
 
@@ -143,6 +148,9 @@
 
     <MaxPermGen>512m</MaxPermGen>
     <CodeCacheSize>512m</CodeCacheSize>
+
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
 
   </properties>
 
@@ -764,6 +772,12 @@
           <version>0.12</version>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-remote-resources-plugin</artifactId>
+          <version>1.5</version>
+        </plugin>
+
       </plugins>
     </pluginManagement>
 
@@ -997,6 +1011,26 @@
             <goals>
               <goal>check</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Override this plugin with parent POM to add DISCLAIMER file to artifacts. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>process-resource-bundles</id>
+            <goals>
+              <goal>process</goal>
+            </goals>
+            <configuration>
+              <resourceBundles>
+                <resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>
+                <resourceBundle>org.apache.apache.resources:apache-incubator-disclaimer-resource-bundle:1.2-SNAPSHOT</resourceBundle>
+              </resourceBundles>
+            </configuration>
           </execution>
         </executions>
       </plugin>
