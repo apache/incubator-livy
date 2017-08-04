@@ -1,9 +1,7 @@
 .rat-excludes
-.travis.yml
 logs/*
 conf/*
 **/*.conf
-**/META-INF/**
 **/*.json
 **/*.md
 *.iml
