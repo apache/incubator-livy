@@ -31,6 +31,15 @@
       </includes>
     </fileSet>
     <fileSet>
+      <directory>${project.parent.basedir}</directory>
+      <outputDirectory>${assembly.name}</outputDirectory>
+      <includes>
+        <include>LICENSE</include>
+        <include>NOTICE</include>
+        <include>DISCLAIMER</include>
+      </includes>
+    </fileSet>
+    <fileSet>
       <directory>${project.parent.basedir}/conf</directory>
       <outputDirectory>${assembly.name}/conf</outputDirectory>
       <includes>
