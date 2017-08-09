@@ -778,6 +778,12 @@
           <version>1.5</version>
         </plugin>
 
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>1.13</version>
+        </plugin>
+
       </plugins>
     </pluginManagement>
 
@@ -1031,6 +1037,26 @@
                 <resourceBundle>org.apache.apache.resources:apache-incubator-disclaimer-resource-bundle:1.2-SNAPSHOT</resourceBundle>
               </resourceBundles>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <inherited>false</inherited>
+        <configuration>
+          <outputDirectory>${execution.root}</outputDirectory>
+          <thirdPartyFilename>THIRD-PARTY</thirdPartyFilename>
+          <sortArtifactByName>true</sortArtifactByName>
+          <fileTemplate>${execution.root}/dev/third-party-file.ftl</fileTemplate>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>aggregate-add-third-party</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
