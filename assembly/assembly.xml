@@ -37,6 +37,7 @@
         <include>LICENSE</include>
         <include>NOTICE</include>
         <include>DISCLAIMER</include>
+        <include>THIRD-PARTY</include>
       </includes>
     </fileSet>
     <fileSet>
