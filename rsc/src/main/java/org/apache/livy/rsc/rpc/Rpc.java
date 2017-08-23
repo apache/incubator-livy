@@ -241,6 +241,9 @@ public class Rpc implements Closeable {
   /**
    * Send an RPC call to the remote endpoint and returns a future that can be used to monitor the
    * operation.
+   *
+   * @param msg RPC call to send.
+   * @return A future used to monitor the operation.
    */
   public Future<Void> call(Object msg) {
     return call(msg, Void.class);

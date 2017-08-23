@@ -274,6 +274,8 @@ public class RSCDriver extends BaseProtocol {
    * context with the provided configuration. Subclasses can override this behavior,
    * and returning a null context is allowed. In that case, the context exposed by
    * JobContext will be null.
+   *
+   * @return The initalized SparkContext
    */
   protected JavaSparkContext initializeContext() throws Exception {
     long t1 = System.nanoTime();

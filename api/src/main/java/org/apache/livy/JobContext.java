@@ -35,16 +35,24 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
  */
 public interface JobContext {
 
-  /** The shared SparkContext instance. */
+  /**
+   * @return The shared SparkContext instance.
+   */
   JavaSparkContext sc();
 
-  /** The shared SQLContext instance. */
+  /**
+   * @return The shared SQLContext instance.
+   */
   SQLContext sqlctx();
 
-  /** The shared HiveContext instance. */
+  /**
+   * @return The shared HiveContext instance.
+   */
   HiveContext hivectx();
 
-  /** Returns the JavaStreamingContext which has already been created. */
+  /**
+   * @return The JavaStreamingContext which has already been created.
+   */
   JavaStreamingContext streamingctx();
 
   /**
@@ -59,12 +67,13 @@ public interface JobContext {
   void stopStreamingCtx();
 
   /**
-   * Returns a local tmp dir specific to the context
+   * @return A local tmp dir specific to the context
    */
   File getLocalTmpDir();
 
   /**
-   * Returns SparkSession if it existed, otherwise throws Exception.
+   * @return The SparkSession if it exists
+   * @throws Exception If SparkSession does not exist
    */
   <E> E sparkSession() throws Exception;
 }
