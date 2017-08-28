@@ -28,6 +28,7 @@ import org.json4s.JsonAST._
 import org.json4s.JsonDSL._
 
 import org.apache.livy.Logging
+import org.apache.livy.rsc.driver.SparkEntries
 
 object AbstractSparkInterpreter {
   private[repl] val KEEP_NEWLINE_REGEX = """(?<=\n)""".r
@@ -48,6 +49,43 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
   protected def interpret(code: String): Results.Result
 
   protected def valueOfTerm(name: String): Option[Any]
+
+  protected def bind(name: String, tpe: String, value: Object, modifier: List[String]): Unit
+
+  def sparkEntries(): SparkEntries
+
+  def postStart(sparkEntries: SparkEntries): Unit = {
+    if (isSparkSessionPresent()) {
+      bind("spark",
+        sparkEntries.sparkSession().getClass.getCanonicalName,
+        sparkEntries.sparkSession(),
+        List("""@transient"""))
+      bind("sc", "org.apache.spark.SparkContext", sparkEntries.sc().sc, List("""@transient"""))
+
+      execute("import org.apache.spark.SparkContext._")
+      execute("import spark.implicits._")
+      execute("import spark.sql")
+      execute("import org.apache.spark.sql.functions._")
+    } else {
+      bind("sc", "org.apache.spark.SparkContext", sparkEntries.sc().sc, List("""@transient"""))
+      val sqlContext = Option(sparkEntries.hivectx()).getOrElse(sparkEntries.sqlctx())
+      bind("sqlContext", sqlContext.getClass.getCanonicalName, sqlContext, List("""@transient"""))
+
+      execute("import org.apache.spark.SparkContext._")
+      execute("import sqlContext.implicits._")
+      execute("import sqlContext.sql")
+      execute("import org.apache.spark.sql.functions._")
+    }
+  }
+
+  private def isSparkSessionPresent(): Boolean = {
+    try {
+      Class.forName("org.apache.spark.sql.SparkSession")
+      true
+    } catch {
+      case _: ClassNotFoundException | _: NoClassDefFoundError => false
+    }
+  }
 
   override protected[repl] def execute(code: String): Interpreter.ExecuteResponse =
     restoreContextClassLoader {

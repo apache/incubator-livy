@@ -18,90 +18,47 @@
 package org.apache.livy.rsc.driver;
 
 import java.io.File;
-import java.lang.reflect.Method;
 
-import org.apache.spark.SparkContext;
-import org.apache.spark.api.java.JavaFutureAction;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.livy.JobContext;
 import org.apache.livy.rsc.Utils;
 
-class JobContextImpl implements JobContext {
+public class JobContextImpl implements JobContext {
 
-  private static final Logger LOG = LoggerFactory.getLogger(JobContextImpl.class);
-
-  private final JavaSparkContext sc;
   private final File localTmpDir;
-  private volatile SQLContext sqlctx;
-  private volatile HiveContext hivectx;
   private volatile JavaStreamingContext streamingctx;
   private final RSCDriver driver;
-  private volatile Object sparksession;
+  private final SparkEntries sparkEntries;
 
-  public JobContextImpl(JavaSparkContext sc, File localTmpDir, RSCDriver driver) {
-    this.sc = sc;
+  public JobContextImpl(SparkEntries sparkEntries, File localTmpDir, RSCDriver driver) {
+    this.sparkEntries = sparkEntries;
     this.localTmpDir = localTmpDir;
     this.driver = driver;
   }
 
   @Override
   public JavaSparkContext sc() {
-    return sc;
+    return sparkEntries.sc();
   }
 
   @Override
   public Object sparkSession() throws Exception {
-    if (sparksession == null) {
-      synchronized (this) {
-        if (sparksession == null) {
-          try {
-            Class<?> clz = Class.forName("org.apache.spark.sql.SparkSession$");
-            Object spark = clz.getField("MODULE$").get(null);
-            Method m = clz.getMethod("builder");
-            Object builder = m.invoke(spark);
-            builder.getClass().getMethod("sparkContext", SparkContext.class)
-              .invoke(builder, sc.sc());
-            sparksession = builder.getClass().getMethod("getOrCreate").invoke(builder);
-          } catch (Exception e) {
-            LOG.warn("SparkSession is not supported", e);
-            throw e;
-          }
-        }
-      }
-    }
-
-    return sparksession;
+    return sparkEntries.sparkSession();
   }
 
   @Override
   public SQLContext sqlctx() {
-    if (sqlctx == null) {
-      synchronized (this) {
-        if (sqlctx == null) {
-          sqlctx = new SQLContext(sc);
-        }
-      }
-    }
-    return sqlctx;
+    return sparkEntries.sqlctx();
   }
 
   @Override
   public HiveContext hivectx() {
-    if (hivectx == null) {
-      synchronized (this) {
-        if (hivectx == null) {
-          hivectx = new HiveContext(sc.sc());
-        }
-      }
-    }
-    return hivectx;
+    return sparkEntries.hivectx();
   }
 
   @Override
@@ -113,13 +70,13 @@ class JobContextImpl implements JobContext {
   @Override
   public synchronized void createStreamingContext(long batchDuration) {
     Utils.checkState(streamingctx == null, "Streaming context is not null.");
-    streamingctx = new JavaStreamingContext(sc, new Duration(batchDuration));
+    streamingctx = new JavaStreamingContext(sparkEntries.sc(), new Duration(batchDuration));
   }
 
   @Override
   public synchronized void stopStreamingCtx() {
     Utils.checkState(streamingctx != null, "Streaming Context is null");
-    streamingctx.stop();
+    streamingctx.stop(false);
     streamingctx = null;
   }
 
@@ -132,9 +89,7 @@ class JobContextImpl implements JobContext {
     if (streamingctx != null) {
       stopStreamingCtx();
     }
-    if (sc != null) {
-      sc.stop();
-    }
+    sparkEntries.stop();
   }
 
   public void addFile(String path) {

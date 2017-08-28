@@ -23,11 +23,9 @@ import java.util.concurrent.locks.ReentrantLock
 import scala.concurrent.Promise
 import scala.io.Source
 
-import org.apache.spark.SparkContext
 import org.json4s.JValue
 
 import org.apache.livy.{Logging, Utils}
-import org.apache.livy.client.common.ClientConf
 
 private sealed trait Request
 private case class ExecuteRequest(code: String, promise: Promise[JValue]) extends Request
@@ -45,14 +43,8 @@ abstract class ProcessInterpreter(process: Process)
   protected[this] val stdin = new PrintWriter(process.getOutputStream)
   protected[this] val stdout = new BufferedReader(new InputStreamReader(process.getInputStream), 1)
 
-  override def start(): SparkContext = {
+  override def start(): Unit = {
     waitUntilReady()
-
-    if (ClientConf.TEST_MODE) {
-      null.asInstanceOf[SparkContext]
-    } else {
-      SparkContext.getOrCreate()
-    }
   }
 
   override protected[repl] def execute(code: String): Interpreter.ExecuteResponse = {

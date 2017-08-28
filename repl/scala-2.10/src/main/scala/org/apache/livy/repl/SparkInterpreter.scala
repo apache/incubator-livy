@@ -26,20 +26,21 @@ import scala.tools.nsc.interpreter.JPrintWriter
 import scala.tools.nsc.interpreter.Results.Result
 import scala.util.{Failure, Success, Try}
 
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkConf
 import org.apache.spark.repl.SparkIMain
+
+import org.apache.livy.rsc.driver.SparkEntries
 
 /**
  * This represents a Spark interpreter. It is not thread safe.
  */
-class SparkInterpreter(conf: SparkConf)
-  extends AbstractSparkInterpreter with SparkContextInitializer {
+class SparkInterpreter(conf: SparkConf) extends AbstractSparkInterpreter {
 
   private var sparkIMain: SparkIMain = _
-  protected var sparkContext: SparkContext = _
+  private var entries: SparkEntries = _
 
-  override def start(): SparkContext = {
-    require(sparkIMain == null && sparkContext == null)
+  override def start(): Unit = {
+    require(sparkIMain == null)
 
     val settings = new Settings()
     settings.embeddedDefaults(Thread.currentThread().getContextClassLoader())
@@ -103,22 +104,26 @@ class SparkInterpreter(conf: SparkConf)
         }
       }
 
-      createSparkContext(conf)
+      entries = new SparkEntries(conf)
+      postStart(entries)
     }
-
-    sparkContext
   }
 
-  protected def bind(name: String, tpe: String, value: Object, modifier: List[String]): Unit = {
+  override def sparkEntries(): SparkEntries = entries
+
+  override protected def bind(name: String,
+      tpe: String,
+      value: Object,
+      modifier: List[String]): Unit = {
     sparkIMain.beQuietDuring {
       sparkIMain.bind(name, tpe, value, modifier)
     }
   }
 
   override def close(): Unit = synchronized {
-    if (sparkContext != null) {
-      sparkContext.stop()
-      sparkContext = null
+    if (entries != null) {
+      entries.stop()
+      entries = null
     }
 
     if (sparkIMain != null) {
@@ -128,7 +133,7 @@ class SparkInterpreter(conf: SparkConf)
   }
 
   override protected def isStarted(): Boolean = {
-    sparkContext != null && sparkIMain != null
+    sparkIMain != null
   }
 
   override protected def interpret(code: String): Result = {

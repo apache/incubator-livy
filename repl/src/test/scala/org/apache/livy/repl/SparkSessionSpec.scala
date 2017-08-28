@@ -20,18 +20,15 @@ package org.apache.livy.repl
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import org.apache.spark.SparkConf
 import org.json4s.Extraction
 import org.json4s.JsonAST.JValue
 import org.json4s.jackson.JsonMethods.parse
 import org.scalatest.concurrent.Eventually._
 
-import org.apache.livy.rsc.RSCConf
 import org.apache.livy.rsc.driver.StatementState
+import org.apache.livy.sessions._
 
-class SparkSessionSpec extends BaseSessionSpec {
-
-  override def createInterpreter(): Interpreter = new SparkInterpreter(new SparkConf())
+class SparkSessionSpec extends BaseSessionSpec(Spark()) {
 
   it should "execute `1 + 2` == 3" in withSession { session =>
     val statement = execute(session)("1 + 2")

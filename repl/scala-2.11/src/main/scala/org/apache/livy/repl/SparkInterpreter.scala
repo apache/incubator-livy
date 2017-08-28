@@ -26,20 +26,21 @@ import scala.tools.nsc.interpreter.JPrintWriter
 import scala.tools.nsc.interpreter.Results.Result
 import scala.util.control.NonFatal
 
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkConf
 import org.apache.spark.repl.SparkILoop
+
+import org.apache.livy.rsc.driver.SparkEntries
 
 /**
  * Scala 2.11 version of SparkInterpreter
  */
-class SparkInterpreter(conf: SparkConf)
-  extends AbstractSparkInterpreter with SparkContextInitializer {
+class SparkInterpreter(conf: SparkConf) extends AbstractSparkInterpreter {
 
-  protected var sparkContext: SparkContext = _
   private var sparkILoop: SparkILoop = _
   private var sparkHttpServer: Object = _
+  private var entries: SparkEntries = _
 
-  override def start(): SparkContext = {
+  override def start(): Unit = {
     require(sparkILoop == null)
 
     val rootDir = conf.get("spark.repl.classdir", System.getProperty("java.io.tmpdir"))
@@ -89,16 +90,17 @@ class SparkInterpreter(conf: SparkConf)
         }
       }
 
-      createSparkContext(conf)
+      entries = new SparkEntries(conf)
+      postStart(entries)
     }
-
-    sparkContext
   }
 
+  override def sparkEntries(): SparkEntries = entries
+
   override def close(): Unit = synchronized {
-    if (sparkContext != null) {
-      sparkContext.stop()
-      sparkContext = null
+    if (entries != null) {
+      entries.stop()
+      entries = null
     }
 
     if (sparkILoop != null) {
@@ -115,7 +117,7 @@ class SparkInterpreter(conf: SparkConf)
   }
 
   override protected def isStarted(): Boolean = {
-    sparkContext != null && sparkILoop != null
+    sparkILoop != null
   }
 
   override protected def interpret(code: String): Result = {
@@ -127,7 +129,10 @@ class SparkInterpreter(conf: SparkConf)
     Option(sparkILoop.lastRequest.lineRep.call("$result"))
   }
 
-  protected def bind(name: String, tpe: String, value: Object, modifier: List[String]): Unit = {
+  override protected def bind(name: String,
+      tpe: String,
+      value: Object,
+      modifier: List[String]): Unit = {
     sparkILoop.beQuietDuring {
       sparkILoop.bind(name, tpe, value, modifier)
     }

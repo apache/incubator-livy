@@ -75,7 +75,7 @@ class JobApiSpec extends BaseInteractiveServletSpec {
 
     withSessionId("should handle synchronous jobs") { testJobSubmission(_, true) }
 
-    // Test that the file does get copied over to the live home dir on HDFS - does not test end
+    // Test that the file does get copied over to the livy home dir on HDFS - does not test end
     // to end that the RSCClient class copies it over to the app.
     withSessionId("should support file uploads") { id =>
       testResourceUpload("file", id)
@@ -89,7 +89,7 @@ class JobApiSpec extends BaseInteractiveServletSpec {
       val ser = new Serializer()
       val job = BufferUtils.toByteArray(ser.serialize(new Echo("hello")))
       var jobId: Long = -1L
-      jpost[JobStatus](s"/$sid/submit-job", new SerializedJob(job)) { status =>
+      jpost[JobStatus](s"/$sid/submit-job", new SerializedJob(job, "spark")) { status =>
         jobId = status.id
       }
 
@@ -211,7 +211,7 @@ class JobApiSpec extends BaseInteractiveServletSpec {
     val jobData = BufferUtils.toByteArray(ser.serialize(job))
     val route = if (sync) s"/$sid/submit-job" else s"/$sid/run-job"
     var jobId: Long = -1L
-    jpost[JobStatus](route, new SerializedJob(jobData), headers = headers) { data =>
+    jpost[JobStatus](route, new SerializedJob(jobData, "spark"), headers = headers) { data =>
       jobId = data.id
     }
 

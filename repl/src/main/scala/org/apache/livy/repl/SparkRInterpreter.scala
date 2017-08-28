@@ -17,8 +17,7 @@
 
 package org.apache.livy.repl
 
-import java.io.{File, FileOutputStream}
-import java.lang.ProcessBuilder.Redirect
+import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.{CountDownLatch, Semaphore, TimeUnit}
 
@@ -28,13 +27,14 @@ import scala.reflect.runtime.universe
 
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang.StringEscapeUtils
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.util.{ChildFirstURLClassLoader, MutableURLClassLoader, Utils}
+import org.apache.spark.SparkConf
+import org.apache.spark.api.java.JavaSparkContext
+import org.apache.spark.sql.SQLContext
 import org.json4s._
 import org.json4s.JsonDSL._
 
 import org.apache.livy.client.common.ClientConf
-import org.apache.livy.rsc.RSCConf
+import org.apache.livy.rsc.driver.SparkEntries
 
 private case class RequestResponse(content: String, error: Boolean)
 
@@ -44,6 +44,7 @@ object SparkRInterpreter {
   private val LIVY_ERROR_MARKER = "----LIVY_END_OF_ERROR----"
   private val PRINT_MARKER = f"""print("$LIVY_END_MARKER")"""
   private val EXPECTED_OUTPUT = f"""[1] "$LIVY_END_MARKER""""
+  private var sparkEntries: SparkEntries = null
 
   private val PLOT_REGEX = (
     "(" +
@@ -67,7 +68,8 @@ object SparkRInterpreter {
     ")"
     ).r.unanchored
 
-  def apply(conf: SparkConf): SparkRInterpreter = {
+  def apply(conf: SparkConf, entries: SparkEntries): SparkRInterpreter = {
+    sparkEntries = entries
     val backendTimeout = sys.env.getOrElse("SPARKR_BACKEND_TIMEOUT", "120").toInt
     val mirror = universe.runtimeMirror(getClass.getClassLoader)
     val sparkRBackendClass = mirror.classLoader.loadClass("org.apache.spark.api.r.RBackend")
@@ -129,6 +131,21 @@ object SparkRInterpreter {
         throw e
     }
   }
+
+  def getSparkContext(): JavaSparkContext = {
+    require(sparkEntries != null)
+    sparkEntries.sc()
+  }
+
+  def getSparkSession(): Object = {
+    require(sparkEntries != null)
+    sparkEntries.sparkSession()
+  }
+
+  def getSQLContext(): SQLContext = {
+    require(sparkEntries != null)
+    if (sparkEntries.hivectx() != null) sparkEntries.hivectx() else sparkEntries.sqlctx()
+  }
 }
 
 class SparkRInterpreter(process: Process,
@@ -149,24 +166,24 @@ class SparkRInterpreter(process: Process,
     // Set the option to catch and ignore errors instead of halting.
     sendRequest("options(error = dump.frames)")
     if (!ClientConf.TEST_MODE) {
+      // scalastyle:off line.size.limit
       sendRequest("library(SparkR)")
+      sendRequest("""port <- Sys.getenv("EXISTING_SPARKR_BACKEND_PORT", "")""")
+      sendRequest("""SparkR:::connectBackend("localhost", port)""")
+      sendRequest("""assign(".scStartTime", as.integer(Sys.time()), envir = SparkR:::.sparkREnv)""")
+
+      sendRequest("""assign(".sc", SparkR:::callJStatic("org.apache.livy.repl.SparkRInterpreter", "getSparkContext"), envir = SparkR:::.sparkREnv)""")
+      sendRequest("""assign("sc", get(".sc", envir = SparkR:::.sparkREnv), envir=.GlobalEnv)""")
+
       if (sparkMajorVersion >= "2") {
-        if (hiveEnabled) {
-          sendRequest("spark <- SparkR::sparkR.session()")
-        } else {
-          sendRequest("spark <- SparkR::sparkR.session(enableHiveSupport=FALSE)")
-        }
-        sendRequest(
-          """sc <- SparkR:::callJStatic("org.apache.spark.sql.api.r.SQLUtils",
-            "getJavaSparkContext", spark)""")
-      } else {
-        sendRequest("sc <- sparkR.init()")
-        if (hiveEnabled) {
-          sendRequest("sqlContext <- sparkRHive.init(sc)")
-        } else {
-          sendRequest("sqlContext <- sparkRSQL.init(sc)")
-        }
+        sendRequest("""assign(".sparkRsession", SparkR ::: callJStatic("org.apache.livy.repl.SparkRInterpreter", "getSparkSession"), envir = SparkR :::.sparkREnv)""")
+        sendRequest("""assign("spark", get(".sparkRsession", envir = SparkR :::.sparkREnv), envir=.GlobalEnv)""")
+        sendRequest("""assign(".sparkRjsc", SparkR ::: callJStatic("org.apache.livy.repl.SparkRInterpreter", "getSparkContext"), envir = SparkR :::.sparkREnv)""")
       }
+
+      sendRequest("""assign(".sqlc", SparkR:::callJStatic("org.apache.livy.repl.SparkRInterpreter", "getSQLContext"), envir = SparkR:::.sparkREnv)""")
+      sendRequest("""assign("sqlContext", get(".sqlc", envir = SparkR:::.sparkREnv), envir = .GlobalEnv)""")
+      // scalastyle:on line.size.limit
     }
 
     isStarted.countDown()
