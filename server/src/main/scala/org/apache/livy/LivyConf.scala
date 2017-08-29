@@ -122,6 +122,21 @@ object LivyConf {
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)
 
+  // The resource manager address for YARN's REST API.
+  val YARN_REST_SCHEMA = Entry("livy.server.yarn.rest.schema", "http")
+
+  // The resource manager address for YARN's REST API.
+  val YARN_REST_HOST = Entry("livy.server.yarn.rest.host", "localhost")
+
+  // The resource manager port for YARN's REST API.
+  val YARN_REST_PORT = Entry("livy.server.yarn.rest.port", 0)
+
+  // The resource manager port for YARN's REST API.
+  val YARN_REST_PATH = Entry("livy.server.yarn.rest.path", "/ws/v1/cluster/apps")
+
+  // The limit to the number of application reports to get on each REST call from YARN RM.
+  val YARN_REST_REPORTS_LIMIT = Entry("livy.server.yarn.resource-manager.report-limit", 100000)
+
   // If Livy can't find the yarn app within this time, consider it lost.
   val YARN_APP_LOOKUP_TIMEOUT = Entry("livy.server.yarn.app-lookup-timeout", "60s")
 

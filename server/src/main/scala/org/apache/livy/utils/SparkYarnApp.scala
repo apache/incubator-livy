@@ -148,27 +148,30 @@ class SparkYarnApp private[utils] (
 
   // Exposed for unit test.
   private[utils] def mapYarnState(
-      appId: ApplicationId,
-      yarnAppState: YarnApplicationState,
-      finalAppStatus: FinalApplicationStatus): SparkApp.State.Value = {
-    yarnAppState match {
-      case (YarnApplicationState.NEW |
-            YarnApplicationState.NEW_SAVING |
-            YarnApplicationState.SUBMITTED |
-            YarnApplicationState.ACCEPTED) => SparkApp.State.STARTING
-      case YarnApplicationState.RUNNING => SparkApp.State.RUNNING
-      case YarnApplicationState.FINISHED =>
-        finalAppStatus match {
-          case FinalApplicationStatus.SUCCEEDED => SparkApp.State.FINISHED
-          case FinalApplicationStatus.FAILED => SparkApp.State.FAILED
-          case FinalApplicationStatus.KILLED => SparkApp.State.KILLED
-          case s =>
-            error(s"Unknown YARN final status $appId $s")
-            SparkApp.State.FAILED
-        }
-      case YarnApplicationState.FAILED => SparkApp.State.FAILED
-      case YarnApplicationState.KILLED => SparkApp.State.KILLED
+      appId: String,
+      yarnAppState: String,
+      finalAppStatus: String): SparkApp.State.Value = {
+    (yarnAppState, finalAppStatus) match {
+      case ("NEW", "UNDEFINED") |
+           ("NEW_SAVING", "UNDEFINED") |
+           ("SUBMITTED", "UNDEFINED") |
+           ("ACCEPTED", "UNDEFINED") =>
+        SparkApp.State.STARTING
+      case ("RUNNING", "UNDEFINED") =>
+        SparkApp.State.RUNNING
+      case ("FINISHED", "SUCCEEDED") =>
+        SparkApp.State.FINISHED
+      case ("FAILED", "FAILED") =>
+        SparkApp.State.FAILED
+      case ("KILLED", "KILLED") =>
+        SparkApp.State.KILLED
+      case (state, finalStatus) => // any other combination is invalid
+        error(s"Unknown YARN state $state for app $appId with final status $finalStatus.")
+        SparkApp.State.FAILED
     }
   }
 
+  def needsUpdating(appInfo: AppInfo): Boolean = {
+    (isRunning || appInfo.driverLogUrl == None || appInfo.sparkUiUrl == None)
+  }
 }

@@ -17,32 +17,39 @@
 
 package org.apache.livy.utils
 
+import java.net.{InetAddress, URI}
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{Map => MutableMap}
-import scala.concurrent.blocking
-import scala.concurrent.Future
+import scala.concurrent.{blocking, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-import org.apache.hadoop.yarn.api.records.{ApplicationId, ApplicationReport, ContainerReport}
+import org.apache.hadoop.yarn.api.records.ApplicationId
 import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.hadoop.yarn.conf.YarnConfiguration
+import org.apache.hadoop.yarn.util.ConverterUtils.toApplicationId
+import org.apache.http.client.HttpClient
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.impl.client.HttpClientBuilder
+import org.apache.http.HttpHost
+import org.json4s.DefaultFormats
+import org.json4s.jackson.JsonMethods._
 
 import org.apache.livy.{LivyConf, Logging, Utils}
 
 /**
   * An interface to handle all interactions with Yarn.
   */
-class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging {
+class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient, httpClient: HttpClient)
+  extends Logging {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  import YarnInterface.appType
+  implicit val formats = DefaultFormats
 
   private val TIMEOUT_EXIT_CODE = -1
 
@@ -54,77 +61,66 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
 
   val yarnTagToAppIdTimeout = livyConf.getTimeAsMs(LivyConf.YARN_APP_LOOKUP_TIMEOUT) milliseconds
 
-  private var yarnApplicationReports = Map.empty[ApplicationReport, ContainerReport]
-
-  private var appTagToAppIdMap = Map.empty[String, Seq[ApplicationId]]
+  @volatile
+  private var appReports = List.empty[ApplicationReport]
 
   val isRunning: AtomicBoolean = new AtomicBoolean(true)
 
-  val lock = new Object
+//  def debug(s: String) = {
+//    println(s)
+//  }
+//
+//  def info(s: String) = {
+//    println(s)
+//  }
+//
+//  def warn(s: String) = {
+//    println(s)
+//  }
+//
+//  def error(s: String) = {
+//    println(s)
+//  }
 
   val appReportUpdater = Utils.startDaemonThread(s"yarnAppMonitorThread-$this") {
+
+    val scheme = livyConf.get(LivyConf.YARN_REST_SCHEMA)
+    val host = livyConf.get(LivyConf.YARN_REST_HOST)
+    val port = livyConf.getInt(LivyConf.YARN_REST_PORT)
+    val path = livyConf.get(LivyConf.YARN_REST_PATH)
+
+    val address = InetAddress.getByName(host)
+    val target = new HttpHost(address, host, port, scheme)
+    val applicationTypes = "Spark"
+    val limit = livyConf.getInt(LivyConf.YARN_REST_REPORTS_LIMIT)
+    val query = s"applicationTypes=$applicationTypes&limit=$limit"
+
+    // parameters URI(scheme, user, host, port, path, query, fragment)
+    val uri = new URI(scheme, null, host, port, path, query, null)
+    val request = new HttpGet(uri)
+    request.addHeader("User-Agent", "livy-yarn-interface")
+
     Try {
       while (isRunning.get) {
-
-        debug(s"cleaning yarnApplicationReports. Currently it is ${
-          yarnApplicationReports.map { case (appReport, _) =>
-            appReport.getApplicationId
-          }.toSeq.sorted.mkString(",")
-        }")
-
-        val yarnApps = blocking(yarnClient.getApplications(appType).asScala)
-        debug(s"new yarn apps = ${
-          yarnApps.map(appReport =>
-            appReport.getApplicationId
-          ).sorted.mkString(",")
-        }")
-
-        val updatedAppTagToAppIdMap = MutableMap.empty[String, Seq[ApplicationId]]
-        val newYarnApplicationReports = yarnApps.map { appReport =>
-          appReport.getApplicationTags.asScala.map(_.toLowerCase).map { tag =>
-            val appIdsForTag = updatedAppTagToAppIdMap.get(tag).getOrElse(Seq[ApplicationId]())
-            if (!appIdsForTag.contains(appReport.getApplicationId)) {
-              updatedAppTagToAppIdMap.update(tag, appIdsForTag :+ appReport.getApplicationId)
-            }
-          }
-          val containerReport = Try {
-            appReport.getCurrentApplicationAttemptId
-          }.toOption.flatMap { attemptId =>
-            Try(yarnClient.getApplicationAttemptReport(attemptId)).toOption
-          }.flatMap { attempt =>
-            Try(attempt.getAMContainerId).toOption
-          }.flatMap { containerId =>
-            Try(yarnClient.getContainerReport(containerId)).toOption
-          }
-          (appReport, containerReport.getOrElse(null))
-        }.toMap
-        blocking {
-          lock.synchronized {
-            yarnApplicationReports = newYarnApplicationReports
-            appTagToAppIdMap = updatedAppTagToAppIdMap.toMap // to immutable map
-          }
-        }
-        debug(s"yarnAppMonitorThread is going to sleep for $yarnPollInterval")
-        Clock.sleep(yarnPollInterval.toMillis)
+        val jsonResponse = parse(httpClient.execute(target, request).getEntity.getContent)
+        appReports = (jsonResponse \\ "apps" \\ "app").extract[List[ApplicationReport]]
+        // .sortBy(app => app.applicationTags)  // Do we need to sort the app reports?
+        Clock.sleep(yarnPollInterval.toMillis) // Calling Sleep here (and only here) is fine.
       }
     } match {
       case Success(_) =>
+        isRunning.set(false)
         debug("Yarn App Monitor thread executed successfully! It is shutting down now!")
       case Failure(ex) =>
-        warn("Unhandled Exception in Yarn App Monitor:${ex.getMessage}!")
+        isRunning.set(false)
+        warn(s"Unhandled Exception in Yarn App Monitor:${ex.getMessage}!")
         warn(ex.getStackTrace.mkString("\n"))
     }
   }
 
   def getApplicationReport(appId: ApplicationId): Option[ApplicationReport] = {
-    blocking {
-      lock.synchronized {
-        yarnApplicationReports.find { case (appReport, _) =>
-          appReport.getApplicationId == appId
-        }.map { case (appReport, _) =>
-          appReport
-        }
-      }
+    appReports.find { appReport =>
+      appReport.id == appId.toString
     }
   }
 
@@ -141,29 +137,19 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
                        process: Option[LineBufferedProcess]
                      ): ApplicationId = {
 
-    val appTagLowerCase = appTag.toLowerCase()
     val deadline = yarnTagToAppIdTimeout.fromNow
     debug(s"Going to find the application id for tag $appTag")
 
     @tailrec
-    def go(appTagLowerCase: String, deadLine: Deadline): ApplicationId = {
-      debug(s"recursively finding appId for tag $appTagLowerCase. Deadline is $deadline")
+    def go(appTag: String, deadLine: Deadline): ApplicationId = {
+      debug(s"recursively finding appId for tag $appTag. Deadline is $deadline")
 
-
-      val taggedApps = blocking {
-        lock.synchronized {
-          appTagToAppIdMap.get(appTagLowerCase)
-        }
-      }
-
-      debug(s"all apps with tag: $appTagLowerCase = ${taggedApps.mkString(",")}")
-
-      taggedApps match {
-        case Some(Seq(applicationId)) =>
-          info(s"Found $applicationId for tag $appTagLowerCase.")
+      appReports.find(_.applicationTags == appTag).map(_.id).map(toApplicationId) match {
+        case Some(applicationId) =>
+          info(s"Found $applicationId for tag $appTag.")
           applicationId
         case _ =>
-          debug(s"didn't find the any app with tag $appTagLowerCase... Trying again")
+          debug(s"didn't find the any app with tag $appTag... Trying again")
           if (deadline.isOverdue) {
             process.foreach(_.destroy())
             leakedAppTags.put(appTag, System.currentTimeMillis())
@@ -175,13 +161,13 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
             throw new Exception(errorMsg)
           } else {
             debug(s"going to sleep for ${yarnPollInterval.toMillis} ms... before retry")
-            Clock.sleep(yarnPollInterval.toMillis)
-            go(appTagLowerCase, deadline)
+            Thread.`yield`()
+            go(appTag, deadline)
           }
       }
     }
 
-    go(appTagLowerCase, deadline)
+    go(appTag, deadline)
   }
 
   @tailrec
@@ -197,7 +183,7 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
           exitValue
         case Failure(ex) =>
           debug(s"process $process did not exit!... trying one more time...: ${ex.getMessage}")
-          Clock.sleep(yarnPollInterval.toMillis)
+          Thread.`yield`()
           waitFor(process, deadline)
       }
     } else {
@@ -232,39 +218,42 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
     exitCodeFuture
   }
 
-  def killApplication(appId: ApplicationId): Unit = yarnClient.killApplication(appId)
+  def killApplication(appId: ApplicationId): Unit = {
+    yarnClient.killApplication(appId)
+  }
 
-  private val leakedAppTags = new java.util.concurrent.ConcurrentHashMap[String, Long]()
-  private val leakedAppsGCThread = new Thread() {
-    override def run(): Unit = {
-      while (true) {
-        if (!leakedAppTags.isEmpty) {
-          // kill the app if found it and remove it if exceeding a threashold
-          val iter = leakedAppTags.entrySet().iterator()
-          var isRemoved = false
-          val now = System.currentTimeMillis()
-          val apps = yarnClient.getApplications(appType).asScala
-          while (iter.hasNext) {
-            val entry = iter.next()
-            apps.find(_.getApplicationTags.contains(entry.getKey))
-              .foreach { applicationReport: ApplicationReport =>
-                info(s"Kill leaked app ${applicationReport.getApplicationId}")
-                killApplication(applicationReport.getApplicationId)
-                iter.remove()
-                isRemoved = true
-              }
-            if (!isRemoved) {
-              if ((entry.getValue - now) > sessionLeakageCheckTimeout) {
-                iter.remove()
-                info(s"Remove leaked yarn app tag ${entry.getKey}")
+  private val leakedAppTags =
+    new java.util.concurrent.ConcurrentHashMap[String, Long]()
+  private val leakedAppsGCThread =
+    new Thread() {
+      override def run(): Unit = {
+        while (true) {
+          if (!leakedAppTags.isEmpty) {
+            // kill the app if found it and remove it if exceeding a threashold
+            val iter = leakedAppTags.entrySet().iterator()
+            var isRemoved = false
+            val now = System.currentTimeMillis()
+            while (iter.hasNext) {
+              val entry = iter.next()
+              appReports.find(_.applicationTags.fold(false)(_.contains(entry.getKey)))
+                .foreach { applicationReport: ApplicationReport =>
+                  info(s"Kill leaked app ${applicationReport.id}")
+                  killApplication(toApplicationId(applicationReport.id))
+                  iter.remove()
+                  isRemoved = true
+                }
+              if (!isRemoved) {
+                if ((entry.getValue - now) > sessionLeakageCheckTimeout) {
+                  iter.remove()
+                  info(s"Remove leaked yarn app tag ${entry.getKey}")
+                }
               }
             }
           }
+          Clock.sleep(sessionLeakageCheckInterval)
         }
-        Clock.sleep(sessionLeakageCheckInterval)
       }
     }
-  }
   leakedAppsGCThread.setDaemon(true)
   leakedAppsGCThread.setName("LeakedAppsGCThread")
   leakedAppsGCThread.start()
@@ -323,9 +312,6 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
       finally {
         app.process.foreach(_.destroy())
       }
-      //    } else if (app.yarnAppMonitorThread.isAlive) {
-      //      debug("Interrupting yarnAppMonitorThread...!!!")
-      //      app.yarnAppMonitorThread.interrupt()
     }
   }
 
@@ -362,6 +348,7 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
 
     appIdFuture.onComplete {
       case Success(Some(applicationId)) =>
+        debug(s"appIdFutureCompleted with $applicationId")
         app.listener.foreach(_.appIdKnown(applicationId.toString))
       case Success(None) =>
         warn(s"No application ID for to get appId for $process:$app")
@@ -376,30 +363,21 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
         var appInfo = AppInfo()
         do {
           try {
-            Clock.sleep(yarnPollInterval.toMillis / 2)
-
             // Refresh application state
             val appReport = getApplicationReport(appId)
             appReport.fold {
-              warn(s"No application report found for $appId")
+              // warn(s"No application report found for $appId")
             } { appReport =>
               app.updateYarnDiagnostics(getYarnDiagnostics(appReport))
               app.changeState(app.mapYarnState(
-                appReport.getApplicationId,
-                appReport.getYarnApplicationState,
-                appReport.getFinalApplicationStatus))
+                appReport.id,
+                appReport.state,
+                appReport.finalStatus))
 
-              val driverLogUrl = blocking {
-                lock.synchronized {
-//                  lock.wait
-                  yarnApplicationReports.get(appReport).flatMap { containerReport =>
-                    Try(containerReport.getLogUrl).toOption
-                  }
-                }
-              }
-              val latestAppInfo = AppInfo(driverLogUrl, Option(appReport.getTrackingUrl))
+              val latestAppInfo = AppInfo(appReport.amContainerLogs, appReport.trackingUrl)
+
               if (appInfo != latestAppInfo) {
-                app.listener.map{ appListener =>
+                app.listener.map { appListener =>
                   Try(appListener.infoChanged(latestAppInfo))
                 }
                 appInfo = latestAppInfo
@@ -410,8 +388,7 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
               warn(s"Error when checking status of $app: ${ex.getMessage}")
               throw ex
           }
-        } while (this.isRunning.get &&
-          (app.isRunning || appInfo.driverLogUrl == None || appInfo.sparkUiUrl == None))
+        } while (this.isRunning.get && app.needsUpdating(appInfo))
     }
   }
 
@@ -423,12 +400,14 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
     yarnClient.getApplicationReport(appId).getFinishTime
   }
 
-  private def toLogUrl(appId: Option[ApplicationId]): Option[String] = {
+  private def toLogUrl(appId: Option[ApplicationId]): Option[String]
+
+  = {
     None
   }
 
   private def getYarnDiagnostics(appReport: ApplicationReport): IndexedSeq[String] = {
-    Option(appReport.getDiagnostics)
+    Option(appReport.diagnostics)
       .filter(_.nonEmpty)
       .map[IndexedSeq[String]]("YARN Diagnostics:" +: _.split("\n"))
       .getOrElse(IndexedSeq.empty)
@@ -437,9 +416,6 @@ class YarnInterface(livyConf: LivyConf, yarnClient: YarnClient) extends Logging 
   def shutdown: Unit = {
     info("Shutting down the YARN interface...")
     isRunning.set(false)
-    lock.synchronized {
-//      lock.notifyAll()
-    }
   }
 }
 
@@ -448,10 +424,17 @@ object YarnInterface {
   val appType = Set("SPARK").asJava
 
   // YarnClient is thread safe. Create once, share it across threads.
+  // It is needed only to kill yarn applications. All othe YARN iteractions use YARN REST API
   val yarnClient = {
     val c = YarnClient.createYarnClient()
     c.init(new YarnConfiguration())
     c.start()
     c
   }
+
+  private val builder = HttpClientBuilder.create()
+    .setMaxConnTotal(1)
+    .setUserAgent("livy-yarn-interface")
+
+  val httpClient = builder.build()
 }
