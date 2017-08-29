@@ -28,7 +28,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.livy.JobContext;
 import org.apache.livy.rsc.Utils;
 
-public class JobContextImpl implements JobContext {
+class JobContextImpl implements JobContext {
 
   private final File localTmpDir;
   private volatile JavaStreamingContext streamingctx;

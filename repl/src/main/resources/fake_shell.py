@@ -565,7 +565,7 @@ def main():
 
             if spark_major_version >= "2":
                 from pyspark.sql import SparkSession
-                spark_session = SparkSession(sc, gateway.entry_point.sparkSession)
+                spark_session = SparkSession(sc, gateway.entry_point.sparkSession())
                 global_dict['spark'] = spark_session
             else:
                 # LIVY-294, need to check whether HiveContext can work properly,
