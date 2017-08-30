@@ -790,6 +790,7 @@
           <version>3.0.0-M1</version>
           <configuration>
             <failOnError>true</failOnError>
+            <excludePackageNames>*.test,*.example,*.common</excludePackageNames>
           </configuration>
         </plugin>
       </plugins>
