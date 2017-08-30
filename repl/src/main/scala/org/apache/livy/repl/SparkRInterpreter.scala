@@ -121,8 +121,7 @@ object SparkRInterpreter {
       builder.redirectErrorStream(true)
       val process = builder.start()
       new SparkRInterpreter(process, backendInstance, backendThread,
-        conf.get("spark.livy.spark_major_version", "1"),
-        conf.getBoolean("spark.repl.enableHiveContext", false))
+        conf.getInt("spark.livy.spark_major_version", 1))
     } catch {
       case e: Exception =>
         if (backendThread != null) {
@@ -151,8 +150,7 @@ object SparkRInterpreter {
 class SparkRInterpreter(process: Process,
     backendInstance: Any,
     backendThread: Thread,
-    val sparkMajorVersion: String,
-    hiveEnabled: Boolean)
+    val sparkMajorVersion: Int)
   extends ProcessInterpreter(process) {
   import SparkRInterpreter._
 
@@ -169,16 +167,15 @@ class SparkRInterpreter(process: Process,
       // scalastyle:off line.size.limit
       sendRequest("library(SparkR)")
       sendRequest("""port <- Sys.getenv("EXISTING_SPARKR_BACKEND_PORT", "")""")
-      sendRequest("""SparkR:::connectBackend("localhost", port)""")
+      sendRequest("""SparkR:::connectBackend("localhost", port, 6000)""")
       sendRequest("""assign(".scStartTime", as.integer(Sys.time()), envir = SparkR:::.sparkREnv)""")
 
       sendRequest("""assign(".sc", SparkR:::callJStatic("org.apache.livy.repl.SparkRInterpreter", "getSparkContext"), envir = SparkR:::.sparkREnv)""")
       sendRequest("""assign("sc", get(".sc", envir = SparkR:::.sparkREnv), envir=.GlobalEnv)""")
 
-      if (sparkMajorVersion >= "2") {
-        sendRequest("""assign(".sparkRsession", SparkR ::: callJStatic("org.apache.livy.repl.SparkRInterpreter", "getSparkSession"), envir = SparkR :::.sparkREnv)""")
-        sendRequest("""assign("spark", get(".sparkRsession", envir = SparkR :::.sparkREnv), envir=.GlobalEnv)""")
-        sendRequest("""assign(".sparkRjsc", SparkR ::: callJStatic("org.apache.livy.repl.SparkRInterpreter", "getSparkContext"), envir = SparkR :::.sparkREnv)""")
+      if (sparkMajorVersion >= 2) {
+        sendRequest("""assign(".sparkRsession", SparkR:::callJStatic("org.apache.livy.repl.SparkRInterpreter", "getSparkSession"), envir = SparkR:::.sparkREnv)""")
+        sendRequest("""assign("spark", get(".sparkRsession", envir = SparkR:::.sparkREnv), envir=.GlobalEnv)""")
       }
 
       sendRequest("""assign(".sqlc", SparkR:::callJStatic("org.apache.livy.repl.SparkRInterpreter", "getSQLContext"), envir = SparkR:::.sparkREnv)""")

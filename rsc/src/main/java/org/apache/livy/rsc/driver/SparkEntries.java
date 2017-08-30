@@ -111,6 +111,7 @@ public class SparkEntries {
       synchronized (this) {
         if (sqlctx == null) {
           sqlctx = new SQLContext(sc());
+          LOG.info("Created SQLContext.");
         }
       }
     }
@@ -132,6 +133,7 @@ public class SparkEntries {
                "classpath.");
             }
             hivectx = new HiveContext(sc().sc());
+            LOG.info("Created HiveContext.");
           }
         }
       }
