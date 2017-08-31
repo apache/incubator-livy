@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream
 
 import scala.tools.nsc.interpreter.Results
 
+import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.json4s.DefaultFormats
 import org.json4s.Extraction
@@ -42,6 +43,10 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
 
   protected val outputStream = new ByteArrayOutputStream()
 
+  protected var entries: SparkEntries = _
+
+  def sparkEntries(): SparkEntries = entries
+
   final def kind: String = "spark"
 
   protected def isStarted(): Boolean
@@ -52,9 +57,11 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
 
   protected def bind(name: String, tpe: String, value: Object, modifier: List[String]): Unit
 
-  def sparkEntries(): SparkEntries
+  protected def conf: SparkConf
 
-  def postStart(sparkEntries: SparkEntries): Unit = {
+  protected def postStart(): Unit = {
+    entries = new SparkEntries(conf)
+
     if (isSparkSessionPresent()) {
       bind("spark",
         sparkEntries.sparkSession().getClass.getCanonicalName,

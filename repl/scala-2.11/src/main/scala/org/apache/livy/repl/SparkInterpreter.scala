@@ -34,11 +34,10 @@ import org.apache.livy.rsc.driver.SparkEntries
 /**
  * Scala 2.11 version of SparkInterpreter
  */
-class SparkInterpreter(conf: SparkConf) extends AbstractSparkInterpreter {
+class SparkInterpreter(protected override val conf: SparkConf) extends AbstractSparkInterpreter {
 
   private var sparkILoop: SparkILoop = _
   private var sparkHttpServer: Object = _
-  private var entries: SparkEntries = _
 
   override def start(): Unit = {
     require(sparkILoop == null)
@@ -90,12 +89,9 @@ class SparkInterpreter(conf: SparkConf) extends AbstractSparkInterpreter {
         }
       }
 
-      entries = new SparkEntries(conf)
-      postStart(entries)
+      postStart()
     }
   }
-
-  override def sparkEntries(): SparkEntries = entries
 
   override def close(): Unit = synchronized {
     if (entries != null) {

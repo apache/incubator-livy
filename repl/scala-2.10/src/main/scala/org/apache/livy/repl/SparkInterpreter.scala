@@ -34,10 +34,9 @@ import org.apache.livy.rsc.driver.SparkEntries
 /**
  * This represents a Spark interpreter. It is not thread safe.
  */
-class SparkInterpreter(conf: SparkConf) extends AbstractSparkInterpreter {
+class SparkInterpreter(protected override val conf: SparkConf) extends AbstractSparkInterpreter {
 
   private var sparkIMain: SparkIMain = _
-  private var entries: SparkEntries = _
 
   override def start(): Unit = {
     require(sparkIMain == null)
@@ -104,12 +103,9 @@ class SparkInterpreter(conf: SparkConf) extends AbstractSparkInterpreter {
         }
       }
 
-      entries = new SparkEntries(conf)
-      postStart(entries)
+      postStart()
     }
   }
-
-  override def sparkEntries(): SparkEntries = entries
 
   override protected def bind(name: String,
       tpe: String,
