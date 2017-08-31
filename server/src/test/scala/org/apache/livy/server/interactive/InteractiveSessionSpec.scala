@@ -71,8 +71,8 @@ class InteractiveSessionSpec extends FunSpec
     InteractiveSession.create(0, null, None, livyConf, req, sessionStore, mockApp)
   }
 
-  private def executeStatement(code: String): JValue = {
-    val id = session.executeStatement(ExecuteRequest(code)).id
+  private def executeStatement(code: String, codeType: Option[String] = None): JValue = {
+    val id = session.executeStatement(ExecuteRequest(code, codeType)).id
     eventually(timeout(30 seconds), interval(100 millis)) {
       val s = session.getStatement(id).get
       s.state.get() shouldBe StatementState.Available
@@ -154,15 +154,10 @@ class InteractiveSessionSpec extends FunSpec
       properties1(RSCConf.Entry.LIVY_JARS.key()).split(",").toSet === rscJars1
     }
 
-    it("should start in the idle state") {
-      session = createSession()
-      session.state should (be(a[SessionState.Starting]) or be(a[SessionState.Idle]))
-    }
-
     it("should update appId and appInfo and session store") {
       val mockApp = mock[SparkApp]
       val sessionStore = mock[SessionStore]
-      val session = createSession(sessionStore, Some(mockApp))
+      session = createSession(sessionStore, Some(mockApp))
 
       val expectedAppId = "APPID"
       session.appIdKnown(expectedAppId)
@@ -174,26 +169,38 @@ class InteractiveSessionSpec extends FunSpec
 
       verify(sessionStore, atLeastOnce()).save(
         MockitoMatchers.eq(InteractiveSession.RECOVERY_SESSION_TYPE), anyObject())
+
+      session.state should (be(a[SessionState.Starting]) or be(a[SessionState.Idle]))
     }
 
     withSession("should execute `1 + 2` == 3") { session =>
-      val result = executeStatement("1 + 2")
-      val expectedResult = Extraction.decompose(Map(
+      val pyResult = executeStatement("1 + 2", Some("pyspark"))
+      pyResult should equal (Extraction.decompose(Map(
         "status" -> "ok",
         "execution_count" -> 0,
-        "data" -> Map(
-          "text/plain" -> "3"
-        )
-      ))
+        "data" -> Map("text/plain" -> "3")))
+      )
 
-      result should equal (expectedResult)
+      val scalaResult = executeStatement("1 + 2", Some("spark"))
+      scalaResult should equal (Extraction.decompose(Map(
+        "status" -> "ok",
+        "execution_count" -> 1,
+        "data" -> Map("text/plain" -> "res0: Int = 3")))
+      )
+
+      val rResult = executeStatement("1 + 2", Some("sparkr"))
+      rResult should equal (Extraction.decompose(Map(
+        "status" -> "ok",
+        "execution_count" -> 2,
+        "data" -> Map("text/plain" -> "[1] 3")))
+      )
     }
 
     withSession("should report an error if accessing an unknown variable") { session =>
       val result = executeStatement("x")
       val expectedResult = Extraction.decompose(Map(
         "status" -> "error",
-        "execution_count" -> 1,
+        "execution_count" -> 3,
         "ename" -> "NameError",
         "evalue" -> "name 'x' is not defined",
         "traceback" -> List(
@@ -214,7 +221,7 @@ class InteractiveSessionSpec extends FunSpec
           |from time import sleep
           |sleep(3)
         """.stripMargin
-      val statement = session.executeStatement(ExecuteRequest(code))
+      val statement = session.executeStatement(ExecuteRequest(code, None))
       statement.progress should be (0.0)
 
       eventually(timeout(10 seconds), interval(100 millis)) {
@@ -225,7 +232,7 @@ class InteractiveSessionSpec extends FunSpec
     }
 
     withSession("should error out the session if the interpreter dies") { session =>
-      session.executeStatement(ExecuteRequest("import os; os._exit(666)"))
+      session.executeStatement(ExecuteRequest("import os; os._exit(666)", None))
       eventually(timeout(30 seconds), interval(100 millis)) {
         session.state shouldBe a[SessionState.Error]
       }

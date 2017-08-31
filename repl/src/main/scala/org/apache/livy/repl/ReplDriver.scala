@@ -22,9 +22,9 @@ import scala.concurrent.duration.Duration
 
 import io.netty.channel.ChannelHandlerContext
 import org.apache.spark.SparkConf
-import org.apache.spark.api.java.JavaSparkContext
 
 import org.apache.livy.Logging
+import org.apache.livy.client.common.ClientConf
 import org.apache.livy.rsc.{BaseProtocol, ReplJobResults, RSCConf}
 import org.apache.livy.rsc.BaseProtocol.ReplState
 import org.apache.livy.rsc.driver._
@@ -37,23 +37,11 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
 
   private[repl] var session: Session = _
 
-  private val kind = Kind(livyConf.get(RSCConf.Entry.SESSION_KIND))
-
-  private[repl] var interpreter: Interpreter = _
-
-  override protected def initializeContext(): JavaSparkContext = {
-    interpreter = kind match {
-      case PySpark() => PythonInterpreter(conf, PySpark())
-      case PySpark3() =>
-        PythonInterpreter(conf, PySpark3())
-      case Spark() => new SparkInterpreter(conf)
-      case SparkR() => SparkRInterpreter(conf)
-    }
-    session = new Session(livyConf, interpreter, { s => broadcast(new ReplState(s.toString)) })
-
-    Option(Await.result(session.start(), Duration.Inf))
-      .map(new JavaSparkContext(_))
-      .orNull
+  override protected def initializeSparkEntries(): SparkEntries = {
+    session = new Session(livyConf = livyConf,
+      sparkConf = conf,
+      stateChangedCallback = { s => broadcast(new ReplState(s.toString)) })
+    Await.result(session.start(), Duration.Inf)
   }
 
   override protected def shutdownContext(): Unit = {
@@ -67,7 +55,7 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
   }
 
   def handle(ctx: ChannelHandlerContext, msg: BaseProtocol.ReplJobRequest): Int = {
-    session.execute(msg.code)
+    session.execute(msg.code, msg.codeType)
   }
 
   def handle(ctx: ChannelHandlerContext, msg: BaseProtocol.CancelReplJobRequest): Unit = {
@@ -100,27 +88,27 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
   }
 
   override protected def createWrapper(msg: BaseProtocol.BypassJobRequest): BypassJobWrapper = {
-    kind match {
-      case PySpark() | PySpark3() => new BypassJobWrapper(this, msg.id,
-        new BypassPySparkJob(msg.serializedJob, this))
+    Kind(msg.jobType) match {
+      case PySpark() =>
+        new BypassJobWrapper(this, msg.id,
+          new BypassPySparkJob(msg.serializedJob,
+            session.interpreter(PySpark()).asInstanceOf[PythonInterpreter]))
       case _ => super.createWrapper(msg)
     }
   }
 
   override protected def addFile(path: String): Unit = {
-    require(interpreter != null)
-    interpreter match {
-      case pi: PythonInterpreter => pi.addFile(path)
-      case _ => super.addFile(path)
+    if (!ClientConf.TEST_MODE) {
+      session.interpreter(PySpark()).asInstanceOf[PythonInterpreter].addFile(path)
     }
+    super.addFile(path)
   }
 
   override protected def addJarOrPyFile(path: String): Unit = {
-    require(interpreter != null)
-    interpreter match {
-      case pi: PythonInterpreter => pi.addPyFile(this, conf, path)
-      case _ => super.addJarOrPyFile(path)
+    if (!ClientConf.TEST_MODE) {
+      session.interpreter(PySpark()).asInstanceOf[PythonInterpreter].addPyFile(this, conf, path)
     }
+    super.addJarOrPyFile(path)
   }
 
   override protected def onClientAuthenticated(client: Rpc): Unit = {

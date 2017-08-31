@@ -17,20 +17,17 @@
 
 package org.apache.livy.repl
 
-import org.apache.spark.SparkConf
 import org.json4s.Extraction
 import org.json4s.jackson.JsonMethods.parse
 
-import org.apache.livy.rsc.RSCConf
+import org.apache.livy.sessions._
 
-class SparkRSessionSpec extends BaseSessionSpec {
+class SparkRSessionSpec extends BaseSessionSpec(SparkR()) {
 
   override protected def withFixture(test: NoArgTest) = {
     assume(!sys.props.getOrElse("skipRTests", "false").toBoolean, "Skipping R tests.")
     super.withFixture(test)
   }
-
-  override def createInterpreter(): Interpreter = SparkRInterpreter(new SparkConf())
 
   it should "execute `1 + 2` == 3" in withSession { session =>
     val statement = execute(session)("1 + 2")

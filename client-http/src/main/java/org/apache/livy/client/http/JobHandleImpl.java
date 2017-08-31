@@ -138,7 +138,7 @@ class JobHandleImpl<T> extends AbstractJobHandle<T> {
       @Override
       public void run() {
         try {
-          ClientMessage msg = new SerializedJob(BufferUtils.toByteArray(serializedJob));
+          ClientMessage msg = new SerializedJob(BufferUtils.toByteArray(serializedJob), "spark");
           JobStatus status = conn.post(msg, JobStatus.class, "/%d/%s", sessionId, command);
 
           if (isCancelPending) {

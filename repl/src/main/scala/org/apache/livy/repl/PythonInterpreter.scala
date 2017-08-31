@@ -37,21 +37,18 @@ import py4j.reflection.PythonProxyHandler
 
 import org.apache.livy.Logging
 import org.apache.livy.client.common.ClientConf
-import org.apache.livy.rsc.BaseProtocol
-import org.apache.livy.rsc.driver.BypassJobWrapper
+import org.apache.livy.rsc.driver.SparkEntries
 import org.apache.livy.sessions._
 
 // scalastyle:off println
 object PythonInterpreter extends Logging {
 
-  def apply(conf: SparkConf, kind: Kind): Interpreter = {
-    val pythonExec = kind match {
-        case PySpark() => sys.env.getOrElse("PYSPARK_PYTHON", "python")
-        case PySpark3() => sys.env.getOrElse("PYSPARK3_PYTHON", "python3")
-        case _ => throw new IllegalArgumentException(s"Unknown kind: $kind")
-    }
+  def apply(conf: SparkConf, sparkEntries: SparkEntries): Interpreter = {
+    val pythonExec = sys.env.get("PYSPARK_PYTHON")
+      .orElse(sys.props.get("pyspark.python")) // This java property is only used for internal UT.
+      .getOrElse("python")
 
-    val gatewayServer = new GatewayServer(null, 0)
+    val gatewayServer = new GatewayServer(sparkEntries, 0)
     gatewayServer.start()
 
     val builder = new ProcessBuilder(Seq(pythonExec, createFakeShell().toString).asJava)
@@ -71,7 +68,7 @@ object PythonInterpreter extends Logging {
     env.put("LIVY_SPARK_MAJOR_VERSION", conf.get("spark.livy.spark_major_version", "1"))
     builder.redirectError(Redirect.PIPE)
     val process = builder.start()
-    new PythonInterpreter(process, gatewayServer, kind.toString)
+    new PythonInterpreter(process, gatewayServer)
   }
 
   private def findPySparkArchives(): Seq[String] = {
@@ -188,14 +185,12 @@ object PythonInterpreter extends Logging {
 
 private class PythonInterpreter(
     process: Process,
-    gatewayServer: GatewayServer,
-    pyKind: String)
+    gatewayServer: GatewayServer)
   extends ProcessInterpreter(process)
-  with Logging
-{
+  with Logging {
   implicit val formats = DefaultFormats
 
-  override def kind: String = pyKind
+  override def kind: String = "pyspark"
 
   private[repl] val pysparkJobProcessor =
     PythonInterpreter.initiatePy4jCallbackGateway(gatewayServer)

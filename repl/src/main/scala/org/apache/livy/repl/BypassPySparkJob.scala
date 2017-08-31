@@ -19,16 +19,13 @@ package org.apache.livy.repl
 import java.nio.charset.StandardCharsets
 
 import org.apache.livy.{Job, JobContext}
+import org.apache.livy.sessions._
 
 class BypassPySparkJob(
     serializedJob: Array[Byte],
-    replDriver: ReplDriver) extends Job[Array[Byte]] {
+    pi: PythonInterpreter) extends Job[Array[Byte]] {
 
   override def call(jc: JobContext): Array[Byte] = {
-    val interpreter = replDriver.interpreter
-    require(interpreter != null && interpreter.isInstanceOf[PythonInterpreter])
-    val pi = interpreter.asInstanceOf[PythonInterpreter]
-
     val resultByteArray = pi.pysparkJobProcessor.processBypassJob(serializedJob)
     val resultString = new String(resultByteArray, StandardCharsets.UTF_8)
     if (resultString.startsWith("Client job error:")) {

@@ -70,6 +70,7 @@ class HttpClient(object):
         uri = urlparse(url)
         self._config = ConfigParser()
         self._load_config(load_defaults, conf_dict)
+        self._job_type = 'pyspark'
         match = re.match(r'(.*)/sessions/([0-9]+)', uri.path)
         if match:
             base = ParseResult(scheme=uri.scheme, netloc=uri.netloc,
@@ -395,7 +396,8 @@ class HttpClient(object):
     def _send_job(self, command, job):
         pickled_job = cloudpickle.dumps(job)
         base64_pickled_job = base64.b64encode(pickled_job).decode('utf-8')
-        base64_pickled_job_data = {'job': base64_pickled_job}
+        base64_pickled_job_data = \
+            {'job': base64_pickled_job, 'jobType': self._job_type}
         handle = JobHandle(self._conn, self._session_id,
             self._executor)
         handle._start(command, base64_pickled_job_data)

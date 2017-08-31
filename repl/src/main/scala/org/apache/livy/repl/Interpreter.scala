@@ -17,7 +17,6 @@
 
 package org.apache.livy.repl
 
-import org.apache.spark.SparkContext
 import org.json4s.JObject
 
 object Interpreter {
@@ -38,10 +37,8 @@ trait Interpreter {
 
   /**
    * Start the Interpreter.
-   *
-   * @return A SparkContext
    */
-  def start(): SparkContext
+  def start(): Unit
 
   /**
    * Execute the code and return the result, it may

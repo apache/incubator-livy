@@ -296,18 +296,19 @@ object InteractiveSession extends Logging {
       }
     }
 
-    kind match {
-      case PySpark() | PySpark3() =>
-        val pySparkFiles = if (!LivyConf.TEST_MODE) findPySparkArchives() else Nil
-        mergeConfList(pySparkFiles, LivyConf.SPARK_PY_FILES)
-        builderProperties.put(SPARK_YARN_IS_PYTHON, "true")
-      case SparkR() =>
-        val sparkRArchive = if (!LivyConf.TEST_MODE) findSparkRArchive() else None
-        sparkRArchive.foreach { archive =>
-          builderProperties.put(RSCConf.Entry.SPARKR_PACKAGE.key(), archive + "#sparkr")
-        }
-      case _ =>
+    val pySparkFiles = if (!LivyConf.TEST_MODE) {
+      builderProperties.put(SPARK_YARN_IS_PYTHON, "true")
+      findPySparkArchives()
+    } else {
+      Nil
     }
+    mergeConfList(pySparkFiles, LivyConf.SPARK_PY_FILES)
+
+    val sparkRArchive = if (!LivyConf.TEST_MODE) findSparkRArchive() else None
+    sparkRArchive.foreach { archive =>
+      builderProperties.put(RSCConf.Entry.SPARKR_PACKAGE.key(), archive + "#sparkr")
+    }
+
     builderProperties.put(RSCConf.Entry.SESSION_KIND.key, kind.toString)
 
     // Set Livy.rsc.jars from livy conf to rsc conf, RSC conf will take precedence if both are set.
@@ -490,7 +491,7 @@ class InteractiveSession(
     ensureRunning()
     recordActivity()
 
-    val id = client.get.submitReplCode(content.code).get
+    val id = client.get.submitReplCode(content.code, content.kind.orNull).get
     client.get.getReplJobResults(id, 1).get().statements(0)
   }
 
@@ -500,12 +501,12 @@ class InteractiveSession(
     client.get.cancelReplCode(statementId)
   }
 
-  def runJob(job: Array[Byte]): Long = {
-    performOperation(job, true)
+  def runJob(job: Array[Byte], jobType: String): Long = {
+    performOperation(job, jobType, true)
   }
 
-  def submitJob(job: Array[Byte]): Long = {
-    performOperation(job, false)
+  def submitJob(job: Array[Byte], jobType: String): Long = {
+    performOperation(job, jobType, false)
   }
 
   def addFile(fileStream: InputStream, fileName: String): Unit = {
@@ -569,10 +570,10 @@ class InteractiveSession(
     }
   }
 
-  private def performOperation(job: Array[Byte], sync: Boolean): Long = {
+  private def performOperation(job: Array[Byte], jobType: String, sync: Boolean): Long = {
     ensureActive()
     recordActivity()
-    val future = client.get.bypass(ByteBuffer.wrap(job), sync)
+    val future = client.get.bypass(ByteBuffer.wrap(job), jobType, sync)
     val opId = operationCounter.incrementAndGet()
     operations(opId) = future
     opId
