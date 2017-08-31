@@ -117,10 +117,7 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
   }
 
   override def close(): Unit = synchronized {
-    if (entries != null) {
-      entries.stop()
-      entries = null
-    }
+    super.close()
 
     if (sparkIMain != null) {
       sparkIMain.close()

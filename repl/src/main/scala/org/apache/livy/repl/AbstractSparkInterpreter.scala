@@ -85,6 +85,13 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
     }
   }
 
+  override def close(): Unit = {
+    if (entries != null) {
+      entries.stop()
+      entries = null
+    }
+  }
+
   private def isSparkSessionPresent(): Boolean = {
     try {
       Class.forName("org.apache.spark.sql.SparkSession")
