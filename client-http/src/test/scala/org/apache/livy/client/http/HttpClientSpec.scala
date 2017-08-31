@@ -217,7 +217,7 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
 
   private def runJob(sync: Boolean, genStatusFn: Long => Seq[JobStatus]): (Long, JFuture[Int]) = {
     val jobId = java.lang.Long.valueOf(ID_GENERATOR.incrementAndGet())
-    when(session.submitJob(any(classOf[Array[Byte]]))).thenReturn(jobId)
+    when(session.submitJob(any(classOf[Array[Byte]]), anyString())).thenReturn(jobId)
 
     val statuses = genStatusFn(jobId)
     val first = statuses.head

@@ -82,13 +82,15 @@ public class HttpMessages {
   public static class SerializedJob implements ClientMessage {
 
     public final byte[] job;
+    public final String jobType;
 
-    public SerializedJob(byte[] job) {
+    public SerializedJob(byte[] job, String jobType) {
       this.job = job;
+      this.jobType = jobType;
     }
 
     private SerializedJob() {
-      this(null);
+      this(null, null);
     }
 
   }
