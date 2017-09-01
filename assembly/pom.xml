@@ -20,16 +20,16 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.4.0-incubating-SNAPSHOT</version>
+    <version>0.4.1-incubating-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>livy-assembly</artifactId>
-  <version>0.4.0-incubating-SNAPSHOT</version>
+  <version>0.4.1-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>
-    <assembly.name>livy-server-${project.version}</assembly.name>
+    <assembly.name>livy-${project.version}-bin</assembly.name>
     <assembly.format>zip</assembly.format>
     <skipDeploy>true</skipDeploy>
   </properties>
