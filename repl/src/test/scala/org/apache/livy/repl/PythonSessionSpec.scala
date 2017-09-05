@@ -17,15 +17,13 @@
 
 package org.apache.livy.repl
 
-import org.apache.spark.SparkConf
 import org.json4s.Extraction
 import org.json4s.jackson.JsonMethods.parse
 import org.scalatest._
 
-import org.apache.livy.rsc.RSCConf
 import org.apache.livy.sessions._
 
-abstract class PythonSessionSpec extends BaseSessionSpec {
+abstract class PythonSessionSpec extends BaseSessionSpec(PySpark()) {
 
   it should "execute `1 + 2` == 3" in withSession { session =>
     val statement = execute(session)("1 + 2")
@@ -172,18 +170,25 @@ abstract class PythonSessionSpec extends BaseSessionSpec {
   }
 }
 
-class Python2SessionSpec extends PythonSessionSpec {
-  override def createInterpreter(): Interpreter = PythonInterpreter(new SparkConf(), PySpark())
-}
+class Python2SessionSpec extends PythonSessionSpec
 
-class Python3SessionSpec extends PythonSessionSpec {
+class Python3SessionSpec extends PythonSessionSpec with BeforeAndAfterAll {
 
   override protected def withFixture(test: NoArgTest): Outcome = {
     assume(!sys.props.getOrElse("skipPySpark3Tests", "false").toBoolean, "Skipping PySpark3 tests.")
     test()
   }
 
-  override def createInterpreter(): Interpreter = PythonInterpreter(new SparkConf(), PySpark3())
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    sys.props.put("pyspark.python", "python3")
+  }
+
+  override def afterAll(): Unit = {
+    sys.props.remove("pyspark.python")
+    super.afterAll()
+  }
+
 
   it should "check python version is 3.x" in withSession { session =>
     val statement = execute(session)(

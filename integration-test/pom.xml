@@ -23,11 +23,11 @@
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>0.4.0-incubating-SNAPSHOT</version>
+    <version>0.5.0-incubating-SNAPSHOT</version>
   </parent>
 
   <artifactId>livy-integration-test</artifactId>
-  <version>0.4.0-incubating-SNAPSHOT</version>
+  <version>0.5.0-incubating-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <properties>
@@ -286,7 +286,7 @@
         <configuration>
           <environmentVariables>
             <LIVY_HOME>${execution.root}</LIVY_HOME>
-            <LIVY_TEST>false</LIVY_TEST>
+            <LIVY_TEST>true</LIVY_TEST>
             <LIVY_INTEGRATION_TEST>true</LIVY_INTEGRATION_TEST>
           </environmentVariables>
           <systemProperties>

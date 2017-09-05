@@ -20,41 +20,41 @@ package org.apache.livy.repl
 import java.util.Properties
 import java.util.concurrent.{ConcurrentLinkedQueue, CountDownLatch, TimeUnit}
 
-import org.mockito.Mockito.when
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
-import org.scalatest.FunSpec
+import org.apache.spark.SparkConf
+import org.scalatest.{BeforeAndAfter, FunSpec}
 import org.scalatest.Matchers._
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mock.MockitoSugar.mock
 import org.scalatest.time._
 
 import org.apache.livy.LivyBaseUnitTestSuite
 import org.apache.livy.repl.Interpreter.ExecuteResponse
 import org.apache.livy.rsc.RSCConf
+import org.apache.livy.sessions._
 
-class SessionSpec extends FunSpec with Eventually with LivyBaseUnitTestSuite {
+class SessionSpec extends FunSpec with Eventually with LivyBaseUnitTestSuite with BeforeAndAfter {
   override implicit val patienceConfig =
-    PatienceConfig(timeout = scaled(Span(10, Seconds)), interval = scaled(Span(100, Millis)))
+    PatienceConfig(timeout = scaled(Span(30, Seconds)), interval = scaled(Span(100, Millis)))
 
-  private val rscConf = new RSCConf(new Properties())
+  private val rscConf = new RSCConf(new Properties()).set(RSCConf.Entry.SESSION_KIND, "spark")
 
   describe("Session") {
+    var session: Session = null
+
+    after {
+      if (session != null) {
+        session.close()
+        session = null
+      }
+    }
+
     it("should call state changed callbacks in happy path") {
       val expectedStateTransitions =
         Array("not_started", "starting", "idle", "busy", "idle", "busy", "idle")
       val actualStateTransitions = new ConcurrentLinkedQueue[String]()
 
-      val interpreter = mock[Interpreter]
-      when(interpreter.kind).thenAnswer(new Answer[String] {
-        override def answer(invocationOnMock: InvocationOnMock): String = "spark"
-      })
-
-      val session =
-        new Session(rscConf, interpreter, { s => actualStateTransitions.add(s.toString) })
-
+      session = new Session(rscConf, new SparkConf(), None,
+        { s => actualStateTransitions.add(s.toString) })
       session.start()
-
       session.execute("")
 
       eventually {
@@ -64,23 +64,19 @@ class SessionSpec extends FunSpec with Eventually with LivyBaseUnitTestSuite {
 
     it("should not transit to idle if there're any pending statements.") {
       val expectedStateTransitions =
-        Array("not_started", "busy", "busy", "busy", "idle", "busy", "idle")
+        Array("not_started", "starting", "idle", "busy", "busy", "busy", "idle", "busy", "idle")
       val actualStateTransitions = new ConcurrentLinkedQueue[String]()
 
-      val interpreter = mock[Interpreter]
-      when(interpreter.kind).thenAnswer(new Answer[String] {
-        override def answer(invocationOnMock: InvocationOnMock): String = "spark"
-      })
-
       val blockFirstExecuteCall = new CountDownLatch(1)
-      when(interpreter.execute("")).thenAnswer(new Answer[Interpreter.ExecuteResponse] {
-        override def answer(invocation: InvocationOnMock): ExecuteResponse = {
+      val interpreter = new SparkInterpreter(new SparkConf()) {
+        override def execute(code: String): ExecuteResponse = {
           blockFirstExecuteCall.await(10, TimeUnit.SECONDS)
-          null
+          super.execute(code)
         }
-      })
-      val session =
-        new Session(rscConf, interpreter, { s => actualStateTransitions.add(s.toString) })
+      }
+      session = new Session(rscConf, new SparkConf(), Some(interpreter),
+        { s => actualStateTransitions.add(s.toString) })
+      session.start()
 
       for (_ <- 1 to 2) {
         session.execute("")
@@ -93,13 +89,8 @@ class SessionSpec extends FunSpec with Eventually with LivyBaseUnitTestSuite {
     }
 
     it("should remove old statements when reaching threshold") {
-      val interpreter = mock[Interpreter]
-      when(interpreter.kind).thenAnswer(new Answer[String] {
-        override def answer(invocationOnMock: InvocationOnMock): String = "spark"
-      })
-
       rscConf.set(RSCConf.Entry.RETAINED_STATEMENT_NUMBER, 2)
-      val session = new Session(rscConf, interpreter)
+      session = new Session(rscConf, new SparkConf())
       session.start()
 
       session.statements.size should be (0)

@@ -18,11 +18,11 @@
 package org.apache.livy.repl
 
 import org.apache.spark.SparkConf
-import org.json4s.{DefaultFormats, JValue}
+import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
 import org.scalatest._
 
-import org.apache.livy.rsc.RSCConf
+import org.apache.livy.rsc.driver.SparkEntries
 
 class SparkRInterpreterSpec extends BaseInterpreterSpec {
 
@@ -33,7 +33,11 @@ class SparkRInterpreterSpec extends BaseInterpreterSpec {
     super.withFixture(test)
   }
 
-  override def createInterpreter(): Interpreter = SparkRInterpreter(new SparkConf())
+
+  override def createInterpreter(): Interpreter = {
+    val sparkConf = new SparkConf()
+    SparkRInterpreter(sparkConf, new SparkEntries(sparkConf))
+  }
 
   it should "execute `1 + 2` == 3" in withInterpreter { interpreter =>
     val response = interpreter.execute("1 + 2")

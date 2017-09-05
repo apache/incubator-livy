@@ -48,7 +48,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -277,13 +276,11 @@ public class RSCDriver extends BaseProtocol {
    *
    * @return The initalized SparkContext
    */
-  protected JavaSparkContext initializeContext() throws Exception {
-    long t1 = System.nanoTime();
-    LOG.info("Starting Spark context...");
-    JavaSparkContext sc = new JavaSparkContext(conf);
-    LOG.info("Spark context finished initialization in {}ms",
-      TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t1));
-    return sc;
+  protected SparkEntries initializeSparkEntries() throws Exception {
+    SparkEntries entries = new SparkEntries(conf);
+    // Explicitly call sc() to initialize SparkContext.
+    entries.sc();
+    return entries;
   }
 
   protected void onClientAuthenticated(final Rpc client) {
@@ -327,9 +324,9 @@ public class RSCDriver extends BaseProtocol {
     try {
       initializeServer();
 
-      JavaSparkContext sc = initializeContext();
+      SparkEntries entries = initializeSparkEntries();
       synchronized (jcLock) {
-        jc = new JobContextImpl(sc, localTmpDir, this);
+        jc = new JobContextImpl(entries, localTmpDir, this);
         jcLock.notifyAll();
       }
 

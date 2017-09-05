@@ -28,6 +28,7 @@ import java.util.concurrent.*;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.spark.launcher.SparkLauncher;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.junit.Test;
@@ -76,6 +77,8 @@ public class TestSparkClient {
     }
 
     conf.put(LIVY_JARS.key(), "");
+    conf.put("spark.repl.enableHiveContext", "true");
+    conf.put("spark.sql.catalogImplementation", "hive");
     return conf;
   }
 
@@ -406,7 +409,7 @@ public class TestSparkClient {
         Serializer s = new Serializer();
         RSCClient lclient = (RSCClient) client;
         ByteBuffer job = s.serialize(new Echo<>("hello"));
-        String jobId = lclient.bypass(job, sync);
+        String jobId = lclient.bypass(job, "spark", sync);
 
         // Try to fetch the result, trying several times until the timeout runs out, and
         // backing off as attempts fail.
@@ -484,6 +487,16 @@ public class TestSparkClient {
     } finally {
       if (client != null) {
         client.stop(true);
+      }
+
+      File derbyLog = new File("derby.log");
+      if (derbyLog.exists()) {
+        derbyLog.delete();
+      }
+
+      File metaStore = new File("metastore_db");
+      if (metaStore.exists()) {
+        FileUtils.deleteDirectory(metaStore);
       }
     }
   }

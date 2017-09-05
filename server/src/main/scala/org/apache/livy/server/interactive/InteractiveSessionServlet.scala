@@ -153,7 +153,7 @@ class InteractiveSessionServlet(
     withModifyAccessSession { session =>
       try {
       require(req.job != null && req.job.length > 0, "no job provided.")
-      val jobId = session.submitJob(req.job)
+      val jobId = session.submitJob(req.job, req.jobType)
       Created(new JobStatus(jobId, JobHandle.State.SENT, null, null))
       } catch {
         case e: Throwable =>
@@ -165,7 +165,7 @@ class InteractiveSessionServlet(
   jpost[SerializedJob]("/:id/run-job") { req =>
     withModifyAccessSession { session =>
       require(req.job != null && req.job.length > 0, "no job provided.")
-      val jobId = session.runJob(req.job)
+      val jobId = session.runJob(req.job, req.jobType)
       Created(new JobStatus(jobId, JobHandle.State.SENT, null, null))
     }
   }
@@ -211,10 +211,7 @@ class InteractiveSessionServlet(
 
   jpost[AddResource]("/:id/add-pyfile") { req =>
     withModifyAccessSession { lsession =>
-      lsession.kind match {
-        case PySpark() | PySpark3() => addJarOrPyFile(req, lsession)
-        case _ => BadRequest("Only supported for pyspark sessions.")
-      }
+      addJarOrPyFile(req, lsession)
     }
   }
 
