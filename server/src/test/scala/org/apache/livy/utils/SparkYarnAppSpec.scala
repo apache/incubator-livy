@@ -59,10 +59,8 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         val mockYarnClient = mock[YarnClient]
         val mockAppListener = mock[SparkAppListener]
 
-
         val mockAppReport = mock[ApplicationReport]
         when(mockAppReport.getApplicationId).thenReturn(appId)
-//        when(mockAppReport.getFinalApplicationStatus)
 
         // Simulate YARN app state progression.
         val applicationStateList = List(
