@@ -68,7 +68,8 @@ class InteractiveSessionSpec extends FunSpec
       SparkLauncher.DRIVER_EXTRA_CLASSPATH -> sys.props("java.class.path"),
       RSCConf.Entry.LIVY_JARS.key() -> ""
     )
-    InteractiveSession.create(0, null, None, livyConf, req, sessionStore, mockApp)
+    InteractiveSession.create(
+      0, "Test Interactive Session", null, None, livyConf, req, sessionStore, mockApp)
   }
 
   private def executeStatement(code: String, codeType: Option[String] = None): JValue = {
@@ -247,7 +248,7 @@ class InteractiveSessionSpec extends FunSpec
       when(mockClient.submit(any(classOf[PingJob]))).thenReturn(mock[JobHandle[Void]])
       val m =
         InteractiveRecoveryMetadata(
-          78, None, "appTag", Spark(), 0, null, None, Some(URI.create("")))
+          78, "Test session ", None, "appTag", Spark(), 0, null, None, Some(URI.create("")))
       val s = InteractiveSession.recover(m, conf, sessionStore, None, Some(mockClient))
 
       s.state shouldBe a[SessionState.Recovering]
@@ -261,7 +262,7 @@ class InteractiveSessionSpec extends FunSpec
       val conf = new LivyConf()
       val sessionStore = mock[SessionStore]
       val m = InteractiveRecoveryMetadata(
-        78, Some("appId"), "appTag", Spark(), 0, null, None, None)
+        78, "Test session ", Some("appId"), "appTag", Spark(), 0, null, None, None)
       val s = InteractiveSession.recover(m, conf, sessionStore, None)
 
       s.state shouldBe a[SessionState.Dead]
