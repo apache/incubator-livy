@@ -55,7 +55,8 @@ class SessionHeartbeatSpec extends FunSpec with Matchers {
   }
 
   describe("SessionHeartbeatWatchdog") {
-    abstract class TestSession extends Session(0, null, null) with SessionHeartbeat {}
+    abstract class TestSession
+      extends Session(0, "Test Heart Beat Session", null, null) with SessionHeartbeat {}
     class TestWatchdog(conf: LivyConf)
       extends SessionManager[TestSession, RecoveryMetadata](
         conf,
@@ -68,10 +69,12 @@ class SessionHeartbeatSpec extends FunSpec with Matchers {
     it("should delete only expired sessions") {
       val expiredSession: TestSession = mock[TestSession]
       when(expiredSession.id).thenReturn(0)
+      when(expiredSession.name).thenReturn("expired session")
       when(expiredSession.heartbeatExpired).thenReturn(true)
 
       val nonExpiredSession: TestSession = mock[TestSession]
       when(nonExpiredSession.id).thenReturn(1)
+      when(nonExpiredSession.name).thenReturn("unexpired session")
       when(nonExpiredSession.heartbeatExpired).thenReturn(false)
 
       val n = new TestWatchdog(new LivyConf())

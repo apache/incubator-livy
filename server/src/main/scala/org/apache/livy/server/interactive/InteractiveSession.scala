@@ -48,6 +48,7 @@ import org.apache.livy.utils._
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class InteractiveRecoveryMetadata(
     id: Int,
+    name: String,
     appId: Option[String],
     appTag: String,
     kind: Kind,
@@ -65,6 +66,7 @@ object InteractiveSession extends Logging {
 
   def create(
       id: Int,
+      name: String,
       owner: String,
       proxyUser: Option[String],
       livyConf: LivyConf,
@@ -109,6 +111,7 @@ object InteractiveSession extends Logging {
 
     new InteractiveSession(
       id,
+      name,
       None,
       appTag,
       client,
@@ -135,6 +138,7 @@ object InteractiveSession extends Logging {
 
     new InteractiveSession(
       metadata.id,
+      metadata.name,
       metadata.appId,
       metadata.appTag,
       client,
@@ -345,6 +349,7 @@ object InteractiveSession extends Logging {
 
 class InteractiveSession(
     id: Int,
+    name: String,
     appIdHint: Option[String],
     appTag: String,
     client: Option[RSCClient],
@@ -356,7 +361,7 @@ class InteractiveSession(
     override val proxyUser: Option[String],
     sessionStore: SessionStore,
     mockApp: Option[SparkApp]) // For unit test.
-  extends Session(id, owner, livyConf)
+  extends Session(id, name, owner, livyConf)
   with SessionHeartbeat
   with SparkAppListener {
 
@@ -436,8 +441,8 @@ class InteractiveSession(
   override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(sessionLog)
 
   override def recoveryMetadata: RecoveryMetadata =
-    InteractiveRecoveryMetadata(
-      id, appId, appTag, kind, heartbeatTimeout.toSeconds.toInt, owner, proxyUser, rscDriverUri)
+    InteractiveRecoveryMetadata( id, name, appId, appTag, kind, heartbeatTimeout.toSeconds.toInt,
+      owner, proxyUser, rscDriverUri)
 
   override def state: SessionState = {
     if (serverSideState.isInstanceOf[SessionState.Running]) {

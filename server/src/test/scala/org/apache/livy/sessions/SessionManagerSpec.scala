@@ -54,6 +54,41 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       }
     }
 
+    it("should create sessions with names") {
+      val livyConf = new LivyConf()
+      livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
+      val manager = new SessionManager[MockSession, RecoveryMetadata](
+        livyConf,
+        { _ => assert(false).asInstanceOf[MockSession] },
+        mock[SessionStore],
+        "test",
+        Some(Seq.empty))
+      val session = manager.register(new MockSession(manager.nextId(), null, livyConf, "session1"))
+      manager.get(session.id).isDefined should be(true)
+      manager.get(session.name).isDefined should be(true)
+    }
+
+    it("should not create sessions with the same name") {
+      val livyConf = new LivyConf()
+      livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
+      val manager = new SessionManager[MockSession, RecoveryMetadata](
+        livyConf,
+        { _ => assert(false).asInstanceOf[MockSession] },
+        mock[SessionStore],
+        "test",
+        Some(Seq.empty))
+      val session1 = new MockSession(manager.nextId(), null, livyConf, "test session name")
+      val session2 = new MockSession(manager.nextId(), null, livyConf, "test session name")
+      manager.register(session1)
+      an[IllegalArgumentException] should be thrownBy manager.register(session2)
+      manager.get(session1.id).isDefined should be(true)
+      manager.get(session2.id).isDefined should be(false)
+      eventually(timeout(5 seconds), interval(100 millis)) {
+        Await.result(manager.collectGarbage(), Duration.Inf)
+        manager.get(session1.id) should be(None)
+      }
+    }
+
     it("batch session should not be gc-ed until application is finished") {
       val sessionId = 24
       val session = mock[BatchSession]
@@ -112,7 +147,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
     implicit def executor: ExecutionContext = ExecutionContext.global
 
     def makeMetadata(id: Int, appTag: String): BatchRecoveryMetadata = {
-      BatchRecoveryMetadata(id, None, appTag, null, None)
+      BatchRecoveryMetadata(id, s"test-session-$id", None, appTag, null, None)
     }
 
     def mockSession(id: Int): BatchSession = {

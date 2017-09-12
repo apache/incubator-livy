@@ -149,6 +149,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
 
   it("should show session properties") {
     val id = 0
+    val name = "TEST-interactive-session"
     val appId = "appid"
     val owner = "owner"
     val proxyUser = "proxyUser"
@@ -159,6 +160,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
 
     val session = mock[InteractiveSession]
     when(session.id).thenReturn(id)
+    when(session.name).thenReturn(name)
     when(session.appId).thenReturn(Some(appId))
     when(session.owner).thenReturn(owner)
     when(session.proxyUser).thenReturn(Some(proxyUser))
@@ -173,6 +175,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       .asInstanceOf[SessionInfo]
 
     view.id shouldEqual id
+    view.name shouldEqual name
     view.appId shouldEqual appId
     view.owner shouldEqual owner
     view.proxyUser shouldEqual proxyUser

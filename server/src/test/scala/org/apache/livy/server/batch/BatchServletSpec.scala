@@ -116,6 +116,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
 
     it("should respect config black list") {
       val createRequest = new CreateBatchRequest()
+      createRequest.name = Some("TEST-BatchServletSpec-Session-0")
       createRequest.file = script.toString
       createRequest.conf = BLACKLISTED_CONFIG
       jpost[Map[String, Any]]("/", createRequest, expectedStatus = SC_BAD_REQUEST) { _ => }
@@ -123,6 +124,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
 
     it("should show session properties") {
       val id = 0
+      val name = "TEST-batch-session"
       val state = SessionState.Running()
       val appId = "appid"
       val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
@@ -130,6 +132,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
 
       val session = mock[BatchSession]
       when(session.id).thenReturn(id)
+      when(session.name).thenReturn(name)
       when(session.state).thenReturn(state)
       when(session.appId).thenReturn(Some(appId))
       when(session.appInfo).thenReturn(appInfo)
@@ -141,6 +144,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
         .asInstanceOf[BatchSessionView]
 
       view.id shouldEqual id
+      view.name shouldEqual name
       view.state shouldEqual state.toString
       view.appId shouldEqual Some(appId)
       view.appInfo shouldEqual appInfo

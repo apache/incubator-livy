@@ -132,7 +132,7 @@ object Session {
   }
 }
 
-abstract class Session(val id: Int, val owner: String, val livyConf: LivyConf)
+abstract class Session(val id: Int, val name: String, val owner: String, val livyConf: LivyConf)
   extends Logging {
 
   import Session._

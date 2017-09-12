@@ -32,7 +32,7 @@ object SessionServletSpec {
   val PROXY_USER = "proxyUser"
 
   class MockSession(id: Int, owner: String, livyConf: LivyConf)
-    extends Session(id, owner, livyConf) {
+    extends Session(id, s"Mock Session $id", owner, livyConf) {
 
     case class MockRecoveryMetadata(id: Int) extends RecoveryMetadata()
 
