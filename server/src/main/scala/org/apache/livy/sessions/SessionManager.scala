@@ -73,6 +73,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
 
   protected[this] final val idCounter = new AtomicInteger(0)
   protected[this] final val sessions = mutable.LinkedHashMap[Int, S]()
+  private[this] final val sessionsByName = mutable.Map[String, S]()
+
 
   private[this] final val sessionTimeoutCheck = livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK)
   private[this] final val sessionTimeout =
@@ -99,6 +101,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
 
   def get(id: Int): Option[S] = sessions.get(id)
 
+  def get(sessionName: String): Option[S] = sessionsByName.get(sessionName)
+
   def size(): Int = sessions.size
 
   def all(): Iterable[S] = sessions.values
@@ -113,6 +117,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
         sessionStore.remove(sessionType, session.id)
         synchronized {
           sessions.remove(session.id)
+          sessionsByName.remove(session.name)
         }
       } catch {
         case NonFatal(e) =>

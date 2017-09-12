@@ -55,7 +55,8 @@ class SessionHeartbeatSpec extends FunSpec with Matchers {
   }
 
   describe("SessionHeartbeatWatchdog") {
-    abstract class TestSession extends Session(0, null, null) with SessionHeartbeat {}
+    abstract class TestSession
+      extends Session(0, "Test Heart Beat Session", null, null) with SessionHeartbeat {}
     class TestWatchdog(conf: LivyConf)
       extends SessionManager[TestSession, RecoveryMetadata](
         conf,
