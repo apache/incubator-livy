@@ -66,8 +66,8 @@ install:
   - mvn $MVN_FLAG install -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
 
 before_script:
-  - pip install --user requests pytest flaky flake8 requests-kerberos
-  - pip3 install --user requests pytest flaky requests-kerberos
+  - pip install --user "requests >= 2.10.0" pytest flaky flake8 requests-kerberos
+  - pip3 install --user "requests >= 2.10.0" pytest flaky requests-kerberos
 
 script:
   - mvn $MVN_FLAG verify -e
