@@ -17,6 +17,8 @@
 
 package org.apache.livy.utils
 
+import java.io.IOException
+
 import scala.collection.JavaConverters._
 
 import org.apache.livy.LivyConf
@@ -47,6 +49,18 @@ trait SparkAppListener {
  * Provide factory methods for SparkApp.
  */
 object SparkApp {
+
+  // this will be accessed only if Livy is running on YARN
+  private var _yarnInterface: Option[YarnInterface] = None
+
+  def withYarnInterFace(yarnInterface: YarnInterface): Unit = {
+     this._yarnInterface = Option(yarnInterface)
+   }
+
+  def yarnInterFace: Option[YarnInterface] = {
+     this._yarnInterface
+   }
+
   private val SPARK_YARN_TAG_KEY = "spark.yarn.tags"
 
   object State extends Enumeration {
@@ -88,7 +102,11 @@ object SparkApp {
       livyConf: LivyConf,
       listener: Option[SparkAppListener]): SparkApp = {
     if (livyConf.isRunningOnYarn()) {
-      new SparkYarnApp(uniqueAppTag, appId, process, listener, livyConf)
+        _yarnInterface.map { yarn =>
+          val app = new SparkYarnApp(uniqueAppTag, appId, process, listener, livyConf, yarn)
+          yarn.checkStatus(app)
+          app
+      }.getOrElse(null)
     } else {
       require(process.isDefined, "process must not be None when Livy master is not YARN.")
       new SparkProcApp(process.get, listener)

@@ -40,6 +40,7 @@ import org.apache.livy.server.recovery.{SessionStore, StateStore}
 import org.apache.livy.server.ui.UIServlet
 import org.apache.livy.sessions.{BatchSessionManager, InteractiveSessionManager}
 import org.apache.livy.sessions.SessionManager.SESSION_RECOVERY_MODE_OFF
+import org.apache.livy.utils.{SparkApp, SparkYarnApp, YarnInterface}
 import org.apache.livy.utils.LivySparkUtils._
 import org.apache.livy.utils.SparkYarnApp
 
@@ -121,8 +122,8 @@ class LivyServer extends Logging {
 
     // Initialize YarnClient ASAP to save time.
     if (livyConf.isRunningOnYarn()) {
-      SparkYarnApp.init(livyConf)
-      Future { SparkYarnApp.yarnClient }
+      val yarnInterface = new YarnInterface(livyConf, YarnInterface.yarnClient)
+      SparkApp.withYarnInterFace(yarnInterface)
     }
 
     StateStore.init(livyConf)
