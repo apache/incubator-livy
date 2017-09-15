@@ -22,9 +22,6 @@ import java.util.concurrent._
 import java.util.EnumSet
 import javax.servlet._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hadoop.security.authentication.server._
 import org.eclipse.jetty.servlet.FilterHolder
@@ -40,8 +37,8 @@ import org.apache.livy.server.recovery.{SessionStore, StateStore}
 import org.apache.livy.server.ui.UIServlet
 import org.apache.livy.sessions.{BatchSessionManager, InteractiveSessionManager}
 import org.apache.livy.sessions.SessionManager.SESSION_RECOVERY_MODE_OFF
+import org.apache.livy.utils.{SparkApp, YarnInterface}
 import org.apache.livy.utils.LivySparkUtils._
-import org.apache.livy.utils.SparkYarnApp
 
 class LivyServer extends Logging {
 
@@ -121,8 +118,9 @@ class LivyServer extends Logging {
 
     // Initialize YarnClient ASAP to save time.
     if (livyConf.isRunningOnYarn()) {
-      SparkYarnApp.init(livyConf)
-      Future { SparkYarnApp.yarnClient }
+      val yarnInterface = new YarnInterface(livyConf,
+        YarnInterface.yarnClient, YarnInterface.httpClient)
+      SparkApp.withYarnInterFace(yarnInterface)
     }
 
     StateStore.init(livyConf)

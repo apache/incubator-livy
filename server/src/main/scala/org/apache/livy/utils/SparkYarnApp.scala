@@ -16,20 +16,15 @@
  */
 package org.apache.livy.utils
 
-import java.util.concurrent.TimeoutException
-
-import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.Try
 
-import org.apache.hadoop.yarn.api.records.{ApplicationId, ApplicationReport, FinalApplicationStatus, YarnApplicationState}
+import org.apache.hadoop.yarn.api.records.{ApplicationId, FinalApplicationStatus, YarnApplicationState}
 import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.hadoop.yarn.conf.YarnConfiguration
-import org.apache.hadoop.yarn.exceptions.ApplicationAttemptNotFoundException
 import org.apache.hadoop.yarn.util.ConverterUtils
 
 import org.apache.livy.{LivyConf, Logging, Utils}
@@ -111,17 +106,20 @@ object SparkYarnApp extends Logging {
  * @param listener Optional listener for notification of appId discovery and app state changes.
  */
 class SparkYarnApp private[utils] (
-    appTag: String,
-    appIdOption: Option[String],
-    process: Option[LineBufferedProcess],
-    listener: Option[SparkAppListener],
+    val appTag: String,
+    val appIdOption: Option[String],
+    val process: Option[LineBufferedProcess],
+    val listener: Option[SparkAppListener],
     livyConf: LivyConf,
-    yarnClient: => YarnClient = SparkYarnApp.yarnClient) // For unit test.
+    yarnInterface: YarnInterface)
   extends SparkApp
   with Logging {
-  import SparkYarnApp._
 
-  private val appIdPromise: Promise[ApplicationId] = Promise()
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  val appId: Future[ApplicationId] = Future {
+    appIdOption.fold(yarnInterface.getAppIdFromTag(appTag, process))(ConverterUtils.toApplicationId)
+  }
   private[utils] var state: SparkApp.State = SparkApp.State.STARTING
   private var yarnDiagnostics: IndexedSeq[String] = IndexedSeq.empty[String]
 
@@ -130,182 +128,50 @@ class SparkYarnApp private[utils] (
     ("\nstderr: " +: process.map(_.errorLines).getOrElse(ArrayBuffer.empty[String])) ++
     ("\nYARN Diagnostics: " +: yarnDiagnostics)
 
-  override def kill(): Unit = synchronized {
-    if (isRunning) {
-      try {
-        val timeout = SparkYarnApp.getYarnTagToAppIdTimeout(livyConf)
-        yarnClient.killApplication(Await.result(appIdPromise.future, timeout))
-      } catch {
-        // We cannot kill the YARN app without the app id.
-        // There's a chance the YARN app hasn't been submitted during a livy-server failure.
-        // We don't want a stuck session that can't be deleted. Emit a warning and move on.
-        case _: TimeoutException | _: InterruptedException =>
-          warn("Deleting a session while its YARN application is not found.")
-          yarnAppMonitorThread.interrupt()
-      } finally {
-        process.foreach(_.destroy())
-      }
-    }
-  }
+  override def kill(): Unit = yarnInterface.kill(this)
 
-  private def changeState(newState: SparkApp.State.Value): Unit = {
+  private[utils] def changeState(newState: SparkApp.State.Value): Unit = {
     if (state != newState) {
       listener.foreach(_.stateChanged(state, newState))
       state = newState
     }
   }
 
-  /**
-   * Find the corresponding YARN application id from an application tag.
-   *
-   * @param appTag The application tag tagged on the target application.
-   *               If the tag is not unique, it returns the first application it found.
-   *               It will be converted to lower case to match YARN's behaviour.
-   * @return ApplicationId or the failure.
-   */
-  @tailrec
-  private def getAppIdFromTag(
-      appTag: String,
-      pollInterval: Duration,
-      deadline: Deadline): ApplicationId = {
-    val appTagLowerCase = appTag.toLowerCase()
-
-    // FIXME Should not loop thru all YARN applications but YarnClient doesn't offer an API.
-    // Consider calling rmClient in YarnClient directly.
-    yarnClient.getApplications(appType).asScala.find(_.getApplicationTags.contains(appTagLowerCase))
-    match {
-      case Some(app) => app.getApplicationId
-      case None =>
-        if (deadline.isOverdue) {
-          process.foreach(_.destroy())
-          leakedAppTags.put(appTag, System.currentTimeMillis())
-          throw new Exception(s"No YARN application is found with tag $appTagLowerCase in " +
-            livyConf.getTimeAsMs(LivyConf.YARN_APP_LOOKUP_TIMEOUT)/1000 + " seconds. " +
-            "Please check your cluster status, it is may be very busy.")
-        } else {
-          Clock.sleep(pollInterval.toMillis)
-          getAppIdFromTag(appTagLowerCase, pollInterval, deadline)
-        }
-    }
+  def updateYarnDiagnostics(diag: IndexedSeq[String]): Unit = {
+    yarnDiagnostics = diag
   }
 
-  private def getYarnDiagnostics(appReport: ApplicationReport): IndexedSeq[String] = {
-    Option(appReport.getDiagnostics)
-      .filter(_.nonEmpty)
-      .map[IndexedSeq[String]](_.split("\n"))
-      .getOrElse(IndexedSeq.empty)
-  }
-
-  private def isRunning: Boolean = {
+  private[utils] def isRunning: Boolean = {
     state != SparkApp.State.FAILED && state != SparkApp.State.FINISHED &&
       state != SparkApp.State.KILLED
   }
 
   // Exposed for unit test.
   private[utils] def mapYarnState(
-      appId: ApplicationId,
-      yarnAppState: YarnApplicationState,
-      finalAppStatus: FinalApplicationStatus): SparkApp.State.Value = {
-    yarnAppState match {
-      case (YarnApplicationState.NEW |
-            YarnApplicationState.NEW_SAVING |
-            YarnApplicationState.SUBMITTED |
-            YarnApplicationState.ACCEPTED) => SparkApp.State.STARTING
-      case YarnApplicationState.RUNNING => SparkApp.State.RUNNING
-      case YarnApplicationState.FINISHED =>
-        finalAppStatus match {
-          case FinalApplicationStatus.SUCCEEDED => SparkApp.State.FINISHED
-          case FinalApplicationStatus.FAILED => SparkApp.State.FAILED
-          case FinalApplicationStatus.KILLED => SparkApp.State.KILLED
-          case s =>
-            error(s"Unknown YARN final status $appId $s")
-            SparkApp.State.FAILED
-        }
-      case YarnApplicationState.FAILED => SparkApp.State.FAILED
-      case YarnApplicationState.KILLED => SparkApp.State.KILLED
+      appId: String,
+      yarnAppState: String,
+      finalAppStatus: String): SparkApp.State.Value = {
+    (yarnAppState, finalAppStatus) match {
+      case ("NEW", "UNDEFINED") |
+           ("NEW_SAVING", "UNDEFINED") |
+           ("SUBMITTED", "UNDEFINED") |
+           ("ACCEPTED", "UNDEFINED") =>
+        SparkApp.State.STARTING
+      case ("RUNNING", "UNDEFINED") =>
+        SparkApp.State.RUNNING
+      case ("FINISHED", "SUCCEEDED") =>
+        SparkApp.State.FINISHED
+      case ("FAILED", "FAILED") =>
+        SparkApp.State.FAILED
+      case ("KILLED", "KILLED") =>
+        SparkApp.State.KILLED
+      case (state, finalStatus) => // any other combination is invalid
+        error(s"Unknown YARN state $state for app $appId with final status $finalStatus.")
+        SparkApp.State.FAILED
     }
   }
 
-  // Exposed for unit test.
-  // TODO Instead of spawning a thread for every session, create a centralized thread and
-  // batch YARN queries.
-  private[utils] val yarnAppMonitorThread = Utils.startDaemonThread(s"yarnAppMonitorThread-$this") {
-    try {
-      // Wait for spark-submit to finish submitting the app to YARN.
-      process.foreach { p =>
-        val exitCode = p.waitFor()
-        if (exitCode != 0) {
-          throw new Exception(s"spark-submit exited with code $exitCode}.\n" +
-            s"${process.get.inputLines.mkString("\n")}")
-        }
-      }
-
-      // If appId is not known, query YARN by appTag to get it.
-      val appId = try {
-        appIdOption.map(ConverterUtils.toApplicationId).getOrElse {
-          val pollInterval = getYarnPollInterval(livyConf)
-          val deadline = getYarnTagToAppIdTimeout(livyConf).fromNow
-          getAppIdFromTag(appTag, pollInterval, deadline)
-        }
-      } catch {
-        case e: Exception =>
-          appIdPromise.failure(e)
-          throw e
-      }
-      appIdPromise.success(appId)
-
-      Thread.currentThread().setName(s"yarnAppMonitorThread-$appId")
-      listener.foreach(_.appIdKnown(appId.toString))
-
-      val pollInterval = SparkYarnApp.getYarnPollInterval(livyConf)
-      var appInfo = AppInfo()
-      while (isRunning) {
-        try {
-          Clock.sleep(pollInterval.toMillis)
-
-          // Refresh application state
-          val appReport = yarnClient.getApplicationReport(appId)
-          yarnDiagnostics = getYarnDiagnostics(appReport)
-          changeState(mapYarnState(
-            appReport.getApplicationId,
-            appReport.getYarnApplicationState,
-            appReport.getFinalApplicationStatus))
-
-          val latestAppInfo = {
-            val attempt =
-              yarnClient.getApplicationAttemptReport(appReport.getCurrentApplicationAttemptId)
-            val driverLogUrl =
-              Try(yarnClient.getContainerReport(attempt.getAMContainerId).getLogUrl)
-                .toOption
-            AppInfo(driverLogUrl, Option(appReport.getTrackingUrl))
-          }
-
-          if (appInfo != latestAppInfo) {
-            listener.foreach(_.infoChanged(latestAppInfo))
-            appInfo = latestAppInfo
-          }
-        } catch {
-          // This exception might be thrown during app is starting up. It's transient.
-          case e: ApplicationAttemptNotFoundException =>
-          // Workaround YARN-4411: No enum constant FINAL_SAVING from getApplicationAttemptReport()
-          case e: IllegalArgumentException =>
-            if (e.getMessage.contains("FINAL_SAVING")) {
-              debug("Encountered YARN-4411.")
-            } else {
-              throw e
-            }
-        }
-      }
-
-      debug(s"$appId $state ${yarnDiagnostics.mkString(" ")}")
-    } catch {
-      case e: InterruptedException =>
-        yarnDiagnostics = ArrayBuffer("Session stopped by user.")
-        changeState(SparkApp.State.KILLED)
-      case e: Throwable =>
-        error(s"Error whiling refreshing YARN state: $e")
-        yarnDiagnostics = ArrayBuffer(e.toString, e.getStackTrace().mkString(" "))
-        changeState(SparkApp.State.FAILED)
-    }
+  def needsUpdating(appInfo: AppInfo): Boolean = {
+    (isRunning || appInfo.driverLogUrl == None || appInfo.sparkUiUrl == None)
   }
 }
