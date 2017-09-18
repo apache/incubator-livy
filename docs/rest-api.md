@@ -78,11 +78,7 @@ Creates a new interactive Scala, Python, or R shell in the cluster.
   <tr><th>Name</th><th>Description</th><th>Type</th></tr>
   <tr>
     <td>kind</td>
-    <td>
-      The session kind. Starting from 0.5, this field is not required, to be compatible
-      with old protocol, user could still specify this with spark, pyspark or sparkr, which
-      implies that the submitted code snippet is one of these kinds.
-    </td>
+    <td>The session kind<sup>[1](#footnote1)</sup></td>
     <td><a href="#session-kind">session kind</a></td>
   </tr>
   <tr>
@@ -156,6 +152,10 @@ Creates a new interactive Scala, Python, or R shell in the cluster.
     <td>int</td>
   </tr>
 </table>
+
+<a name="footnote1">1</a>: Starting with version 0.5.0-incubating this field is not required. To be
+compatible with previous versions users could still specify this with spark, pyspark or sparkr,
+implying that the submitted code snippet is the corresponding kind.
 
 #### Response Body
 
@@ -272,15 +272,14 @@ Runs a statement in a session.
   </tr>
   <tr>
     <td>kind</td>
-    <td>
-      The kind of code to execute (optional). If session kind is not specified or the submitted
-      code is not the kind specified in session creation, this field should be filled with
-      correct kind; Otherwise Livy will use kind specified in session creation as the default code
-      kind.
-     </td>
+    <td>The kind of code to execute<sup>[2](#footnote2)</sup></td>
     <td><a href="#session-kind">code kind</a></td>
   </tr>
 </table>
+
+<a name="footnote2">2</a>: If session kind is not specified or the submitted code is not the kind
+specified in session creation, this field should be filled with correct kind.
+Otherwise Livy will use kind specified in session creation as the default code kind.
 
 #### Response Body
 
@@ -632,20 +631,24 @@ A session represents an interactive shell.
   </tr>
 </table>
 
-Starting from Livy 0.5.0, each session could support both Scala, Python and R interpreters. The
-``kind`` field in session creation is not required anymore, instead user needs to specify code kind
-(spark, pyspark or sparkr) during statement submission.
+Starting with version 0.5.0-incubating, each session can support all three Scala, Python and R
+interpreters. The ``kind`` field in session creation is no longer required, instead users must
+specify code kind (spark, pyspark or sparkr) during statement submission.
 
-To be compatible with old protocol, user could still specify ``kind`` field in session creation
-as a hint, while ignoring the ``kind`` field in statement submission, Livy will use this session
-``kind`` as the default kind for all the submitted statements.
+To be compatible with previous versions, users can still specify ``kind`` in session creation,
+while ignoring ``kind`` in statement submission. Livy will then use this session
+``kind`` as default kind for all the submitted statements.
 
-If user want to submit code other than the default ``kind`` specified in session creation, user
-needs to specify code kind (spark, pyspark or sparkr) during statement submission.
+If users want to submit code other than default ``kind`` specified in session creation, users
+need to specify code kind (spark, pyspark or sparkr) during statement submission.
 
 #### pyspark
+
 To change the Python executable the session uses, Livy reads the path from environment variable
 ``PYSPARK_PYTHON`` (Same as pyspark).
+
+Starting with version 0.5.0-incubating, session kind "pyspark3" is removed, instead users require
+to set ``PYSPARK_PYTHON`` to python3 executable.
 
 Like pyspark, if Livy is running in ``local`` mode, just set the environment variable.
 If the session is running in ``yarn-cluster`` mode, please set
