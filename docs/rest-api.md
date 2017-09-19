@@ -153,8 +153,8 @@ Creates a new interactive Scala, Python, or R shell in the cluster.
   </tr>
 </table>
 
-<a name="footnote1">1</a>: Starting with version 0.5.0-incubating this field is not required. To be
-compatible with previous versions users could still specify this with spark, pyspark or sparkr,
+<a id="footnote1">1</a>: Starting with version 0.5.0-incubating this field is not required. To be
+compatible with previous versions users can still specify this with spark, pyspark or sparkr,
 implying that the submitted code snippet is the corresponding kind.
 
 #### Response Body
@@ -277,7 +277,7 @@ Runs a statement in a session.
   </tr>
 </table>
 
-<a name="footnote2">2</a>: If session kind is not specified or the submitted code is not the kind
+<a id="footnote2">2</a>: If session kind is not specified or the submitted code is not the kind
 specified in session creation, this field should be filled with correct kind.
 Otherwise Livy will use kind specified in session creation as the default code kind.
 
@@ -632,7 +632,7 @@ A session represents an interactive shell.
 </table>
 
 Starting with version 0.5.0-incubating, each session can support all three Scala, Python and R
-interpreters. The ``kind`` field in session creation is no longer required, instead users must
+interpreters. The ``kind`` field in session creation is no longer required, instead users should
 specify code kind (spark, pyspark or sparkr) during statement submission.
 
 To be compatible with previous versions, users can still specify ``kind`` in session creation,
