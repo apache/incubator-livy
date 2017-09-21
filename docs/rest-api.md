@@ -78,7 +78,7 @@ Creates a new interactive Scala, Python, or R shell in the cluster.
   <tr><th>Name</th><th>Description</th><th>Type</th></tr>
   <tr>
     <td>kind</td>
-    <td>The session kind<sup>[1](#footnote1)</sup></td>
+    <td>The session kind<sup><a href="#footnote1">[1]</a></sup></td>
     <td><a href="#session-kind">session kind</a></td>
   </tr>
   <tr>
@@ -272,7 +272,7 @@ Runs a statement in a session.
   </tr>
   <tr>
     <td>kind</td>
-    <td>The kind of code to execute<sup>[2](#footnote2)</sup></td>
+    <td>The kind of code to execute<sup><a href="footnote2">[2]</a></sup></td>
     <td><a href="#session-kind">code kind</a></td>
   </tr>
 </table>
