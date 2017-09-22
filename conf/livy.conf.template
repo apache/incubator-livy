@@ -107,7 +107,7 @@
 # livy.server.recovery.state-store.url =
 
 # If Livy can't find the yarn app within this time, consider it lost.
-# livy.server.yarn.app-lookup-timeout = 60s
+# livy.server.yarn.app-lookup-timeout = 120s
 # When the cluster is busy, we may fail to launch yarn app in app-lookup-timeout, then it would
 # cause session leakage, so we need to check session leakage.
 # How long to check livy session leakage
@@ -116,7 +116,7 @@
 # livy.server.yarn.app-leakage.check-interval = 60s
 
 # How often Livy polls YARN to refresh YARN app state.
-# livy.server.yarn.poll-interval = 1s
+# livy.server.yarn.poll-interval = 5s
 #
 # Days to keep Livy server request logs.
 # livy.server.request-log-retain.days = 5
