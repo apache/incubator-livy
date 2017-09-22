@@ -272,7 +272,7 @@ Runs a statement in a session.
   </tr>
   <tr>
     <td>kind</td>
-    <td>The kind of code to execute<sup><a href="footnote2">[2]</a></sup></td>
+    <td>The kind of code to execute<sup><a href="#footnote2">[2]</a></sup></td>
     <td><a href="#session-kind">code kind</a></td>
   </tr>
 </table>
