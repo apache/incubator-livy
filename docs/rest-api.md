@@ -310,6 +310,37 @@ Cancel the specified statement in this session.
   </tr>
 </table>
 
+### POST /sessions/{sessionId}/completion
+
+Runs a statement in a session.
+
+#### Request Body
+
+<table class="table">
+  <tr><th>Name</th><th>Description</th><th>Type</th></tr>
+  <tr>
+    <td>code</td>
+    <td>The code for which completion proposals are requested</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>cursor</td>
+    <td>cursor position to get proposals</td>
+    <td>string</td>
+  </tr>
+</table>
+
+#### Response Body
+
+<table class="table">
+  <tr><th>Name</th><th>Description</th><th>Type</th></tr>
+  <tr>
+    <td>candidates</td>
+    <td>Code completions proposals</td>
+    <td>array[string]</td>
+  </tr>
+</table>
+
 ### GET /batches
 
 Returns all the active batch sessions.

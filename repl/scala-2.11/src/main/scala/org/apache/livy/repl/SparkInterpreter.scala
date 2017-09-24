@@ -117,6 +117,11 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
     sparkILoop.interpret(code)
   }
 
+  override protected def completeCandidates(code: String, cursor: Int) : Array[String] = {
+    val completer = new scala.tools.nsc.interpreter.JLineCompletion(sparkILoop.intp)
+    completer.completer().complete(code, cursor).candidates.toArray
+  }
+
   override protected def valueOfTerm(name: String): Option[Any] = {
     // IMain#valueOfTerm will always return None, so use other way instead.
     Option(sparkILoop.lastRequest.lineRep.call("$result"))
