@@ -19,6 +19,7 @@ package org.apache.livy.utils
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -249,6 +250,35 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         assert(app.mapYarnState(appId, KILLED, UNDEFINED) == State.FAILED)
         assert(app.mapYarnState(appId, FAILED, FinalApplicationStatus.SUCCEEDED) == State.FAILED)
         assert(app.mapYarnState(appId, KILLED, FinalApplicationStatus.SUCCEEDED) == State.FAILED)
+      }
+    }
+
+    it("should get App Id") {
+      Clock.withSleepMethod(mockSleep) {
+        val mockYarnClient = mock[YarnClient]
+        val mockAppReport = mock[ApplicationReport]
+
+        when(mockAppReport.getApplicationTags).thenReturn(Set(appTag.toLowerCase).asJava)
+        when(mockAppReport.getApplicationId).thenReturn(appId)
+        when(mockAppReport.getFinalApplicationStatus).thenReturn(FinalApplicationStatus.SUCCEEDED)
+        when(mockAppReport.getYarnApplicationState).thenReturn(RUNNING)
+        when(mockYarnClient.getApplicationReport(appId)).thenReturn(mockAppReport)
+        when(mockYarnClient.getApplications(Set("SPARK").asJava))
+          .thenReturn(List(mockAppReport).asJava)
+
+        val mockListener = mock[SparkAppListener]
+        val mockSparkSubmit = mock[LineBufferedProcess]
+        val app = new SparkYarnApp(
+          appTag, None, Some(mockSparkSubmit), Some(mockListener), livyConf, mockYarnClient)
+
+        cleanupThread(app.yarnAppMonitorThread) {
+          app.yarnAppMonitorThread.join(TEST_TIMEOUT.toMillis)
+          assert(!app.yarnAppMonitorThread.isAlive,
+            "YarnAppMonitorThread should terminate after YARN app is finished.")
+
+          verify(mockYarnClient, atLeast(1)).getApplicationReport(appId)
+          verify(mockListener).appIdKnown(appId.toString)
+        }
       }
     }
 
