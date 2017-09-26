@@ -231,15 +231,6 @@ class SparkYarnApp private[utils] (
   // batch YARN queries.
   private[utils] val yarnAppMonitorThread = Utils.startDaemonThread(s"yarnAppMonitorThread-$this") {
     try {
-      // Wait for spark-submit to finish submitting the app to YARN.
-      process.foreach { p =>
-        val exitCode = p.waitFor()
-        if (exitCode != 0) {
-          throw new Exception(s"spark-submit exited with code $exitCode}.\n" +
-            s"${process.get.inputLines.mkString("\n")}")
-        }
-      }
-
       // If appId is not known, query YARN by appTag to get it.
       val appId = try {
         appIdOption.map(ConverterUtils.toApplicationId).getOrElse {
