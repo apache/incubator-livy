@@ -227,7 +227,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         when(mockAppReport.getApplicationTags).thenReturn(Set(appTag.toLowerCase).asJava)
         when(mockAppReport.getApplicationId).thenReturn(appId)
         when(mockAppReport.getFinalApplicationStatus).thenReturn(FinalApplicationStatus.SUCCEEDED)
-        when(mockAppReport.getYarnApplicationState).thenReturn(RUNNING)
+        when(mockAppReport.getYarnApplicationState).thenReturn(YarnApplicationState.FINISHED)
         when(mockYarnClient.getApplicationReport(appId)).thenReturn(mockAppReport)
         when(mockYarnClient.getApplications(Set("SPARK").asJava))
           .thenReturn(List(mockAppReport).asJava)
