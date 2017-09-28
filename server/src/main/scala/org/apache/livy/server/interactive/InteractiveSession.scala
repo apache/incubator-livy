@@ -505,7 +505,7 @@ class InteractiveSession(
     ensureRunning()
     recordActivity()
 
-    val proposals = client.get.completeReplCode(content.code, content.kind.orNull,
+    val proposals = client.get.completeReplCode(content.code, content.kind,
         content.cursor).get
     CompletionResponse(proposals.toList)
   }
