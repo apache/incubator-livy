@@ -60,7 +60,7 @@ case class ExecuteReplyError(execution_count: Int,
 
 case class ExecuteResponse(id: Int, input: Seq[String], output: Seq[String])
 
-case class CompletionRequest(code: String, kind: Option[String], cursor: Int) extends Content
+case class CompletionRequest(code: String, kind: String, cursor: Int) extends Content
 
 case class CompletionResponse(candidates: List[String]) extends Content
 
