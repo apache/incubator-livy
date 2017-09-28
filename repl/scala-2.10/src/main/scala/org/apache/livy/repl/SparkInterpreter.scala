@@ -133,6 +133,11 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
     sparkIMain.interpret(code)
   }
 
+  override protected def completeCandidates(code: String, cursor: Int) : Array[String] = {
+    val completer = new org.apache.spark.repl.SparkJLineCompletion(sparkIMain)
+    completer.completer().complete(code, cursor).candidates.toArray
+  }
+
   override protected[repl] def parseError(stdout: String): (String, Seq[String]) = {
     // An example of Scala 2.10 runtime exception error message:
     // java.lang.Exception: message
