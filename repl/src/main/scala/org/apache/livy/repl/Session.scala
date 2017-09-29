@@ -169,14 +169,8 @@ class Session(
     statementId
   }
 
-  def complete(code: String, codeType: String = null, cursor: Int): Array[String] = {
-    val tpe = if (codeType != null) {
-      Kind(codeType)
-    } else if (defaultInterpKind != Shared()) {
-      defaultInterpKind
-    } else {
-      throw new IllegalArgumentException(s"Code type should be specified if session kind is shared")
-    }
+  def complete(code: String, codeType: String, cursor: Int): Array[String] = {
+    val tpe = Kind(codeType)
     val interp = interpreter(tpe)
     interp.complete(code, cursor)
   }

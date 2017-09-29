@@ -190,9 +190,9 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
       }
     }
 
-    class Completion(code: String, cursor: Int) {
+    class Completion(code: String, kind: String, cursor: Int) {
       val completions = {
-        val requestBody = Map("code" -> code, "cursor" -> cursor)
+        val requestBody = Map("code" -> code, "cursor" -> cursor, "kind" -> kind)
         val r = httpClient.preparePost(s"$url/completion")
           .setBody(mapper.writeValueAsString(requestBody))
           .execute()
@@ -206,7 +206,7 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
       final def result(): Seq[String] = completions
 
       def verifyContaining(expected: List[String]): Unit = {
-        result().toSet.exists(x => x == expected)
+        assert(result().toSet.forall(x => expected.contains(x)))
       }
 
       def verifyNone(): Unit = {
@@ -221,7 +221,8 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
 
     def run(code: String): Statement = { new Statement(code) }
 
-    def complete(code: String, cursor: Int): Completion = { new Completion(code, cursor) }
+    def complete(code: String, kind: String, cursor: Int): Completion =
+      { new Completion(code, kind, cursor) }
 
     def runFatalStatement(code: String): Unit = {
       val requestBody = Map("code" -> code)

@@ -49,8 +49,8 @@ class InteractiveIT extends BaseIntegrationTestSuite {
         .verifyResult(".*false")
       s.run("""sys.props.exists(_._1.startsWith("spark.__livy__."))""").verifyResult(".*false")
       s.run("""val str = "str"""")
-      s.complete("str.", 4).verifyContaining(List("compare", "contains", "chars"))
-      s.complete("str2.", 5).verifyNone()
+      s.complete("str.", "scala", 4).verifyContaining(List("compare", "contains"))
+      s.complete("str2.", "scala", 5).verifyNone()
 
       // Make sure appInfo is reported correctly.
       val state = s.snapshot()

@@ -28,6 +28,7 @@ import scala.util.{Failure, Success, Try}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.repl.SparkIMain
+import org.apache.spark.repl.SparkJLineCompletion
 
 import org.apache.livy.rsc.driver.SparkEntries
 
@@ -134,7 +135,7 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
   }
 
   override protected def completeCandidates(code: String, cursor: Int) : Array[String] = {
-    val completer = new org.apache.spark.repl.SparkJLineCompletion(sparkIMain)
+    val completer = new SparkJLineCompletion(sparkIMain)
     completer.completer().complete(code, cursor).candidates.toArray
   }
 
