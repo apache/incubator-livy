@@ -209,7 +209,6 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
       """"a".""".stripMargin
     val actual = interpreter.complete(code, code.length)
     actual should contain ("+")
-    actual should contain ("asInstanceOf")
     actual should contain ("charAt")
     actual should contain ("compareTo")
   }

@@ -212,17 +212,13 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
       def verifyNone(): Unit = {
         assert(result() == List(), s"Expected no completion proposals but found $completions")
       }
-
-      private def matchStrings(actual: String, expected: String): Unit = {
-        val regex = Pattern.compile(expected, Pattern.DOTALL)
-        assert(regex.matcher(actual).matches(), s"$actual did not match regex $expected")
-      }
     }
 
     def run(code: String): Statement = { new Statement(code) }
 
-    def complete(code: String, kind: String, cursor: Int): Completion =
-      { new Completion(code, kind, cursor) }
+    def complete(code: String, kind: String, cursor: Int): Completion = {
+      new Completion(code, kind, cursor)
+    }
 
     def runFatalStatement(code: String): Unit = {
       val requestBody = Map("code" -> code)

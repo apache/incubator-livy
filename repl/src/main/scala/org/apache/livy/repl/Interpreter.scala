@@ -29,7 +29,6 @@ object Interpreter {
                           traceback: Seq[String] = Seq()) extends ExecuteResponse
   case class ExecuteIncomplete() extends ExecuteResponse
   case class ExecuteAborted(message: String) extends ExecuteResponse
-
 }
 
 trait Interpreter {
