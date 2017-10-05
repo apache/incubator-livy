@@ -30,9 +30,10 @@
 # By default, a Spark (Scala) session is created.
 #
 
-import httplib
 import json
 import readline
+import requests
+import signal
 import sys
 import time
 import urlparse
@@ -56,33 +57,37 @@ class LiteralDict(dict):
     return name
 
 
-def request(conn, method, uri, body):
-  body = json.dumps(body) if body else None
-  headers = { 'Content-Type' : 'application/json' }
-  conn.request(method, uri, body=body, headers=headers)
+def request(method, uri, body):
+  kwargs = { 'headers': { 'Content-Type' : 'application/json' } }
+  if body:
+    kwargs['json'] = body
+  resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), **kwargs)
 
-  resp = conn.getresponse()
-  data = resp.read()
-  if resp.status < 200 or resp.status >= 400:
-    raise httplib.HTTPException, (resp.status, resp.reason, data)
-  if resp.status < 300 and resp.status != httplib.NO_CONTENT:
-    return json.loads(data)
+  # try:
+  if resp.status_code < requests.codes.ok or resp.status_code >= requests.codes.bad_request:
+    raise httplib.HTTPException, (resp.status_code, resp.reason, data)
+  if resp.status_code < requests.codes.multiple_choices and resp.status_code != requests.codes.no_content:
+    return resp.json()
   return None
+  # except httplib.BadStatusLine as e:
+  #   if retries > 0:
+  #     message("BadStatusLine occurred during request, retrying. Number of retries left: %s", retries - 1)
+  #     request(method, uri, body, retries - 1)
 
 
-def get(conn, uri):
-  return request(conn, 'GET', uri, None)
+def get(uri):
+  return request('GET', uri, None)
 
 
-def post(conn, uri, body):
-  return request(conn, 'POST', uri, body)
+def post(uri, body):
+  return request('POST', uri, body)
 
 
-def delete(conn, uri):
-  return request(conn, 'DELETE', uri, None)
+def delete(uri):
+  return request('DELETE', uri, None)
 
 
-def create_session(conn):
+def create_session():
   request = {
     "kind" : "spark"
   }
@@ -91,21 +96,21 @@ def create_session(conn):
     key, value = opt.split('=', 1)
     request[key] = eval(value, LiteralDict())
 
-  return post(conn, "/sessions", request)
+  return post("/sessions", request)
 
 
 def wait_for_idle(sid):
-  session = get(conn, "/sessions/%d" % (sid, ))
+  session = get("/sessions/%d" % (sid, ))
   while session['state'] == 'starting':
     message("Session not ready yet (%s)", session['state'])
     time.sleep(5)
-    session = get(conn, "/sessions/%d" % (sid, ))
+    session = get("/sessions/%d" % (sid, ))
 
   if session['state'] != 'idle':
     raise Exception, "Session failed to start."
 
 
-def monitor_statement(conn, sid, s):
+def monitor_statement(sid, s):
   cnt = 0
   while True:
     state = s['state']
@@ -139,23 +144,25 @@ def monitor_statement(conn, sid, s):
       else:
         cnt += 1
       time.sleep(1)
-      s = get(conn, "/sessions/%d/statements/%s" % (sid, s['id']))
+      s = get("/sessions/%d/statements/%s" % (sid, s['id']))
 
 
-def run_shell(conn, sid):
+def run_shell(sid, session_kind):
+  prompt = "{} ({}) > ".format(session_kind, sid)
+  def ctrl_c_handler(signal, frame):
+    message("Please type quit() to exit the livy shell.")
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+  signal.signal(signal.SIGINT, ctrl_c_handler)
+
   while True:
-    cmd = raw_input('> ')
+    cmd = raw_input(prompt)
     if cmd == "quit()":
       break
 
-    statement = post(conn, "/sessions/%d/statements" % (sid, ), { 'code' : cmd })
-    monitor_statement(conn, sid, statement)
+    statement = post("/sessions/%d/statements" % (sid, ), { 'code' : cmd })
+    monitor_statement(sid, statement)
 
-def open_connection(url):
-  if url.scheme == "https":
-    return httplib.HTTPSConnection(url.netloc)
-  else:
-    return httplib.HTTPConnection(url.netloc)
 
 #
 # main()
@@ -164,24 +171,17 @@ def open_connection(url):
 check(len(sys.argv) > 1, "Missing arguments.")
 
 url = urlparse.urlparse(sys.argv[1])
-conn = open_connection(url)
-
 sid = -1
 try:
   message("Creating new session...")
-  session = create_session(conn)
+  session = create_session()
   sid = int(session['id'])
   message("New session (id = %d, kind = %s), waiting for idle state...", sid, session['kind'])
   wait_for_idle(sid)
   message("Session ready.")
-  run_shell(conn,sid)
+  run_shell(sid, session.get('kind', 'spark'))
 except EOFError:
   pass
 finally:
-  conn.close()
   if sid != -1:
-    conn = open_connection(url)
-    try:
-      delete(conn, "/sessions/%d" % (sid, ))
-    finally:
-      conn.close()
+    delete("/sessions/%d" % (sid, ))
