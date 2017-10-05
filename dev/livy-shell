@@ -67,8 +67,7 @@ def request(method, uri, body):
   if body:
     kwargs['json'] = body
   resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), **kwargs)
-  if resp.status_code < requests.codes.ok or resp.status_code >= requests.codes.bad_request:
-    raise httplib.HTTPException, (resp.status_code, resp.reason, data)
+  resp.raise_for_status()
   if resp.status_code < requests.codes.multiple_choices and resp.status_code != requests.codes.no_content:
     return resp.json()
   return None
