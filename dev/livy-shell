@@ -32,11 +32,16 @@
 
 import json
 import readline
-import requests
 import signal
 import sys
 import time
 import urlparse
+
+try:
+  import requests
+except ImportError:
+  print "Unable to import 'requests' module, which is required by livy-shell."
+  sys.exit(1)
 
 def check(condition, msg, *args):
   if not condition:
