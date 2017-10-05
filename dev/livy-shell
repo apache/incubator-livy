@@ -62,17 +62,11 @@ def request(method, uri, body):
   if body:
     kwargs['json'] = body
   resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), **kwargs)
-
-  # try:
   if resp.status_code < requests.codes.ok or resp.status_code >= requests.codes.bad_request:
     raise httplib.HTTPException, (resp.status_code, resp.reason, data)
   if resp.status_code < requests.codes.multiple_choices and resp.status_code != requests.codes.no_content:
     return resp.json()
   return None
-  # except httplib.BadStatusLine as e:
-  #   if retries > 0:
-  #     message("BadStatusLine occurred during request, retrying. Number of retries left: %s", retries - 1)
-  #     request(method, uri, body, retries - 1)
 
 
 def get(uri):
