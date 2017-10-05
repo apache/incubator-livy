@@ -30,6 +30,7 @@
 # By default, a Spark (Scala) session is created.
 #
 
+import argparse
 import json
 import readline
 import signal
@@ -40,14 +41,6 @@ import urlparse
 
 class ControlCInterrupt(Exception):
   pass
-
-
-def check(condition, msg, *args):
-  if not condition:
-    if args:
-      msg = msg % args
-    print >> sys.stderr, msg
-    sys.exit(1)
 
 
 def message(msg, *args):
@@ -72,7 +65,7 @@ def request(method, uri, body):
   kwargs = { 'headers': { 'Content-Type' : 'application/json', 'X-Requested-By': 'livy' } }
   if body:
     kwargs['json'] = body
-  resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), **kwargs)
+  resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), auth=auth, **kwargs)
   resp.raise_for_status()
   if resp.status_code < requests.codes.multiple_choices and resp.status_code != requests.codes.no_content:
     return resp.json()
@@ -91,12 +84,11 @@ def delete(uri):
   return request('DELETE', uri, None)
 
 
-def create_session():
+def create_session(extra_args=[]):
   request = {
     "kind" : "spark"
   }
-  for opt in sys.argv[2:]:
-    check(opt.find('=') > 0, "Invalid option: %s.", opt)
+  for opt in extra_args:
     key, value = opt.split('=', 1)
     request[key] = eval(value, LiteralDict())
 
@@ -170,18 +162,35 @@ def run_shell(sid, session_kind):
     monitor_statement(sid, statement)
 
 
+def valid_extra_arg(s):
+    if not s.find('=') > 0:
+        raise argparse.ArgumentTypeError
+    return s
+
 #
 # main()
 #
 
-check(len(sys.argv) > 1, "Missing arguments.")
+parser = argparse.ArgumentParser(description="A REPL for connecting to Livy.")
+parser.add_argument("livy_url", type=str, help="The full URL to the Livy server.")
+parser.add_argument("--enable_kerberos", action="store_true", help="Enable kerberos authentication when communicating with Livy.")
+parser.add_argument("--option", type=valid_extra_arg, action="append", default=[], help="Additional options to send when creating the session in Livy. Should be in the form 'key=value'.")
+args = parser.parse_args()
 
-url = urlparse.urlparse(sys.argv[1])
+url = urlparse.urlparse(args.livy_url)
 sid = -1
+auth = None
+if args.enable_kerberos:
+  try:
+    from requests_kerberos import HTTPKerberosAuth
+    auth = HTTPKerberosAuth()
+  except ImportError:
+    message("Could not import requests_kerberos module which is required for Kerberos authentication.")
+    sys.exit(1)
 
 try:
   message("Creating new session...")
-  session = create_session()
+  session = create_session(args.option)
   sid = int(session['id'])
   message("New session (id = %d, kind = %s), waiting for idle state...", sid, session['kind'])
   wait_for_idle(sid)
