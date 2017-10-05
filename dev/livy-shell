@@ -66,7 +66,9 @@ def request(method, uri, body):
   if body:
     kwargs['json'] = body
   resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), auth=auth, **kwargs)
-  resp.raise_for_status()
+  if resp.status_code >= requests.codes.bad_request:
+    message("Error received from Livy: %s", resp.text)
+    resp.raise_for_status()
   if resp.status_code < requests.codes.multiple_choices and resp.status_code != requests.codes.no_content:
     return resp.json()
   return None
@@ -144,7 +146,7 @@ def monitor_statement(sid, s):
 
 
 def run_shell(sid, session_kind):
-  prompt = "{} ({}) > ".format(session_kind, sid)
+  prompt = "{0} ({1}) > ".format(session_kind, sid)
   def ctrl_c_handler(signal, frame):
     message("\nPlease type quit() to exit the livy shell.")
     raise ControlCInterrupt()
