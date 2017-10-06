@@ -67,7 +67,11 @@ def request(method, uri, body):
     kwargs['json'] = body
   resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), auth=auth, **kwargs)
   if resp.status_code >= requests.codes.bad_request:
-    message("Error received from Livy: %s", resp.text)
+    if resp.status_code == requests.codes.unauthorized:
+      message("ERROR: Unauthorized response received from Livy. Please ensure that Kerberos is enabled " +
+        "(via the --enable_kerberos argument) and this user has an up to date ticket.\n")
+    else:
+      message("ERROR: %s\n", resp.text)
     resp.raise_for_status()
   if resp.status_code < requests.codes.multiple_choices and resp.status_code != requests.codes.no_content:
     return resp.json()
