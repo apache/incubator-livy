@@ -1,4 +1,5 @@
 .rat-excludes
+.github/*
 logs/*
 **/*.conf
 **/*.json
