@@ -62,6 +62,10 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
     session.cancel(msg.id)
   }
 
+  def handle(ctx: ChannelHandlerContext, msg: BaseProtocol.ReplCompleteRequest): Array[String] = {
+    session.complete(msg.code, msg.codeType, msg.cursor)
+  }
+
   /**
    * Return statement results. Results are sorted by statement id.
    */

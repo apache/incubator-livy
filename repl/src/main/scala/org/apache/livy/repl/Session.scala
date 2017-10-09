@@ -169,6 +169,12 @@ class Session(
     statementId
   }
 
+  def complete(code: String, codeType: String, cursor: Int): Array[String] = {
+    val tpe = Kind(codeType)
+    val interp = interpreter(tpe)
+    interp.complete(code, cursor)
+  }
+
   def cancel(statementId: Int): Unit = {
     val statementOpt = _statements.synchronized { _statements.get(statementId) }
     if (statementOpt.isEmpty) {

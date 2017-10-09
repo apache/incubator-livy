@@ -53,6 +53,8 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
 
   protected def interpret(code: String): Results.Result
 
+  protected def completeCandidates(code: String, cursor: Int) : Array[String] = Array()
+
   protected def valueOfTerm(name: String): Option[Any]
 
   protected def bind(name: String, tpe: String, value: Object, modifier: List[String]): Unit
@@ -108,6 +110,10 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
       executeLines(code.trim.split("\n").toList, Interpreter.ExecuteSuccess(JObject(
         (TEXT_PLAIN, JString(""))
       )))
+  }
+
+  override protected[repl] def complete(code: String, cursor: Int): Array[String] = {
+      completeCandidates(code, cursor)
   }
 
   private def executeMagic(magic: String, rest: String): Interpreter.ExecuteResponse = {

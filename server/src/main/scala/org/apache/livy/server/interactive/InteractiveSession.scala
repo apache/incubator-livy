@@ -501,6 +501,15 @@ class InteractiveSession(
     client.get.cancelReplCode(statementId)
   }
 
+  def completion(content: CompletionRequest): CompletionResponse = {
+    ensureRunning()
+    recordActivity()
+
+    val proposals = client.get.completeReplCode(content.code, content.kind,
+        content.cursor).get
+    CompletionResponse(proposals.toList)
+  }
+
   def runJob(job: Array[Byte], jobType: String): Long = {
     performOperation(job, jobType, true)
   }

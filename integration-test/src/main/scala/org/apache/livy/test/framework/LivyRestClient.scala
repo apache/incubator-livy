@@ -46,6 +46,8 @@ object LivyRestClient {
   @JsonIgnoreProperties(ignoreUnknown = true)
   private case class StatementResult(id: Int, state: String, output: Map[String, Any])
 
+  private case class CompletionResult(candidates: Seq[String])
+
   @JsonIgnoreProperties(ignoreUnknown = true)
   case class StatementError(ename: String, evalue: String, stackTrace: Seq[String])
 
@@ -188,7 +190,35 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
       }
     }
 
+    class Completion(code: String, kind: String, cursor: Int) {
+      val completions = {
+        val requestBody = Map("code" -> code, "cursor" -> cursor, "kind" -> kind)
+        val r = httpClient.preparePost(s"$url/completion")
+          .setBody(mapper.writeValueAsString(requestBody))
+          .execute()
+          .get()
+        assertStatusCode(r, HttpServletResponse.SC_OK)
+
+        val res = mapper.readValue(r.getResponseBodyAsStream, classOf[CompletionResult])
+        res.candidates
+      }
+
+      final def result(): Seq[String] = completions
+
+      def verifyContaining(expected: List[String]): Unit = {
+        assert(result().toSet.forall(x => expected.contains(x)))
+      }
+
+      def verifyNone(): Unit = {
+        assert(result() == List(), s"Expected no completion proposals but found $completions")
+      }
+    }
+
     def run(code: String): Statement = { new Statement(code) }
+
+    def complete(code: String, kind: String, cursor: Int): Completion = {
+      new Completion(code, kind, cursor)
+    }
 
     def runFatalStatement(code: String): Unit = {
       val requestBody = Map("code" -> code)

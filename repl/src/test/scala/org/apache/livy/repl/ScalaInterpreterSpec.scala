@@ -203,4 +203,14 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
           Interpreter.ExecuteSuccess(TEXT_PLAIN -> s"r: String =\n$stringWithComment"))
     }
   }
+
+  it should "return code completion candidates" in withInterpreter { interpreter =>
+    val code =
+      """"a".""".stripMargin
+    val actual = interpreter.complete(code, code.length)
+    actual should contain ("+")
+    actual should contain ("charAt")
+    actual should contain ("compareTo")
+  }
+
 }
