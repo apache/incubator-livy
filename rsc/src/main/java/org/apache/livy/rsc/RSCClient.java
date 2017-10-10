@@ -302,6 +302,12 @@ public class RSCClient implements LivyClient {
     return deferredCall(new BaseProtocol.GetReplJobResults(), ReplJobResults.class);
   }
 
+  public Future<String[]> completeReplCode(String code, String codeType, int cursor)
+      throws Exception {
+    return deferredCall(new BaseProtocol.ReplCompleteRequest(code, codeType, cursor),
+        String[].class);
+  }
+
   /**
    * @return Return the repl state. If this's not connected to a repl session, it will return null.
    */

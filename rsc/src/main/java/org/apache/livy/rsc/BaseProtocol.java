@@ -202,6 +202,22 @@ public abstract class BaseProtocol extends RpcDispatcher {
     }
   }
 
+  public static class ReplCompleteRequest {
+    public final String code;
+    public final String codeType;
+    public final int cursor;
+
+    public ReplCompleteRequest(String code, String codeType, int cursor) {
+      this.code = code;
+      this.codeType = codeType;
+      this.cursor = cursor;
+    }
+
+    public ReplCompleteRequest() {
+      this(null, null, 0);
+    }
+  }
+
   protected static class ReplState {
 
     public final String state;

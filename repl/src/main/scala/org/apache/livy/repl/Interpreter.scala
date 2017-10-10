@@ -17,6 +17,7 @@
 
 package org.apache.livy.repl
 
+import org.json4s.JArray
 import org.json4s.JObject
 
 object Interpreter {
@@ -45,6 +46,9 @@ trait Interpreter {
    * take some time to execute.
    */
   protected[repl] def execute(code: String): ExecuteResponse
+
+  protected[repl] def complete(code: String, cursor: Int): Array[String]
+    = Array()
 
   /** Shut down the interpreter. */
   def close(): Unit

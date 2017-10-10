@@ -22,6 +22,9 @@ import java.net.URLClassLoader
 import java.nio.file.{Files, Paths}
 
 import scala.tools.nsc.Settings
+import scala.tools.nsc.interpreter.Completion.ScalaCompleter
+import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.interpreter.JLineCompletion
 import scala.tools.nsc.interpreter.JPrintWriter
 import scala.tools.nsc.interpreter.Results.Result
 import scala.util.control.NonFatal
@@ -115,6 +118,19 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
 
   override protected def interpret(code: String): Result = {
     sparkILoop.interpret(code)
+  }
+
+  override protected def completeCandidates(code: String, cursor: Int) : Array[String] = {
+    val completer : ScalaCompleter = {
+      try {
+        val cls = Class.forName("scala.tools.nsc.interpreter.PresentationCompilerCompleter")
+        cls.getDeclaredConstructor(classOf[IMain]).newInstance(sparkILoop.intp)
+          .asInstanceOf[ScalaCompleter]
+      } catch {
+        case e : ClassNotFoundException => new JLineCompletion(sparkILoop.intp).completer
+      }
+    }
+    completer.complete(code, cursor).candidates.toArray
   }
 
   override protected def valueOfTerm(name: String): Option[Any] = {
