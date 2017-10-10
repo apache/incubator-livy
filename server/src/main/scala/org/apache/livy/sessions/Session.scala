@@ -21,7 +21,6 @@ import java.io.InputStream
 import java.net.{URI, URISyntaxException}
 import java.security.PrivilegedExceptionAction
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -29,7 +28,9 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.security.UserGroupInformation
 
-import org.apache.livy.{LivyConf, Logging, Utils}
+import org.apache.livy.LivyConf
+import org.apache.livy.Logging
+import org.apache.livy.Utils
 import org.apache.livy.utils.AppInfo
 
 object Session {
@@ -132,7 +133,8 @@ object Session {
   }
 }
 
-abstract class Session(val id: Int, val name: String, val owner: String, val livyConf: LivyConf)
+abstract class Session(val id: Int, val name: Option[String], val owner: String,
+                       val livyConf: LivyConf)
   extends Logging {
 
   import Session._
@@ -167,6 +169,8 @@ abstract class Session(val id: Int, val name: String, val owner: String, val liv
   def recoveryMetadata: RecoveryMetadata
 
   def state: SessionState
+
+  def start(): Unit
 
   def stop(): Future[Unit] = Future {
     try {

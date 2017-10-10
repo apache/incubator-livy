@@ -33,7 +33,7 @@ import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessB
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class BatchRecoveryMetadata(
     id: Int,
-    name: String,
+    name: Option[String],
     appId: Option[String],
     appTag: String,
     owner: String,
@@ -46,7 +46,7 @@ object BatchSession extends Logging {
 
   def create(
       id: Int,
-      name: String,
+      name: Option[String],
       request: CreateBatchRequest,
       livyConf: LivyConf,
       owner: String,
@@ -126,7 +126,7 @@ object BatchSession extends Logging {
 
 class BatchSession(
     id: Int,
-    name: String,
+    name: Option[String],
     appTag: String,
     initialState: SessionState,
     livyConf: LivyConf,
@@ -140,18 +140,24 @@ class BatchSession(
   protected implicit def executor: ExecutionContextExecutor = ExecutionContext.global
 
   private[this] var _state: SessionState = initialState
-  private val app = sparkApp(this)
+
+  private var app: Option[SparkApp] = None
 
   override def state: SessionState = _state
 
-  override def logLines(): IndexedSeq[String] = app.log()
+  override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(IndexedSeq.empty[String])
+
+  override def start(): Unit = {
+    app = Option(sparkApp(this))
+  }
 
   override def stopSession(): Unit = {
-    app.kill()
+    app.foreach(_.kill())
   }
 
   override def appIdKnown(appId: String): Unit = {
-    _appId = Option(appId)
+    _appId = Option(
+      appId)
     sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
   }
 

@@ -205,14 +205,14 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
   }
 
   def startBatch(
-      name: String,
+      name: Option[String],
       file: String,
       className: Option[String],
       args: List[String],
       sparkConf: Map[String, String]): BatchSession = {
     val r = new CreateBatchRequest()
     r.file = file
-    r.name = Option(name)
+    r.name = name
     r.className = className
     r.args = args
     r.conf = Map("spark.yarn.maxAppAttempts" -> "1") ++ sparkConf
@@ -222,14 +222,14 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
   }
 
   def startSession(
-      name: String,
+      name: Option[String],
       kind: Kind,
       sparkConf: Map[String, String],
       heartbeatTimeoutInSecond: Int): InteractiveSession = {
     val r = new CreateInteractiveRequest()
     r.kind = kind
     r.conf = sparkConf
-    r.name = Option(name)
+    r.name = name
     r.heartbeatTimeoutInSecond = heartbeatTimeoutInSecond
 
     val id = start(INTERACTIVE_TYPE, mapper.writeValueAsString(r))

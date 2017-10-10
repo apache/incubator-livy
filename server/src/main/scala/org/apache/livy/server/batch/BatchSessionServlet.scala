@@ -27,7 +27,7 @@ import org.apache.livy.utils.AppInfo
 
 case class BatchSessionView(
   id: Long,
-  name: String,
+  name: Option[String],
   state: String,
   appId: Option[String],
   appInfo: AppInfo,
@@ -45,22 +45,7 @@ class BatchSessionServlet(
     val createRequest = bodyAs[CreateBatchRequest](req)
     val proxyUser = checkImpersonation(createRequest.proxyUser, req)
     val sessionId = sessionManager.nextId()
-    val sessionName: String = createRequest.name match {
-      case Some(name) =>
-        if (sessionManager.get(name).isEmpty)
-          name
-        else {
-          // this does NOT guarantee that by the time this session is ready to be registered in
-          // sessionManager, another with the same name is not registered. But in most cases,
-          // it prevents Livy from submitting applications to Spark.
-          val msg = s"Session $name already exists! " +
-            s"Choose a different name or delete the existing session."
-          throw new IllegalArgumentException(msg)
-        }
-      case None =>
-        s"batch-$sessionId"
-    }
-
+    val sessionName = createRequest.name
     BatchSession.create(
       sessionId, sessionName, createRequest, livyConf, remoteUser(req), proxyUser, sessionStore)
   }

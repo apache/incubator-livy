@@ -54,19 +54,7 @@ class InteractiveSessionServlet(
     val createRequest = bodyAs[CreateInteractiveRequest](req)
     val proxyUser = checkImpersonation(createRequest.proxyUser, req)
     val sessionId: Int = sessionManager.nextId()
-    val sessionName: String = createRequest.name match {
-      case Some(name) if sessionManager.get(name).isEmpty =>
-        name
-      case Some(name) =>
-        // this does NOT guarantee that by the time this session is ready to be registered in
-        // sessionManager, another with the same name is not registered. But in most cases,
-        // it prevents Livy from submitting applications to Spark.
-        val msg = s"Session $name already exists! " +
-          s"Choose a different name or delete the existing session."
-        throw new IllegalArgumentException(msg)
-      case None =>
-        s"INTERACTIVE-SESSION-$sessionId"
-    }
+    val sessionName = createRequest.name
     InteractiveSession.create(
       sessionId,
       sessionName,
@@ -95,7 +83,7 @@ class InteractiveSessionServlet(
         Nil
       }
 
-    new SessionInfo(session.id, session.name, session.appId.orNull, session.owner,
+    new SessionInfo(session.id, session.name.orNull, session.appId.orNull, session.owner,
       session.proxyUser.orNull, session.state.toString, session.kind.toString,
       session.appInfo.asJavaMap, logs.asJava)
   }
