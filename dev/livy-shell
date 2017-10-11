@@ -43,6 +43,9 @@ except ImportError:
   print "Unable to import 'requests' module, which is required by livy-shell."
   sys.exit(1)
 
+class ControlCInterrupt(Exception):
+  pass
+
 def check(condition, msg, *args):
   if not condition:
     if args:
@@ -148,15 +151,17 @@ def monitor_statement(sid, s):
 def run_shell(sid, session_kind):
   prompt = "{} ({}) > ".format(session_kind, sid)
   def ctrl_c_handler(signal, frame):
-    message("Please type quit() to exit the livy shell.")
-    sys.stdout.write(prompt)
-    sys.stdout.flush()
+    message("\nPlease type quit() to exit the livy shell.")
+    raise ControlCInterrupt()
   signal.signal(signal.SIGINT, ctrl_c_handler)
 
   while True:
-    cmd = raw_input(prompt)
-    if cmd == "quit()":
-      break
+    try:
+      cmd = raw_input(prompt)
+      if cmd == "quit()":
+        break
+    except ControlCInterrupt:
+      continue
 
     statement = post("/sessions/%d/statements" % (sid, ), { 'code' : cmd })
     monitor_statement(sid, statement)
