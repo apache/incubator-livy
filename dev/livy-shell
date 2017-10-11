@@ -15,17 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Very bare bones shell for driving a Livy session. Usage:
-#
-#   livy-shell url [option=value ...]
-#
-# Options are set directly in the session creation request, so they must match the names of fields
-# in the CreateInteractiveRequest structure. Option values should be python-like objects (should be
-# parseable by python's "eval" function; naked strings are allowed). For example:
-#
-#   kind=spark
-#   jars=[ '/foo.jar', '/bar.jar' ]
-#   conf={ foo : bar, 'spark.option' : opt_value }
+# Very bare bones shell for driving a Livy session. Run livy-shell -h for usage
+# information.
 #
 # By default, a Spark (Scala) session is created.
 #
@@ -180,7 +171,7 @@ def valid_extra_arg(s):
 parser = argparse.ArgumentParser(description="A REPL for connecting to Livy.")
 parser.add_argument("livy_url", type=str, help="The full URL to the Livy server.")
 parser.add_argument("--enable_kerberos", action="store_true", help="Enable kerberos authentication when communicating with Livy.")
-parser.add_argument("--option", type=valid_extra_arg, action="append", default=[], help="Additional options to send when creating the session in Livy. Should be in the form 'key=value'.")
+parser.add_argument("--option", type=valid_extra_arg, action="append", default=[], help="Additional options to send when creating the session in Livy. Should be in the form 'key=value', for example --option kind=pyspark.")
 args = parser.parse_args()
 
 url = urlparse.urlparse(args.livy_url)
