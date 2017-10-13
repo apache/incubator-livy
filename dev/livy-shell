@@ -37,14 +37,10 @@ import sys
 import time
 import urlparse
 
-try:
-  import requests
-except ImportError:
-  print "Unable to import 'requests' module, which is required by livy-shell."
-  sys.exit(1)
 
 class ControlCInterrupt(Exception):
   pass
+
 
 def check(condition, msg, *args):
   if not condition:
@@ -57,7 +53,14 @@ def check(condition, msg, *args):
 def message(msg, *args):
   if args:
     msg = msg % args
-  print msg
+  print(msg)
+
+
+try:
+  import requests
+except ImportError:
+  message("Unable to import 'requests' module, which is required by livy-shell.")
+  sys.exit(1)
 
 
 class LiteralDict(dict):
@@ -175,6 +178,7 @@ check(len(sys.argv) > 1, "Missing arguments.")
 
 url = urlparse.urlparse(sys.argv[1])
 sid = -1
+
 try:
   message("Creating new session...")
   session = create_session()
