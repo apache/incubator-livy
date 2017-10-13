@@ -69,7 +69,7 @@ class LiteralDict(dict):
 
 
 def request(method, uri, body):
-  kwargs = { 'headers': { 'Content-Type' : 'application/json' } }
+  kwargs = { 'headers': { 'Content-Type' : 'application/json', 'X-Requested-By': 'livy' } }
   if body:
     kwargs['json'] = body
   resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), **kwargs)
