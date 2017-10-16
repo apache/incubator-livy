@@ -104,9 +104,9 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
           // info(s"sessionNames = ${sessionsByName.keys.mkString}")
           sessionsByName.put(sessionName, session)
         }
-        sessions.put(session.id, session)
-        session.start()
       }
+      sessions.put(session.id, session)
+      session.start()
     }
     session
   }

@@ -28,9 +28,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.security.UserGroupInformation
 
-import org.apache.livy.LivyConf
-import org.apache.livy.Logging
-import org.apache.livy.Utils
+import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.utils.AppInfo
 
 object Session {

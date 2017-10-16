@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletRequest
 import org.scalatra._
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
 
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.sessions.{Session, SessionManager}

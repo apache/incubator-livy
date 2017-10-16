@@ -56,6 +56,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
 
       val session = mock[InteractiveSession]
       when(session.kind).thenReturn(Spark())
+      when(session.name).thenReturn(None)
       when(session.appId).thenReturn(None)
       when(session.appInfo).thenReturn(AppInfo())
       when(session.logLines()).thenReturn(IndexedSeq())

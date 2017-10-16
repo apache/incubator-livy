@@ -95,6 +95,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       val sessionId = 24
       val session = mock[BatchSession]
       when(session.id).thenReturn(sessionId)
+      when(session.name).thenReturn(None)
       when(session.stop()).thenReturn(Future {})
       when(session.lastActivity).thenReturn(System.nanoTime())
 
@@ -107,6 +108,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       val sessionId = 24
       val session = mock[InteractiveSession]
       when(session.id).thenReturn(sessionId)
+      when(session.name).thenReturn(None)
       when(session.stop()).thenReturn(Future {})
       when(session.lastActivity).thenReturn(System.nanoTime())
 
@@ -155,6 +157,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
     def mockSession(id: Int): BatchSession = {
       val session = mock[BatchSession]
       when(session.id).thenReturn(id)
+      when(session.name).thenReturn(None)
       when(session.stop()).thenReturn(Future {})
       when(session.lastActivity).thenReturn(System.nanoTime())
 
