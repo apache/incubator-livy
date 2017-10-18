@@ -26,6 +26,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 import org.apache.spark.{SparkConf, SparkContext}
 import org.json4s.jackson.JsonMethods.{compact, render}
@@ -90,24 +91,29 @@ class Session(
     entries.sc().sc
   }
 
-  private[repl] def interpreter(kind: Kind): Interpreter = interpGroup.synchronized {
+  private[repl] def interpreter(kind: Kind): Option[Interpreter] = interpGroup.synchronized {
     if (interpGroup.contains(kind)) {
-      interpGroup(kind)
+      Some(interpGroup(kind))
     } else {
-      require(entries != null,
-        "SparkEntries should not be null when lazily initialize other interpreters.")
+      try {
+        require(entries != null,
+          "SparkEntries should not be null when lazily initialize other interpreters.")
 
-      val interp = kind match {
-        case Spark() =>
-          // This should never be touched here.
-          throw new IllegalStateException("SparkInterpreter should not be lazily created.")
-        case PySpark() => PythonInterpreter(sparkConf, entries)
-        case SparkR() => SparkRInterpreter(sparkConf, entries)
+        val interp = kind match {
+          case Spark() =>
+            // This should never be touched here.
+            throw new IllegalStateException("SparkInterpreter should not be lazily created.")
+          case PySpark() => PythonInterpreter(sparkConf, entries)
+          case SparkR() => SparkRInterpreter(sparkConf, entries)
+        }
+        interp.start()
+        interpGroup(kind) = interp
+        Some(interp)
+      } catch {
+        case NonFatal(e) =>
+          warn(s"Fail to start interpreter $kind", e)
+          None
       }
-      interp.start()
-      interpGroup(kind) = interp
-
-      interp
     }
   }
 
@@ -171,8 +177,7 @@ class Session(
 
   def complete(code: String, codeType: String, cursor: Int): Array[String] = {
     val tpe = Kind(codeType)
-    val interp = interpreter(tpe)
-    interp.complete(code, cursor)
+    interpreter(tpe).map { _.complete(code, cursor) }.getOrElse(Array.empty)
   }
 
   def cancel(statementId: Int): Unit = {
@@ -251,7 +256,9 @@ class Session(
     stateChangedCallback(newState)
   }
 
-  private def executeCode(interp: Interpreter, executionCount: Int, code: String): String = {
+  private def executeCode(interp: Option[Interpreter],
+     executionCount: Int,
+     code: String): String = {
     changeState(SessionState.Busy())
 
     def transitToIdle() = {
@@ -261,52 +268,61 @@ class Session(
       }
     }
 
-    val resultInJson = try {
-      interp.execute(code) match {
-        case Interpreter.ExecuteSuccess(data) =>
-          transitToIdle()
+    val resultInJson = interp.map { i =>
+      try {
+        i.execute(code) match {
+          case Interpreter.ExecuteSuccess(data) =>
+            transitToIdle()
 
-          (STATUS -> OK) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (DATA -> data)
+            (STATUS -> OK) ~
+              (EXECUTION_COUNT -> executionCount) ~
+              (DATA -> data)
 
-        case Interpreter.ExecuteIncomplete() =>
+          case Interpreter.ExecuteIncomplete() =>
+            transitToIdle()
+
+            (STATUS -> ERROR) ~
+              (EXECUTION_COUNT -> executionCount) ~
+              (ENAME -> "Error") ~
+              (EVALUE -> "incomplete statement") ~
+              (TRACEBACK -> Seq.empty[String])
+
+          case Interpreter.ExecuteError(ename, evalue, traceback) =>
+            transitToIdle()
+
+            (STATUS -> ERROR) ~
+              (EXECUTION_COUNT -> executionCount) ~
+              (ENAME -> ename) ~
+              (EVALUE -> evalue) ~
+              (TRACEBACK -> traceback)
+
+          case Interpreter.ExecuteAborted(message) =>
+            changeState(SessionState.Error())
+
+            (STATUS -> ERROR) ~
+              (EXECUTION_COUNT -> executionCount) ~
+              (ENAME -> "Error") ~
+              (EVALUE -> f"Interpreter died:\n$message") ~
+              (TRACEBACK -> Seq.empty[String])
+        }
+      } catch {
+        case e: Throwable =>
+          error("Exception when executing code", e)
+
           transitToIdle()
 
           (STATUS -> ERROR) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (ENAME -> "Error") ~
-          (EVALUE -> "incomplete statement") ~
-          (TRACEBACK -> Seq.empty[String])
-
-        case Interpreter.ExecuteError(ename, evalue, traceback) =>
-          transitToIdle()
-
-          (STATUS -> ERROR) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (ENAME -> ename) ~
-          (EVALUE -> evalue) ~
-          (TRACEBACK -> traceback)
-
-        case Interpreter.ExecuteAborted(message) =>
-          changeState(SessionState.Error())
-
-          (STATUS -> ERROR) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (ENAME -> "Error") ~
-          (EVALUE -> f"Interpreter died:\n$message") ~
-          (TRACEBACK -> Seq.empty[String])
+            (EXECUTION_COUNT -> executionCount) ~
+            (ENAME -> f"Internal Error: ${e.getClass.getName}") ~
+            (EVALUE -> e.getMessage) ~
+            (TRACEBACK -> Seq.empty[String])
       }
-    } catch {
-      case e: Throwable =>
-        error("Exception when executing code", e)
-
-        transitToIdle()
-
-        (STATUS -> ERROR) ~
+    }.getOrElse {
+      transitToIdle()
+      (STATUS -> ERROR) ~
         (EXECUTION_COUNT -> executionCount) ~
-        (ENAME -> f"Internal Error: ${e.getClass.getName}") ~
-        (EVALUE -> e.getMessage) ~
+        (ENAME -> "InterpreterError") ~
+        (EVALUE -> "Fail to start interpreter") ~
         (TRACEBACK -> Seq.empty[String])
     }
 
