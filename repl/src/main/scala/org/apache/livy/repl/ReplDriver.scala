@@ -102,15 +102,16 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
   }
 
   override protected def addFile(path: String): Unit = {
-    if (!ClientConf.TEST_MODE && session.interpreter(PySpark()).isDefined) {
-      session.interpreter(PySpark()).get.asInstanceOf[PythonInterpreter].addFile(path)
+    if (!ClientConf.TEST_MODE) {
+      session.interpreter(PySpark()).foreach { _.asInstanceOf[PythonInterpreter].addFile(path) }
     }
     super.addFile(path)
   }
 
   override protected def addJarOrPyFile(path: String): Unit = {
-    if (!ClientConf.TEST_MODE && session.interpreter(PySpark()).isDefined) {
-      session.interpreter(PySpark()).get.asInstanceOf[PythonInterpreter].addPyFile(this, conf, path)
+    if (!ClientConf.TEST_MODE) {
+      session.interpreter(PySpark())
+        .foreach { _.asInstanceOf[PythonInterpreter].addPyFile(this, conf, path) }
     }
     super.addJarOrPyFile(path)
   }
