@@ -160,8 +160,8 @@ def run_shell(sid, session_kind):
 
 
 def valid_extra_arg(s):
-    if not s.find('=') > 0:
-        raise argparse.ArgumentTypeError
+    if not s.find("=") > 0:
+        raise argparse.ArgumentTypeError("All --option values must be in the form <key>=<value>. The provided value is invalid: {}.".format(s))
     return s
 
 #
