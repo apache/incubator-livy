@@ -50,8 +50,11 @@ class ScalaClientTest extends FunSuite
 
   after {
     if (client != null) {
-      client.stop(true)
-      client = null
+      try {
+        client.stop(true)
+      } finally {
+        client = null
+      }
     }
   }
 
