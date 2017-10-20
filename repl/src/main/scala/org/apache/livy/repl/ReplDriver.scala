@@ -93,24 +93,25 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
 
   override protected def createWrapper(msg: BaseProtocol.BypassJobRequest): BypassJobWrapper = {
     Kind(msg.jobType) match {
-      case PySpark() =>
+      case PySpark() if session.interpreter(PySpark()).isDefined =>
         new BypassJobWrapper(this, msg.id,
           new BypassPySparkJob(msg.serializedJob,
-            session.interpreter(PySpark()).asInstanceOf[PythonInterpreter]))
+            session.interpreter(PySpark()).get.asInstanceOf[PythonInterpreter]))
       case _ => super.createWrapper(msg)
     }
   }
 
   override protected def addFile(path: String): Unit = {
     if (!ClientConf.TEST_MODE) {
-      session.interpreter(PySpark()).asInstanceOf[PythonInterpreter].addFile(path)
+      session.interpreter(PySpark()).foreach { _.asInstanceOf[PythonInterpreter].addFile(path) }
     }
     super.addFile(path)
   }
 
   override protected def addJarOrPyFile(path: String): Unit = {
     if (!ClientConf.TEST_MODE) {
-      session.interpreter(PySpark()).asInstanceOf[PythonInterpreter].addPyFile(this, conf, path)
+      session.interpreter(PySpark())
+        .foreach { _.asInstanceOf[PythonInterpreter].addPyFile(this, conf, path) }
     }
     super.addJarOrPyFile(path)
   }

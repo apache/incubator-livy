@@ -91,7 +91,7 @@ class Spark2JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll wit
   }
 
   private def waitFor[T](future: JFuture[T]): T = {
-    future.get(30, TimeUnit.SECONDS)
+    future.get(60, TimeUnit.SECONDS)
   }
 
   private def sessionList(): SessionList = {

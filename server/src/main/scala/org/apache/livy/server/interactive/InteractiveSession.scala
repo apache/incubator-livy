@@ -28,7 +28,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.Random
+import scala.util.{Random, Try}
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.google.common.annotations.VisibleForTesting
@@ -179,11 +179,15 @@ object InteractiveSession extends Logging {
 
     def findSparkRArchive(): Option[String] = {
       Option(livyConf.get(RSCConf.Entry.SPARKR_PACKAGE.key())).orElse {
-        sys.env.get("SPARK_HOME").map { case sparkHome =>
+        sys.env.get("SPARK_HOME").flatMap { case sparkHome =>
           val path = Seq(sparkHome, "R", "lib", "sparkr.zip").mkString(File.separator)
           val rArchivesFile = new File(path)
-          require(rArchivesFile.exists(), "sparkr.zip not found; cannot run sparkr application.")
-          rArchivesFile.getAbsolutePath()
+          if (rArchivesFile.exists()) {
+            Some(rArchivesFile.getAbsolutePath)
+          } else {
+            warn("sparkr.zip not found; cannot start R interpreter.")
+            None
+          }
         }
       }
     }
@@ -252,17 +256,22 @@ object InteractiveSession extends Logging {
           sys.env.get("SPARK_HOME") .map { case sparkHome =>
             val pyLibPath = Seq(sparkHome, "python", "lib").mkString(File.separator)
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
-            require(pyArchivesFile.exists(),
-              "pyspark.zip not found; cannot run pyspark application in YARN mode.")
+            val py4jFile = Try {
+              Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
+                .iterator()
+                .next()
+                .toFile
+            }.toOption
 
-            val py4jFile = Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
-              .iterator()
-              .next()
-              .toFile
-
-            require(py4jFile.exists(),
-              "py4j-*-src.zip not found; cannot run pyspark application in YARN mode.")
-            Seq(pyArchivesFile.getAbsolutePath, py4jFile.getAbsolutePath)
+            if (!pyArchivesFile.exists()) {
+              warn("pyspark.zip not found; cannot start pyspark interpreter.")
+              Seq.empty
+            } else if (py4jFile.isEmpty || !py4jFile.get.exists()) {
+              warn("py4j-*-src.zip not found; can start pyspark interpreter.")
+              Seq.empty
+            } else {
+              Seq(pyArchivesFile.getAbsolutePath, py4jFile.get.getAbsolutePath)
+            }
           }.getOrElse(Seq())
         }
     }
@@ -297,11 +306,15 @@ object InteractiveSession extends Logging {
     }
 
     val pySparkFiles = if (!LivyConf.TEST_MODE) {
-      builderProperties.put(SPARK_YARN_IS_PYTHON, "true")
       findPySparkArchives()
     } else {
       Nil
     }
+
+    if (pySparkFiles.nonEmpty) {
+      builderProperties.put(SPARK_YARN_IS_PYTHON, "true")
+    }
+
     mergeConfList(pySparkFiles, LivyConf.SPARK_PY_FILES)
 
     val sparkRArchive = if (!LivyConf.TEST_MODE) findSparkRArchive() else None
