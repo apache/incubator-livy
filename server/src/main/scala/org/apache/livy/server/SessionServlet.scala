@@ -121,7 +121,8 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   def shouldRejectCreateSession(): Boolean = {
-    val creatingSession = RSCClientFactory.interactive_child_process + SessionServlet.batch_child_process
+    val creatingSession = RSCClientFactory.interactive_child_process +
+      SessionServlet.batch_child_process
     creatingSession > livyConf.getInt(LivyConf.MAX_CREATE_SESSION)
   }
 
