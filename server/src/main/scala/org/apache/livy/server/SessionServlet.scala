@@ -24,10 +24,13 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.rsc.RSCClientFactory
 import org.apache.livy.sessions.{Session, SessionManager}
 import org.apache.livy.sessions.Session.RecoveryMetadata
 
-object SessionServlet extends Logging
+object SessionServlet extends Logging {
+  var batch_child_process = 0
+}
 
 /**
  * Base servlet for session management. All helper methods in this class assume that the session
@@ -117,14 +120,23 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     }
   }
 
+  def shouldRejectCreateSession(): Boolean = {
+    val creatingSession = RSCClientFactory.interactive_child_process + SessionServlet.batch_child_process
+    creatingSession > livyConf.getInt(LivyConf.MAX_CREATE_SESSION)
+  }
+
   post("/") {
-    val session = sessionManager.register(createSession(request))
-    // Because it may take some time to establish the session, update the last activity
-    // time before returning the session info to the client.
-    session.recordActivity()
-    Created(clientSessionView(session, request),
-      headers = Map("Location" ->
-        (getRequestPathInfo(request) + url(getSession, "id" -> session.id.toString))))
+    if (shouldRejectCreateSession) {
+      BadRequest("Reject, too more creating sessions!")
+    } else {
+      val session = sessionManager.register(createSession(request))
+      // Because it may take some time to establish the session, update the last activity
+      // time before returning the session info to the client.
+      session.recordActivity()
+      Created(clientSessionView(session, request),
+        headers = Map("Location" ->
+          (getRequestPathInfo(request) + url(getSession, "id" -> session.id.toString))))
+    }
   }
 
   private def getRequestPathInfo(request: HttpServletRequest): String = {
