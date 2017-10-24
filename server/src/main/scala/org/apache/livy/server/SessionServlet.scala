@@ -18,6 +18,7 @@
 package org.apache.livy.server
 
 import javax.servlet.http.HttpServletRequest
+import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatra._
 import scala.concurrent._
@@ -29,7 +30,7 @@ import org.apache.livy.sessions.{Session, SessionManager}
 import org.apache.livy.sessions.Session.RecoveryMetadata
 
 object SessionServlet extends Logging {
-  var batch_child_process = 0
+  var batchSessionChildProcess = new AtomicInteger
 }
 
 /**
@@ -121,14 +122,14 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   def shouldRejectCreateSession(): Boolean = {
-    val creatingSession = RSCClientFactory.interactive_child_process +
-      SessionServlet.batch_child_process
+    val creatingSession = RSCClientFactory.interactiveSessionChildProcess.get() +
+      SessionServlet.batchSessionChildProcess.get()
     creatingSession > livyConf.getInt(LivyConf.MAX_CREATE_SESSION)
   }
 
   post("/") {
     if (shouldRejectCreateSession) {
-      BadRequest("Reject, too more creating sessions!")
+      BadRequest("Reject, too many sessions are being created!")
     } else {
       val session = sessionManager.register(createSession(request))
       // Because it may take some time to establish the session, update the last activity

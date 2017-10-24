@@ -36,7 +36,7 @@ public final class RSCClientFactory implements LivyClientFactory {
 
   private final AtomicInteger refCount = new AtomicInteger();
   private RpcServer server = null;
-  public static int interactive_child_process = 0;
+  public static AtomicInteger interactiveSessionChildProcess = new AtomicInteger();
 
   /**
    * Creates a local Livy client if the URI has the "rsc" scheme.
