@@ -17,8 +17,8 @@
 
 package org.apache.livy.server
 
-import javax.servlet.http.HttpServletRequest
 import java.util.concurrent.atomic.AtomicInteger
+import javax.servlet.http.HttpServletRequest
 
 import org.scalatra._
 import scala.concurrent._
