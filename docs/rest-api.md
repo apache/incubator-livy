@@ -57,7 +57,7 @@ Returns all the active interactive sessions.
     <td>int</td>
   </tr>
   <tr>
-    <td>size</td>
+    <td>total</td>
     <td>Number of sessions to fetch</td>
     <td>int</td>
   </tr>
