@@ -87,7 +87,7 @@ object BatchSession extends Logging {
       val sparkSubmit = builder.start(Some(file), request.args)
 
       Utils.startDaemonThread(s"ContextLauncher-$id") {
-        SessionServlet.batchSessionChildProcess.incrementAndGet()
+        SessionServlet.batchSessionChildProcesses.incrementAndGet()
         try {
           sparkSubmit.waitFor() match {
             case 0 =>
@@ -95,7 +95,7 @@ object BatchSession extends Logging {
               warn(s"spark-submit exited with code $exitCode")
           }
         } finally {
-          SessionServlet.batchSessionChildProcess.decrementAndGet()
+          SessionServlet.batchSessionChildProcesses.decrementAndGet()
         }
       }
       SparkApp.create(appTag, None, Option(sparkSubmit), livyConf, Option(s))

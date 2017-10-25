@@ -30,7 +30,7 @@ import org.apache.livy.sessions.{Session, SessionManager}
 import org.apache.livy.sessions.Session.RecoveryMetadata
 
 object SessionServlet extends Logging {
-  var batchSessionChildProcess = new AtomicInteger
+  val batchSessionChildProcesses = new AtomicInteger
 }
 
 /**
@@ -121,15 +121,15 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     }
   }
 
-  def shouldRejectCreateSession(): Boolean = {
-    val creatingSession = RSCClientFactory.interactiveSessionChildProcess.get() +
-      SessionServlet.batchSessionChildProcess.get()
-    creatingSession > livyConf.getInt(LivyConf.MAX_CREATE_SESSION)
+  def tooManySessions(): Boolean = {
+    val totalChildProceses = RSCClientFactory.interactiveSessionChildProcesses.get() +
+      SessionServlet.batchSessionChildProcesses.get()
+    totalChildProceses > livyConf.getInt(LivyConf.MAX_CREATE_SESSION)
   }
 
   post("/") {
-    if (shouldRejectCreateSession) {
-      BadRequest("Reject, too many sessions are being created!")
+    if (tooManySessions) {
+      BadRequest("Rejected, too many sessions are being created!")
     } else {
       val session = sessionManager.register(createSession(request))
       // Because it may take some time to establish the session, update the last activity
