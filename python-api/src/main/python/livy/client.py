@@ -335,7 +335,7 @@ class HttpClient(object):
                         headers = {'X-Requested-By': 'livy'}
                         self._conn.send_request("DELETE", session_uri,
                             headers=headers)
-                except:
+                except Exception:
                     raise Exception(traceback.format_exc())
                 self._stopped = True
 
