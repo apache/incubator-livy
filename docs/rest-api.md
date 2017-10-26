@@ -57,7 +57,7 @@ Returns all the active interactive sessions.
     <td>int</td>
   </tr>
   <tr>
-    <td>size</td>
+    <td>total</td>
     <td>Number of sessions to fetch</td>
     <td>int</td>
   </tr>
@@ -476,12 +476,12 @@ Gets the log lines from this batch.
   <tr>
     <td>from</td>
     <td>Offset</td>
-    <td>Offset</td>
+    <td>int</td>
   </tr>
   <tr>
     <td>size</td>
     <td>Max number of log lines to return</td>
-    <td>Offset</td>
+    <td>int</td>
   </tr>
 </table>
 
@@ -492,17 +492,17 @@ Gets the log lines from this batch.
   <tr>
     <td>id</td>
     <td>The batch id</td>
-    <td>id</td>
+    <td>int</td>
   </tr>
   <tr>
     <td>from</td>
     <td>Offset from start of log</td>
-    <td>id</td>
+    <td>int</td>
   </tr>
   <tr>
     <td>size</td>
     <td>Number of log lines</td>
-    <td>id</td>
+    <td>int</td>
   </tr>
   <tr>
     <td>log</td>
