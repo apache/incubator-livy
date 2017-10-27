@@ -28,7 +28,7 @@ import scala.concurrent.duration.Duration
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
 
-import org.apache.livy.Utils
+import org.apache.livy.{LivyConf, Utils}
 import org.apache.livy.server.{AccessManager, BaseSessionServletSpec}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{BatchSessionManager, SessionState}
@@ -79,6 +79,11 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
         val batch = servlet.sessionManager.get(0)
         batch should be (defined)
       }
+
+      val tmp = servlet.livyConf.getInt(LivyConf.MAX_CREATING_SESSION)
+      servlet.livyConf.set(LivyConf.MAX_CREATING_SESSION, 1)
+      jpost[Map[String, Any]]("/", createRequest, 400) { data => None }
+      servlet.livyConf.set(LivyConf.MAX_CREATING_SESSION, tmp)
 
       // Wait for the process to finish.
       {

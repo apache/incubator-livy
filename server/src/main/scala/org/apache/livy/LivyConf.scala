@@ -149,7 +149,7 @@ object LivyConf {
   // How long a finished session state will be kept in memory
   val SESSION_STATE_RETAIN_TIME = Entry("livy.server.session.state-retain.sec", "600s")
   // Max creating session in livyServer
-  val MAX_CREATE_SESSION = Entry("livy.server.max.create.session", 100)
+  val MAX_CREATING_SESSION = Entry("livy.server.max.creating.session", 100)
 
   val SPARK_MASTER = "spark.master"
   val SPARK_DEPLOY_MODE = "spark.submit.deployMode"

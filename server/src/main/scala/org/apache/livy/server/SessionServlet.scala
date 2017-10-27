@@ -17,7 +17,6 @@
 
 package org.apache.livy.server
 
-import java.util.concurrent.atomic.AtomicInteger
 import javax.servlet.http.HttpServletRequest
 
 import org.scalatra._
@@ -26,12 +25,12 @@ import scala.concurrent.duration._
 
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.rsc.RSCClientFactory
+import org.apache.livy.server.batch.BatchSession
 import org.apache.livy.sessions.{Session, SessionManager}
 import org.apache.livy.sessions.Session.RecoveryMetadata
 
-object SessionServlet extends Logging {
-  val batchSessionChildProcesses = new AtomicInteger
-}
+
+object SessionServlet extends Logging
 
 /**
  * Base servlet for session management. All helper methods in this class assume that the session
@@ -42,7 +41,7 @@ object SessionServlet extends Logging {
  */
 abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     private[livy] val sessionManager: SessionManager[S, R],
-    livyConf: LivyConf,
+    val livyConf: LivyConf,
     accessManager: AccessManager)
   extends JsonServlet
   with ApiVersioningSupport
@@ -123,8 +122,8 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
 
   def tooManySessions(): Boolean = {
     val totalChildProceses = RSCClientFactory.interactiveSessionChildProcesses.get() +
-      SessionServlet.batchSessionChildProcesses.get()
-    totalChildProceses > livyConf.getInt(LivyConf.MAX_CREATE_SESSION)
+      BatchSession.batchSessionChildProcesses.get()
+    totalChildProceses >= livyConf.getInt(LivyConf.MAX_CREATING_SESSION)
   }
 
   post("/") {

@@ -18,6 +18,7 @@
 package org.apache.livy.server.batch
 
 import java.lang.ProcessBuilder.Redirect
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.Random
@@ -43,6 +44,7 @@ case class BatchRecoveryMetadata(
 
 object BatchSession extends Logging {
   val RECOVERY_SESSION_TYPE = "batch"
+  val batchSessionChildProcesses = new AtomicInteger
 
   def create(
       id: Int,
@@ -87,7 +89,7 @@ object BatchSession extends Logging {
       val sparkSubmit = builder.start(Some(file), request.args)
 
       Utils.startDaemonThread(s"ContextLauncher-$id") {
-        SessionServlet.batchSessionChildProcesses.incrementAndGet()
+        BatchSession.batchSessionChildProcesses.incrementAndGet()
         try {
           sparkSubmit.waitFor() match {
             case 0 =>
@@ -95,7 +97,7 @@ object BatchSession extends Logging {
               warn(s"spark-submit exited with code $exitCode")
           }
         } finally {
-          SessionServlet.batchSessionChildProcesses.decrementAndGet()
+          BatchSession.batchSessionChildProcesses.decrementAndGet()
         }
       }
       SparkApp.create(appTag, None, Option(sparkSubmit), livyConf, Option(s))
