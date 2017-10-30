@@ -183,4 +183,27 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     view.log shouldEqual log.asJava
   }
 
+  it("should failed create session when too many creating session ") {
+    jget[Map[String, Any]]("/") { data =>
+      data("sessions") should equal(Seq())
+    }
+
+    jpost[Map[String, Any]]("/", createRequest()) { data =>
+      header("Location") should equal("/0")
+      data("id") should equal(0)
+
+      val session = servlet.sessionManager.get(0)
+      session should be(defined)
+    }
+
+    servlet.livyConf.set(LivyConf.MAX_CREATING_SESSION, 1)
+    jpost[Map[String, Any]]("/", createRequest(), HttpServletResponse.SC_BAD_REQUEST) { data => None}
+
+    jdelete[Map[String, Any]]("/0") { data =>
+      data should equal (Map("msg" -> "deleted"))
+
+      val session = servlet.sessionManager.get(0)
+      session should not be defined
+    }
+  }
 }

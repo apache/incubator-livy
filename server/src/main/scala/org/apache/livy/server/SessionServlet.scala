@@ -29,7 +29,6 @@ import org.apache.livy.server.batch.BatchSession
 import org.apache.livy.sessions.{Session, SessionManager}
 import org.apache.livy.sessions.Session.RecoveryMetadata
 
-
 object SessionServlet extends Logging
 
 /**

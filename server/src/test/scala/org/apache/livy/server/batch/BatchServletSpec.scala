@@ -80,11 +80,6 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
         batch should be (defined)
       }
 
-      val tmp = servlet.livyConf.getInt(LivyConf.MAX_CREATING_SESSION)
-      servlet.livyConf.set(LivyConf.MAX_CREATING_SESSION, 1)
-      jpost[Map[String, Any]]("/", createRequest, 400) { data => None }
-      servlet.livyConf.set(LivyConf.MAX_CREATING_SESSION, tmp)
-
       // Wait for the process to finish.
       {
         val batch = servlet.sessionManager.get(0).get
@@ -151,6 +146,29 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
       view.appInfo shouldEqual appInfo
       view.log shouldEqual log
     }
-  }
 
+    it("should failed create session when too many creating session") {
+      val createRequest = new CreateBatchRequest()
+      createRequest.file = script.toString
+      createRequest.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
+
+      jpost[Map[String, Any]]("/", createRequest) { data =>
+        header("Location") should equal("/2")
+        data("id") should equal (2)
+
+        val batch = servlet.sessionManager.get(2)
+        batch should be (defined)
+      }
+
+      servlet.livyConf.set(LivyConf.MAX_CREATING_SESSION, 1)
+      jpost[Map[String, Any]]("/", createRequest, SC_BAD_REQUEST) { data => None }
+
+      jdelete[Map[String, Any]]("/2") { data =>
+        data should equal (Map("msg" -> "deleted"))
+
+        val batch = servlet.sessionManager.get(2)
+        batch should not be defined
+      }
+    }
+  }
 }
