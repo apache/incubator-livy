@@ -197,7 +197,9 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     }
 
     servlet.livyConf.set(LivyConf.MAX_CREATING_SESSION, 1)
-    jpost[Map[String, Any]]("/", createRequest(), HttpServletResponse.SC_BAD_REQUEST) { data => None}
+    jpost[Map[String, Any]]("/", createRequest(), HttpServletResponse.SC_BAD_REQUEST) { data =>
+      None
+    }
 
     jdelete[Map[String, Any]]("/0") { data =>
       data should equal (Map("msg" -> "deleted"))
