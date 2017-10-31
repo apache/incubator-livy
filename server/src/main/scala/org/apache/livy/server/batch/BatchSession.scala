@@ -44,7 +44,12 @@ case class BatchRecoveryMetadata(
 
 object BatchSession extends Logging {
   val RECOVERY_SESSION_TYPE = "batch"
-  val batchSessionChildProcesses = new AtomicInteger
+  // batch session child processes number
+  val bscpn = new AtomicInteger
+
+  def childProcesses(): AtomicInteger = {
+    bscpn
+  }
 
   def create(
       id: Int,
@@ -89,7 +94,7 @@ object BatchSession extends Logging {
       val sparkSubmit = builder.start(Some(file), request.args)
 
       Utils.startDaemonThread(s"ContextLauncher-$id") {
-        BatchSession.batchSessionChildProcesses.incrementAndGet()
+        childProcesses.incrementAndGet()
         try {
           sparkSubmit.waitFor() match {
             case 0 =>
@@ -97,7 +102,7 @@ object BatchSession extends Logging {
               warn(s"spark-submit exited with code $exitCode")
           }
         } finally {
-          BatchSession.batchSessionChildProcesses.decrementAndGet()
+          childProcesses.decrementAndGet()
         }
       }
       SparkApp.create(appTag, None, Option(sparkSubmit), livyConf, Option(s))

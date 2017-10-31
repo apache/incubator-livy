@@ -374,7 +374,7 @@ class ContextLauncher {
         @Override
         public void run() {
           try {
-            RSCClientFactory.interactiveSessionChildProcesses.incrementAndGet();
+            RSCClientFactory.childProcesses().incrementAndGet();
             int exitCode = child.waitFor();
             if (exitCode != 0) {
               LOG.warn("Child process exited with code {}.", exitCode);
@@ -387,7 +387,7 @@ class ContextLauncher {
           } catch (Exception e) {
             LOG.warn("Exception while waiting for child process.", e);
           } finally {
-            RSCClientFactory.interactiveSessionChildProcesses.decrementAndGet();
+            RSCClientFactory.childProcesses().decrementAndGet();
           }
         }
       };
