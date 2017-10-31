@@ -93,7 +93,7 @@ object BatchSession extends Logging {
       val file = resolveURIs(Seq(request.file), livyConf)(0)
       val sparkSubmit = builder.start(Some(file), request.args)
 
-      Utils.startDaemonThread(s"ContextLauncher-$id") {
+      Utils.startDaemonThread(s"batch-session-process-$id") {
         childProcesses.incrementAndGet()
         try {
           sparkSubmit.waitFor() match {
