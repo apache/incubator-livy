@@ -147,7 +147,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
       view.log shouldEqual log
     }
 
-    it("should failed create session when too many creating session") {
+    it("should fail session creation when max session creation is hit") {
       val createRequest = new CreateBatchRequest()
       createRequest.file = script.toString
       createRequest.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
