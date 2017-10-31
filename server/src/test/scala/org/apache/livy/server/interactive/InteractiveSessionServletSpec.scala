@@ -196,7 +196,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       session should be(defined)
     }
 
-    servlet.livyConf.set(LivyConf.MAX_CREATING_SESSION, 1)
+    servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 1)
     jpost[Map[String, Any]]("/", createRequest(), HttpServletResponse.SC_BAD_REQUEST) { data =>
       None
     }
