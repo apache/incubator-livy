@@ -17,12 +17,13 @@
 
 package org.apache.livy.server.interactive
 
+import java.io.FileWriter
+import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicInteger
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
-
 import org.json4s.jackson.Json4sScalaModule
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -30,11 +31,11 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.Entry
 import org.scalatest.mock.MockitoSugar.mock
-
 import org.apache.livy.{ExecuteRequest, LivyConf}
 import org.apache.livy.client.common.HttpMessages.SessionInfo
 import org.apache.livy.rsc.driver.{Statement, StatementState}
 import org.apache.livy.server.AccessManager
+import org.apache.livy.server.batch.CreateBatchRequest
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
 import org.apache.livy.utils.AppInfo
@@ -184,16 +185,31 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
   }
 
   it("should failed create session when too many creating session ") {
-    jget[Map[String, Any]]("/") { data =>
-      data("sessions") should equal(Seq())
+    val script: Path = {
+      val script = Files.createTempFile("livy-test", ".py")
+      script.toFile.deleteOnExit()
+      val writer = new FileWriter(script.toFile)
+      try {
+        writer.write(
+          """
+            |print "hello world"
+          """.stripMargin)
+      } finally {
+        writer.close()
+      }
+      script
     }
 
-    jpost[Map[String, Any]]("/", createRequest()) { data =>
-      header("Location") should equal("/0")
-      data("id") should equal(0)
+    val request = new CreateBatchRequest()
+    request.file = script.toString
+    request.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
 
-      val session = servlet.sessionManager.get(0)
-      session should be(defined)
+    jpost[Map[String, Any]]("/", request) { data =>
+      header("Location") should equal("/0")
+      data("id") should equal (0)
+
+      val batch = servlet.sessionManager.get(0)
+      batch should be (defined)
     }
 
     servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 1)
