@@ -24,6 +24,7 @@ import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
+
 import org.json4s.jackson.Json4sScalaModule
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -31,6 +32,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.Entry
 import org.scalatest.mock.MockitoSugar.mock
+
 import org.apache.livy.{ExecuteRequest, LivyConf}
 import org.apache.livy.client.common.HttpMessages.SessionInfo
 import org.apache.livy.rsc.driver.{Statement, StatementState}
