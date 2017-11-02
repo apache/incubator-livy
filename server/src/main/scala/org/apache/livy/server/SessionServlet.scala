@@ -120,6 +120,10 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   def tooManySessions(): Boolean = {
+    // scalastyle:off println
+    System.out.println("interProcesses:" + RSCClientFactory.childProcesses().get())
+    System.out.println("batchProcesses:" + BatchSession.childProcesses().get())
+    // scalastyle:on println
     val totalChildProceses = RSCClientFactory.childProcesses().get() +
       BatchSession.childProcesses.get()
     totalChildProceses >= livyConf.getInt(LivyConf.SESSION_MAX_CREATION)

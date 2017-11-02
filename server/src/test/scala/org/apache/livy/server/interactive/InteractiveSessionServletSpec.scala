@@ -17,8 +17,6 @@
 
 package org.apache.livy.server.interactive
 
-import java.io.FileWriter
-import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicInteger
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
@@ -187,34 +185,22 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
   }
 
   it("should failed create session when too many creating session ") {
-    val script: Path = {
-      val script = Files.createTempFile("livy-test", ".py")
-      script.toFile.deleteOnExit()
-      val writer = new FileWriter(script.toFile)
-      try {
-        writer.write(
-          """
-            |print "hello world"
-          """.stripMargin)
-      } finally {
-        writer.close()
-      }
-      script
+    jget[Map[String, Any]]("/") { data =>
+      data("sessions") should equal(Seq())
     }
 
-    val request = new CreateBatchRequest()
-    request.file = script.toString
-    request.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
-
-    jpost[Map[String, Any]]("/", request) { data =>
+    jpost[Map[String, Any]]("/", createRequest()) { data =>
       header("Location") should equal("/0")
       data("id") should equal (0)
 
-      val batch = servlet.sessionManager.get(0)
-      batch should be (defined)
+      val session = servlet.sessionManager.get(0)
+      session should be (defined)
     }
 
     servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 1)
+    // scalastyle:off println
+    System.out.println("tooManySessions:" + servlet.tooManySessions)
+    // scalastyle:on println
     jpost[Map[String, Any]]("/", createRequest(), HttpServletResponse.SC_BAD_REQUEST) { data =>
       None
     }
