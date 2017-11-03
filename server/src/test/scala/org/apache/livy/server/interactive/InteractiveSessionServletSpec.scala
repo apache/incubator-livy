@@ -21,21 +21,22 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 import scala.concurrent.Future
 
 import org.json4s.jackson.Json4sScalaModule
 import org.mockito.Matchers._
-import org.mockito.Mockito._
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.Entry
+import org.scalatest.concurrent.Eventually._
 import org.scalatest.mock.MockitoSugar.mock
 
 import org.apache.livy.{ExecuteRequest, LivyConf}
 import org.apache.livy.client.common.HttpMessages.SessionInfo
 import org.apache.livy.rsc.driver.{Statement, StatementState}
 import org.apache.livy.server.AccessManager
-import org.apache.livy.server.batch.CreateBatchRequest
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
 import org.apache.livy.utils.AppInfo
@@ -53,6 +54,8 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     private var statements = IndexedSeq[Statement]()
 
     override protected def createSession(req: HttpServletRequest): InteractiveSession = {
+      super.createSession(req)
+
       val statementCounter = new AtomicInteger()
 
       val session = mock[InteractiveSession]
@@ -184,20 +187,30 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     view.log shouldEqual log.asJava
   }
 
-  it("should failed create session when too many creating session ") {
-    jget[Map[String, Any]]("/") { data =>
-      data("sessions") should equal(Seq())
+  private def waitForIdle(id: Int): Unit = {
+    eventually(timeout(1 minute), interval(100 millis)) {
+      jget[SessionInfo](s"/$id") { status =>
+        status.state should be (SessionState.Idle().toString())
+      }
     }
+  }
 
-    jpost[Map[String, Any]]("/", createRequest()) { data =>
-      header("Location") should equal("/0")
-      data("id") should equal (0)
+  private def waitSession(): Unit = {
+    eventually(timeout(1 minute), interval(100 millis)) {
+      servlet.tooManySessions should be(true)
+    }
+  }
 
-      val session = servlet.sessionManager.get(0)
-      session should be (defined)
+  it("should failed create session when too many creating session ") {
+    var id = 1
+    jpost[SessionInfo]("/", createRequest(inProcess = false)) { data =>
+      id = data.id
     }
 
     servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 1)
+
+    waitSession
+
     // scalastyle:off println
     System.out.println("tooManySessions:" + servlet.tooManySessions)
     // scalastyle:on println
@@ -205,11 +218,6 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       None
     }
 
-    jdelete[Map[String, Any]]("/0") { data =>
-      data should equal (Map("msg" -> "deleted"))
-
-      val session = servlet.sessionManager.get(0)
-      session should not be defined
-    }
+    jdelete[Map[String, Any]](s"/${id}") { _ => }
   }
 }
