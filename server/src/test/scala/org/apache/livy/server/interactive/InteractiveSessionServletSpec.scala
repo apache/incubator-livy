@@ -187,14 +187,6 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     view.log shouldEqual log.asJava
   }
 
-  private def waitForIdle(id: Int): Unit = {
-    eventually(timeout(1 minute), interval(100 millis)) {
-      jget[SessionInfo](s"/$id") { status =>
-        status.state should be (SessionState.Idle().toString())
-      }
-    }
-  }
-
   private def waitSession(): Unit = {
     eventually(timeout(1 minute), interval(100 millis)) {
       servlet.tooManySessions should be(true)
@@ -210,10 +202,6 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 1)
 
     waitSession
-
-    // scalastyle:off println
-    System.out.println("tooManySessions:" + servlet.tooManySessions)
-    // scalastyle:on println
     jpost[Map[String, Any]]("/", createRequest(), HttpServletResponse.SC_BAD_REQUEST) { data =>
       None
     }
