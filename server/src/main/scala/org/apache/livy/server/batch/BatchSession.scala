@@ -45,7 +45,7 @@ case class BatchRecoveryMetadata(
 object BatchSession extends Logging {
   val RECOVERY_SESSION_TYPE = "batch"
   // batch session child processes number
-  val bscpn = new AtomicInteger
+  private val bscpn = new AtomicInteger
 
   def childProcesses(): AtomicInteger = {
     bscpn
