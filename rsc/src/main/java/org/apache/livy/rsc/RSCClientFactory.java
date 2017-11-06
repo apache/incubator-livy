@@ -37,7 +37,7 @@ public final class RSCClientFactory implements LivyClientFactory {
   private final AtomicInteger refCount = new AtomicInteger();
   private RpcServer server = null;
   // interactive session child processes number
-  private final static AtomicInteger iscpn = new AtomicInteger();
+  private static AtomicInteger iscpn = new AtomicInteger();
 
   public static AtomicInteger childProcesses() {
     return iscpn;
