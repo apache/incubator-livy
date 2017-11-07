@@ -18,14 +18,16 @@
 package org.apache.livy.server.batch
 
 import java.lang.ProcessBuilder.Redirect
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.Random
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.server.recovery.SessionStore
+import org.apache.livy.server.SessionServlet
 import org.apache.livy.sessions.{Session, SessionState}
 import org.apache.livy.sessions.Session._
 import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
@@ -42,6 +44,12 @@ case class BatchRecoveryMetadata(
 
 object BatchSession extends Logging {
   val RECOVERY_SESSION_TYPE = "batch"
+  // batch session child processes number
+  private val bscpn = new AtomicInteger
+
+  def childProcesses(): AtomicInteger = {
+    bscpn
+  }
 
   def create(
       id: Int,
@@ -85,6 +93,18 @@ object BatchSession extends Logging {
       val file = resolveURIs(Seq(request.file), livyConf)(0)
       val sparkSubmit = builder.start(Some(file), request.args)
 
+      Utils.startDaemonThread(s"batch-session-process-$id") {
+        childProcesses.incrementAndGet()
+        try {
+          sparkSubmit.waitFor() match {
+            case 0 =>
+            case exitCode =>
+              warn(s"spark-submit exited with code $exitCode")
+          }
+        } finally {
+          childProcesses.decrementAndGet()
+        }
+      }
       SparkApp.create(appTag, None, Option(sparkSubmit), livyConf, Option(s))
     }
 

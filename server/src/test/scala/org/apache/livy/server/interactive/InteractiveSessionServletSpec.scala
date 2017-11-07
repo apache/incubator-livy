@@ -21,14 +21,16 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 import scala.concurrent.Future
 
 import org.json4s.jackson.Json4sScalaModule
 import org.mockito.Matchers._
-import org.mockito.Mockito._
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.Entry
+import org.scalatest.concurrent.Eventually._
 import org.scalatest.mock.MockitoSugar.mock
 
 import org.apache.livy.{ExecuteRequest, LivyConf}
@@ -52,6 +54,8 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     private var statements = IndexedSeq[Statement]()
 
     override protected def createSession(req: HttpServletRequest): InteractiveSession = {
+      super.createSession(req)
+
       val statementCounter = new AtomicInteger()
 
       val session = mock[InteractiveSession]
@@ -183,4 +187,25 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     view.log shouldEqual log.asJava
   }
 
+  private def waitSession(): Unit = {
+    eventually(timeout(1 minute), interval(100 millis)) {
+      servlet.tooManySessions should be(true)
+    }
+  }
+
+  it("should failed create session when too many creating session ") {
+    var id = 1
+    jpost[SessionInfo]("/", createRequest(inProcess = false)) { data =>
+      id = data.id
+    }
+
+    servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 1)
+
+    waitSession
+    jpost[Map[String, Any]]("/", createRequest(), HttpServletResponse.SC_BAD_REQUEST) { data =>
+      None
+    }
+
+    jdelete[Map[String, Any]](s"/${id}") { _ => }
+  }
 }
