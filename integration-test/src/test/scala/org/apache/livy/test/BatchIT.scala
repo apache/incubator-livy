@@ -87,7 +87,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
   test("deleting a session should kill YARN app") {
     val output = newOutputPath()
     withTestLib(classOf[SimpleSparkApp], List(output, "false")) { s =>
-      s.verifySessionState(SessionState.Running())
+      s.verifySessionState(SessionState.Running)
       s.snapshot().appInfo.driverLogUrl.value should include ("containerlogs")
 
       val appId = s.appId()
@@ -102,7 +102,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
   test("killing YARN app should change batch state to dead") {
     val output = newOutputPath()
     withTestLib(classOf[SimpleSparkApp], List(output, "false")) { s =>
-      s.verifySessionState(SessionState.Running())
+      s.verifySessionState(SessionState.Running)
       val appId = s.appId()
 
       // Kill the YARN app and check batch state should be KILLED.

@@ -112,7 +112,7 @@ object InteractiveSession extends Logging {
       None,
       appTag,
       client,
-      SessionState.Starting(),
+      SessionState.Starting,
       request.kind,
       request.heartbeatTimeoutInSecond,
       livyConf,
@@ -138,7 +138,7 @@ object InteractiveSession extends Logging {
       metadata.appId,
       metadata.appTag,
       client,
-      SessionState.Recovering(),
+      SessionState.Recovering,
       metadata.kind,
       metadata.heartbeatTimeoutS,
       livyConf,
@@ -398,7 +398,7 @@ class InteractiveSession(
   }
 
   if (client.isEmpty) {
-    transition(Dead())
+    transition(Dead)
     val msg = s"Cannot recover interactive session $id because its RSCDriver URI is unknown."
     info(msg)
     sessionLog = IndexedSeq(msg)
@@ -424,7 +424,7 @@ class InteractiveSession(
       override def onJobFailed(job: JobHandle[Void], cause: Throwable): Unit = errorOut()
 
       override def onJobSucceeded(job: JobHandle[Void], result: Void): Unit = {
-        transition(SessionState.Running())
+        transition(SessionState.Running)
         info(s"Interactive session $id created [appid: ${appId.orNull}, owner: $owner, proxyUser:" +
           s" $proxyUser, state: ${state.toString}, kind: ${kind.toString}, " +
           s"info: ${appInfo.asJavaMap}]")
@@ -434,8 +434,8 @@ class InteractiveSession(
         // Other code might call stop() to close the RPC channel. When RPC channel is closing,
         // this callback might be triggered. Check and don't call stop() to avoid nested called
         // if the session is already shutting down.
-        if (serverSideState != SessionState.ShuttingDown()) {
-          transition(SessionState.Error())
+        if (serverSideState != SessionState.ShuttingDown) {
+          transition(SessionState.Error)
           stop()
           app.foreach { a =>
             info(s"Failed to ping RSC driver for session $id. Killing application.")
@@ -453,20 +453,18 @@ class InteractiveSession(
       id, appId, appTag, kind, heartbeatTimeout.toSeconds.toInt, owner, proxyUser, rscDriverUri)
 
   override def state: SessionState = {
-    if (serverSideState.isInstanceOf[SessionState.Running]) {
+    if (serverSideState == SessionState.Running) {
       // If session is in running state, return the repl state from RSCClient.
       client
         .flatMap(s => Option(s.getReplState))
         .map(SessionState(_))
-        .getOrElse(SessionState.Busy()) // If repl state is unknown, assume repl is busy.
-    } else {
-      serverSideState
-    }
+        .getOrElse(SessionState.Busy) // If repl state is unknown, assume repl is busy.
+    } else serverSideState
   }
 
   override def stopSession(): Unit = {
     try {
-      transition(SessionState.ShuttingDown())
+      transition(SessionState.ShuttingDown)
       sessionStore.remove(RECOVERY_SESSION_TYPE, id)
       client.foreach { _.stop(true) }
     } catch {
@@ -476,7 +474,7 @@ class InteractiveSession(
           _.kill()
         }
     } finally {
-      transition(SessionState.Dead())
+      transition(SessionState.Dead)
     }
   }
 
@@ -586,7 +584,7 @@ class InteractiveSession(
 
   private def ensureRunning(): Unit = synchronized {
     serverSideState match {
-      case SessionState.Running() =>
+      case SessionState.Running =>
       case _ =>
         throw new IllegalStateException("Session is in state %s" format serverSideState)
     }
@@ -613,7 +611,7 @@ class InteractiveSession(
       debug(s"$this app state changed from $oldState to $newState")
       newState match {
         case SparkApp.State.FINISHED | SparkApp.State.KILLED | SparkApp.State.FAILED =>
-          transition(SessionState.Dead())
+          transition(SessionState.Dead)
         case _ =>
       }
     }

@@ -45,7 +45,7 @@ class ReplDriverSuite extends FunSuite with LivyBaseUnitTestSuite {
       .setConf(RSCConf.Entry.LIVY_JARS.key(), "")
       .setURI(new URI("rsc:/"))
       .setConf(RSCConf.Entry.DRIVER_CLASS.key(), classOf[ReplDriver].getName())
-      .setConf(RSCConf.Entry.SESSION_KIND.key(), Spark().toString)
+      .setConf(RSCConf.Entry.SESSION_KIND.key(), Spark.toString)
       .build()
       .asInstanceOf[RSCClient]
 

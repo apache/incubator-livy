@@ -28,7 +28,7 @@ import org.scalatest.concurrent.Eventually._
 import org.apache.livy.rsc.driver.StatementState
 import org.apache.livy.sessions._
 
-class SparkSessionSpec extends BaseSessionSpec(Spark()) {
+class SparkSessionSpec extends BaseSessionSpec(Spark) {
 
   it should "execute `1 + 2` == 3" in withSession { session =>
     val statement = execute(session)("1 + 2")

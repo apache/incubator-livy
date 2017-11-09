@@ -28,7 +28,7 @@ import org.scalatest.concurrent.Eventually.{eventually, interval, timeout}
 import org.apache.livy.rsc.driver.{Statement, StatementState}
 import org.apache.livy.sessions._
 
-class SharedSessionSpec extends BaseSessionSpec(Shared()) {
+class SharedSessionSpec extends BaseSessionSpec(Shared) {
 
   private def execute(session: Session, code: String, codeType: String): Statement = {
     val id = session.execute(code, codeType)

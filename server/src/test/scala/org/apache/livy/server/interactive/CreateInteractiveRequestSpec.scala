@@ -34,7 +34,7 @@ class CreateInteractiveRequestSpec extends FunSpec with LivyBaseUnitTestSuite {
     it("should have default values for fields after deserialization") {
       val json = """{ "kind" : "pyspark" }"""
       val req = mapper.readValue(json, classOf[CreateInteractiveRequest])
-      assert(req.kind === PySpark())
+      assert(req.kind === PySpark)
       assert(req.proxyUser === None)
       assert(req.jars === List())
       assert(req.pyFiles === List())
