@@ -46,8 +46,8 @@ class HttpClient(object):
         The key-value pairs in the conf_dict will be loaded to the config
         Default is None
     env_dict : dict, optional
-        The key-value pairs in the env_dict will be loaded as environment variables
-        Default is None
+        The key-value pairs in the env_dict will be loaded as environment
+        variables. Default is None
 
     Examples
     --------
@@ -387,7 +387,8 @@ class HttpClient(object):
         self._config.readfp(StringIO(data))
 
     def _create_new_session(self, session_conf_dict, session_env_dict):
-        data = {'kind': 'pyspark', 'conf': session_conf_dict, 'env': session_env_dict}
+        data = {'kind': 'pyspark', 'conf': session_conf_dict,
+                'env': session_env_dict}
         response = self._conn.send_request('POST', "/",
             headers=self._conn._JSON_HEADERS, data=data)
         return response
