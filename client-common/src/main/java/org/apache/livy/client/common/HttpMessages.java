@@ -39,13 +39,15 @@ public class HttpMessages {
   public static class CreateClientRequest implements ClientMessage {
 
     public final Map<String, String> conf;
+    public final Map<String, String> env;
 
-    public CreateClientRequest(Map<String, String> conf) {
+    public CreateClientRequest(Map<String, String> conf, Map<String, String> env) {
       this.conf = conf;
+      this.env = env;
     }
 
     private CreateClientRequest() {
-      this(null);
+      this(null, null);
     }
 
   }

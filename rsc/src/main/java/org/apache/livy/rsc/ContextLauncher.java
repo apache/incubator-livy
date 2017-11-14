@@ -70,9 +70,9 @@ class ContextLauncher {
   private static final String SPARK_ARCHIVES_KEY = "spark.yarn.dist.archives";
   private static final String SPARK_HOME_ENV = "SPARK_HOME";
 
-  static DriverProcessInfo create(RSCClientFactory factory, RSCConf conf)
+  static DriverProcessInfo create(RSCClientFactory factory, RSCConf conf, Map<String, String> env)
       throws IOException {
-    ContextLauncher launcher = new ContextLauncher(factory, conf);
+    ContextLauncher launcher = new ContextLauncher(factory, conf, env);
     return new DriverProcessInfo(launcher.promise, launcher.child.child);
   }
 
@@ -82,13 +82,18 @@ class ContextLauncher {
   private final String secret;
   private final ChildProcess child;
   private final RSCConf conf;
+  private final Map<String, String> env;
   private final RSCClientFactory factory;
 
-  private ContextLauncher(RSCClientFactory factory, RSCConf conf) throws IOException {
+  private ContextLauncher(
+      RSCClientFactory factory,
+      RSCConf conf,
+      Map<String, String> env) throws IOException {
     this.promise = factory.getServer().getEventLoopGroup().next().newPromise();
     this.clientId = UUID.randomUUID().toString();
     this.secret = factory.getServer().createSecret();
     this.conf = conf;
+    this.env = env;
     this.factory = factory;
 
     final RegistrationHandler handler = new RegistrationHandler();
@@ -112,7 +117,7 @@ class ContextLauncher {
         }
       });
 
-      this.child = startDriver(conf, promise);
+      this.child = startDriver(this.conf, this.env, promise);
 
       // Set up a timeout to fail the promise if we don't hear back from the context
       // after a configurable timeout.
@@ -152,8 +157,10 @@ class ContextLauncher {
     }
   }
 
-  private static ChildProcess startDriver(final RSCConf conf, Promise<?> promise)
-      throws IOException {
+  private static ChildProcess startDriver(
+      final RSCConf conf,
+      final Map<String, String> env,
+      Promise<?> promise) throws IOException {
     String livyJars = conf.get(LIVY_JARS);
     if (livyJars == null) {
       String livyHome = System.getenv("LIVY_HOME");
@@ -217,7 +224,7 @@ class ContextLauncher {
       };
       return new ChildProcess(conf, promise, child, confFile);
     } else {
-      final SparkLauncher launcher = new SparkLauncher();
+      final SparkLauncher launcher = new SparkLauncher(env);
 
       // Spark 1.x does not support specifying deploy mode in conf and needs special handling.
       String deployMode = conf.get(SPARK_DEPLOY_MODE);

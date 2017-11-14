@@ -23,6 +23,7 @@ import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
@@ -36,6 +37,8 @@ public final class LivyClientBuilder {
   public static final String LIVY_URI_KEY = "livy.uri";
 
   private final Properties config;
+
+  private final Map<String, String> env;
 
   /**
    * Creates a new builder that will automatically load the default Livy and Spark configuration
@@ -57,6 +60,7 @@ public final class LivyClientBuilder {
    */
   public LivyClientBuilder(boolean loadDefaults) throws IOException {
     this.config = new Properties();
+    this.env = new HashMap<>();
 
     if (loadDefaults) {
       String[] confFiles = { "spark-defaults.conf", "livy-client.conf" };
@@ -99,6 +103,20 @@ public final class LivyClientBuilder {
     return this;
   }
 
+  public LivyClientBuilder setEnv(String key, String value) {
+    if (value != null) {
+      env.put(key, value);
+    } else {
+      env.remove(key);
+    }
+    return this;
+  }
+
+  public LivyClientBuilder setAllEnvs(Map<String, String> envs) {
+    env.putAll(envs);
+    return this;
+  }
+
   public LivyClient build() {
     String uriStr = config.getProperty(LIVY_URI_KEY);
     if (uriStr == null) {
@@ -121,7 +139,7 @@ public final class LivyClientBuilder {
     Exception error = null;
     for (LivyClientFactory factory : loader) {
       try {
-        client = factory.createClient(uri, config);
+        client = factory.createClient(uri, config, env);
       } catch (Exception e) {
         if (!(e instanceof RuntimeException)) {
           e = new RuntimeException(e);

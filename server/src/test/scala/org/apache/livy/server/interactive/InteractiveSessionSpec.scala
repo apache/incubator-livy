@@ -54,7 +54,8 @@ class InteractiveSessionSpec extends FunSpec
 
   private def createSession(
       sessionStore: SessionStore = mock[SessionStore],
-      mockApp: Option[SparkApp] = None): InteractiveSession = {
+      mockApp: Option[SparkApp] = None,
+      env: Map[String, String] = Map.empty): InteractiveSession = {
     assume(sys.env.get("SPARK_HOME").isDefined, "SPARK_HOME is not set.")
 
     val req = new CreateInteractiveRequest()
@@ -68,6 +69,7 @@ class InteractiveSessionSpec extends FunSpec
       SparkLauncher.DRIVER_EXTRA_CLASSPATH -> sys.props("java.class.path"),
       RSCConf.Entry.LIVY_JARS.key() -> ""
     )
+    req.env = env
     InteractiveSession.create(0, null, None, livyConf, req, sessionStore, mockApp)
   }
 
@@ -157,7 +159,7 @@ class InteractiveSessionSpec extends FunSpec
     it("should update appId and appInfo and session store") {
       val mockApp = mock[SparkApp]
       val sessionStore = mock[SessionStore]
-      session = createSession(sessionStore, Some(mockApp))
+      session = createSession(sessionStore, Some(mockApp), Map("key1" -> "value1"))
 
       val expectedAppId = "APPID"
       session.appIdKnown(expectedAppId)
@@ -173,25 +175,39 @@ class InteractiveSessionSpec extends FunSpec
       session.state should (be(a[SessionState.Starting]) or be(a[SessionState.Idle]))
     }
 
+    withSession("should get correct env variables") { session =>
+      val result = executeStatement(
+        """
+          |import os
+          |print os.environ['key1'] if 'key1' in os.environ else ''
+        """.stripMargin)
+
+      result should equal (Extraction.decompose(Map(
+        "status" -> "ok",
+        "execution_count" -> 0,
+        "data" -> Map("text/plain" -> "value1")))
+      )
+    }
+
     withSession("should execute `1 + 2` == 3") { session =>
       val pyResult = executeStatement("1 + 2", Some("pyspark"))
       pyResult should equal (Extraction.decompose(Map(
         "status" -> "ok",
-        "execution_count" -> 0,
+        "execution_count" -> 1,
         "data" -> Map("text/plain" -> "3")))
       )
 
       val scalaResult = executeStatement("1 + 2", Some("spark"))
       scalaResult should equal (Extraction.decompose(Map(
         "status" -> "ok",
-        "execution_count" -> 1,
+        "execution_count" -> 2,
         "data" -> Map("text/plain" -> "res0: Int = 3")))
       )
 
       val rResult = executeStatement("1 + 2", Some("sparkr"))
       rResult should equal (Extraction.decompose(Map(
         "status" -> "ok",
-        "execution_count" -> 2,
+        "execution_count" -> 3,
         "data" -> Map("text/plain" -> "[1] 3")))
       )
     }
@@ -200,7 +216,7 @@ class InteractiveSessionSpec extends FunSpec
       val result = executeStatement("x")
       val expectedResult = Extraction.decompose(Map(
         "status" -> "error",
-        "execution_count" -> 3,
+        "execution_count" -> 4,
         "ename" -> "NameError",
         "evalue" -> "name 'x' is not defined",
         "traceback" -> List(

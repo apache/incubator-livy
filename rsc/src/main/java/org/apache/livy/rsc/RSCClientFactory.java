@@ -19,6 +19,7 @@ package org.apache.livy.rsc;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,7 +54,7 @@ public final class RSCClientFactory implements LivyClientFactory {
    * Otherwise, a new Spark context will be started with the given configuration.
    */
   @Override
-  public LivyClient createClient(URI uri, Properties config) {
+  public LivyClient createClient(URI uri, Properties config, Map<String, String> env) {
     if (!"rsc".equals(uri.getScheme())) {
       return null;
     }
@@ -69,7 +70,7 @@ public final class RSCClientFactory implements LivyClientFactory {
       } else {
         needsServer = true;
         ref(lconf);
-        DriverProcessInfo processInfo = ContextLauncher.create(this, lconf);
+        DriverProcessInfo processInfo = ContextLauncher.create(this, lconf, env);
         info = processInfo.getContextInfo();
         driverProcess = processInfo.getDriverProcess();
       }

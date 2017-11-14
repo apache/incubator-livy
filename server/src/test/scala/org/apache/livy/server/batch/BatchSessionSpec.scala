@@ -47,7 +47,9 @@ class BatchSessionSpec
     try {
       writer.write(
         """
+          |import os
           |print "hello world"
+          |print os.environ['key1'] if 'key1' in os.environ else ''
         """.stripMargin)
     } finally {
       writer.close()
@@ -77,6 +79,25 @@ class BatchSessionSpec
       }) should be (true)
 
       batch.logLines() should contain("hello world")
+    }
+
+    it("should honor env variables from request") {
+      val req = new CreateBatchRequest()
+      req.file = script.toString
+      req.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
+      req.env = Map("key1" -> "value1")
+
+      val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
+      val batch = BatchSession.create(0, req, conf, null, None, sessionStore)
+
+      Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
+      (batch.state match {
+        case SessionState.Success(_) => true
+        case _ => false
+      }) should be (true)
+
+      batch.logLines() should contain("hello world")
+      batch.logLines() should contain("value1")
     }
 
     it("should update appId and appInfo") {

@@ -19,16 +19,17 @@ package org.apache.livy;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
 public class TestClientFactory implements LivyClientFactory {
 
   @Override
-  public LivyClient createClient(URI uri, Properties config) {
+  public LivyClient createClient(URI uri, Properties config, Map<String, String> env) {
     switch (uri.getPath()) {
       case "match":
-        return new Client(config);
+        return new Client(config, env);
 
       case "error":
         throw new IllegalStateException("error");
@@ -41,9 +42,11 @@ public class TestClientFactory implements LivyClientFactory {
   public static class Client implements LivyClient {
 
     public final Properties config;
+    public final Map<String, String> env;
 
-    private Client(Properties config) {
+    private Client(Properties config, Map<String, String> env) {
       this.config = config;
+      this.env = env;
     }
 
     @Override

@@ -18,6 +18,7 @@
 package org.apache.livy;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.livy.annotations.Private;
@@ -39,6 +40,6 @@ public interface LivyClientFactory {
    *
    * @param uri URI pointing at the livy backend to use.
    */
-  LivyClient createClient(URI uri, Properties config);
+  LivyClient createClient(URI uri, Properties config, Map<String, String> env);
 
 }

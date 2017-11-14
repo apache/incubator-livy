@@ -452,6 +452,17 @@ public class TestSparkClient {
     runBypassTest(true);
   }
 
+  @Test
+  public void testEnvs() throws Exception {
+    runTest(false, new TestFunction() {
+      @Override
+      void call(LivyClient client) throws Exception {
+        JobHandle<String> handle = client.submit(new EnvCheck("key1"));
+        assertEquals("value1", handle.get(TIMEOUT, TimeUnit.SECONDS));
+      }
+    }, Collections.singletonMap("key1", "value1"));
+  }
+
   private void runBypassTest(final boolean sync) throws Exception {
     runTest(true, new TestFunction() {
       @Override
@@ -517,12 +528,20 @@ public class TestSparkClient {
   }
 
   private void runTest(boolean local, TestFunction test) throws Exception {
+    runTest(local, test, Collections.<String, String>emptyMap());
+  }
+
+  private void runTest(
+      boolean local,
+      TestFunction test,
+      Map<String, String> env) throws Exception {
     Properties conf = createConf(local);
     LivyClient client = null;
     try {
       test.config(conf);
       client = new LivyClientBuilder(false).setURI(new URI("rsc:/"))
         .setAll(conf)
+        .setAllEnvs(env)
         .build();
 
       // Wait for the context to be up before running the test.
