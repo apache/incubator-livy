@@ -40,7 +40,7 @@ object SessionServletSpec {
 
     override def recoveryMetadata: RecoveryMetadata = MockRecoveryMetadata(0)
 
-    override def state: SessionState = SessionState.Idle()
+    override def state: SessionState = SessionState.Idle
 
     override protected def stopSession(): Unit = ()
 

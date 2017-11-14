@@ -57,7 +57,7 @@ abstract class BaseInteractiveServletSpec
   protected def createRequest(
       inProcess: Boolean = true,
       extraConf: Map[String, String] = Map(),
-      kind: Kind = Spark()): CreateInteractiveRequest = {
+      kind: Kind = Spark): CreateInteractiveRequest = {
     val classpath = sys.props("java.class.path")
     val request = new CreateInteractiveRequest()
     request.kind = kind

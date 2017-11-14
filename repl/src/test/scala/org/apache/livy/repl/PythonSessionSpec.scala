@@ -23,7 +23,7 @@ import org.scalatest._
 
 import org.apache.livy.sessions._
 
-abstract class PythonSessionSpec extends BaseSessionSpec(PySpark()) {
+abstract class PythonSessionSpec extends BaseSessionSpec(PySpark) {
 
   it should "execute `1 + 2` == 3" in withSession { session =>
     val statement = execute(session)("1 + 2")

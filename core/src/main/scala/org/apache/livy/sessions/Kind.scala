@@ -21,33 +21,27 @@ import com.fasterxml.jackson.core.{JsonGenerator, JsonParser, JsonToken}
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.module.SimpleModule
 
-sealed trait Kind
-case class Spark() extends Kind {
-  override def toString: String = "spark"
+sealed abstract class Kind(val name: String) {
+  override def toString: String = name
 }
 
-case class PySpark() extends Kind {
-  override def toString: String = "pyspark"
-}
+object Spark extends Kind("spark")
 
-case class SparkR() extends Kind {
-  override def toString: String = "sparkr"
-}
+object PySpark extends Kind("pyspark")
 
-case class Shared() extends Kind {
-  override def toString: String = "shared"
-}
+object SparkR extends Kind("sparkr")
+
+object Shared extends Kind("shared")
 
 object Kind {
 
   def apply(kind: String): Kind = kind match {
-    case "spark" | "scala" => Spark()
-    case "pyspark" | "python" => PySpark()
-    case "sparkr" | "r" => SparkR()
-    case "shared" => Shared()
+    case "spark" | "scala" => Spark
+    case "pyspark" | "python" => PySpark
+    case "sparkr" | "r" => SparkR
+    case "shared" => Shared
     case other => throw new IllegalArgumentException(s"Invalid kind: $other")
   }
-
 }
 
 class SessionKindModule extends SimpleModule("SessionKind") {
