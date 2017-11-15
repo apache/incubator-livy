@@ -101,6 +101,7 @@ object InteractiveSession extends Logging {
         .setAll(builderProperties.asJava)
         .setConf("livy.client.session-id", id.toString)
         .setConf(RSCConf.Entry.DRIVER_CLASS.key(), "org.apache.livy.repl.ReplDriver")
+        .setAllEnvs(request.env.asJava)
         .setConf(RSCConf.Entry.PROXY_USER.key(), proxyUser.orNull)
         .setURI(new URI("rsc:/"))
 

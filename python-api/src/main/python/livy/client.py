@@ -45,6 +45,9 @@ class HttpClient(object):
     conf_dict : dict, optional
         The key-value pairs in the conf_dict will be loaded to the config
         Default is None
+    env_dict : dict, optional
+        The key-value pairs in the env_dict will be loaded as environment
+        variables. Default is None
 
     Examples
     --------
@@ -66,11 +69,12 @@ class HttpClient(object):
     _CONFIG_SECTION = 'env'
     _LIVY_CLIENT_CONF_DIR = "LIVY_CLIENT_CONF_DIR"
 
-    def __init__(self, url, load_defaults=True, conf_dict=None):
+    def __init__(self, url, load_defaults=True, conf_dict=None, env_dict=None):
         uri = urlparse(url)
         self._config = ConfigParser()
         self._load_config(load_defaults, conf_dict)
         self._job_type = 'pyspark'
+        self._env = {} if env_dict is None else env_dict
         match = re.match(r'(.*)/sessions/([0-9]+)', uri.path)
         if match:
             base = ParseResult(scheme=uri.scheme, netloc=uri.netloc,
@@ -85,7 +89,7 @@ class HttpClient(object):
             session_conf_dict = dict(self._config.items(self._CONFIG_SECTION))
             self._conn = _LivyConnection(uri, self._config)
             self._session_id = self._create_new_session(
-                session_conf_dict).json()['id']
+                session_conf_dict, self._env).json()['id']
         self._executor = ThreadPoolExecutor(max_workers=1)
         self._stopped = False
         self.lock = threading.Lock()
@@ -382,8 +386,9 @@ class HttpClient(object):
             open(path, encoding='utf-8').read()
         self._config.readfp(StringIO(data))
 
-    def _create_new_session(self, session_conf_dict):
-        data = {'kind': 'pyspark', 'conf': session_conf_dict}
+    def _create_new_session(self, session_conf_dict, session_env_dict):
+        data = {'kind': 'pyspark', 'conf': session_conf_dict,
+                'env': session_env_dict}
         response = self._conn.send_request('POST', "/",
             headers=self._conn._JSON_HEADERS, data=data)
         return response

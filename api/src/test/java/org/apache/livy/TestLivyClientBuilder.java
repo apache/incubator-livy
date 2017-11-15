@@ -18,6 +18,7 @@
 package org.apache.livy;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.Properties;
 
 import org.junit.Test;
@@ -36,6 +37,8 @@ public class TestLivyClientBuilder {
         .setURI(new URI("match"))
         .setConf("prop1", "prop1")
         .setConf("prop2", "prop2")
+        .setEnv("env1", "env1")
+        .setAllEnvs(Collections.singletonMap("env2", "env2"))
         .setAll(props)
         .build();
 
@@ -43,6 +46,8 @@ public class TestLivyClientBuilder {
     assertEquals("_prop1_", client.config.getProperty("prop1"));
     assertEquals("prop2", client.config.getProperty("prop2"));
     assertEquals("prop3", client.config.getProperty("prop3"));
+    assertEquals("env1", client.env.get("env1"));
+    assertEquals("env2", client.env.get("env2"));
   }
 
   @Test(expected = IllegalArgumentException.class)

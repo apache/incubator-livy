@@ -34,6 +34,7 @@ class CreateInteractiveRequest {
   var queue: Option[String] = None
   var name: Option[String] = None
   var conf: Map[String, String] = Map()
+  var env: Map[String, String] = Map()
   var heartbeatTimeoutInSecond: Int = 0
 
   override def toString: String = {
@@ -50,6 +51,7 @@ class CreateInteractiveRequest {
       (if (queue.isDefined) s"queue: ${queue.get}, " else "") +
       (if (name.isDefined) s"name: ${name.get}, " else "") +
       (if (conf.nonEmpty) s"conf: ${conf.mkString(",")}, " else "") +
+      (if (env.nonEmpty) s"env: ${env.mkString(",")}, " else "") +
       s"heartbeatTimeoutInSecond: $heartbeatTimeoutInSecond]"
   }
 }

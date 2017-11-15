@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.livy.client.http;
+package org.apache.livy.test.jobs;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.Properties;
+import org.apache.livy.Job;
+import org.apache.livy.JobContext;
 
-import org.apache.livy.LivyClient;
-import org.apache.livy.LivyClientFactory;
+public class EnvCheck implements Job<String> {
 
-/**
- * Factory for HTTP Livy clients.
- */
-public final class HttpClientFactory implements LivyClientFactory {
+  private final String envKey;
 
-  @Override
-  public LivyClient createClient(URI uri, Properties config, Map<String, String> env) {
-    if (!"http".equals(uri.getScheme()) && !"https".equals(uri.getScheme())) {
-      return null;
-    }
-
-    return new HttpClient(uri, new HttpConf(config), env);
+  public EnvCheck(String key) {
+    this.envKey = key;
   }
 
+  @Override
+  public String call(JobContext jc) {
+    return System.getenv(envKey);
+  }
 }

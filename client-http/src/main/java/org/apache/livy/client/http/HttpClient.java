@@ -50,7 +50,7 @@ class HttpClient implements LivyClient {
 
   private boolean stopped;
 
-  HttpClient(URI uri, HttpConf httpConf) {
+  HttpClient(URI uri, HttpConf httpConf, Map<String, String> sessionEnv) {
     this.config = httpConf;
     this.stopped = false;
 
@@ -74,7 +74,7 @@ class HttpClient implements LivyClient {
           sessionConf.put(e.getKey(), e.getValue());
         }
 
-        ClientMessage create = new CreateClientRequest(sessionConf);
+        ClientMessage create = new CreateClientRequest(sessionConf, sessionEnv);
         this.conn = new LivyConnection(uri, httpConf);
         this.sessionId = conn.post(create, SessionInfo.class, "/").id;
       }
