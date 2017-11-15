@@ -22,7 +22,7 @@ import org.json4s.jackson.JsonMethods.parse
 
 import org.apache.livy.sessions._
 
-class SparkRSessionSpec extends BaseSessionSpec(SparkR()) {
+class SparkRSessionSpec extends BaseSessionSpec(SparkR) {
 
   override protected def withFixture(test: NoArgTest) = {
     assume(!sys.props.getOrElse("skipRTests", "false").toBoolean, "Skipping R tests.")

@@ -65,7 +65,7 @@ class Session(
 
   private implicit val formats = DefaultFormats
 
-  private var _state: SessionState = SessionState.NotStarted()
+  private var _state: SessionState = SessionState.NotStarted
 
   // Number of statements kept in driver's memory
   private val numRetainedStatements = livyConf.getInt(RSCConf.Entry.RETAINED_STATEMENTS)
@@ -100,11 +100,11 @@ class Session(
           "SparkEntries should not be null when lazily initialize other interpreters.")
 
         val interp = kind match {
-          case Spark() =>
+          case Spark =>
             // This should never be touched here.
             throw new IllegalStateException("SparkInterpreter should not be lazily created.")
-          case PySpark() => PythonInterpreter(sparkConf, entries)
-          case SparkR() => SparkRInterpreter(sparkConf, entries)
+          case PySpark => PythonInterpreter(sparkConf, entries)
+          case SparkR => SparkRInterpreter(sparkConf, entries)
         }
         interp.start()
         interpGroup(kind) = interp
@@ -119,7 +119,7 @@ class Session(
 
   def start(): Future[SparkEntries] = {
     val future = Future {
-      changeState(SessionState.Starting())
+      changeState(SessionState.Starting)
 
       // Always start SparkInterpreter after beginning, because we rely on SparkInterpreter to
       // initialize SparkContext and create SparkEntries.
@@ -129,14 +129,14 @@ class Session(
       entries = sparkInterp.sparkEntries()
       require(entries != null, "SparkEntries object should not be null in Spark Interpreter.")
       interpGroup.synchronized {
-        interpGroup.put(Spark(), sparkInterp)
+        interpGroup.put(Spark, sparkInterp)
       }
 
-      changeState(SessionState.Idle())
+      changeState(SessionState.Idle)
       entries
     }(interpreterExecutor)
 
-    future.onFailure { case _ => changeState(SessionState.Error()) }(interpreterExecutor)
+    future.onFailure { case _ => changeState(SessionState.Error) }(interpreterExecutor)
     future
   }
 
@@ -149,7 +149,7 @@ class Session(
   def execute(code: String, codeType: String = null): Int = {
     val tpe = if (codeType != null) {
       Kind(codeType)
-    } else if (defaultInterpKind != Shared()) {
+    } else if (defaultInterpKind != Shared) {
       defaultInterpKind
     } else {
       throw new IllegalArgumentException(s"Code type should be specified if session kind is shared")
@@ -259,12 +259,12 @@ class Session(
   private def executeCode(interp: Option[Interpreter],
      executionCount: Int,
      code: String): String = {
-    changeState(SessionState.Busy())
+    changeState(SessionState.Busy)
 
     def transitToIdle() = {
       val executingLastStatement = executionCount == newStatementId.intValue() - 1
       if (_statements.isEmpty || executingLastStatement) {
-        changeState(SessionState.Idle())
+        changeState(SessionState.Idle)
       }
     }
 
@@ -297,7 +297,7 @@ class Session(
               (TRACEBACK -> traceback)
 
           case Interpreter.ExecuteAborted(message) =>
-            changeState(SessionState.Error())
+            changeState(SessionState.Error)
 
             (STATUS -> ERROR) ~
               (EXECUTION_COUNT -> executionCount) ~
@@ -332,13 +332,13 @@ class Session(
   private def setJobGroup(codeType: Kind, statementId: Int): String = {
     val jobGroup = statementIdToJobGroup(statementId)
     val cmd = codeType match {
-      case Spark() =>
+      case Spark =>
         // A dummy value to avoid automatic value binding in scala REPL.
         s"""val _livyJobGroup$jobGroup = sc.setJobGroup("$jobGroup",""" +
           s""""Job group for statement $jobGroup")"""
-      case PySpark() =>
+      case PySpark =>
         s"""sc.setJobGroup("$jobGroup", "Job group for statement $jobGroup")"""
-      case SparkR() =>
+      case SparkR =>
         sc.getConf.get("spark.livy.spark_major_version", "1") match {
           case "1" =>
             s"""setJobGroup(sc, "$jobGroup", "Job group for statement $jobGroup", """ +

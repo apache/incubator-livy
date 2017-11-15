@@ -123,7 +123,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
 
     it("should show session properties") {
       val id = 0
-      val state = SessionState.Running()
+      val state = SessionState.Running
       val appId = "appid"
       val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
       val log = IndexedSeq[String]("log1", "log2")
