@@ -64,7 +64,7 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
         |x + y
       """.stripMargin)
     response should equal(Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "res2: Int = 3"
+      TEXT_PLAIN -> "x: Int = 1\ny: Int = 2\nres2: Int = 3"
     ))
   }
 

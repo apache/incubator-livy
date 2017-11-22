@@ -65,6 +65,17 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
     ))
   }
 
+  it should "get multiple outputs in one block" in withInterpreter { interpreter =>
+    val response = interpreter.execute(
+      """
+        |print("1")
+        |print("2")
+      """.stripMargin)
+    response should equal(Interpreter.ExecuteSuccess(
+      TEXT_PLAIN -> "1\n2"
+    ))
+  }
+
   it should "parse a class" in withInterpreter { interpreter =>
     val response = interpreter.execute(
       """
