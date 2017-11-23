@@ -44,7 +44,8 @@ import org.apache.livy.sessions._
 object PythonInterpreter extends Logging {
 
   def apply(conf: SparkConf, sparkEntries: SparkEntries): Interpreter = {
-    val pythonExec = sys.env.get("PYSPARK_PYTHON")
+    val pythonExec = conf.getOption("spark.pyspark.python")
+      .orElse(sys.env.get("PYSPARK_PYTHON"))
       .orElse(sys.props.get("pyspark.python")) // This java property is only used for internal UT.
       .getOrElse("python")
 
