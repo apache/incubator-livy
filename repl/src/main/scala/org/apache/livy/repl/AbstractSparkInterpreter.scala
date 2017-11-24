@@ -274,7 +274,7 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
                   val lastRet = s.values.getOrElse(TEXT_PLAIN, "").asInstanceOf[String]
                   val currRet = e.values.getOrElse(TEXT_PLAIN, "").asInstanceOf[String]
                   if (lastRet.nonEmpty && currRet.nonEmpty) {
-                    Interpreter.ExecuteSuccess(TEXT_PLAIN -> s"$lastRet\n$currRet")
+                    Interpreter.ExecuteSuccess(TEXT_PLAIN -> s"$lastRet$currRet")
                   } else if (lastRet.nonEmpty) {
                     Interpreter.ExecuteSuccess(TEXT_PLAIN -> lastRet)
                   } else if (currRet.nonEmpty) {
@@ -344,7 +344,7 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
   }
 
   private def readStdout() = {
-    val output = outputStream.toString("UTF-8").trim
+    val output = outputStream.toString("UTF-8")
     outputStream.reset()
 
     output

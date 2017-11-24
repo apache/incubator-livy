@@ -34,8 +34,8 @@ class InteractiveIT extends BaseIntegrationTestSuite {
   test("basic interactive session") {
     withNewSession(Spark) { s =>
       s.run("val sparkVersion = sc.version").result().left.foreach(info(_))
-      s.run("1+1").verifyResult("res0: Int = 2")
-      s.run("""sc.getConf.get("spark.executor.instances")""").verifyResult("res1: String = 1")
+      s.run("1+1").verifyResult("res0: Int = 2\n")
+      s.run("""sc.getConf.get("spark.executor.instances")""").verifyResult("res1: String = 1\n")
       s.run("val sql = new org.apache.spark.sql.SQLContext(sc)").verifyResult(
         ".*" + Pattern.quote(
         "sql: org.apache.spark.sql.SQLContext = org.apache.spark.sql.SQLContext") + ".*")
@@ -46,8 +46,8 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       // Verify Livy internal configurations are not exposed.
       // TODO separate all these checks to different sub tests after merging new IT code.
       s.run("""sc.getConf.getAll.exists(_._1.startsWith("spark.__livy__."))""")
-        .verifyResult(".*false")
-      s.run("""sys.props.exists(_._1.startsWith("spark.__livy__."))""").verifyResult(".*false")
+        .verifyResult(".*false\n")
+      s.run("""sys.props.exists(_._1.startsWith("spark.__livy__."))""").verifyResult(".*false\n")
       s.run("""val str = "str"""")
       s.complete("str.", "scala", 4).verifyContaining(List("compare", "contains"))
       s.complete("str2.", "scala", 5).verifyNone()
@@ -137,16 +137,16 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       // Check is the library loaded in JVM in the proper class loader.
       s.run("Thread.currentThread.getContextClassLoader.loadClass" +
           """("org.codehaus.plexus.util.FileUtils")""")
-        .verifyResult(".*Class\\[_\\] = class org.codehaus.plexus.util.FileUtils")
+        .verifyResult(".*Class\\[_\\] = class org.codehaus.plexus.util.FileUtils\n")
 
       // Check does Scala interpreter see the library.
-      s.run("import org.codehaus.plexus.util._").verifyResult("import org.codehaus.plexus.util._")
+      s.run("import org.codehaus.plexus.util._").verifyResult("import org.codehaus.plexus.util._\n")
 
       // Check does SparkContext see classes defined by Scala interpreter.
-      s.run("case class Item(i: Int)").verifyResult("defined class Item")
+      s.run("case class Item(i: Int)").verifyResult("defined class Item\n")
       s.run("val rdd = sc.parallelize(Array.fill(10){new Item(scala.util.Random.nextInt(1000))})")
         .verifyResult("rdd.*")
-      s.run("rdd.count()").verifyResult(".*= 10")
+      s.run("rdd.count()").verifyResult(".*= 10\n")
     }
   }
 
@@ -164,15 +164,15 @@ class InteractiveIT extends BaseIntegrationTestSuite {
   test("recover interactive session") {
     withNewSession(Spark) { s =>
       val stmt1 = s.run("1")
-      stmt1.verifyResult("res0: Int = 1")
+      stmt1.verifyResult("res0: Int = 1\n")
 
       restartLivy()
 
       // Verify session still exists.
       s.verifySessionIdle()
-      s.run("2").verifyResult("res1: Int = 2")
+      s.run("2").verifyResult("res1: Int = 2\n")
       // Verify statement result is preserved.
-      stmt1.verifyResult("res0: Int = 1")
+      stmt1.verifyResult("res0: Int = 1\n")
 
       s.stop()
 
