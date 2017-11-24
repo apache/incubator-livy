@@ -185,7 +185,7 @@ class InteractiveSessionSpec extends FunSpec
       scalaResult should equal (Extraction.decompose(Map(
         "status" -> "ok",
         "execution_count" -> 1,
-        "data" -> Map("text/plain" -> "res0: Int = 3")))
+        "data" -> Map("text/plain" -> "res0: Int = 3\n")))
       )
 
       val rResult = executeStatement("1 + 2", Some("sparkr"))

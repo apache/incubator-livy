@@ -39,7 +39,7 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
       "status" -> "ok",
       "execution_count" -> 0,
       "data" -> Map(
-        "text/plain" -> "res0: Int = 3"
+        "text/plain" -> "res0: Int = 3\n"
       )
     ))
 
@@ -56,7 +56,7 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
       "status" -> "ok",
       "execution_count" -> 0,
       "data" -> Map(
-        "text/plain" -> "x: Int = 1"
+        "text/plain" -> "x: Int = 1\n"
       )
     ))
 
@@ -70,7 +70,7 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
       "status" -> "ok",
       "execution_count" -> 1,
       "data" -> Map(
-        "text/plain" -> "y: Int = 2"
+        "text/plain" -> "y: Int = 2\n"
       )
     ))
 
@@ -84,7 +84,7 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
       "status" -> "ok",
       "execution_count" -> 2,
       "data" -> Map(
-        "text/plain" -> "res0: Int = 3"
+        "text/plain" -> "res0: Int = 3\n"
       )
     ))
 
@@ -100,7 +100,7 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
       "status" -> "ok",
       "execution_count" -> 0,
       "data" -> Map(
-        "text/plain" -> "Hello World"
+        "text/plain" -> "Hello World\n"
       )
     ))
 
@@ -169,7 +169,7 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
       "status" -> "ok",
       "execution_count" -> 0,
       "data" -> Map(
-        "text/plain" -> "res0: Array[Int] = Array(1, 2)"
+        "text/plain" -> "res0: Array[Int] = Array(1, 2)\n"
       )
     ))
 

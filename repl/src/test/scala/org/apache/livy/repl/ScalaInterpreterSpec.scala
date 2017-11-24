@@ -33,24 +33,24 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
   it should "execute `1 + 2` == 3" in withInterpreter { interpreter =>
     val response = interpreter.execute("1 + 2")
     response should equal (Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "res0: Int = 3"
+      TEXT_PLAIN -> "res0: Int = 3\n"
     ))
   }
 
   it should "execute multiple statements" in withInterpreter { interpreter =>
     var response = interpreter.execute("val x = 1")
     response should equal (Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "x: Int = 1"
+      TEXT_PLAIN -> "x: Int = 1\n"
     ))
 
     response = interpreter.execute("val y = 2")
     response should equal (Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "y: Int = 2"
+      TEXT_PLAIN -> "y: Int = 2\n"
     ))
 
     response = interpreter.execute("x + y")
     response should equal (Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "res0: Int = 3"
+      TEXT_PLAIN -> "res0: Int = 3\n"
     ))
   }
 
@@ -64,7 +64,7 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
         |x + y
       """.stripMargin)
     response should equal(Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "res2: Int = 3"
+      TEXT_PLAIN -> "x: Int = 1\ny: Int = 2\nres2: Int = 3\n"
     ))
   }
 
@@ -96,14 +96,24 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
       """.stripMargin)
 
     response should equal(Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "res0: Int = 3"
+      TEXT_PLAIN -> "res0: Int = 3\n"
     ))
   }
 
   it should "capture stdout" in withInterpreter { interpreter =>
     val response = interpreter.execute("println(\"Hello World\")")
     response should equal(Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "Hello World"
+      TEXT_PLAIN -> "Hello World\n"
+    ))
+
+    val resp1 = interpreter.execute("print(1)\nprint(2)")
+    resp1 should equal(Interpreter.ExecuteSuccess(
+      TEXT_PLAIN -> "12"
+    ))
+
+    val resp2 = interpreter.execute("println(1)\nprintln(2)")
+    resp2 should equal(Interpreter.ExecuteSuccess(
+      TEXT_PLAIN -> "1\n2\n"
     ))
   }
 
@@ -123,7 +133,7 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
       """sc.parallelize(0 to 1).map { i => i+1 }.collect""".stripMargin)
 
     response should equal(Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "res0: Array[Int] = Array(1, 2)"
+      TEXT_PLAIN -> "res0: Array[Int] = Array(1, 2)\n"
     ))
   }
 
@@ -144,7 +154,7 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
       """val r = 1
         |// comment
       """.stripMargin)
-    response should equal(Interpreter.ExecuteSuccess(TEXT_PLAIN -> "r: Int = 1"))
+    response should equal(Interpreter.ExecuteSuccess(TEXT_PLAIN -> "r: Int = 1\n"))
 
     response = interpreter.execute(
       """val r = 1
@@ -153,7 +163,7 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
         |comment
         |*/
       """.stripMargin)
-    response should equal(Interpreter.ExecuteSuccess(TEXT_PLAIN -> "r: Int = 1"))
+    response should equal(Interpreter.ExecuteSuccess(TEXT_PLAIN -> "r: Int = 1\n"))
 
     // Test statements ending with a mix of single line and multi-line comments
     response = interpreter.execute(
@@ -165,7 +175,7 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
         |*/
         |// comment
       """.stripMargin)
-    response should equal(Interpreter.ExecuteSuccess(TEXT_PLAIN -> "r: Int = 1"))
+    response should equal(Interpreter.ExecuteSuccess(TEXT_PLAIN -> "r: Int = 1\n"))
 
     response = interpreter.execute(
       """val r = 1
@@ -175,7 +185,7 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
         |comment
         |*/
       """.stripMargin)
-    response should equal(Interpreter.ExecuteSuccess(TEXT_PLAIN -> "r: Int = 1"))
+    response should equal(Interpreter.ExecuteSuccess(TEXT_PLAIN -> "r: Int = 1\n"))
 
     // Make sure incomplete statement is still returned as incomplete statement.
     response = interpreter.execute("sc.")
@@ -195,12 +205,12 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
 
     try {
       response should equal(
-        Interpreter.ExecuteSuccess(TEXT_PLAIN -> s"r: String = \n$stringWithComment"))
+        Interpreter.ExecuteSuccess(TEXT_PLAIN -> s"r: String = \n$stringWithComment\n"))
     } catch {
       case _: Exception =>
         response should equal(
           // Scala 2.11 doesn't have a " " after "="
-          Interpreter.ExecuteSuccess(TEXT_PLAIN -> s"r: String =\n$stringWithComment"))
+          Interpreter.ExecuteSuccess(TEXT_PLAIN -> s"r: String =\n$stringWithComment\n"))
     }
   }
 
