@@ -38,8 +38,6 @@
     -->
     <cluster.spec>default</cluster.spec>
     <skipDeploy>true</skipDeploy>
-    <skipITs-2.10>false</skipITs-2.10>
-    <skipITs-2.11>false</skipITs-2.11>
   </properties>
 
   <dependencies>
@@ -65,41 +63,9 @@
 
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>minicluster-dependencies_2.10</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>minicluster-dependencies_2.11</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>livy-test-lib</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.decodified</groupId>
-      <artifactId>scala-ssh_${scala.binary.version}</artifactId>
-      <version>0.7.0</version>
     </dependency>
 
     <dependency>
@@ -209,6 +175,26 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>com.googlecode.maven-download-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>download-spark-files</id>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <readTimeOut>60000</readTimeOut>
+              <retries>5</retries>
+              <url>${spark.bin.download.url}</url>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+              <unpack>true</unpack>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>
@@ -237,6 +223,7 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -247,6 +234,7 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest-maven-plugin</artifactId>
@@ -257,37 +245,19 @@
             <phase>none</phase>
           </execution>
           <execution>
-            <id>integration-test-scala-2.10</id>
+            <id>integration-test</id>
             <phase>integration-test</phase>
             <goals>
               <goal>test</goal>
             </goals>
-            <configuration>
-              <environmentVariables>
-                <LIVY_SPARK_SCALA_VERSION>2.10</LIVY_SPARK_SCALA_VERSION>
-              </environmentVariables>
-              <skipTests>${skipITs-2.10}</skipTests>
-            </configuration>
-          </execution>
-          <execution>
-            <id>integration-test-scala-2.11</id>
-            <phase>integration-test</phase>
-            <goals>
-              <goal>test</goal>
-            </goals>
-            <configuration>
-              <environmentVariables>
-                <LIVY_SPARK_SCALA_VERSION>2.11</LIVY_SPARK_SCALA_VERSION>
-              </environmentVariables>
-              <skipTests>${skipITs-2.11}</skipTests>
-            </configuration>
           </execution>
         </executions>
         <configuration>
           <environmentVariables>
             <LIVY_HOME>${execution.root}</LIVY_HOME>
-            <LIVY_TEST>true</LIVY_TEST>
+            <LIVY_TEST>false</LIVY_TEST>
             <LIVY_INTEGRATION_TEST>true</LIVY_INTEGRATION_TEST>
+            <SPARK_HOME>${project.build.directory}/${spark.bin.name}</SPARK_HOME>
           </environmentVariables>
           <systemProperties>
             <cluster.spec>${cluster.spec}</cluster.spec>
@@ -300,18 +270,6 @@
 
   <profiles>
     <profile>
-      <id>real-spark-home</id>
-      <activation>
-        <property>
-          <name>real.spark.home</name>
-        </property>
-      </activation>
-      <properties>
-        <spark.home>${real.spark.home}</spark.home>
-      </properties>
-    </profile>
-
-    <profile>
     <id>skip-integration-test</id>
       <activation>
         <property>
@@ -319,11 +277,6 @@
           <value>true</value>
         </property>
       </activation>
-      <properties>
-        <skipITs-2.10>true</skipITs-2.10>
-        <skipITs-2.11>true</skipITs-2.11>
-      </properties>
     </profile>
   </profiles>
-
 </project>

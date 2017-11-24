@@ -69,24 +69,6 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
     hdfsPath.toUri().getPath()
   }
 
-  /** Wrapper around test() to be used by pyspark tests. */
-  protected def pytest(desc: String)(testFn: => Unit): Unit = {
-    test(desc) {
-      assume(cluster.isRealSpark(), "PySpark tests require a real Spark installation.")
-      testFn
-    }
-  }
-
-  /** Wrapper around test() to be used by SparkR tests. */
-  protected def rtest(desc: String)(testFn: => Unit): Unit = {
-    test(desc) {
-      assume(!sys.props.getOrElse("skipRTests", "false").toBoolean, "Skipping R tests.")
-      assume(cluster.isRealSpark(), "SparkR tests require a real Spark installation.")
-      assume(cluster.hasSparkR(), "Spark under test does not support R.")
-      testFn
-    }
-  }
-
   /** Clean up session and show info when test fails. */
   protected def withSession[S <: LivyRestClient#Session, R]
     (s: S)

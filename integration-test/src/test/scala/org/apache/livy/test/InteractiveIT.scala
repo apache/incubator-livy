@@ -66,10 +66,9 @@ class InteractiveIT extends BaseIntegrationTestSuite {
     }
   }
 
-  pytest("pyspark interactive session") {
+  test("pyspark interactive session") {
     withNewSession(PySpark) { s =>
       s.run("1+1").verifyResult("2")
-      s.run("sqlContext").verifyResult(startsWith("<pyspark.sql.context.HiveContext"))
       s.run("sc.parallelize(range(100)).map(lambda x: x * 2).reduce(lambda x, y: x + y)")
         .verifyResult("9900")
       s.run("from pyspark.sql.types import Row").verifyResult("")
@@ -81,7 +80,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
     }
   }
 
-  rtest("R interactive session") {
+  test("R interactive session") {
     withNewSession(SparkR) { s =>
       // R's output sometimes includes the count of statements, which makes it annoying to test
       // things. This helps a bit.
@@ -89,8 +88,6 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       def count: Int = curr.incrementAndGet()
 
       s.run("1+1").verifyResult(startsWith(s"[$count] 2"))
-      s.run("sqlContext <- sparkRSQL.init(sc)").verifyResult(null)
-      s.run("hiveContext <- sparkRHive.init(sc)").verifyResult(null)
       s.run("""localDF <- data.frame(name=c("John", "Smith", "Sarah"), age=c(19, 23, 18))""")
         .verifyResult(null)
       s.run("df <- createDataFrame(sqlContext, localDF)").verifyResult(null)
