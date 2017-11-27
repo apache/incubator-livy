@@ -188,8 +188,13 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
 
   protected def scalaTest(desc: String)(testFn: => Unit): Unit = {
     test(desc) {
-      assume(sys.env("LIVY_SPARK_SCALA_VERSION") ==
-        LivySparkUtils.formatScalaVersion(Properties.versionNumberString),
+      val livyConf = new LivyConf()
+      val (sparkVersion, scalaVersion) = LivySparkUtils.sparkSubmitVersion(livyConf)
+      val formattedSparkVersion = LivySparkUtils.formatSparkVersion(sparkVersion)
+      val versionString =
+        LivySparkUtils.sparkScalaVersion(formattedSparkVersion, scalaVersion, livyConf)
+
+      assume(versionString == LivySparkUtils.formatScalaVersion(Properties.versionNumberString),
         s"Scala test can only be run with ${Properties.versionString}")
       testFn
     }
@@ -233,7 +238,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     sessionId = -1
   }
 
-  pytest("validate Python-API requests") {
+  test("validate Python-API requests") {
     val addFileContent = "hello from addfile"
     val addFilePath = createTempFilesForTest("add_file", ".txt", addFileContent, true)
     val addPyFileContent = "def test_add_pyfile(): return \"hello from addpyfile\""
@@ -253,7 +258,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     env.put("UPLOAD_FILE_URL", uploadFilePath)
     env.put("UPLOAD_PYFILE_URL", uploadPyFilePath)
 
-    builder.redirectOutput(new File(sys.props("java.io.tmpdir") + "/pytest_results.txt"))
+    builder.redirectOutput(new File(sys.props("java.io.tmpdir") + "/pytest_results.log"))
     builder.redirectErrorStream(true)
 
     val process = builder.start()
