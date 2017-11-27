@@ -193,7 +193,7 @@ private class PythonInterpreter(
 
   override def kind: String = "pyspark"
 
-  private[repl] val pysparkJobProcessor =
+  private[repl] lazy val pysparkJobProcessor =
     PythonInterpreter.initiatePy4jCallbackGateway(gatewayServer)
 
   override def close(): Unit = {

@@ -66,7 +66,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
     }
   }
 
-  pytest("submit a pyspark application") {
+  test("submit a pyspark application") {
     val scriptPath = uploadResource("batch.py")
     val output = newOutputPath()
     withScript(scriptPath, List(output)) { s =>
@@ -75,9 +75,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
     }
   }
 
-  // This is disabled since R scripts don't seem to work in yarn-cluster mode. There's a
-  // TODO comment in Spark's ApplicationMaster.scala.
-  ignore("submit a SparkR application") {
+  test("submit a SparkR application") {
     val hdfsPath = uploadResource("rtest.R")
     withScript(hdfsPath, List.empty) { s =>
       s.verifySessionSuccess()

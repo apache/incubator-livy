@@ -108,6 +108,10 @@
     <test.redirectToFile>true</test.redirectToFile>
     <execution.root>${user.dir}</execution.root>
     <spark.home>${execution.root}/dev/spark</spark.home>
+    <spark.bin.download.url>
+      https://d3kbcqa49mib13.cloudfront.net/spark-1.6.2-bin-hadoop2.6.tgz
+    </spark.bin.download.url>
+    <spark.bin.name>spark-1.6.2-bin-hadoop2.6</spark.bin.name>
     <!--  used for testing, NCSARequestLog use it for access log  -->
     <livy.log.dir>${basedir}/target</livy.log.dir>
 
@@ -228,9 +232,6 @@
     <module>scala-api/scala-2.11</module>
     <module>server</module>
     <module>test-lib</module>
-    <module>integration-test/minicluster-dependencies</module>
-    <module>integration-test/minicluster-dependencies/scala-2.10</module>
-    <module>integration-test/minicluster-dependencies/scala-2.11</module>
     <module>integration-test</module>
   </modules>
 
@@ -791,6 +792,12 @@
           <version>1.13</version>
         </plugin>
 
+        <plugin>
+          <groupId>com.googlecode.maven-download-plugin</groupId>
+          <artifactId>download-maven-plugin</artifactId>
+          <version>1.3.0</version>
+        </plugin>
+
       </plugins>
     </pluginManagement>
 
@@ -1097,6 +1104,11 @@
       </activation>
       <properties>
         <spark.version>2.0.1</spark.version>
+        <py4j.version>0.10.3</py4j.version>
+        <spark.bin.download.url>
+          https://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.0.1-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
@@ -1109,6 +1121,11 @@
       </activation>
       <properties>
         <spark.version>2.1.0</spark.version>
+        <py4j.version>0.10.4</py4j.version>
+        <spark.bin.download.url>
+          https://d3kbcqa49mib13.cloudfront.net/spark-2.1.0-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.1.0-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
@@ -1122,6 +1139,11 @@
       <properties>
         <spark.version>2.2.0</spark.version>
         <java.version>1.8</java.version>
+        <py4j.version>0.10.4</py4j.version>
+        <spark.bin.download.url>
+          https://d3kbcqa49mib13.cloudfront.net/spark-2.2.0-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.2.0-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
