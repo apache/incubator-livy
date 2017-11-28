@@ -98,9 +98,9 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       }
 
       // Stopped session should be gc-ed after retained timeout
-      for (s <- Seq(SessionState.Error,
-        SessionState.Success,
-        SessionState.Dead)) {
+      for (s <- Seq(SessionState.Error(),
+        SessionState.Success(),
+        SessionState.Dead())) {
         eventually(timeout(30 seconds), interval(100 millis)) {
           changeStateAndCheck(s) { sm => sm.get(session.id) should be (None) }
         }

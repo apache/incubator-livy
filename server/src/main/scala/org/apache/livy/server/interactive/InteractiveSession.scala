@@ -398,7 +398,7 @@ class InteractiveSession(
   }
 
   if (client.isEmpty) {
-    transition(Dead)
+    transition(Dead())
     val msg = s"Cannot recover interactive session $id because its RSCDriver URI is unknown."
     info(msg)
     sessionLog = IndexedSeq(msg)
@@ -435,7 +435,7 @@ class InteractiveSession(
         // this callback might be triggered. Check and don't call stop() to avoid nested called
         // if the session is already shutting down.
         if (serverSideState != SessionState.ShuttingDown) {
-          transition(SessionState.Error)
+          transition(SessionState.Error())
           stop()
           app.foreach { a =>
             info(s"Failed to ping RSC driver for session $id. Killing application.")
@@ -474,7 +474,7 @@ class InteractiveSession(
           _.kill()
         }
     } finally {
-      transition(SessionState.Dead)
+      transition(SessionState.Dead())
     }
   }
 
@@ -611,7 +611,7 @@ class InteractiveSession(
       debug(s"$this app state changed from $oldState to $newState")
       newState match {
         case SparkApp.State.FINISHED | SparkApp.State.KILLED | SparkApp.State.FAILED =>
-          transition(SessionState.Dead)
+          transition(SessionState.Dead())
         case _ =>
       }
     }
