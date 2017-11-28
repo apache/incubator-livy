@@ -178,9 +178,9 @@ class BatchSession(
           _state = SessionState.Running
           info(s"Batch session $id created [appid: ${appId.orNull}, state: ${state.toString}, " +
             s"info: ${appInfo.asJavaMap}]")
-        case SparkApp.State.FINISHED => _state = SessionState.Success
+        case SparkApp.State.FINISHED => _state = SessionState.Success()
         case SparkApp.State.KILLED | SparkApp.State.FAILED =>
-          _state = SessionState.Dead
+          _state = SessionState.Dead()
         case _ =>
       }
     }

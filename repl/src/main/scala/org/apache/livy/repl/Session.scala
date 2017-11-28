@@ -136,7 +136,7 @@ class Session(
       entries
     }(interpreterExecutor)
 
-    future.onFailure { case _ => changeState(SessionState.Error) }(interpreterExecutor)
+    future.onFailure { case _ => changeState(SessionState.Error()) }(interpreterExecutor)
     future
   }
 
@@ -297,7 +297,7 @@ class Session(
               (TRACEBACK -> traceback)
 
           case Interpreter.ExecuteAborted(message) =>
-            changeState(SessionState.Error)
+            changeState(SessionState.Error())
 
             (STATUS -> ERROR) ~
               (EXECUTION_COUNT -> executionCount) ~
