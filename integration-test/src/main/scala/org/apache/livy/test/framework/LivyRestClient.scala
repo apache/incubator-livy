@@ -117,9 +117,13 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
   }
 
   class InteractiveSession(id: Int) extends Session(id, INTERACTIVE_TYPE) {
-    class Statement(code: String) {
+    class Statement(code: String, codeKind: Option[Kind] = None) {
       val stmtId = {
-        val requestBody = Map("code" -> code)
+        val requestBody = if (codeKind.isDefined) {
+          Map("code" -> code, "kind" -> codeKind.get.toString())
+        } else {
+          Map("code" -> code)
+        }
         val r = httpClient.preparePost(s"$url/statements")
           .setBody(mapper.writeValueAsString(requestBody))
           .execute()
@@ -146,8 +150,11 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
               val data = output("data").asInstanceOf[Map[String, Any]]
               var rst = data.getOrElse("text/plain", "")
               val magicRst = data.getOrElse("application/vnd.livy.table.v1+json", null)
+              val jsonRst = data.getOrElse("application/json", null)
               if (magicRst != null) {
                 rst = mapper.writeValueAsString(magicRst)
+              } else if (jsonRst != null) {
+                rst = mapper.writeValueAsString(jsonRst)
               }
               Left(rst.asInstanceOf[String])
             case Some("error") => Right(mapper.convertValue(output, classOf[StatementError]))
@@ -214,7 +221,9 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
       }
     }
 
-    def run(code: String): Statement = { new Statement(code) }
+    def run(code: String, codeKind: Option[Kind] = None): Statement = {
+      new Statement(code, codeKind)
+    }
 
     def complete(code: String, kind: String, cursor: Int): Completion = {
       new Completion(code, kind, cursor)
