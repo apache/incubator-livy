@@ -97,10 +97,13 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
   it should "throw exception for illegal query" in withInterpreter { interpreter =>
     val resp = interpreter.execute(
       """
-        |SELECT * FROM peopl1
+        |SELECT * FROM people1
       """.stripMargin)
 
     assert(resp.isInstanceOf[Interpreter.ExecuteError])
+    val error = resp.asInstanceOf[Interpreter.ExecuteError]
+    error.ename should be ("Error")
+    assert(error.evalue.contains("not found"))
   }
 
   it should "fail if submitting multiple queries" in withInterpreter { interpreter =>
@@ -111,5 +114,6 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
       """.stripMargin)
 
     assert(resp.isInstanceOf[Interpreter.ExecuteError])
+    resp.asInstanceOf[Interpreter.ExecuteError].ename should be ("Error")
   }
 }
