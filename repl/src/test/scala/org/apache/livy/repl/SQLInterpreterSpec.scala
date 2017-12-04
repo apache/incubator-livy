@@ -24,6 +24,7 @@ import org.json4s.{DefaultFormats, JValue}
 import org.json4s.JsonAST.JArray
 import org.json4s.JsonDSL._
 
+import org.apache.livy.rsc.RSCConf
 import org.apache.livy.rsc.driver.SparkEntries
 
 case class People(name: String, age: Int)
@@ -39,7 +40,7 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
     if (sparkEntries == null) {
       sparkEntries = new SparkEntries(conf)
     }
-    new SQLInterpreter(conf, sparkEntries)
+    new SQLInterpreter(conf, new RSCConf(), sparkEntries)
   }
 
   it should "execute sql queries" in withInterpreter { interpreter =>

@@ -28,6 +28,7 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 
 import org.apache.livy.Logging
+import org.apache.livy.rsc.RSCConf
 import org.apache.livy.rsc.driver.SparkEntries
 
 /**
@@ -61,13 +62,14 @@ import org.apache.livy.rsc.driver.SparkEntries
  */
 class SQLInterpreter(
     sparkConf: SparkConf,
+    rscConf: RSCConf,
     sparkEntries: SparkEntries) extends Interpreter with Logging {
 
   private implicit def formats = DefaultFormats
 
   private var spark: AnyRef = null
 
-  private val maxResult = sparkConf.getInt("spark.livy.sql.max-result", 1000)
+  private val maxResult = rscConf.getInt(RSCConf.Entry.SQL_NUM_ROWS)
 
   override def kind: String = "sql"
 

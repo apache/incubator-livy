@@ -666,12 +666,12 @@ A session represents an interactive shell.
     <td>Interactive R Spark session</td>
   </tr>
   <tr>
-    <td>SQL</td>
+    <td>sql</td>
     <td>Interactive SQL Spark session</td>
   </tr>
   </table>
 
-Starting with version 0.5.0-incubating, each session can support all three Scala, Python and R
+Starting with version 0.5.0-incubating, each session can support all four Scala, Python and R
 interpreters with newly added SQL interpreter. The ``kind`` field in session creation 
 is no longer required, instead users should specify code kind (spark, pyspark, sparkr or sql) 
 during statement submission.
@@ -681,7 +681,7 @@ while ignoring ``kind`` in statement submission. Livy will then use this session
 ``kind`` as default kind for all the submitted statements.
 
 If users want to submit code other than default ``kind`` specified in session creation, users
-need to specify code kind (spark, pyspark, sparkr or SQL) during statement submission.
+need to specify code kind (spark, pyspark, sparkr or sql) during statement submission.
 
 #### pyspark
 
