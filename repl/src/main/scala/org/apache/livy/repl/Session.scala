@@ -105,6 +105,7 @@ class Session(
             throw new IllegalStateException("SparkInterpreter should not be lazily created.")
           case PySpark => PythonInterpreter(sparkConf, entries)
           case SparkR => SparkRInterpreter(sparkConf, entries)
+          case SQL => new SQLInterpreter(sparkConf, livyConf, entries)
         }
         interp.start()
         interpGroup(kind) = interp
@@ -331,24 +332,25 @@ class Session(
 
   private def setJobGroup(codeType: Kind, statementId: Int): String = {
     val jobGroup = statementIdToJobGroup(statementId)
-    val cmd = codeType match {
-      case Spark =>
+    val (cmd, tpe) = codeType match {
+      case Spark | SQL =>
         // A dummy value to avoid automatic value binding in scala REPL.
-        s"""val _livyJobGroup$jobGroup = sc.setJobGroup("$jobGroup",""" +
-          s""""Job group for statement $jobGroup")"""
+        (s"""val _livyJobGroup$jobGroup = sc.setJobGroup("$jobGroup",""" +
+          s""""Job group for statement $jobGroup")""",
+         Spark)
       case PySpark =>
-        s"""sc.setJobGroup("$jobGroup", "Job group for statement $jobGroup")"""
+        (s"""sc.setJobGroup("$jobGroup", "Job group for statement $jobGroup")""", PySpark)
       case SparkR =>
         sc.getConf.get("spark.livy.spark_major_version", "1") match {
           case "1" =>
-            s"""setJobGroup(sc, "$jobGroup", "Job group for statement $jobGroup", """ +
-              "FALSE)"
+            (s"""setJobGroup(sc, "$jobGroup", "Job group for statement $jobGroup", FALSE)""",
+             SparkR)
           case "2" =>
-            s"""setJobGroup("$jobGroup", "Job group for statement $jobGroup", FALSE)"""
+            (s"""setJobGroup("$jobGroup", "Job group for statement $jobGroup", FALSE)""", SparkR)
         }
     }
     // Set the job group
-    executeCode(interpreter(codeType), statementId, cmd)
+    executeCode(interpreter(tpe), statementId, cmd)
   }
 
   private def statementIdToJobGroup(statementId: Int): String = {
