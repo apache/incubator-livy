@@ -52,7 +52,7 @@ public class RSCConf extends ClientConf<RSCConf> {
     // Address for the RSC driver to connect back with it's connection info.
     LAUNCHER_ADDRESS("launcher.address", null),
     LAUNCHER_PORT_RANGE("launcher.port.range", "10000~10010"),
-    // Setting up of this propety by user has no benefit. It is currently being used
+    // Setting up of this property by user has no benefit. It is currently being used
     // to pass  port information from ContextLauncher to RSCDriver
     LAUNCHER_PORT("launcher.port", -1),
     // How long will the RSC wait for a connection for a Livy server before shutting itself down.
@@ -78,7 +78,10 @@ public class RSCConf extends ClientConf<RSCConf> {
     JOB_CANCEL_TIMEOUT("job-cancel.timeout", "30s"),
 
     RETAINED_STATEMENTS("retained-statements", 100),
-    RETAINED_SHARE_VARIABLES("retained.share-variables", 100);
+    RETAINED_SHARE_VARIABLES("retained.share-variables", 100),
+
+    // Number of result rows to get for SQL Interpreters.
+    SQL_NUM_ROWS("sql.num-rows", 1000);
 
     private final String key;
     private final Object dflt;
