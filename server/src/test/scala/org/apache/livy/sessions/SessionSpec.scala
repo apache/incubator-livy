@@ -29,8 +29,8 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
     val conf = new LivyConf(false)
     conf.hadoopConf.set("fs.defaultFS", "dummy:///")
 
-    val uris = Seq("http://example.com/foo", "hdfs:/bar", "/baz")
-    val expected = Seq(uris(0), uris(1), "dummy:///baz")
+    val uris = Seq("http://example.com/foo", "hdfs:/bar", "/baz", "/foo#bar")
+    val expected = Seq(uris(0), uris(1), "dummy:///baz", "dummy:///foo#bar")
     assert(Session.resolveURIs(uris, conf) === expected)
 
     intercept[IllegalArgumentException] {
