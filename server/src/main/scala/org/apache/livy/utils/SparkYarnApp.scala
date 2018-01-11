@@ -206,23 +206,23 @@ class SparkYarnApp private[utils] (
       appId: ApplicationId,
       yarnAppState: YarnApplicationState,
       finalAppStatus: FinalApplicationStatus): SparkApp.State.Value = {
-    yarnAppState match {
-      case (YarnApplicationState.NEW |
-            YarnApplicationState.NEW_SAVING |
-            YarnApplicationState.SUBMITTED |
-            YarnApplicationState.ACCEPTED) => SparkApp.State.STARTING
-      case YarnApplicationState.RUNNING => SparkApp.State.RUNNING
-      case YarnApplicationState.FINISHED =>
-        finalAppStatus match {
-          case FinalApplicationStatus.SUCCEEDED => SparkApp.State.FINISHED
-          case FinalApplicationStatus.FAILED => SparkApp.State.FAILED
-          case FinalApplicationStatus.KILLED => SparkApp.State.KILLED
-          case s =>
-            error(s"Unknown YARN final status $appId $s")
-            SparkApp.State.FAILED
-        }
-      case YarnApplicationState.FAILED => SparkApp.State.FAILED
-      case YarnApplicationState.KILLED => SparkApp.State.KILLED
+    (yarnAppState, finalAppStatus) match {
+      case (YarnApplicationState.NEW, FinalApplicationStatus.UNDEFINED) |
+           (YarnApplicationState.NEW_SAVING, FinalApplicationStatus.UNDEFINED) |
+           (YarnApplicationState.SUBMITTED, FinalApplicationStatus.UNDEFINED) |
+           (YarnApplicationState.ACCEPTED, FinalApplicationStatus.UNDEFINED) =>
+        SparkApp.State.STARTING
+      case (YarnApplicationState.RUNNING, FinalApplicationStatus.UNDEFINED) =>
+        SparkApp.State.RUNNING
+      case (YarnApplicationState.FINISHED, FinalApplicationStatus.SUCCEEDED) =>
+        SparkApp.State.FINISHED
+      case (YarnApplicationState.FAILED, FinalApplicationStatus.FAILED) =>
+        SparkApp.State.FAILED
+      case (YarnApplicationState.KILLED, FinalApplicationStatus.KILLED) =>
+        SparkApp.State.KILLED
+      case (state, finalStatus) => // any other combination is invalid, so FAIL the application.
+        error(s"Unknown YARN state $state for app $appId with final status $finalStatus.")
+        SparkApp.State.FAILED
     }
   }
 
@@ -231,15 +231,6 @@ class SparkYarnApp private[utils] (
   // batch YARN queries.
   private[utils] val yarnAppMonitorThread = Utils.startDaemonThread(s"yarnAppMonitorThread-$this") {
     try {
-      // Wait for spark-submit to finish submitting the app to YARN.
-      process.foreach { p =>
-        val exitCode = p.waitFor()
-        if (exitCode != 0) {
-          throw new Exception(s"spark-submit exited with code $exitCode}.\n" +
-            s"${process.get.inputLines.mkString("\n")}")
-        }
-      }
-
       // If appId is not known, query YARN by appTag to get it.
       val appId = try {
         appIdOption.map(ConverterUtils.toApplicationId).getOrElse {

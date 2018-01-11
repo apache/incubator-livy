@@ -17,7 +17,9 @@
 package org.apache.livy.utils
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -60,19 +62,46 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
 
         val mockAppReport = mock[ApplicationReport]
         when(mockAppReport.getApplicationId).thenReturn(appId)
-        when(mockAppReport.getFinalApplicationStatus).thenReturn(FinalApplicationStatus.SUCCEEDED)
-        // Simulate YARN app state progression.
-        when(mockAppReport.getYarnApplicationState).thenAnswer(new Answer[YarnApplicationState]() {
-          private var stateSeq = List(ACCEPTED, RUNNING, FINISHED)
 
-          override def answer(invocation: InvocationOnMock): YarnApplicationState = {
-            val currentState = stateSeq.head
-            if (stateSeq.tail.nonEmpty) {
-              stateSeq = stateSeq.tail
+        // Simulate YARN app state progression.
+        val applicationStateList = List(
+          ACCEPTED,
+          RUNNING,
+          FINISHED
+        )
+        val finalApplicationStatusList = List(
+          FinalApplicationStatus.UNDEFINED,
+          FinalApplicationStatus.UNDEFINED,
+          FinalApplicationStatus.SUCCEEDED
+       )
+        val stateIndex = new AtomicInteger(-1)
+        when(mockAppReport.getYarnApplicationState).thenAnswer(
+          // get and increment
+          new Answer[YarnApplicationState] {
+            override def answer(invocationOnMock: InvocationOnMock): YarnApplicationState = {
+              stateIndex.incrementAndGet match {
+                case i if i < applicationStateList.size =>
+                  applicationStateList(i)
+                case _ =>
+                  applicationStateList.last
+              }
             }
-            currentState
           }
-        })
+        )
+        when(mockAppReport.getFinalApplicationStatus).thenAnswer(
+          new Answer[FinalApplicationStatus] {
+            override def answer(invocationOnMock: InvocationOnMock): FinalApplicationStatus = {
+              // do not increment here, only get
+              stateIndex.get match {
+                case i if i < applicationStateList.size =>
+                  finalApplicationStatusList(i)
+                case _ =>
+                  finalApplicationStatusList.last
+              }
+            }
+          }
+        )
+
         when(mockYarnClient.getApplicationReport(appId)).thenReturn(mockAppReport)
 
         val app = new SparkYarnApp(
@@ -210,11 +239,46 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         assert(app.mapYarnState(appId, RUNNING, UNDEFINED) == State.RUNNING)
         assert(
           app.mapYarnState(appId, FINISHED, FinalApplicationStatus.SUCCEEDED) == State.FINISHED)
-        assert(app.mapYarnState(appId, FINISHED, FinalApplicationStatus.FAILED) == State.FAILED)
-        assert(app.mapYarnState(appId, FINISHED, FinalApplicationStatus.KILLED) == State.KILLED)
+        assert(app.mapYarnState(appId, FAILED, FinalApplicationStatus.FAILED) == State.FAILED)
+        assert(app.mapYarnState(appId, KILLED, FinalApplicationStatus.KILLED) == State.KILLED)
+
+        // none of the (state , finalStatus) combination below should happen
         assert(app.mapYarnState(appId, FINISHED, UNDEFINED) == State.FAILED)
+        assert(app.mapYarnState(appId, FINISHED, FinalApplicationStatus.FAILED) == State.FAILED)
+        assert(app.mapYarnState(appId, FINISHED, FinalApplicationStatus.KILLED) == State.FAILED)
         assert(app.mapYarnState(appId, FAILED, UNDEFINED) == State.FAILED)
-        assert(app.mapYarnState(appId, KILLED, UNDEFINED) == State.KILLED)
+        assert(app.mapYarnState(appId, KILLED, UNDEFINED) == State.FAILED)
+        assert(app.mapYarnState(appId, FAILED, FinalApplicationStatus.SUCCEEDED) == State.FAILED)
+        assert(app.mapYarnState(appId, KILLED, FinalApplicationStatus.SUCCEEDED) == State.FAILED)
+      }
+    }
+
+    it("should get App Id") {
+      Clock.withSleepMethod(mockSleep) {
+        val mockYarnClient = mock[YarnClient]
+        val mockAppReport = mock[ApplicationReport]
+
+        when(mockAppReport.getApplicationTags).thenReturn(Set(appTag.toLowerCase).asJava)
+        when(mockAppReport.getApplicationId).thenReturn(appId)
+        when(mockAppReport.getFinalApplicationStatus).thenReturn(FinalApplicationStatus.SUCCEEDED)
+        when(mockAppReport.getYarnApplicationState).thenReturn(YarnApplicationState.FINISHED)
+        when(mockYarnClient.getApplicationReport(appId)).thenReturn(mockAppReport)
+        when(mockYarnClient.getApplications(Set("SPARK").asJava))
+          .thenReturn(List(mockAppReport).asJava)
+
+        val mockListener = mock[SparkAppListener]
+        val mockSparkSubmit = mock[LineBufferedProcess]
+        val app = new SparkYarnApp(
+          appTag, None, Some(mockSparkSubmit), Some(mockListener), livyConf, mockYarnClient)
+
+        cleanupThread(app.yarnAppMonitorThread) {
+          app.yarnAppMonitorThread.join(TEST_TIMEOUT.toMillis)
+          assert(!app.yarnAppMonitorThread.isAlive,
+            "YarnAppMonitorThread should terminate after YARN app is finished.")
+
+          verify(mockYarnClient, atLeast(1)).getApplicationReport(appId)
+          verify(mockListener).appIdKnown(appId.toString)
+        }
       }
     }
 
@@ -311,20 +375,30 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         val mockYarnClient = mock[YarnClient]
         val mockAppReport = mock[ApplicationReport]
         val mockApplicationAttemptId = mock[ApplicationAttemptId]
-        var done = false
+        val done = new AtomicBoolean(false)
 
         when(mockAppReport.getApplicationId).thenReturn(appId)
         when(mockAppReport.getYarnApplicationState).thenAnswer(
           new Answer[YarnApplicationState]() {
             override def answer(invocation: InvocationOnMock): YarnApplicationState = {
-              if (done) {
+              if (done.get()) {
                 FINISHED
               } else {
                 RUNNING
               }
             }
           })
-        when(mockAppReport.getFinalApplicationStatus).thenReturn(FinalApplicationStatus.SUCCEEDED)
+        when(mockAppReport.getFinalApplicationStatus).thenAnswer(
+          new Answer[FinalApplicationStatus]() {
+            override def answer(invocation: InvocationOnMock): FinalApplicationStatus = {
+              if (done.get()) {
+                FinalApplicationStatus.SUCCEEDED
+              } else {
+                FinalApplicationStatus.UNDEFINED
+              }
+            }
+          })
+
         when(mockAppReport.getCurrentApplicationAttemptId).thenReturn(mockApplicationAttemptId)
         when(mockYarnClient.getApplicationReport(appId)).thenReturn(mockAppReport)
 
@@ -342,7 +416,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         cleanupThread(app.yarnAppMonitorThread) {
           pollCountDown.await(TEST_TIMEOUT.length, TEST_TIMEOUT.unit)
           assert(app.state == SparkApp.State.RUNNING)
-          done = true
+          done.set(true)
 
           app.yarnAppMonitorThread.join(TEST_TIMEOUT.toMillis)
         }

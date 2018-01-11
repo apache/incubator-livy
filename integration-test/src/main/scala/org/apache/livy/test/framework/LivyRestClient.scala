@@ -46,6 +46,8 @@ object LivyRestClient {
   @JsonIgnoreProperties(ignoreUnknown = true)
   private case class StatementResult(id: Int, state: String, output: Map[String, Any])
 
+  private case class CompletionResult(candidates: Seq[String])
+
   @JsonIgnoreProperties(ignoreUnknown = true)
   case class StatementError(ename: String, evalue: String, stackTrace: Seq[String])
 
@@ -110,14 +112,18 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
 
   class BatchSession(id: Int) extends Session(id, BATCH_TYPE) {
     def verifySessionDead(): Unit = verifySessionState(SessionState.Dead())
-    def verifySessionRunning(): Unit = verifySessionState(SessionState.Running())
+    def verifySessionRunning(): Unit = verifySessionState(SessionState.Running)
     def verifySessionSuccess(): Unit = verifySessionState(SessionState.Success())
   }
 
   class InteractiveSession(id: Int) extends Session(id, INTERACTIVE_TYPE) {
-    class Statement(code: String) {
+    class Statement(code: String, codeKind: Option[Kind] = None) {
       val stmtId = {
-        val requestBody = Map("code" -> code)
+        val requestBody = if (codeKind.isDefined) {
+          Map("code" -> code, "kind" -> codeKind.get.toString())
+        } else {
+          Map("code" -> code)
+        }
         val r = httpClient.preparePost(s"$url/statements")
           .setBody(mapper.writeValueAsString(requestBody))
           .execute()
@@ -144,8 +150,11 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
               val data = output("data").asInstanceOf[Map[String, Any]]
               var rst = data.getOrElse("text/plain", "")
               val magicRst = data.getOrElse("application/vnd.livy.table.v1+json", null)
+              val jsonRst = data.getOrElse("application/json", null)
               if (magicRst != null) {
                 rst = mapper.writeValueAsString(magicRst)
+              } else if (jsonRst != null) {
+                rst = mapper.writeValueAsString(jsonRst)
               }
               Left(rst.asInstanceOf[String])
             case Some("error") => Right(mapper.convertValue(output, classOf[StatementError]))
@@ -188,7 +197,37 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
       }
     }
 
-    def run(code: String): Statement = { new Statement(code) }
+    class Completion(code: String, kind: String, cursor: Int) {
+      val completions = {
+        val requestBody = Map("code" -> code, "cursor" -> cursor, "kind" -> kind)
+        val r = httpClient.preparePost(s"$url/completion")
+          .setBody(mapper.writeValueAsString(requestBody))
+          .execute()
+          .get()
+        assertStatusCode(r, HttpServletResponse.SC_OK)
+
+        val res = mapper.readValue(r.getResponseBodyAsStream, classOf[CompletionResult])
+        res.candidates
+      }
+
+      final def result(): Seq[String] = completions
+
+      def verifyContaining(expected: List[String]): Unit = {
+        assert(result().toSet.forall(x => expected.contains(x)))
+      }
+
+      def verifyNone(): Unit = {
+        assert(result() == List(), s"Expected no completion proposals but found $completions")
+      }
+    }
+
+    def run(code: String, codeKind: Option[Kind] = None): Statement = {
+      new Statement(code, codeKind)
+    }
+
+    def complete(code: String, kind: String, cursor: Int): Completion = {
+      new Completion(code, kind, cursor)
+    }
 
     def runFatalStatement(code: String): Unit = {
       val requestBody = Map("code" -> code)
@@ -200,7 +239,7 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
     }
 
     def verifySessionIdle(): Unit = {
-      verifySessionState(SessionState.Idle())
+      verifySessionState(SessionState.Idle)
     }
   }
 

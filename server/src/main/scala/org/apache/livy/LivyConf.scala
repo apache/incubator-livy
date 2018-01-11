@@ -123,7 +123,7 @@ object LivyConf {
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)
 
   // If Livy can't find the yarn app within this time, consider it lost.
-  val YARN_APP_LOOKUP_TIMEOUT = Entry("livy.server.yarn.app-lookup-timeout", "60s")
+  val YARN_APP_LOOKUP_TIMEOUT = Entry("livy.server.yarn.app-lookup-timeout", "120s")
 
   // How often Livy polls YARN to refresh YARN app state.
   val YARN_POLL_INTERVAL = Entry("livy.server.yarn.poll-interval", "5s")
@@ -148,6 +148,8 @@ object LivyConf {
   val SESSION_TIMEOUT = Entry("livy.server.session.timeout", "1h")
   // How long a finished session state will be kept in memory
   val SESSION_STATE_RETAIN_TIME = Entry("livy.server.session.state-retain.sec", "600s")
+  // Max creating session in livyServer
+  val SESSION_MAX_CREATION = Entry("livy.server.session.max-creation", 100)
 
   val SPARK_MASTER = "spark.master"
   val SPARK_DEPLOY_MODE = "spark.submit.deployMode"

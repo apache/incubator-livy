@@ -26,6 +26,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 import org.apache.spark.{SparkConf, SparkContext}
 import org.json4s.jackson.JsonMethods.{compact, render}
@@ -64,10 +65,10 @@ class Session(
 
   private implicit val formats = DefaultFormats
 
-  private var _state: SessionState = SessionState.NotStarted()
+  private var _state: SessionState = SessionState.NotStarted
 
   // Number of statements kept in driver's memory
-  private val numRetainedStatements = livyConf.getInt(RSCConf.Entry.RETAINED_STATEMENT_NUMBER)
+  private val numRetainedStatements = livyConf.getInt(RSCConf.Entry.RETAINED_STATEMENTS)
 
   private val _statements = new JLinkedHashMap[Int, Statement] {
     protected override def removeEldestEntry(eldest: Entry[Int, Statement]): Boolean = {
@@ -90,30 +91,36 @@ class Session(
     entries.sc().sc
   }
 
-  private[repl] def interpreter(kind: Kind): Interpreter = interpGroup.synchronized {
+  private[repl] def interpreter(kind: Kind): Option[Interpreter] = interpGroup.synchronized {
     if (interpGroup.contains(kind)) {
-      interpGroup(kind)
+      Some(interpGroup(kind))
     } else {
-      require(entries != null,
-        "SparkEntries should not be null when lazily initialize other interpreters.")
+      try {
+        require(entries != null,
+          "SparkEntries should not be null when lazily initialize other interpreters.")
 
-      val interp = kind match {
-        case Spark() =>
-          // This should never be touched here.
-          throw new IllegalStateException("SparkInterpreter should not be lazily created.")
-        case PySpark() => PythonInterpreter(sparkConf, entries)
-        case SparkR() => SparkRInterpreter(sparkConf, entries)
+        val interp = kind match {
+          case Spark =>
+            // This should never be touched here.
+            throw new IllegalStateException("SparkInterpreter should not be lazily created.")
+          case PySpark => PythonInterpreter(sparkConf, entries)
+          case SparkR => SparkRInterpreter(sparkConf, entries)
+          case SQL => new SQLInterpreter(sparkConf, livyConf, entries)
+        }
+        interp.start()
+        interpGroup(kind) = interp
+        Some(interp)
+      } catch {
+        case NonFatal(e) =>
+          warn(s"Fail to start interpreter $kind", e)
+          None
       }
-      interp.start()
-      interpGroup(kind) = interp
-
-      interp
     }
   }
 
   def start(): Future[SparkEntries] = {
     val future = Future {
-      changeState(SessionState.Starting())
+      changeState(SessionState.Starting)
 
       // Always start SparkInterpreter after beginning, because we rely on SparkInterpreter to
       // initialize SparkContext and create SparkEntries.
@@ -123,10 +130,10 @@ class Session(
       entries = sparkInterp.sparkEntries()
       require(entries != null, "SparkEntries object should not be null in Spark Interpreter.")
       interpGroup.synchronized {
-        interpGroup.put(Spark(), sparkInterp)
+        interpGroup.put(Spark, sparkInterp)
       }
 
-      changeState(SessionState.Idle())
+      changeState(SessionState.Idle)
       entries
     }(interpreterExecutor)
 
@@ -143,7 +150,7 @@ class Session(
   def execute(code: String, codeType: String = null): Int = {
     val tpe = if (codeType != null) {
       Kind(codeType)
-    } else if (defaultInterpKind != Shared()) {
+    } else if (defaultInterpKind != Shared) {
       defaultInterpKind
     } else {
       throw new IllegalArgumentException(s"Code type should be specified if session kind is shared")
@@ -167,6 +174,11 @@ class Session(
     }(interpreterExecutor)
 
     statementId
+  }
+
+  def complete(code: String, codeType: String, cursor: Int): Array[String] = {
+    val tpe = Kind(codeType)
+    interpreter(tpe).map { _.complete(code, cursor) }.getOrElse(Array.empty)
   }
 
   def cancel(statementId: Int): Unit = {
@@ -245,62 +257,73 @@ class Session(
     stateChangedCallback(newState)
   }
 
-  private def executeCode(interp: Interpreter, executionCount: Int, code: String): String = {
-    changeState(SessionState.Busy())
+  private def executeCode(interp: Option[Interpreter],
+     executionCount: Int,
+     code: String): String = {
+    changeState(SessionState.Busy)
 
     def transitToIdle() = {
       val executingLastStatement = executionCount == newStatementId.intValue() - 1
       if (_statements.isEmpty || executingLastStatement) {
-        changeState(SessionState.Idle())
+        changeState(SessionState.Idle)
       }
     }
 
-    val resultInJson = try {
-      interp.execute(code) match {
-        case Interpreter.ExecuteSuccess(data) =>
-          transitToIdle()
+    val resultInJson = interp.map { i =>
+      try {
+        i.execute(code) match {
+          case Interpreter.ExecuteSuccess(data) =>
+            transitToIdle()
 
-          (STATUS -> OK) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (DATA -> data)
+            (STATUS -> OK) ~
+              (EXECUTION_COUNT -> executionCount) ~
+              (DATA -> data)
 
-        case Interpreter.ExecuteIncomplete() =>
+          case Interpreter.ExecuteIncomplete() =>
+            transitToIdle()
+
+            (STATUS -> ERROR) ~
+              (EXECUTION_COUNT -> executionCount) ~
+              (ENAME -> "Error") ~
+              (EVALUE -> "incomplete statement") ~
+              (TRACEBACK -> Seq.empty[String])
+
+          case Interpreter.ExecuteError(ename, evalue, traceback) =>
+            transitToIdle()
+
+            (STATUS -> ERROR) ~
+              (EXECUTION_COUNT -> executionCount) ~
+              (ENAME -> ename) ~
+              (EVALUE -> evalue) ~
+              (TRACEBACK -> traceback)
+
+          case Interpreter.ExecuteAborted(message) =>
+            changeState(SessionState.Error())
+
+            (STATUS -> ERROR) ~
+              (EXECUTION_COUNT -> executionCount) ~
+              (ENAME -> "Error") ~
+              (EVALUE -> f"Interpreter died:\n$message") ~
+              (TRACEBACK -> Seq.empty[String])
+        }
+      } catch {
+        case e: Throwable =>
+          error("Exception when executing code", e)
+
           transitToIdle()
 
           (STATUS -> ERROR) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (ENAME -> "Error") ~
-          (EVALUE -> "incomplete statement") ~
-          (TRACEBACK -> Seq.empty[String])
-
-        case Interpreter.ExecuteError(ename, evalue, traceback) =>
-          transitToIdle()
-
-          (STATUS -> ERROR) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (ENAME -> ename) ~
-          (EVALUE -> evalue) ~
-          (TRACEBACK -> traceback)
-
-        case Interpreter.ExecuteAborted(message) =>
-          changeState(SessionState.Error())
-
-          (STATUS -> ERROR) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (ENAME -> "Error") ~
-          (EVALUE -> f"Interpreter died:\n$message") ~
-          (TRACEBACK -> Seq.empty[String])
+            (EXECUTION_COUNT -> executionCount) ~
+            (ENAME -> f"Internal Error: ${e.getClass.getName}") ~
+            (EVALUE -> e.getMessage) ~
+            (TRACEBACK -> Seq.empty[String])
       }
-    } catch {
-      case e: Throwable =>
-        error("Exception when executing code", e)
-
-        transitToIdle()
-
-        (STATUS -> ERROR) ~
+    }.getOrElse {
+      transitToIdle()
+      (STATUS -> ERROR) ~
         (EXECUTION_COUNT -> executionCount) ~
-        (ENAME -> f"Internal Error: ${e.getClass.getName}") ~
-        (EVALUE -> e.getMessage) ~
+        (ENAME -> "InterpreterError") ~
+        (EVALUE -> "Fail to start interpreter") ~
         (TRACEBACK -> Seq.empty[String])
     }
 
@@ -309,24 +332,25 @@ class Session(
 
   private def setJobGroup(codeType: Kind, statementId: Int): String = {
     val jobGroup = statementIdToJobGroup(statementId)
-    val cmd = codeType match {
-      case Spark() =>
+    val (cmd, tpe) = codeType match {
+      case Spark | SQL =>
         // A dummy value to avoid automatic value binding in scala REPL.
-        s"""val _livyJobGroup$jobGroup = sc.setJobGroup("$jobGroup",""" +
-          s""""Job group for statement $jobGroup")"""
-      case PySpark() =>
-        s"""sc.setJobGroup("$jobGroup", "Job group for statement $jobGroup")"""
-      case SparkR() =>
+        (s"""val _livyJobGroup$jobGroup = sc.setJobGroup("$jobGroup",""" +
+          s""""Job group for statement $jobGroup")""",
+         Spark)
+      case PySpark =>
+        (s"""sc.setJobGroup("$jobGroup", "Job group for statement $jobGroup")""", PySpark)
+      case SparkR =>
         sc.getConf.get("spark.livy.spark_major_version", "1") match {
           case "1" =>
-            s"""setJobGroup(sc, "$jobGroup", "Job group for statement $jobGroup", """ +
-              "FALSE)"
+            (s"""setJobGroup(sc, "$jobGroup", "Job group for statement $jobGroup", FALSE)""",
+             SparkR)
           case "2" =>
-            s"""setJobGroup("$jobGroup", "Job group for statement $jobGroup", FALSE)"""
+            (s"""setJobGroup("$jobGroup", "Job group for statement $jobGroup", FALSE)""", SparkR)
         }
     }
     // Set the job group
-    executeCode(interpreter(codeType), statementId, cmd)
+    executeCode(interpreter(tpe), statementId, cmd)
   }
 
   private def statementIdToJobGroup(statementId: Int): String = {

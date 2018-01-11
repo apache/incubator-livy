@@ -66,7 +66,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
     }
   }
 
-  pytest("submit a pyspark application") {
+  test("submit a pyspark application") {
     val scriptPath = uploadResource("batch.py")
     val output = newOutputPath()
     withScript(scriptPath, List(output)) { s =>
@@ -75,9 +75,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
     }
   }
 
-  // This is disabled since R scripts don't seem to work in yarn-cluster mode. There's a
-  // TODO comment in Spark's ApplicationMaster.scala.
-  ignore("submit a SparkR application") {
+  test("submit a SparkR application") {
     val hdfsPath = uploadResource("rtest.R")
     withScript(hdfsPath, List.empty) { s =>
       s.verifySessionSuccess()
@@ -87,7 +85,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
   test("deleting a session should kill YARN app") {
     val output = newOutputPath()
     withTestLib(classOf[SimpleSparkApp], List(output, "false")) { s =>
-      s.verifySessionState(SessionState.Running())
+      s.verifySessionState(SessionState.Running)
       s.snapshot().appInfo.driverLogUrl.value should include ("containerlogs")
 
       val appId = s.appId()
@@ -102,7 +100,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
   test("killing YARN app should change batch state to dead") {
     val output = newOutputPath()
     withTestLib(classOf[SimpleSparkApp], List(output, "false")) { s =>
-      s.verifySessionState(SessionState.Running())
+      s.verifySessionState(SessionState.Running)
       val appId = s.appId()
 
       // Kill the YARN app and check batch state should be KILLED.

@@ -28,7 +28,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.Random
+import scala.util.{Random, Try}
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.google.common.annotations.VisibleForTesting
@@ -112,7 +112,7 @@ object InteractiveSession extends Logging {
       None,
       appTag,
       client,
-      SessionState.Starting(),
+      SessionState.Starting,
       request.kind,
       request.heartbeatTimeoutInSecond,
       livyConf,
@@ -138,7 +138,7 @@ object InteractiveSession extends Logging {
       metadata.appId,
       metadata.appTag,
       client,
-      SessionState.Recovering(),
+      SessionState.Recovering,
       metadata.kind,
       metadata.heartbeatTimeoutS,
       livyConf,
@@ -179,11 +179,15 @@ object InteractiveSession extends Logging {
 
     def findSparkRArchive(): Option[String] = {
       Option(livyConf.get(RSCConf.Entry.SPARKR_PACKAGE.key())).orElse {
-        sys.env.get("SPARK_HOME").map { case sparkHome =>
+        sys.env.get("SPARK_HOME").flatMap { case sparkHome =>
           val path = Seq(sparkHome, "R", "lib", "sparkr.zip").mkString(File.separator)
           val rArchivesFile = new File(path)
-          require(rArchivesFile.exists(), "sparkr.zip not found; cannot run sparkr application.")
-          rArchivesFile.getAbsolutePath()
+          if (rArchivesFile.exists()) {
+            Some(rArchivesFile.getAbsolutePath)
+          } else {
+            warn("sparkr.zip not found; cannot start R interpreter.")
+            None
+          }
         }
       }
     }
@@ -252,17 +256,22 @@ object InteractiveSession extends Logging {
           sys.env.get("SPARK_HOME") .map { case sparkHome =>
             val pyLibPath = Seq(sparkHome, "python", "lib").mkString(File.separator)
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
-            require(pyArchivesFile.exists(),
-              "pyspark.zip not found; cannot run pyspark application in YARN mode.")
+            val py4jFile = Try {
+              Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
+                .iterator()
+                .next()
+                .toFile
+            }.toOption
 
-            val py4jFile = Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
-              .iterator()
-              .next()
-              .toFile
-
-            require(py4jFile.exists(),
-              "py4j-*-src.zip not found; cannot run pyspark application in YARN mode.")
-            Seq(pyArchivesFile.getAbsolutePath, py4jFile.getAbsolutePath)
+            if (!pyArchivesFile.exists()) {
+              warn("pyspark.zip not found; cannot start pyspark interpreter.")
+              Seq.empty
+            } else if (py4jFile.isEmpty || !py4jFile.get.exists()) {
+              warn("py4j-*-src.zip not found; can start pyspark interpreter.")
+              Seq.empty
+            } else {
+              Seq(pyArchivesFile.getAbsolutePath, py4jFile.get.getAbsolutePath)
+            }
           }.getOrElse(Seq())
         }
     }
@@ -297,11 +306,15 @@ object InteractiveSession extends Logging {
     }
 
     val pySparkFiles = if (!LivyConf.TEST_MODE) {
-      builderProperties.put(SPARK_YARN_IS_PYTHON, "true")
       findPySparkArchives()
     } else {
       Nil
     }
+
+    if (pySparkFiles.nonEmpty) {
+      builderProperties.put(SPARK_YARN_IS_PYTHON, "true")
+    }
+
     mergeConfList(pySparkFiles, LivyConf.SPARK_PY_FILES)
 
     val sparkRArchive = if (!LivyConf.TEST_MODE) findSparkRArchive() else None
@@ -411,7 +424,7 @@ class InteractiveSession(
       override def onJobFailed(job: JobHandle[Void], cause: Throwable): Unit = errorOut()
 
       override def onJobSucceeded(job: JobHandle[Void], result: Void): Unit = {
-        transition(SessionState.Running())
+        transition(SessionState.Running)
         info(s"Interactive session $id created [appid: ${appId.orNull}, owner: $owner, proxyUser:" +
           s" $proxyUser, state: ${state.toString}, kind: ${kind.toString}, " +
           s"info: ${appInfo.asJavaMap}]")
@@ -421,7 +434,7 @@ class InteractiveSession(
         // Other code might call stop() to close the RPC channel. When RPC channel is closing,
         // this callback might be triggered. Check and don't call stop() to avoid nested called
         // if the session is already shutting down.
-        if (serverSideState != SessionState.ShuttingDown()) {
+        if (serverSideState != SessionState.ShuttingDown) {
           transition(SessionState.Error())
           stop()
           app.foreach { a =>
@@ -440,20 +453,18 @@ class InteractiveSession(
       id, appId, appTag, kind, heartbeatTimeout.toSeconds.toInt, owner, proxyUser, rscDriverUri)
 
   override def state: SessionState = {
-    if (serverSideState.isInstanceOf[SessionState.Running]) {
+    if (serverSideState == SessionState.Running) {
       // If session is in running state, return the repl state from RSCClient.
       client
         .flatMap(s => Option(s.getReplState))
         .map(SessionState(_))
-        .getOrElse(SessionState.Busy()) // If repl state is unknown, assume repl is busy.
-    } else {
-      serverSideState
-    }
+        .getOrElse(SessionState.Busy) // If repl state is unknown, assume repl is busy.
+    } else serverSideState
   }
 
   override def stopSession(): Unit = {
     try {
-      transition(SessionState.ShuttingDown())
+      transition(SessionState.ShuttingDown)
       sessionStore.remove(RECOVERY_SESSION_TYPE, id)
       client.foreach { _.stop(true) }
     } catch {
@@ -499,6 +510,15 @@ class InteractiveSession(
     ensureRunning()
     recordActivity()
     client.get.cancelReplCode(statementId)
+  }
+
+  def completion(content: CompletionRequest): CompletionResponse = {
+    ensureRunning()
+    recordActivity()
+
+    val proposals = client.get.completeReplCode(content.code, content.kind,
+        content.cursor).get
+    CompletionResponse(proposals.toList)
   }
 
   def runJob(job: Array[Byte], jobType: String): Long = {
@@ -564,7 +584,7 @@ class InteractiveSession(
 
   private def ensureRunning(): Unit = synchronized {
     serverSideState match {
-      case SessionState.Running() =>
+      case SessionState.Running =>
       case _ =>
         throw new IllegalStateException("Session is in state %s" format serverSideState)
     }

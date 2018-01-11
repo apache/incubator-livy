@@ -88,12 +88,12 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       }
 
       // Batch session should not be gc-ed when alive
-      for (s <- Seq(SessionState.Running(),
-        SessionState.Idle(),
-        SessionState.Recovering(),
-        SessionState.NotStarted(),
-        SessionState.Busy(),
-        SessionState.ShuttingDown())) {
+      for (s <- Seq(SessionState.Running,
+        SessionState.Idle,
+        SessionState.Recovering,
+        SessionState.NotStarted,
+        SessionState.Busy,
+        SessionState.ShuttingDown)) {
         changeStateAndCheck(s) { sm => sm.get(session.id) should be (Some(session)) }
       }
 

@@ -89,7 +89,7 @@ class SessionSpec extends FunSpec with Eventually with LivyBaseUnitTestSuite wit
     }
 
     it("should remove old statements when reaching threshold") {
-      rscConf.set(RSCConf.Entry.RETAINED_STATEMENT_NUMBER, 2)
+      rscConf.set(RSCConf.Entry.RETAINED_STATEMENTS, 2)
       session = new Session(rscConf, new SparkConf())
       session.start()
 

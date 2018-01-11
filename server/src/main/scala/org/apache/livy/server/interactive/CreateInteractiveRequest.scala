@@ -20,7 +20,7 @@ package org.apache.livy.server.interactive
 import org.apache.livy.sessions.{Kind, Shared}
 
 class CreateInteractiveRequest {
-  var kind: Kind = Shared()
+  var kind: Kind = Shared
   var proxyUser: Option[String] = None
   var jars: List[String] = List()
   var pyFiles: List[String] = List()

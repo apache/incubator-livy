@@ -15,20 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.livy.sessions
+package org.apache.livy.test.jobs
 
-import org.apache.livy.LivyConf
+import org.apache.livy.{Job, JobContext}
 
-class MockSession(id: Int, owner: String, conf: LivyConf) extends Session(id, owner, conf) {
-  case class RecoveryMetadata(id: Int) extends Session.RecoveryMetadata()
+class ScalaSharedVariableCounter(name: String) extends Job[Int] {
 
-  override val proxyUser = None
+  override def call(jc: JobContext): Int = {
+    val value = try {
+      jc.getSharedObject(name)
+    } catch {
+      case e: NoSuchElementException =>
+        jc.setSharedObject(name, -1)
+        -1
+    }
 
-  override protected def stopSession(): Unit = ()
+    val newValue = value + 1
+    jc.setSharedObject(name, newValue)
 
-  override def logLines(): IndexedSeq[String] = IndexedSeq()
-
-  override def state: SessionState = SessionState.Idle
-
-  override def recoveryMetadata: RecoveryMetadata = RecoveryMetadata(0)
+    newValue
+  }
 }

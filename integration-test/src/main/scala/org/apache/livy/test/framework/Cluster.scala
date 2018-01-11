@@ -38,8 +38,6 @@ trait Cluster {
   def deploy(): Unit
   def cleanUp(): Unit
   def configDir(): File
-  def isRealSpark(): Boolean
-  def hasSparkR(): Boolean
 
   def runLivy(): Unit
   def stopLivy(): Unit
@@ -101,7 +99,6 @@ object Cluster extends Logging {
     var _cluster: Cluster = null
     try {
       _cluster = config.get(CLUSTER_TYPE) match {
-        case Some("real") => new RealCluster(config)
         case Some("mini") => new MiniCluster(config)
         case t => throw new Exception(s"Unknown or unset cluster.type $t")
       }

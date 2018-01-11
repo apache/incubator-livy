@@ -28,7 +28,7 @@ import scala.concurrent.duration.Duration
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar.mock
 
-import org.apache.livy.Utils
+import org.apache.livy.{LivyConf, Utils}
 import org.apache.livy.server.{AccessManager, BaseSessionServletSpec}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{BatchSessionManager, SessionState}
@@ -123,7 +123,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
 
     it("should show session properties") {
       val id = 0
-      val state = SessionState.Running()
+      val state = SessionState.Running
       val appId = "appid"
       val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
       val log = IndexedSeq[String]("log1", "log2")
@@ -146,6 +146,29 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
       view.appInfo shouldEqual appInfo
       view.log shouldEqual log
     }
-  }
 
+    it("should fail session creation when max session creation is hit") {
+      val createRequest = new CreateBatchRequest()
+      createRequest.file = script.toString
+      createRequest.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
+
+      jpost[Map[String, Any]]("/", createRequest) { data =>
+        header("Location") should equal("/2")
+        data("id") should equal (2)
+
+        val batch = servlet.sessionManager.get(2)
+        batch should be (defined)
+      }
+
+      servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 1)
+      jpost[Map[String, Any]]("/", createRequest, SC_BAD_REQUEST) { data => None }
+
+      jdelete[Map[String, Any]]("/2") { data =>
+        data should equal (Map("msg" -> "deleted"))
+
+        val batch = servlet.sessionManager.get(2)
+        batch should not be defined
+      }
+    }
+  }
 }

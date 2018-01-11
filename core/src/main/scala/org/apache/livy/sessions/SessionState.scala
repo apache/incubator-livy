@@ -17,91 +17,52 @@
 
 package org.apache.livy.sessions
 
-sealed trait SessionState {
-  /** Returns true if the State represents a process that can eventually execute commands */
-  def isActive: Boolean
+sealed abstract class SessionState(val state: String, val isActive: Boolean) {
+  override def toString: String = state
 }
 
-sealed trait FinishedSessionState extends SessionState {
-  /** When session is finished. */
-  def time: Long
-}
+class FinishedSessionState(
+  override val state: String,
+  override val isActive: Boolean,
+  val time: Long
+) extends SessionState(state, isActive)
 
 object SessionState {
 
-  def apply(s: String): SessionState = {
-    s match {
-      case "not_started" => NotStarted()
-      case "starting" => Starting()
-      case "recovering" => Recovering()
-      case "idle" => Idle()
-      case "running" => Running()
-      case "busy" => Busy()
-      case "shutting_down" => ShuttingDown()
-      case "error" => Error()
-      case "dead" => Dead()
-      case "success" => Success()
-      case _ => throw new IllegalArgumentException(s"Illegal session state: $s")
-    }
+  def apply(s: String): SessionState = s match {
+    case "not_started" => NotStarted
+    case "starting" => Starting
+    case "recovering" => Recovering
+    case "idle" => Idle
+    case "running" => Running
+    case "busy" => Busy
+    case "shutting_down" => ShuttingDown
+    case "error" => Error()
+    case "dead" => Dead()
+    case "success" => Success()
+    case _ => throw new IllegalArgumentException(s"Illegal session state: $s")
   }
 
-  case class NotStarted() extends SessionState {
-    override def isActive: Boolean = true
+  object NotStarted extends SessionState("not_started", true)
 
-    override def toString: String = "not_started"
-  }
+  object Starting extends SessionState("starting", true)
 
-  case class Starting() extends SessionState {
-    override def isActive: Boolean = true
+  object Recovering extends SessionState("recovering", true)
 
-    override def toString: String = "starting"
-  }
+  object Idle extends SessionState("idle", true)
 
-  case class Recovering() extends SessionState {
-    override def isActive: Boolean = true
+  object Running extends SessionState("running", true)
 
-    override def toString: String = "recovering"
-  }
+  object Busy extends SessionState("busy", true)
 
-  case class Idle() extends SessionState {
-    override def isActive: Boolean = true
+  object ShuttingDown extends SessionState("shutting_down", false)
 
-    override def toString: String = "idle"
-  }
+  case class Error(override val time: Long = System.nanoTime()) extends
+    FinishedSessionState("error", true, time)
 
-  case class Running() extends SessionState {
-    override def isActive: Boolean = true
+  case class Dead(override val time: Long = System.nanoTime()) extends
+    FinishedSessionState("dead", false, time)
 
-    override def toString: String = "running"
-  }
-
-  case class Busy() extends SessionState {
-    override def isActive: Boolean = true
-
-    override def toString: String = "busy"
-  }
-
-  case class ShuttingDown() extends SessionState {
-    override def isActive: Boolean = false
-
-    override def toString: String = "shutting_down"
-  }
-
-  case class Error(time: Long = System.nanoTime()) extends FinishedSessionState {
-    override def isActive: Boolean = true
-
-    override def toString: String = "error"
-  }
-
-  case class Dead(time: Long = System.nanoTime()) extends FinishedSessionState {
-    override def isActive: Boolean = false
-
-    override def toString: String = "dead"
-  }
-
-  case class Success(time: Long = System.nanoTime()) extends FinishedSessionState {
-    override def isActive: Boolean = false
-
-    override def toString: String = "success"
-  }
+  case class Success(override val time: Long = System.nanoTime()) extends
+    FinishedSessionState("success", false, time)
 }

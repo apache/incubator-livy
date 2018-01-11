@@ -82,9 +82,10 @@
     <hadoop.scope>compile</hadoop.scope>
     <spark.version>1.6.2</spark.version>
     <commons-codec.version>1.9</commons-codec.version>
+    <guava.version>15.0</guava.version>
     <httpclient.version>4.5.3</httpclient.version>
     <httpcore.version>4.4.4</httpcore.version>
-    <jackson.version>2.4.4</jackson.version>
+    <jackson.version>2.9.2</jackson.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
     <jetty.version>9.2.16.v20160414</jetty.version>
     <json4s.version>3.2.10</json4s.version>
@@ -92,7 +93,7 @@
     <kryo.version>2.22</kryo.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.9.5</mockito.version>
-    <netty.version>4.0.29.Final</netty.version>
+    <netty.version>4.0.37.Final</netty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <py4j.version>0.9</py4j.version>
     <scala-2.10.version>2.10.4</scala-2.10.version>
@@ -107,6 +108,10 @@
     <test.redirectToFile>true</test.redirectToFile>
     <execution.root>${user.dir}</execution.root>
     <spark.home>${execution.root}/dev/spark</spark.home>
+    <spark.bin.download.url>
+      https://d3kbcqa49mib13.cloudfront.net/spark-1.6.2-bin-hadoop2.6.tgz
+    </spark.bin.download.url>
+    <spark.bin.name>spark-1.6.2-bin-hadoop2.6</spark.bin.name>
     <!--  used for testing, NCSARequestLog use it for access log  -->
     <livy.log.dir>${basedir}/target</livy.log.dir>
 
@@ -227,9 +232,6 @@
     <module>scala-api/scala-2.11</module>
     <module>server</module>
     <module>test-lib</module>
-    <module>integration-test/minicluster-dependencies</module>
-    <module>integration-test/minicluster-dependencies/scala-2.10</module>
-    <module>integration-test/minicluster-dependencies/scala-2.11</module>
     <module>integration-test</module>
   </modules>
 
@@ -307,6 +309,12 @@
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>${commons-codec.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
       </dependency>
 
       <dependency>
@@ -793,6 +801,13 @@
             <excludePackageNames>*.test,*.example,*.common</excludePackageNames>
           </configuration>
         </plugin>
+
+        <plugin>
+          <groupId>com.googlecode.maven-download-plugin</groupId>
+          <artifactId>download-maven-plugin</artifactId>
+          <version>1.3.0</version>
+        </plugin>
+
       </plugins>
     </pluginManagement>
 
@@ -1099,6 +1114,12 @@
       </activation>
       <properties>
         <spark.version>2.0.1</spark.version>
+        <py4j.version>0.10.3</py4j.version>
+        <json4s.version>3.2.11</json4s.version>
+        <spark.bin.download.url>
+          https://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.0.1-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
@@ -1111,6 +1132,12 @@
       </activation>
       <properties>
         <spark.version>2.1.0</spark.version>
+        <py4j.version>0.10.4</py4j.version>
+        <json4s.version>3.2.11</json4s.version>
+        <spark.bin.download.url>
+          https://d3kbcqa49mib13.cloudfront.net/spark-2.1.0-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.1.0-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
@@ -1124,6 +1151,12 @@
       <properties>
         <spark.version>2.2.0</spark.version>
         <java.version>1.8</java.version>
+        <py4j.version>0.10.4</py4j.version>
+        <json4s.version>3.2.11</json4s.version>
+        <spark.bin.download.url>
+          https://d3kbcqa49mib13.cloudfront.net/spark-2.2.0-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.2.0-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
