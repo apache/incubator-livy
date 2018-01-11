@@ -34,6 +34,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
   test("basic interactive session") {
     withNewSession(Spark) { s =>
       s.run("val sparkVersion = sc.version").result().left.foreach(info(_))
+      s.run("val scalaVersion = util.Properties.versionString").result().left.foreach(info(_))
       s.run("1+1").verifyResult("res0: Int = 2\n")
       s.run("""sc.getConf.get("spark.executor.instances")""").verifyResult("res1: String = 1\n")
       s.run("val sql = new org.apache.spark.sql.SQLContext(sc)").verifyResult(
@@ -74,8 +75,10 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       // This is important because if YARN app state is killed, Spark history is not archived.
       val appId = s.appId()
       s.stop()
-      val appReport = cluster.yarnClient.getApplicationReport(appId)
-      appReport.getYarnApplicationState() shouldEqual YarnApplicationState.FINISHED
+      eventually(timeout(15 seconds), interval(5 seconds)) {
+        val appReport = cluster.yarnClient.getApplicationReport(appId)
+        appReport.getYarnApplicationState() shouldEqual YarnApplicationState.FINISHED
+      }
     }
   }
 

@@ -168,10 +168,10 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
 
     val jobs = Seq(
       new ScalaEcho("abcde"),
-      new ScalaEcho(Seq(1, 2, 3, 4)),
+      new ScalaEcho(IndexedSeq(1, 2, 3, 4)),
       new ScalaEcho(Map(1 -> 2, 3 -> 4)),
       new ScalaEcho(ValueHolder("abcde")),
-      new ScalaEcho(ValueHolder(Seq(1, 2, 3, 4))),
+      new ScalaEcho(ValueHolder(IndexedSeq(1, 2, 3, 4))),
       new ScalaEcho(Some("abcde"))
     )
 
