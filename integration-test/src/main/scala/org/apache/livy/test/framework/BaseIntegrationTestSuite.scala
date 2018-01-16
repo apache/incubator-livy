@@ -54,7 +54,7 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
   }
 
   protected def restartLivy(): Unit = {
-    val f = future {
+    val f = Future {
       cluster.stopLivy()
       cluster.runLivy()
     }
