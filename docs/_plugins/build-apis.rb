@@ -17,17 +17,22 @@ require 'fileutils'
 include FileUtils
 
 if not (ENV['SKIP_API'] == '1')
-  # Build Scaladoc for Scala and Javadoc for Java
+  # Build Scaladoc for Scala API and Javadoc for Java API
 
-  puts "Moving to project root and building API docs."
-  curr_dir = pwd
-  cd("..")
+  puts "Moving to scala-api module and building Scala API docs."
+  cd("../scala-api")
 
-  puts "Running 'mvn package scala:doc -DskipTests -DskipITs javadoc:javadoc -Ppublic-docs' from " + pwd + "; this may take a few minutes..."
-  system("mvn package scala:doc -DskipTests -DskipITs javadoc:javadoc -Ppublic-docs") || raise("Maven build failed")
+  puts "Running 'mvn scala:doc' from " + pwd + "; this may take a few minutes..."
+  system("mvn scala:doc") || raise("Scaladoc maven build failed")
+
+  puts "Moving to api module and building Java API docs."
+  cd("../api")
+
+  puts "Running 'mvn javadoc:javadoc -Ppublic-docs' from " + pwd + "; this may take a few minutes..."
+  system("mvn javadoc:javadoc -Ppublic-docs") || raise("Javadoc maven build failed")
 
   puts "Moving back into docs dir."
-  cd("docs")
+  cd("../docs")
 
   puts "Removing old docs"
   puts `rm -rf api`

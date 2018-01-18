@@ -48,8 +48,9 @@ Before opening a pull request, you can preview your contributions by running fro
 
 ## API Docs (Scaladocs and Javadocs)
 
-You can build just the Livy scaladocs or javadocs by running `mvn package scala:doc` or
-`mvn javadoc:aggregate` from the `LIVY_HOME` directory.
+You can build just the Livy javadocs by running  `mvn javadoc:aggregate` from the `LIVY_HOME`
+directory, or the Livy scaladocs by running `mvn scala:doc` in certain modules. (Scaladocs do
+not currently build in every module)
 
 When you run `jekyll build` in the `docs` directory, it will also copy over the scaladocs and
 javadocs for the public APIs into the `docs` directory (and then also into the `_site` directory).
