@@ -14,6 +14,7 @@
 conf/*.conf
 conf/*.properties
 conf/*.sh
+docs/api/
 lib_managed/
 logs/
 src_managed/

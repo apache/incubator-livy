@@ -40,12 +40,14 @@ public abstract class ClientConf<T extends ClientConf>
 
   public static interface ConfEntry {
 
-    /** The key in the configuration file. */
+    /**
+     * @return The key in the configuration file.
+     */
     String key();
 
     /**
-     * The default value, which also defines the type of the config. Supported types:
-     * Boolean, Integer, Long, String. <code>null</code> maps to String.
+     * @return The default value, which also defines the type of the config. Supported types:
+     *         Boolean, Integer, Long, String. <code>null</code> maps to String.
      */
     Object dflt();
 
@@ -226,10 +228,14 @@ public abstract class ClientConf<T extends ClientConf>
     }
   }
 
-  /** Maps valid key to DeprecatedConf with the deprecated key. */
+  /**
+   * @return A Map from a valid key to a DeprecatedConf with the deprecated key.
+   */
   protected abstract Map<String, DeprecatedConf> getConfigsWithAlternatives();
 
-  /** Maps deprecated key to DeprecatedConf with the same key. */
+  /**
+   * @return A Map from a deprecated key to a DeprecatedConf with the same key.
+   */
   protected abstract Map<String, DeprecatedConf> getDeprecatedConfigs();
 
   private static class ConfPair {
@@ -261,13 +267,19 @@ public abstract class ClientConf<T extends ClientConf>
 
   public static interface DeprecatedConf {
 
-    /** The key in the configuration file. */
+    /**
+     * @return The key in the configuration file.
+     */
     String key();
 
-    /** The Livy version in which the key was deprecated. */
+    /**
+     * @return The Livy version in which the key was deprecated.
+     */
     String version();
 
-    /** Message to include in the deprecation warning for configs without alternatives */
+    /**
+     * @return Message to include in the deprecation warning for configs without alternatives
+     */
     String deprecationMessage();
   }
 

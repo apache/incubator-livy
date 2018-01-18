@@ -52,10 +52,13 @@ public abstract class AbstractJobHandle<T> implements JobHandle<T> {
    * Changes the state of this job handle, making sure that illegal state transitions are ignored.
    * Fires events appropriately.
    *
-   * As a rule, state transitions can only occur if the current state is "higher" than the current
+   * As a rule, state transitions can only occur if the new state is "higher" than the current
    * state (i.e., has a higher ordinal number) and is not a "final" state. "Final" states are
    * CANCELLED, FAILED and SUCCEEDED, defined here in the code as having an ordinal number higher
    * than the CANCELLED enum constant.
+   *
+   * @param newState The new state to change to.
+   * @return Whether the state changed.
    */
   public boolean changeState(State newState) {
     synchronized (listeners) {
