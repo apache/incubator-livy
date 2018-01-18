@@ -799,8 +799,6 @@
           <configuration>
             <doctitle>Livy ${project.version} Java API</doctitle>
             <windowtitle>Livy ${project.version} JavaDoc</windowtitle>
-            <failOnError>true</failOnError>
-            <excludePackageNames>*.test,*.example,*.common</excludePackageNames>
           </configuration>
         </plugin>
 
@@ -1216,6 +1214,27 @@
       </plugins>
     </build>
   </profile>
+
+    <profile>
+      <id>public-docs</id>
+      <activation>
+        <property>
+          <name>public-docs</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <failOnError>true</failOnError>
+              <excludePackageNames>*.test,*.example,*.client,*.annotations,*.rsc</excludePackageNames>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
   </profiles>
 
