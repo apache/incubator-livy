@@ -133,7 +133,7 @@ abstract class JsonServlet extends ScalatraServlet with ApiFormats with FutureSu
   }
 
   private def toJson(obj: Any): Any = {
-    if (obj != null && obj != ()) {
+    if (obj != null && obj != (())) {
       mapper.writeValueAsBytes(obj)
     } else {
       null
