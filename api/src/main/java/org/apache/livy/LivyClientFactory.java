@@ -38,6 +38,8 @@ public interface LivyClientFactory {
    * Instantiates a new client if the given URI is supported by the implementation.
    *
    * @param uri URI pointing at the livy backend to use.
+   * @param config Livy client configs.
+   * @return The newly created LivyClient or null if an unsupported URI
    */
   LivyClient createClient(URI uri, Properties config);
 

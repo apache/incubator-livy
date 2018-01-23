@@ -27,6 +27,8 @@ public interface JobHandle<T> extends Future<T> {
 
   /**
    * Return the current state of the job.
+   *
+   * @return The current State of this job
    */
   State getState();
 
@@ -60,6 +62,8 @@ public interface JobHandle<T> extends Future<T> {
      * Notifies when a job has been queued for execution on the remote context. Note that it is
      * possible for jobs to bypass this state and got directly from the SENT state to the STARTED
      * state.
+     *
+     * @param job The JobHandle for the queued job
      */
     void onJobQueued(JobHandle<T> job);
 

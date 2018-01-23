@@ -46,12 +46,27 @@ Before opening a pull request, you can preview your contributions by running fro
 3. Open http://localhost:4000
 ```
 
+## API Docs (Scaladocs and Javadocs)
+
+You can build just the Livy javadocs by running  `mvn javadoc:aggregate` from the `LIVY_HOME`
+directory, or the Livy scaladocs by running `mvn scala:doc` in certain modules. (Scaladocs do
+not currently build in every module)
+
+When you run `jekyll build` in the `docs` directory, it will also copy over the scaladocs and
+javadocs for the public APIs into the `docs` directory (and then also into the `_site` directory).
+We use a jekyll plugin to run the api builds before building the site so if you haven't run it
+(recently) it may take some time as it generates all of the scaladoc and javadoc using Maven.
+
+NOTE: To skip the step of building and copying over the Scala and Java API docs, run `SKIP_API=1
+jekyll build`.
+
+
 ## Publishing Docs to [livy.incubator.apache.org]
 
 1. Build Livy Docs (`cd docs` then `bundle exec jekyll build`).
 2. Copy the contents of `docs/target/` excluding `assets/` into a new directory (eg. `0.4.0/`) and
 move it into the `docs/` directory in your local fork of `apache/incubator-livy-website`.
-3. If this is a major version, update the `latest` symlink to point to the new directory.
+3. If nesesary, update the `latest` symlink to point to the new directory.
 4. Open a pull request to `apache/incubator-livy-website` with the update.
 
 Note: If you made any changes to files in the `assets/` directory you will need to replicate those
