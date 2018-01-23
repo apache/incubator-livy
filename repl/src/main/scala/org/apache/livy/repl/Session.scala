@@ -48,14 +48,16 @@ object Session {
 }
 
 class Session(
-    livyConf: RSCConf,
-    interpreter: Interpreter,
-    stateChangedCallback: SessionState => Unit = { _ => })
+               livyConf: RSCConf,
+               interpreter: Interpreter,
+               stateChangedCallback: SessionState => Unit = { _ => })
   extends Logging {
   import Session._
 
-  private val interpreterExecutor = ExecutionContext.fromExecutorService(
-    Executors.newSingleThreadExecutor())
+  //  private val interpreterExecutor = ExecutionContext.fromExecutorService(
+  //    Executors.newSingleThreadExecutor())
+
+  private val interpreterExecutor = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(livyConf.get("livy.statements.concurrency").toInt))
 
   private val cancelExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
@@ -107,6 +109,7 @@ class Session(
 
     Future {
       setJobGroup(statementId)
+
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
       if (statement.state.get() == StatementState.Running) {
@@ -170,8 +173,8 @@ class Session(
   }
 
   /**
-   * Get the current progress of given statement id.
-   */
+    * Get the current progress of given statement id.
+    */
   def progressOfStatement(stmtId: Int): Double = {
     val jobGroup = statementIdToJobGroup(stmtId)
 
@@ -215,35 +218,35 @@ class Session(
           transitToIdle()
 
           (STATUS -> OK) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (DATA -> data)
+            (EXECUTION_COUNT -> executionCount) ~
+            (DATA -> data)
 
         case Interpreter.ExecuteIncomplete() =>
           transitToIdle()
 
           (STATUS -> ERROR) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (ENAME -> "Error") ~
-          (EVALUE -> "incomplete statement") ~
-          (TRACEBACK -> Seq.empty[String])
+            (EXECUTION_COUNT -> executionCount) ~
+            (ENAME -> "Error") ~
+            (EVALUE -> "incomplete statement") ~
+            (TRACEBACK -> Seq.empty[String])
 
         case Interpreter.ExecuteError(ename, evalue, traceback) =>
           transitToIdle()
 
           (STATUS -> ERROR) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (ENAME -> ename) ~
-          (EVALUE -> evalue) ~
-          (TRACEBACK -> traceback)
+            (EXECUTION_COUNT -> executionCount) ~
+            (ENAME -> ename) ~
+            (EVALUE -> evalue) ~
+            (TRACEBACK -> traceback)
 
         case Interpreter.ExecuteAborted(message) =>
           changeState(SessionState.Error())
 
           (STATUS -> ERROR) ~
-          (EXECUTION_COUNT -> executionCount) ~
-          (ENAME -> "Error") ~
-          (EVALUE -> f"Interpreter died:\n$message") ~
-          (TRACEBACK -> Seq.empty[String])
+            (EXECUTION_COUNT -> executionCount) ~
+            (ENAME -> "Error") ~
+            (EVALUE -> f"Interpreter died:\n$message") ~
+            (TRACEBACK -> Seq.empty[String])
       }
     } catch {
       case e: Throwable =>
@@ -252,10 +255,10 @@ class Session(
         transitToIdle()
 
         (STATUS -> ERROR) ~
-        (EXECUTION_COUNT -> executionCount) ~
-        (ENAME -> f"Internal Error: ${e.getClass.getName}") ~
-        (EVALUE -> e.getMessage) ~
-        (TRACEBACK -> Seq.empty[String])
+          (EXECUTION_COUNT -> executionCount) ~
+          (ENAME -> f"Internal Error: ${e.getClass.getName}") ~
+          (EVALUE -> e.getMessage) ~
+          (TRACEBACK -> Seq.empty[String])
     }
 
     compact(render(resultInJson))
@@ -278,9 +281,14 @@ class Session(
           case "2" =>
             s"""setJobGroup("$jobGroup", "Job group for statement $jobGroup", FALSE)"""
         }
+      case ConcurrentSpark() => ""
     }
     // Set the job group
-    executeCode(statementId, cmd)
+    if (!cmd.isEmpty) {
+      executeCode(statementId, cmd)
+    } else {
+      ""
+    }
   }
 
   private def statementIdToJobGroup(statementId: Int): String = {

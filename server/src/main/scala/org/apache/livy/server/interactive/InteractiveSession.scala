@@ -47,15 +47,15 @@ import org.apache.livy.utils._
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class InteractiveRecoveryMetadata(
-    id: Int,
-    appId: Option[String],
-    appTag: String,
-    kind: Kind,
-    heartbeatTimeoutS: Int,
-    owner: String,
-    proxyUser: Option[String],
-    rscDriverUri: Option[URI],
-    version: Int = 1)
+                                        id: Int,
+                                        appId: Option[String],
+                                        appTag: String,
+                                        kind: Kind,
+                                        heartbeatTimeoutS: Int,
+                                        owner: String,
+                                        proxyUser: Option[String],
+                                        rscDriverUri: Option[URI],
+                                        version: Int = 1)
   extends RecoveryMetadata
 
 object InteractiveSession extends Logging {
@@ -64,14 +64,14 @@ object InteractiveSession extends Logging {
   val RECOVERY_SESSION_TYPE = "interactive"
 
   def create(
-      id: Int,
-      owner: String,
-      proxyUser: Option[String],
-      livyConf: LivyConf,
-      request: CreateInteractiveRequest,
-      sessionStore: SessionStore,
-      mockApp: Option[SparkApp] = None,
-      mockClient: Option[RSCClient] = None): InteractiveSession = {
+              id: Int,
+              owner: String,
+              proxyUser: Option[String],
+              livyConf: LivyConf,
+              request: CreateInteractiveRequest,
+              sessionStore: SessionStore,
+              mockApp: Option[SparkApp] = None,
+              mockClient: Option[RSCClient] = None): InteractiveSession = {
     val appTag = s"livy-session-$id-${Random.alphanumeric.take(8).mkString}"
 
     val client = mockClient.orElse {
@@ -102,6 +102,7 @@ object InteractiveSession extends Logging {
         .setConf("livy.client.session-id", id.toString)
         .setConf(RSCConf.Entry.DRIVER_CLASS.key(), "org.apache.livy.repl.ReplDriver")
         .setConf(RSCConf.Entry.PROXY_USER.key(), proxyUser.orNull)
+        .setConf("livy.statements.concurrency", request.concurrency.toString)
         .setURI(new URI("rsc:/"))
 
       Option(builder.build().asInstanceOf[RSCClient])
@@ -123,11 +124,11 @@ object InteractiveSession extends Logging {
   }
 
   def recover(
-      metadata: InteractiveRecoveryMetadata,
-      livyConf: LivyConf,
-      sessionStore: SessionStore,
-      mockApp: Option[SparkApp] = None,
-      mockClient: Option[RSCClient] = None): InteractiveSession = {
+               metadata: InteractiveRecoveryMetadata,
+               livyConf: LivyConf,
+               sessionStore: SessionStore,
+               mockApp: Option[SparkApp] = None,
+               mockClient: Option[RSCClient] = None): InteractiveSession = {
     val client = mockClient.orElse(metadata.rscDriverUri.map { uri =>
       val builder = new LivyClientBuilder().setURI(uri)
       builder.build().asInstanceOf[RSCClient]
@@ -150,9 +151,9 @@ object InteractiveSession extends Logging {
 
   @VisibleForTesting
   private[interactive] def prepareBuilderProp(
-    conf: Map[String, String],
-    kind: Kind,
-    livyConf: LivyConf): mutable.Map[String, String] = {
+                                               conf: Map[String, String],
+                                               kind: Kind,
+                                               livyConf: LivyConf): mutable.Map[String, String] = {
 
     val builderProperties = mutable.Map[String, String]()
     builderProperties ++= conf
@@ -161,11 +162,11 @@ object InteractiveSession extends Logging {
       Option(livyConf.get(LivyConf.REPL_JARS)).map { jars =>
         val regex = """[\w-]+_(\d\.\d\d).*\.jar""".r
         jars.split(",").filter { name => new Path(name).getName match {
-            // Filter out unmatched scala jars
-            case regex(ver) => ver == scalaVersion
-            // Keep all the java jars end with ".jar"
-            case _ => name.endsWith(".jar")
-          }
+          // Filter out unmatched scala jars
+          case regex(ver) => ver == scalaVersion
+          // Keep all the java jars end with ".jar"
+          case _ => name.endsWith(".jar")
+        }
         }.toList
       }.getOrElse {
         val home = sys.env("LIVY_HOME")
@@ -226,12 +227,12 @@ object InteractiveSession extends Logging {
     }
 
     /**
-     * Look for hive-site.xml (for now just ignore spark.files defined in spark-defaults.conf)
-     * 1. First look for hive-site.xml in user request
-     * 2. Then look for that under classpath
-     * @param livyConf
-     * @return  (hive-site.xml path, whether it is provided by user)
-     */
+      * Look for hive-site.xml (for now just ignore spark.files defined in spark-defaults.conf)
+      * 1. First look for hive-site.xml in user request
+      * 2. Then look for that under classpath
+      * @param livyConf
+      * @return  (hive-site.xml path, whether it is provided by user)
+      */
     def hiveSiteFile(sparkFiles: Array[String], livyConf: LivyConf): (Option[File], Boolean) = {
       if (sparkFiles.exists(_.split("/").last == "hive-site.xml")) {
         (None, true)
@@ -343,21 +344,21 @@ object InteractiveSession extends Logging {
 }
 
 class InteractiveSession(
-    id: Int,
-    appIdHint: Option[String],
-    appTag: String,
-    client: Option[RSCClient],
-    initialState: SessionState,
-    val kind: Kind,
-    heartbeatTimeoutS: Int,
-    livyConf: LivyConf,
-    owner: String,
-    override val proxyUser: Option[String],
-    sessionStore: SessionStore,
-    mockApp: Option[SparkApp]) // For unit test.
+                          id: Int,
+                          appIdHint: Option[String],
+                          appTag: String,
+                          client: Option[RSCClient],
+                          initialState: SessionState,
+                          val kind: Kind,
+                          heartbeatTimeoutS: Int,
+                          livyConf: LivyConf,
+                          owner: String,
+                          override val proxyUser: Option[String],
+                          sessionStore: SessionStore,
+                          mockApp: Option[SparkApp]) // For unit test.
   extends Session(id, owner, livyConf)
-  with SessionHeartbeat
-  with SparkAppListener {
+    with SessionHeartbeat
+    with SparkAppListener {
 
   import InteractiveSession._
 
@@ -379,7 +380,7 @@ class InteractiveSession(
 
   private val app = mockApp.orElse {
     val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
-        .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
+      .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
     driverProcess.map { _ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)) }
   }
 
@@ -576,7 +577,7 @@ class InteractiveSession(
     val opId = operationCounter.incrementAndGet()
     operations(opId) = future
     opId
-   }
+  }
 
   override def appIdKnown(appId: String): Unit = {
     _appId = Option(appId)

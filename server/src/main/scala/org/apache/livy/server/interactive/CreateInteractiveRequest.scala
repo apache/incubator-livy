@@ -35,6 +35,7 @@ class CreateInteractiveRequest {
   var name: Option[String] = None
   var conf: Map[String, String] = Map()
   var heartbeatTimeoutInSecond: Int = 0
+  var concurrency: Int  = 1
 
   override def toString: String = {
     s"[kind: $kind, " +
@@ -51,6 +52,7 @@ class CreateInteractiveRequest {
       (if (queue.isDefined) s"queue: ${queue.get}, " else "") +
       (if (name.isDefined) s"name: ${name.get}, " else "") +
       (if (conf.nonEmpty) s"conf: ${conf.mkString(",")}, " else "") +
+      s"concurrency: $concurrency" +
       s"heartbeatTimeoutInSecond: $heartbeatTimeoutInSecond]"
   }
 }
