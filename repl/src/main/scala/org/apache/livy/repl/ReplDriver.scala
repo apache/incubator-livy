@@ -30,10 +30,11 @@ import org.apache.livy.rsc.BaseProtocol.ReplState
 import org.apache.livy.rsc.driver._
 import org.apache.livy.rsc.rpc.Rpc
 import org.apache.livy.sessions._
+import org.apache.livy.repl.ConcurrentSparkInterpreter
 
 class ReplDriver(conf: SparkConf, livyConf: RSCConf)
   extends RSCDriver(conf, livyConf)
-  with Logging {
+    with Logging {
 
   private[repl] var session: Session = _
 
@@ -48,6 +49,7 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
         PythonInterpreter(conf, PySpark3())
       case Spark() => new SparkInterpreter(conf)
       case SparkR() => SparkRInterpreter(conf)
+      case ConcurrentSpark() => new ConcurrentSparkInterpreter(livyConf.get("livy.statements.concurrency").toInt, conf)
     }
     session = new Session(livyConf, interpreter, { s => broadcast(new ReplState(s.toString)) })
 
@@ -75,8 +77,8 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
   }
 
   /**
-   * Return statement results. Results are sorted by statement id.
-   */
+    * Return statement results. Results are sorted by statement id.
+    */
   def handle(ctx: ChannelHandlerContext, msg: BaseProtocol.GetReplJobResults): ReplJobResults = {
     val statements = if (msg.allResults) {
       session.statements.values.toArray
