@@ -92,7 +92,7 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
     this
   }
 
-  def driverCores(driverCores: Int): SparkProcessBuilder = {
+  def driverCores(driverCores: Double): SparkProcessBuilder = {
     this.driverCores(driverCores.toString)
   }
 
@@ -104,7 +104,7 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
     conf("spark.driver.cores", driverCores)
   }
 
-  def executorCores(executorCores: Int): SparkProcessBuilder = {
+  def executorCores(executorCores: Double): SparkProcessBuilder = {
     this.executorCores(executorCores.toString)
   }
 

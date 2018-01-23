@@ -50,6 +50,20 @@ class CreateBatchRequestSpec extends FunSpec with LivyBaseUnitTestSuite {
       assert(req.conf === Map())
     }
 
+    it("should support integer cores") {
+      val json = """{ "driverCores" : 1, "executorCores": 2 }"""
+      val req = mapper.readValue(json, classOf[CreateBatchRequest])
+      assert(req.driverCores === 1)
+      assert(req.executorCores === 2)
+    }
+
+    it("should support float cores") {
+      val json = """{ "driverCores" : 0.1, "executorCores": 0.2 }"""
+      val req = mapper.readValue(json, classOf[CreateBatchRequest])
+      assert(req.driverCores === 0.1)
+      assert(req.executorCores === 0.2)
+    }
+
   }
 
 }
