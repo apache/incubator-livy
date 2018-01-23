@@ -793,6 +793,16 @@
         </plugin>
 
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.0.0-M1</version>
+          <configuration>
+            <doctitle>Livy ${project.version} Java API</doctitle>
+            <windowtitle>Livy ${project.version} JavaDoc</windowtitle>
+          </configuration>
+        </plugin>
+
+        <plugin>
           <groupId>com.googlecode.maven-download-plugin</groupId>
           <artifactId>download-maven-plugin</artifactId>
           <version>1.3.0</version>
@@ -1204,6 +1214,27 @@
       </plugins>
     </build>
   </profile>
+
+    <profile>
+      <id>public-docs</id>
+      <activation>
+        <property>
+          <name>public-docs</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <failOnError>true</failOnError>
+              <excludePackageNames>*.test,*.example,*.client,*.annotations,*.rsc</excludePackageNames>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
   </profiles>
 

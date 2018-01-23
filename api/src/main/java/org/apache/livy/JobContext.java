@@ -33,25 +33,51 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
  */
 public interface JobContext {
 
-  /** The shared SparkContext instance. */
+  /**
+   * @return The shared SparkContext instance.
+   */
   JavaSparkContext sc();
 
-  /** The shared SQLContext instance. */
+  /**
+   * @return The shared SQLContext instance.
+   */
   SQLContext sqlctx();
 
-  /** The shared HiveContext instance. */
+  /**
+   * @return The shared HiveContext instance.
+   */
   HiveContext hivectx();
 
-  /** Returns the JavaStreamingContext which has already been created. */
+  /**
+   * @return The JavaStreamingContext which has already been created.
+   */
   JavaStreamingContext streamingctx();
 
-  /** Get shared object */
+  /**
+   * Get shared object
+   *
+   * @param <E> The type of the shared object
+   * @param name Name of the shared object to return
+   * @return The shared object matching name
+   */
   <E> E getSharedObject(String name) throws NoSuchElementException;
 
-  /** Set shared object, it will replace the old one if already existed */
+  /**
+   * Set shared object, it will replace the old one if already existed
+   *
+   * @param <E> The type of the shared object
+   * @param name Name of the shared object to be set
+   * @param object The object to be set
+   */
   <E> void setSharedObject(String name, E object);
 
-  /** Remove shared object from cache */
+  /**
+   * Remove shared object from cache
+   *
+   * @param <E> The type of the shared object
+   * @param name Name of the shared object to be removed
+   * @return The object that was removed
+   */
   <E> E removeSharedObject(String name);
 
   /**
@@ -66,12 +92,15 @@ public interface JobContext {
   void stopStreamingCtx();
 
   /**
-   * Returns a local tmp dir specific to the context
+   * @return A local tmp dir specific to the context
    */
   File getLocalTmpDir();
 
   /**
-   * Returns SparkSession if it existed, otherwise throws Exception.
+   *
+   * @param <E> The type of the sparksession object
+   * @return The SparkSession if it exists
+   * @throws Exception If SparkSession does not exist
    */
   <E> E sparkSession() throws Exception;
 }

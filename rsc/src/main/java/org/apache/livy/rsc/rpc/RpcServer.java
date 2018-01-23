@@ -74,7 +74,7 @@ public class RpcServer implements Closeable {
   private final String PORT_DELIMITER = "~";
   /**
    * Creating RPC Server
-   * @param lconf
+   * @param lconf The default RSC configs
    * @throws IOException
    * @throws InterruptedException
    */
@@ -192,6 +192,8 @@ public class RpcServer implements Closeable {
 
   /**
    * Creates a secret for identifying a client connection.
+   *
+   * @return the secret
    */
   public String createSecret() {
     byte[] secret = new byte[config.getInt(RPC_SECRET_RANDOM_BITS) / 8];
