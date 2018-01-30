@@ -168,7 +168,10 @@ fi
 
 if [[ "$1" == "publish-release" ]]; then
   tmp_dir=$(mktemp -d livy-repo-XXXXX)
-  tmp_repo=`readlink -f "$tmp_dir"`
+  # the following recreates `readlink -f "$tmp_dir"` since readlink -f is unsupported on MacOS
+  cd $tmp_dir
+  tmp_repo=$(pwd)
+  cd ..
 
   cd incubator-livy
   # Publish Livy to Maven release repo
