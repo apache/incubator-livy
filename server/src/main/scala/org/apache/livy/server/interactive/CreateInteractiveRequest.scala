@@ -26,9 +26,9 @@ class CreateInteractiveRequest {
   var pyFiles: List[String] = List()
   var files: List[String] = List()
   var driverMemory: Option[String] = None
-  var driverCores: Option[Int] = None
+  var driverCores: Option[Double] = None
   var executorMemory: Option[String] = None
-  var executorCores: Option[Int] = None
+  var executorCores: Option[Double] = None
   var numExecutors: Option[Int] = None
   var archives: List[String] = List()
   var queue: Option[String] = None
