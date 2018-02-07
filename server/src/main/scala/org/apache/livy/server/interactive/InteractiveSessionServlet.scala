@@ -256,7 +256,7 @@ class InteractiveSessionServlet(
     */
   private def resolveResourceName(utf8EncodeName: String): String = {
     val utf8EncodeTag = "utf-8\'\'"
-    if (utf8EncodeName.startsWith(utf8EncodeTag)) {
+    if (utf8EncodeName != null && utf8EncodeName.startsWith(utf8EncodeTag)) {
       val utf8FileName = utf8EncodeName.substring(utf8EncodeTag.length)
       URLDecoder.decode(utf8FileName, "utf-8")
     } else {
