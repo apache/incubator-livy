@@ -220,9 +220,8 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
   // Scalastyle is treating unicode escape as non ascii characters. Turn off the check.
   // scalastyle:off non.ascii.character.disallowed
   private def uploadNonASCIIAndVerify(cmd: String): Unit = {
-    val nonASCIIFileName = "файл"
-    val f = File.createTempFile(nonASCIIFileName, cmd)
-    val expectedStr = s"Test data with $nonASCIIFileName"
+    val f = File.createTempFile("файл", cmd)
+    val expectedStr = "Test data"
     val expectedData = expectedStr.getBytes()
     Files.write(Paths.get(f.getAbsolutePath), expectedData)
     val b = new Array[Byte](expectedData.length)
