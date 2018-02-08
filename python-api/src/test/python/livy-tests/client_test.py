@@ -1,3 +1,4 @@
+# -*-coding:utf-8 -*-
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -186,6 +187,7 @@ def test_add_file():
     add_file_future.result(15)
     assert add_file_future.done()
 
+
 @responses.activate
 def test_add_non_ascii_file():
     file_uri = "file://" + os.path.dirname(os.path.abspath(__file__)) + \
@@ -194,6 +196,7 @@ def test_add_non_ascii_file():
          file_uri)
     add_file_future.result(15)
     assert add_file_future.done()
+
 
 @responses.activate
 def test_upload_file():
@@ -204,6 +207,7 @@ def test_upload_file():
     upload_file_future.result(15)
     assert upload_file_future.done()
 
+
 @responses.activate
 def test_upload_non_ascii_file():
     file_path = os.path.dirname(os.path.abspath(__file__)) + \
@@ -212,6 +216,7 @@ def test_upload_non_ascii_file():
         file_path)
     upload_file_future.result(15)
     assert upload_file_future.done()
+
 
 @responses.activate
 def test_add_pyfile():
@@ -222,6 +227,7 @@ def test_add_pyfile():
     add_file_future.result(15)
     assert add_file_future.done()
 
+
 @responses.activate
 def test_add_non_ascii_pyfile():
     file_uri = "file://" + os.path.dirname(os.path.abspath(__file__)) + \
@@ -230,6 +236,7 @@ def test_add_non_ascii_pyfile():
          file_uri)
     add_file_future.result(15)
     assert add_file_future.done()
+
 
 @responses.activate
 def test_upload_pyfile():
@@ -240,6 +247,7 @@ def test_upload_pyfile():
     pyfile_future.result(15)
     assert pyfile_future.done()
 
+
 @responses.activate
 def test_upload_non_ascii_pyfile():
     file_path = os.path.dirname(os.path.abspath(__file__)) + \
@@ -249,6 +257,7 @@ def test_upload_non_ascii_pyfile():
     pyfile_future.result(15)
     assert pyfile_future.done()
 
+
 @responses.activate
 def test_add_jar():
     file_uri = "file://" + os.path.dirname(os.path.abspath(__file__)) + \
@@ -256,6 +265,7 @@ def test_add_jar():
     add_file_future = mock_file_apis('add-jar', client_test.add_jar, file_uri)
     add_file_future.result(15)
     assert add_file_future.done()
+
 
 @responses.activate
 def test_add_non_ascii_jar():
