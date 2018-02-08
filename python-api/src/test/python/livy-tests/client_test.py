@@ -191,7 +191,7 @@ def test_add_file():
 @responses.activate
 def test_add_non_ascii_file():
     file_uri = "file://" + os.path.dirname(os.path.abspath(__file__)) + \
-        "/resources/text_файл.txt"
+        u"/resources/text_файл.txt"
     add_file_future = mock_file_apis('add-file', client_test.add_file,
          file_uri)
     add_file_future.result(15)
@@ -211,7 +211,7 @@ def test_upload_file():
 @responses.activate
 def test_upload_non_ascii_file():
     file_path = os.path.dirname(os.path.abspath(__file__)) + \
-        "/resources/text_файл.txt"
+        u"/resources/text_файл.txt"
     upload_file_future = mock_file_apis('upload-file', client_test.upload_file,
         file_path)
     upload_file_future.result(15)
@@ -231,7 +231,7 @@ def test_add_pyfile():
 @responses.activate
 def test_add_non_ascii_pyfile():
     file_uri = "file://" + os.path.dirname(os.path.abspath(__file__)) + \
-        "/resources/zip_файл.zip"
+        u"/resources/zip_файл.zip"
     add_file_future = mock_file_apis('add-pyfile', client_test.add_pyfile,
          file_uri)
     add_file_future.result(15)
@@ -251,7 +251,7 @@ def test_upload_pyfile():
 @responses.activate
 def test_upload_non_ascii_pyfile():
     file_path = os.path.dirname(os.path.abspath(__file__)) + \
-        "/resources/zip_файл.zip"
+        u"/resources/zip_файл.zip"
     pyfile_future = mock_file_apis('upload-pyfile', client_test.upload_pyfile,
         file_path)
     pyfile_future.result(15)
@@ -270,7 +270,7 @@ def test_add_jar():
 @responses.activate
 def test_add_non_ascii_jar():
     file_uri = "file://" + os.path.dirname(os.path.abspath(__file__)) + \
-        "/resources/jar_файл.jar"
+        u"/resources/jar_файл.jar"
     add_file_future = mock_file_apis('add-jar', client_test.add_jar, file_uri)
     add_file_future.result(15)
     assert add_file_future.done()
