@@ -50,19 +50,36 @@ if [[ $@ == *"help"* ]]; then
   exit_with_usage
 fi
 
-for env in ASF_USERNAME ASF_PASSWORD GPG_PASSPHRASE RELEASE_RC; do
-  if [ -z "${!env}" ]; then
-    echo "ERROR: $env must be set to run this script"
-    exit_with_usage
-  fi
-done
-
 # Explicitly set locale in order to make `sort` output consistent across machines.
 # See https://stackoverflow.com/questions/28881 for more details.
 export LC_ALL=C
 
+# Setup env
+
 # Commit ref to checkout when building
-GIT_REF=${GIT_REF:-master}
+if [ -z "$GIT_REF" ]; then
+  read -p "Choose git branch/tag [master]: " GIT_REF
+  GIT_REF=${GIT_REF:-master}
+  echo $GIT_REF
+fi
+
+# Set RELEASE_RC
+if [ -z "$RELEASE_RC" ]; then
+  read -p "Choose RC [rc1]: " RELEASE_RC
+  RELEASE_RC=${RELEASE_RC:-rc1}
+  echo $RELEASE_RC
+fi
+
+# Get ASF Login
+if [ -z "$ASF_USERNAME" ]; then
+  read -p "ASF username: " ASF_USERNAME
+  echo $ASF_USERNAME
+fi
+
+if [ -z "$ASF_PASSWORD" ]; then
+  read -s -p "ASF password: " ASF_PASSWORD
+  echo
+fi
 
 # Destination directory on remote server
 RELEASE_STAGING_LOCATION="https://dist.apache.org/repos/dist/dev/incubator/livy"
@@ -74,7 +91,11 @@ BASE_DIR=$(pwd)
 
 MVN="mvn"
 
-rm -rf incubator-livy
+# Use temp staging dir for release process
+rm -rf release-staging
+mkdir release-staging
+cd release-staging
+
 git clone https://git-wip-us.apache.org/repos/asf/incubator-livy.git
 cd incubator-livy
 git checkout $GIT_REF
@@ -96,11 +117,11 @@ if [[ "$1" == "package" ]]; then
   echo "Packaging release tarballs"
   cp -r incubator-livy livy-$LIVY_VERSION-src
   zip -r livy-$LIVY_VERSION-src.zip livy-$LIVY_VERSION-src
-  echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --armour --output livy-$LIVY_VERSION-src.zip.asc \
+  echo "" | $GPG --passphrase-fd 0 --armour --output livy-$LIVY_VERSION-src.zip.asc \
     --detach-sig livy-$LIVY_VERSION-src.zip
-  echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --print-md MD5 livy-$LIVY_VERSION-src.zip > \
+  echo "" | $GPG --passphrase-fd 0 --print-md MD5 livy-$LIVY_VERSION-src.zip > \
     livy-$LIVY_VERSION-src.zip.md5
-  echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --print-md \
+  echo "" | $GPG --passphrase-fd 0 --print-md \
     SHA512 livy-$LIVY_VERSION-src.zip > livy-$LIVY_VERSION-src.zip.sha512
   rm -rf livy-$LIVY_VERSION-src
 
@@ -115,13 +136,13 @@ if [[ "$1" == "package" ]]; then
 
     echo "Copying and signing regular binary distribution"
     cp assembly/target/livy-$LIVY_VERSION-bin.zip .
-    echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --armour \
+    echo "" | $GPG --passphrase-fd 0 --armour \
       --output livy-$LIVY_VERSION-bin.zip.asc \
       --detach-sig livy-$LIVY_VERSION-bin.zip
-    echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --print-md \
+    echo "" | $GPG --passphrase-fd 0 --print-md \
       MD5 livy-$LIVY_VERSION-bin.zip > \
       livy-$LIVY_VERSION-bin.zip.md5
-    echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --print-md \
+    echo "" | $GPG --passphrase-fd 0 --print-md \
       SHA512 livy-$LIVY_VERSION-bin.zip > \
       livy-$LIVY_VERSION-bin.zip.sha512
 
@@ -147,7 +168,10 @@ fi
 
 if [[ "$1" == "publish-release" ]]; then
   tmp_dir=$(mktemp -d livy-repo-XXXXX)
-  tmp_repo=`readlink -f "$tmp_dir"`
+  # the following recreates `readlink -f "$tmp_dir"` since readlink -f is unsupported on MacOS
+  cd $tmp_dir
+  tmp_repo=$(pwd)
+  cd ..
 
   cd incubator-livy
   # Publish Livy to Maven release repo
@@ -176,7 +200,7 @@ if [[ "$1" == "publish-release" ]]; then
   echo "Creating hash and signature files"
   for file in $(find . -type f)
   do
-    echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --output $file.asc \
+    echo "" | $GPG --passphrase-fd 0 --output $file.asc \
       --detach-sig --armour $file;
     if [ $(command -v md5) ]; then
       # Available on OS X; -q to keep only hash
@@ -212,5 +236,5 @@ if [[ "$1" == "publish-release" ]]; then
 fi
 
 cd ..
-rm -rf incubator-livy
+rm -rf release-staging
 echo "ERROR: expects to be called with 'package', 'publish-release'"
