@@ -249,15 +249,20 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val uploadPyFilePath = createTempFilesForTest("upload_pyfile", ".py",
       uploadPyFileContent, false)
 
-    //[LIVY-438] test add or upload resources contain non-ascii-char names.
+    // [LIVY-438] test add or upload resources contain non-ascii-char names.
     // scalastyle:off non.ascii.character.disallowed
     val addNonASCIIFileContent = "hello from non-ascii addfile"
-    val addNonASCIIFilePath = createTempFilesForTest("add_файл_file", ".txt", addNonASCIIFileContent, true)
-    val addNonASCIIPyFileContent = "def test_add_non_ascii_pyfile(): return \"hello from non-ascii addpyfile\""
-    val addNonASCIIPyFilePath = createTempFilesForTest("add_файл_pyfile", ".py", addNonASCIIPyFileContent, true)
+    val addNonASCIIFilePath = createTempFilesForTest("add_файл_file", ".txt",
+      addNonASCIIFileContent, true)
+    val addNonASCIIPyFileContent = "def test_add_non_ascii_pyfile(): " +
+      "return \"hello from non-ascii addpyfile\""
+    val addNonASCIIPyFilePath = createTempFilesForTest("add_файл_pyfile", ".py",
+      addNonASCIIPyFileContent, true)
     val uploadNonASCIIFileContent = "hello from non-ascii uploadfile"
-    val uploadNonASCIIFilePath = createTempFilesForTest("upload_файл_pyfile", ".py", uploadNonASCIIFileContent, false)
-    val uploadNonASCIIPyFileContent = "def test_upload_non_ascii_pyfile(): return \"hello from non-ascii uploadpyfile\""
+    val uploadNonASCIIFilePath = createTempFilesForTest("upload_файл_pyfile",
+      ".py", uploadNonASCIIFileContent, false)
+    val uploadNonASCIIPyFileContent = "def test_upload_non_ascii_pyfile():" +
+      " return \"hello from non-ascii uploadpyfile\""
     val uploadNonASCIIPyFilePath = createTempFilesForTest("upload_файл_pyfile", ".py",
       uploadNonASCIIPyFileContent, false)
     // scalastyle:on non.ascii.character.disallowed
