@@ -23,6 +23,7 @@ reports/
 metastore_db/
 derby.log
 dependency-reduced-pom.xml
+release-staging/
 
 # For python setup.py, which pollutes the source dirs.
 python-api/dist
