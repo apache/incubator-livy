@@ -104,6 +104,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     assert(result === "hello")
   }
 
+  // scalastyle:off non.ascii.character.disallowed
   test("upload non-ascii file") {
     assume(client != null, "Client not active.")
 
@@ -115,6 +116,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val result = waitFor(client.submit(new FileReader(file.toFile().getName(), false)))
     assert(result === "hello файл")
   }
+  // scalastyle:on non.ascii.character.disallowed
 
   test("add file from HDFS") {
     assume(client != null, "Client not active.")
@@ -129,6 +131,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     assert(result === "hello")
   }
 
+  // scalastyle:off non.ascii.character.disallowed
   test("add non-ascii file from HDFS") {
     assume(client != null, "Client not active.")
     val file = Files.createTempFile("filetest2_файл", ".txt")
@@ -141,6 +144,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val result = waitFor(client.submit(task))
     assert(result === "hello файл")
   }
+  // scalastyle:on non.ascii.character.disallowed
 
   test("run simple jobs") {
     assume(client != null, "Client not active.")
