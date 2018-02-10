@@ -104,6 +104,18 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     assert(result === "hello")
   }
 
+  test("upload non-ascii file") {
+    assume(client != null, "Client not active.")
+
+    val file = Files.createTempFile("filetest_файл", ".txt")
+    Files.write(file, "hello файл".getBytes(UTF_8))
+
+    waitFor(client.uploadFile(file.toFile()))
+
+    val result = waitFor(client.submit(new FileReader(file.toFile().getName(), false)))
+    assert(result === "hello файл")
+  }
+
   test("add file from HDFS") {
     assume(client != null, "Client not active.")
     val file = Files.createTempFile("filetest2", ".txt")
@@ -115,6 +127,19 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val task = new FileReader(new File(uri.getPath()).getName(), false)
     val result = waitFor(client.submit(task))
     assert(result === "hello")
+  }
+
+  test("add non-ascii file from HDFS") {
+    assume(client != null, "Client not active.")
+    val file = Files.createTempFile("filetest2_файл", ".txt")
+    Files.write(file, "hello файл".getBytes(UTF_8))
+
+    val uri = new URI(uploadToHdfs(file.toFile()))
+    waitFor(client.addFile(uri))
+
+    val task = new FileReader(new File(uri.getPath()).getName(), false)
+    val result = waitFor(client.submit(task))
+    assert(result === "hello файл")
   }
 
   test("run simple jobs") {
@@ -254,17 +279,9 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val addNonASCIIFileContent = "hello from non-ascii addfile"
     val addNonASCIIFilePath = createTempFilesForTest("add_файл_file", ".txt",
       addNonASCIIFileContent, true)
-    val addNonASCIIPyFileContent = "def test_add_non_ascii_pyfile(): " +
-      "return \"hello from non-ascii addpyfile\""
-    val addNonASCIIPyFilePath = createTempFilesForTest("add_файл_pyfile", ".py",
-      addNonASCIIPyFileContent, true)
     val uploadNonASCIIFileContent = "hello from non-ascii uploadfile"
-    val uploadNonASCIIFilePath = createTempFilesForTest("upload_файл_pyfile",
-      ".py", uploadNonASCIIFileContent, false)
-    val uploadNonASCIIPyFileContent = "def test_upload_non_ascii_pyfile():" +
-      " return \"hello from non-ascii uploadpyfile\""
-    val uploadNonASCIIPyFilePath = createTempFilesForTest("upload_файл_pyfile", ".py",
-      uploadNonASCIIPyFileContent, false)
+    val uploadNonASCIIFilePath = createTempFilesForTest("upload_файл_file",
+      ".txt", uploadNonASCIIFileContent, false)
     // scalastyle:on non.ascii.character.disallowed
     val builder = new ProcessBuilder(Seq("python", createPyTestsForPythonAPI().toString).asJava)
 
@@ -275,9 +292,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     env.put("UPLOAD_FILE_URL", uploadFilePath)
     env.put("UPLOAD_PYFILE_URL", uploadPyFilePath)
     env.put("ADD_NON_ASCII_FILE_URL", addNonASCIIFilePath)
-    env.put("ADD_NON_ASCII_PYFILE_URL", addNonASCIIPyFilePath)
     env.put("UPLOAD_NON_ASCII_FILE_URL", uploadNonASCIIFilePath)
-    env.put("UPLOAD_NON_ASCII_PYFILE_URL", uploadNonASCIIPyFilePath)
 
     builder.redirectOutput(new File(sys.props("java.io.tmpdir") + "/pytest_results.log"))
     builder.redirectErrorStream(true)

@@ -35,9 +35,7 @@ add_pyfile_url = os.environ.get("ADD_PYFILE_URL")
 upload_file_url = os.environ.get("UPLOAD_FILE_URL")
 upload_pyfile_url = os.environ.get("UPLOAD_PYFILE_URL")
 add_non_ascii_file_url = os.environ.get("ADD_NON_ASCII_FILE_URL")
-add_non_ascii_pyfile_url = os.environ.get("ADD_NON_ASCII_PYFILE_URL")
 upload_non_ascii_file_url = os.environ.get("UPLOAD_NON_ASCII_FILE_URL")
-upload_non_ascii_pyfile_url = os.environ.get("UPLOAD_NON_ASCII_PYFILE_URL")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -238,28 +236,11 @@ def test_add_non_ascii_file():
     process_job(add_non_ascii_file_job, "hello from non-ascii addfile")
 
 
-def test_add_non_ascii_pyfile():
-    add_non_ascii_pyfile_name_with_ext = os.path.basename(add_non_ascii_pyfile_url)
-    add_non_ascii_pyfile_name = add_non_ascii_pyfile_name_with_ext.rsplit('.', 1)[0]
-    json_data = json.dumps({'uri': add_non_ascii_pyfile_url})
-    request_url = livy_end_point + "/sessions/" + str(session_id) + "/add-pyfile"
-    header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
-    response_add_pyfile = requests.request('POST', request_url, headers=header, data=json_data)
-
-    assert response_add_pyfile.status_code == httplib.OK
-
-    def add_non_ascii_pyfile_job(context):
-        pyfile_module = __import__ (add_non_ascii_pyfile_name)
-        return pyfile_module.test_add_non_ascii_pyfile()
-
-    process_job(add_non_ascii_pyfile_job, "hello from non-ascii addpyfile")
-
-
 def test_upload_non_ascii_file():
     upload_non_ascii_file = open(upload_non_ascii_file_url)
     upload_non_ascii_file_name = os.path.basename(upload_non_ascii_file.name)
     request_url = livy_end_point + "/sessions/" + str(session_id) + "/upload-file"
-    files = {'file': upload_file}
+    files = {'file': upload_non_ascii_file}
     header = {'X-Requested-By': 'livy'}
     response = requests.request('POST', request_url, headers=header, files=files)
 
@@ -272,22 +253,6 @@ def test_upload_non_ascii_file():
         return file_val
 
     process_job(upload_non_ascii_file_job, "hello from non-ascii uploadfile")
-
-
-def test_non_ascii_upload_pyfile():
-    upload_non_ascii_pyfile = open(upload_non_ascii_pyfile_url)
-    upload_non_ascii_pyfile_name_with_ext = os.path.basename(upload_non_ascii_pyfile.name)
-    upload_non_ascii_pyfile_name = upload_non_ascii_pyfile_name_with_ext.rsplit('.', 1)[0]
-    request_url = livy_end_point + "/sessions/" + str(session_id) + "/upload-pyfile"
-    files = {'file': upload_pyfile}
-    header = {'X-Requested-By': 'livy'}
-    response = requests.request('POST', request_url, headers=header, files=files)
-    assert response.status_code == httplib.OK
-
-    def upload_non_ascii_pyfile_job(context):
-        pyfile_module = __import__ (upload_non_ascii_pyfile_name)
-        return pyfile_module.test_upload_pyfile()
-    process_job(upload_non_ascii_pyfile_job, "hello from non-ascii uploadpyfile")
 
 
 if __name__ == '__main__':
