@@ -219,7 +219,7 @@ def test_upload_pyfile():
 
 
 def test_add_non_ascii_file():
-    add_non_ascii_file_name = os.path.basename(add_non_ascii_file_url)
+    add_non_ascii_file_name = os.path.basename(add_non_ascii_file_url).decode('utf-8')
     json_data = json.dumps({'uri': add_non_ascii_file_url})
     request_url = livy_end_point + "/sessions/" + str(session_id) + "/add-file"
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
@@ -238,7 +238,7 @@ def test_add_non_ascii_file():
 
 def test_upload_non_ascii_file():
     upload_non_ascii_file = open(upload_non_ascii_file_url)
-    upload_non_ascii_file_name = os.path.basename(upload_non_ascii_file.name)
+    upload_non_ascii_file_name = os.path.basename(upload_non_ascii_file.name).decode('utf-8')
     request_url = livy_end_point + "/sessions/" + str(session_id) + "/upload-file"
     files = {'file': upload_non_ascii_file}
     header = {'X-Requested-By': 'livy'}
