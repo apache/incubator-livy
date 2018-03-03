@@ -98,12 +98,20 @@ object InteractiveSession extends Logging {
 
       builderProperties.getOrElseUpdate("spark.app.name", s"livy-session-$id")
 
+      val envConfigPrefix = RSCConf.Entry.SPARK_ENV + "."
+      val livyClientEnv = mutable.Map[String, String]()
+      request.env.foreach { case (key, opt) =>
+          livyClientEnv.put(envConfigPrefix + key, opt)
+      }
+
+
       info(s"Creating Interactive session $id: [owner: $owner, request: $request]")
       val builder = new LivyClientBuilder()
         .setAll(builderProperties.asJava)
         .setConf("livy.client.session-id", id.toString)
         .setConf(RSCConf.Entry.DRIVER_CLASS.key(), "org.apache.livy.repl.ReplDriver")
         .setConf(RSCConf.Entry.PROXY_USER.key(), impersonatedUser.orNull)
+        .setAll(livyClientEnv.asJava)
         .setURI(new URI("rsc:/"))
 
       Option(builder.build().asInstanceOf[RSCClient])
