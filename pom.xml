@@ -1119,6 +1119,7 @@
       <properties>
         <spark.scala-2.11.version>2.0.1</spark.scala-2.11.version>
         <spark.scala-2.10.version>2.0.1</spark.scala-2.10.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
         <py4j.version>0.10.3</py4j.version>
         <json4s.version>3.2.11</json4s.version>
         <spark.bin.download.url>
@@ -1138,6 +1139,7 @@
       <properties>
         <spark.scala-2.11.version>2.1.0</spark.scala-2.11.version>
         <spark.scala-2.10.version>2.1.0</spark.scala-2.10.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
         <py4j.version>0.10.4</py4j.version>
         <json4s.version>3.2.11</json4s.version>
         <spark.bin.download.url>
@@ -1157,6 +1159,7 @@
       <properties>
         <spark.scala-2.11.version>2.2.0</spark.scala-2.11.version>
         <spark.scala-2.10.version>2.2.0</spark.scala-2.10.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
         <java.version>1.8</java.version>
         <py4j.version>0.10.4</py4j.version>
         <json4s.version>3.2.11</json4s.version>
@@ -1177,6 +1180,7 @@
       <properties>
         <spark.scala-2.11.version>2.3.0</spark.scala-2.11.version>
         <spark.scala-2.10.version>2.2.0</spark.scala-2.10.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
         <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
         <netty.spark-2.10.version>4.0.37.Final</netty.spark-2.10.version>
         <java.version>1.8</java.version>
