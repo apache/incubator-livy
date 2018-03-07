@@ -30,10 +30,14 @@ env:
 
 matrix:
   include:
-      # Spark 2.2 will only be verified using JDK8
+      # Spark 2.2+ will only be verified using JDK8
     - env: MVN_FLAG='-Pspark-2.2 -DskipTests'
       jdk: oraclejdk8
     - env: MVN_FLAG='-Pspark-2.2 -DskipITs'
+      jdk: oraclejdk8
+    - env: MVN_FLAG='-Pspark-2.3 -DskipTests'
+      jdk: oraclejdk8
+    - env: MVN_FLAG='-Pspark-2.3 -DskipITs'
       jdk: oraclejdk8
 
 
