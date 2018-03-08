@@ -77,9 +77,6 @@
               <descriptors>
                 <descriptor>assembly.xml</descriptor>
               </descriptors>
-              <formats>
-                <format>${assembly.format}</format>
-              </formats>
             </configuration>
           </execution>
         </executions>
