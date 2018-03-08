@@ -1130,6 +1130,21 @@
     </profile>
 
     <profile>
+      <id>spark-2.0-it</id>
+      <activation>
+        <property>
+          <name>spark-2.0-it</name>
+        </property>
+      </activation>
+      <properties>
+        <spark.bin.download.url>
+          https://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.0.1-bin-hadoop2.7</spark.bin.name>
+      </properties>
+    </profile>
+
+    <profile>
       <id>spark-2.1</id>
       <activation>
         <property>
@@ -1142,6 +1157,17 @@
         <spark.version>${spark.scala-2.11.version}</spark.version>
         <py4j.version>0.10.4</py4j.version>
         <json4s.version>3.2.11</json4s.version>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark-2.1-it</id>
+      <activation>
+        <property>
+          <name>spark-2.1-it</name>
+        </property>
+      </activation>
+      <properties>
         <spark.bin.download.url>
           https://d3kbcqa49mib13.cloudfront.net/spark-2.1.0-bin-hadoop2.7.tgz
         </spark.bin.download.url>
@@ -1163,6 +1189,17 @@
         <java.version>1.8</java.version>
         <py4j.version>0.10.4</py4j.version>
         <json4s.version>3.2.11</json4s.version>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark-2.2-it</id>
+      <activation>
+        <property>
+          <name>spark-2.2-it</name>
+        </property>
+      </activation>
+      <properties>
         <spark.bin.download.url>
           https://d3kbcqa49mib13.cloudfront.net/spark-2.2.0-bin-hadoop2.7.tgz
         </spark.bin.download.url>
@@ -1186,6 +1223,17 @@
         <java.version>1.8</java.version>
         <py4j.version>0.10.4</py4j.version>
         <json4s.version>3.2.11</json4s.version>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark-2.3-it</id>
+      <activation>
+        <property>
+          <name>spark-2.3-it</name>
+        </property>
+      </activation>
+      <properties>
         <spark.bin.download.url>
           http://apache.mirrors.ionfish.org/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz
         </spark.bin.download.url>
