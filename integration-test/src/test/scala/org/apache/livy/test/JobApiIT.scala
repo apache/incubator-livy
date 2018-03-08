@@ -133,7 +133,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     assert(result === 100)
   }
 
-  test("run spark sql job") {
+  ignore("run spark sql job") {
     assume(client != null, "Client not active.")
     val result = waitFor(client.submit(new SQLGetTweets(false)))
     assert(result.size() > 0)
