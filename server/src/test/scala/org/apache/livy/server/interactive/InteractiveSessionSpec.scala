@@ -91,7 +91,7 @@ class InteractiveSessionSpec extends FunSpec
   private def withSession(desc: String)(fn: (InteractiveSession) => Unit): Unit = {
     it(desc) {
       assume(session != null, "No active session.")
-      eventually(timeout(30 seconds), interval(100 millis)) {
+      eventually(timeout(60 seconds), interval(100 millis)) {
         session.state shouldBe (SessionState.Idle)
       }
       fn(session)
