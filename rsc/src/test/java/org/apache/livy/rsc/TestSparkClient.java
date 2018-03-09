@@ -70,6 +70,7 @@ public class TestSparkClient {
       conf.put(SparkLauncher.EXECUTOR_EXTRA_CLASSPATH, classpath);
     }
 
+    conf.put(CLIENT_SHUTDOWN_TIMEOUT.key(), "30s");
     conf.put(LIVY_JARS.key(), "");
     conf.put("spark.repl.enableHiveContext", "true");
     conf.put("spark.sql.catalogImplementation", "hive");
