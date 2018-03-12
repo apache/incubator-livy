@@ -80,7 +80,9 @@
   <properties>
     <hadoop.version>2.7.3</hadoop.version>
     <hadoop.scope>compile</hadoop.scope>
-    <spark.version>1.6.2</spark.version>
+    <spark.scala-2.11.version>1.6.2</spark.scala-2.11.version>
+    <spark.scala-2.10.version>1.6.2</spark.scala-2.10.version>
+    <spark.version>${spark.scala-2.11.version}</spark.version>
     <commons-codec.version>1.9</commons-codec.version>
     <guava.version>15.0</guava.version>
     <httpclient.version>4.5.3</httpclient.version>
@@ -93,7 +95,9 @@
     <kryo.version>2.22</kryo.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.9.5</mockito.version>
-    <netty.version>4.0.37.Final</netty.version>
+    <netty.spark-2.11.version>4.0.37.Final</netty.spark-2.11.version>
+    <netty.spark-2.10.version>4.0.37.Final</netty.spark-2.10.version>
+    <netty.version>${netty.spark-2.11.version}</netty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <py4j.version>0.9</py4j.version>
     <scala-2.10.version>2.10.4</scala-2.10.version>
@@ -182,25 +186,6 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </repository>
-    <repository>
-      <id>cdh.repo</id>
-      <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
-      <name>Cloudera Repositories</name>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>cdh.snapshots.repo</id>
-      <url>https://repository.cloudera.com/artifactory/libs-snapshot-local</url>
-      <name>Cloudera Snapshots Repository</name>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
     </repository>
     <repository>
       <id>repository.jboss.org</id>
@@ -1113,9 +1098,26 @@
         </property>
       </activation>
       <properties>
-        <spark.version>2.0.1</spark.version>
+        <spark.scala-2.11.version>2.0.1</spark.scala-2.11.version>
+        <spark.scala-2.10.version>2.0.1</spark.scala-2.10.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
         <py4j.version>0.10.3</py4j.version>
         <json4s.version>3.2.11</json4s.version>
+        <spark.bin.download.url>
+          https://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.0.1-bin-hadoop2.7</spark.bin.name>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark-2.0-it</id>
+      <activation>
+        <property>
+          <name>spark-2.0-it</name>
+        </property>
+      </activation>
+      <properties>
         <spark.bin.download.url>
           https://d3kbcqa49mib13.cloudfront.net/spark-2.0.1-bin-hadoop2.7.tgz
         </spark.bin.download.url>
@@ -1131,9 +1133,22 @@
         </property>
       </activation>
       <properties>
-        <spark.version>2.1.0</spark.version>
+        <spark.scala-2.11.version>2.1.0</spark.scala-2.11.version>
+        <spark.scala-2.10.version>2.1.0</spark.scala-2.10.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
         <py4j.version>0.10.4</py4j.version>
         <json4s.version>3.2.11</json4s.version>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark-2.1-it</id>
+      <activation>
+        <property>
+          <name>spark-2.1-it</name>
+        </property>
+      </activation>
+      <properties>
         <spark.bin.download.url>
           https://d3kbcqa49mib13.cloudfront.net/spark-2.1.0-bin-hadoop2.7.tgz
         </spark.bin.download.url>
@@ -1149,14 +1164,61 @@
         </property>
       </activation>
       <properties>
-        <spark.version>2.2.0</spark.version>
+        <spark.scala-2.11.version>2.2.0</spark.scala-2.11.version>
+        <spark.scala-2.10.version>2.2.0</spark.scala-2.10.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
         <java.version>1.8</java.version>
         <py4j.version>0.10.4</py4j.version>
         <json4s.version>3.2.11</json4s.version>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark-2.2-it</id>
+      <activation>
+        <property>
+          <name>spark-2.2-it</name>
+        </property>
+      </activation>
+      <properties>
         <spark.bin.download.url>
           https://d3kbcqa49mib13.cloudfront.net/spark-2.2.0-bin-hadoop2.7.tgz
         </spark.bin.download.url>
         <spark.bin.name>spark-2.2.0-bin-hadoop2.7</spark.bin.name>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark-2.3</id>
+      <activation>
+        <property>
+          <name>spark-2.3</name>
+        </property>
+      </activation>
+      <properties>
+        <spark.scala-2.11.version>2.3.0</spark.scala-2.11.version>
+        <spark.scala-2.10.version>2.2.0</spark.scala-2.10.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
+        <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
+        <netty.spark-2.10.version>4.0.37.Final</netty.spark-2.10.version>
+        <java.version>1.8</java.version>
+        <py4j.version>0.10.4</py4j.version>
+        <json4s.version>3.2.11</json4s.version>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark-2.3-it</id>
+      <activation>
+        <property>
+          <name>spark-2.3-it</name>
+        </property>
+      </activation>
+      <properties>
+        <spark.bin.download.url>
+          http://apache.mirrors.ionfish.org/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.3.0-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 

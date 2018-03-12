@@ -59,7 +59,7 @@ object PythonInterpreter extends Logging {
     val pythonPath = sys.env.getOrElse("PYTHONPATH", "")
       .split(File.pathSeparator)
       .++(if (!ClientConf.TEST_MODE) findPySparkArchives() else Nil)
-      .++(if (!ClientConf.TEST_MODE) findPyFiles() else Nil)
+      .++(if (!ClientConf.TEST_MODE) findPyFiles(conf) else Nil)
 
     env.put("PYSPARK_PYTHON", pythonExec)
     env.put("PYTHONPATH", pythonPath.mkString(File.pathSeparator))
@@ -94,10 +94,12 @@ object PythonInterpreter extends Logging {
       }
   }
 
-  private def findPyFiles(): Seq[String] = {
+  private def findPyFiles(conf: SparkConf): Seq[String] = {
     val pyFiles = sys.props.getOrElse("spark.submit.pyFiles", "").split(",")
 
-    if (sys.env.getOrElse("SPARK_YARN_MODE", "") == "true") {
+    if (sys.env.getOrElse("SPARK_YARN_MODE", "") == "true" ||
+      (conf.get("spark.master", "").toLowerCase == "yarn" &&
+        conf.get("spark.submit.deployMode", "").toLowerCase == "cluster")) {
       // In spark mode, these files have been localized into the current directory.
       pyFiles.map { file =>
         val name = new File(file).getName

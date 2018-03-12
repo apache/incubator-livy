@@ -98,7 +98,9 @@ object SparkRInterpreter {
         .getOrElse("R")
 
       var packageDir = ""
-      if (sys.env.getOrElse("SPARK_YARN_MODE", "") == "true") {
+      if (sys.env.getOrElse("SPARK_YARN_MODE", "") == "true" ||
+        (conf.get("spark.master", "").toLowerCase == "yarn" &&
+          conf.get("spark.submit.deployMode", "").toLowerCase == "cluster")) {
         packageDir = "./sparkr"
       } else {
         // local mode
