@@ -32,5 +32,7 @@
   <properties>
     <scala.version>${scala-2.11.version}</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
+    <spark.version>${spark.scala-2.11.version}</spark.version>
+    <netty.version>${netty.spark-2.11.version}</netty.version>
   </properties>
 </project>

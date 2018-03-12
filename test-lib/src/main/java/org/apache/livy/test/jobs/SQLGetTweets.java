@@ -61,7 +61,7 @@ public class SQLGetTweets implements Job<List<String>> {
     }
 
     SQLContext sqlctx = useHiveContext ? jc.hivectx() : jc.sqlctx();
-    sqlctx.jsonFile(input.toString()).registerTempTable("tweets");
+    sqlctx.read().json(input.toString()).registerTempTable("tweets");
 
     List<String> tweetList = new ArrayList<>();
     Row[] result =
