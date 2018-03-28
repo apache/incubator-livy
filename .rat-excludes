@@ -23,6 +23,7 @@ logs/*
 **/derby.log
 **/metastore_db/**
 **/.eggs/**
+**/.pytest_cache/**
 **/Gemfile.lock
 **/jquery-2.1.1.min.js
 docs/**/*.html

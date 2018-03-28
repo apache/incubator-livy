@@ -62,9 +62,9 @@ before_install:
   - sudo apt-get -y install libkrb5-dev
   - sudo apt-get -y remove python-setuptools
   - sudo pip2 install --upgrade pip "setuptools < 36"
-  - sudo pip3 install --upgrade pip "setuptools < 36"
+  - sudo python3 -m pip install --upgrade pip "setuptools < 36"
   - sudo pip2 install codecov cloudpickle
-  - sudo pip3 install cloudpickle
+  - sudo python3 -m pip install cloudpickle
 
 install:
   - mvn $MVN_FLAG install -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
@@ -80,4 +80,4 @@ after_success:
   - bash <(curl -s https://codecov.io/bash)
 
 after_failure:
-  - for log in `find * -name "*.log" -o -name "stderr" -o -name "stdout"`; do echo "=========$log========="; cat $log; done
+  - for log in `find * -name "*.log" -o -name "stderr" -o -name "stdout" -o -name "rat.txt"`; do echo "=========$log========="; cat $log; done
