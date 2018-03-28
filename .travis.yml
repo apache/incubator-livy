@@ -80,4 +80,4 @@ after_success:
   - bash <(curl -s https://codecov.io/bash)
 
 after_failure:
-  - for log in `find * -name "*.log" -o -name "stderr" -o -name "stdout"`; do echo "=========$log========="; cat $log; done
+  - for log in `find * -name "*.log" -o -name "stderr" -o -name "stdout" -o -name "rat.txt"`; do echo "=========$log========="; cat $log; done
