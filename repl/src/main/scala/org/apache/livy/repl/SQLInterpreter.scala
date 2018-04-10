@@ -97,9 +97,8 @@ class SQLInterpreter(
       val rows = result.getClass.getMethod("take", classOf[Int])
         .invoke(result, maxResult: java.lang.Integer)
         .asInstanceOf[Array[Row]]
-        .map(_.toSeq)
-        .map { seq =>
-          seq.map {
+        .map {
+          _.toSeq.map {
             // Convert java BigDecimal type to Scala BigDecimal, because current version of
             // Json4s doesn't support java BigDecimal as a primitive type (LIVY-455).
             case i: java.math.BigDecimal => BigDecimal(i)
