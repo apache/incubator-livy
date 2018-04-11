@@ -169,6 +169,76 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
         val batch = servlet.sessionManager.get(2)
         batch should not be defined
       }
+
+      // Set back default value
+      servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 100)
+    }
+
+    it("should create and tear down delayed batch") {
+      jget[Map[String, Any]]("/") { data =>
+        data("sessions") should equal (Seq())
+      }
+
+      val createRequest = new CreateBatchRequest()
+      createRequest.delayed = Some("true")
+      createRequest.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
+
+      jpost[Map[String, Any]]("/", createRequest) { data =>
+        header("Location") should equal("/3")
+        data("id") should equal (3)
+        data("state") should equal ("not_started")
+
+        val batch = servlet.sessionManager.get(3)
+        batch should be (defined)
+      }
+
+      // Upload script
+      val uploadRequest = Map[String, Any]("file" -> script.toFile)
+      jupload[Map[String, Any]]("/3/set-file", uploadRequest) { data =>
+        val batch = servlet.sessionManager.get(3)
+        batch should be (defined)
+      }
+
+      // Start batch
+      jget[Map[String, Any]]("/3/start") { data =>
+        data("msg") should equal ("started")
+
+        val batch = servlet.sessionManager.get(3)
+        batch should be (defined)
+      }
+
+      // Wait for the process to finish.
+      {
+        val batch = servlet.sessionManager.get(3).get
+        Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
+        (batch.state match {
+          case SessionState.Success(_) => true
+          case _ => false
+        }) should be (true)
+      }
+
+      jget[Map[String, Any]]("/3") { data =>
+        data("id") should equal (3)
+        data("state") should equal ("success")
+
+        val batch = servlet.sessionManager.get(3)
+        batch should be (defined)
+      }
+
+      jget[Map[String, Any]]("/3/log?size=1000") { data =>
+        data("id") should equal (3)
+        data("log").asInstanceOf[Seq[String]] should contain ("hello world")
+
+        val batch = servlet.sessionManager.get(3)
+        batch should be (defined)
+      }
+
+      jdelete[Map[String, Any]]("/3") { data =>
+        data should equal (Map("msg" -> "deleted"))
+
+        val batch = servlet.sessionManager.get(3)
+        batch should not be defined
+      }
     }
   }
 }
