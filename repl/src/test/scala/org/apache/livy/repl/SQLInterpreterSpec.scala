@@ -95,6 +95,42 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
     ))
   }
 
+  it should "handle java BigDecimal" in withInterpreter { interpreter =>
+    val rdd = sparkEntries.sc().parallelize(Seq(
+      ("1", new java.math.BigDecimal(1.0)),
+      ("2", new java.math.BigDecimal(2.0))))
+    val df = sparkEntries.sqlctx().createDataFrame(rdd).selectExpr("_1 as col1", "_2 as col2")
+    df.registerTempTable("test")
+
+    val resp1 = interpreter.execute(
+      """
+        |SELECT * FROM test
+      """.stripMargin)
+
+    val expectedResult = (nullable: Boolean) => {
+      Interpreter.ExecuteSuccess(
+        APPLICATION_JSON -> (("schema" ->
+          (("type" -> "struct") ~
+            ("fields" -> List(
+              ("name" -> "col1") ~ ("type" -> "string") ~ ("nullable" -> true) ~
+                ("metadata" -> List()),
+              ("name" -> "col2") ~ ("type" -> "decimal(38,18)") ~ ("nullable" -> nullable) ~
+                ("metadata" -> List())
+            )))) ~
+          ("data" -> List(
+            List[JValue]("1", 1.0d),
+            List[JValue]("2", 2.0d)
+          )))
+      )
+    }
+
+    val result = Try { resp1 should equal(expectedResult(false))}
+      .orElse(Try { resp1 should equal(expectedResult(true)) })
+    if (result.isFailure) {
+      fail(s"$resp1 doesn't equal to expected result")
+    }
+  }
+
   it should "throw exception for illegal query" in withInterpreter { interpreter =>
     val resp = interpreter.execute(
       """
