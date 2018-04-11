@@ -102,7 +102,6 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
     val df = sparkEntries.sqlctx().createDataFrame(rdd).selectExpr("_1 as col1", "_2 as col2")
     df.registerTempTable("test")
 
-    // Test normal behavior
     val resp1 = interpreter.execute(
       """
         |SELECT * FROM test
