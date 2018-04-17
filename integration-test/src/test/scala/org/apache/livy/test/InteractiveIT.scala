@@ -90,6 +90,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       s.run("from pyspark.sql.types import Row").verifyResult("")
       s.run("x = [Row(age=1, name=u'a'), Row(age=2, name=u'b'), Row(age=3, name=u'c')]")
         .verifyResult("")
+      s.run("df = sqlContext.createDataFrame(x)").verifyResult("")
       s.run("%table x").verifyResult(".*headers.*type.*name.*data.*")
       s.run("abcde").verifyError(ename = "NameError", evalue = "name 'abcde' is not defined")
       s.run("raise KeyError, 'foo'").verifyError(ename = "KeyError", evalue = "'foo'")
