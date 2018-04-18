@@ -588,14 +588,17 @@ def main():
             conf = SparkConf(_jvm = gateway.jvm, _jconf = jconf)
             sc = SparkContext(jsc=jsc, gateway=gateway, conf=conf)
             global_dict['sc'] = sc
-            sqlc = SQLContext(sc, jsqlc)
-            global_dict['sqlContext'] = sqlc
 
             if spark_major_version >= "2":
                 from pyspark.sql import SparkSession
                 spark_session = SparkSession(sc, gateway.entry_point.sparkSession())
+                sqlc = SQLContext(sc, spark_session, jsqlc)
+                global_dict['sqlContext'] = sqlc
                 global_dict['spark'] = spark_session
             else:
+                sqlc = SQLContext(sc, jsqlc)
+                global_dict['sqlContext'] = sqlc
+
                 # LIVY-294, need to check whether HiveContext can work properly,
                 # fallback to SQLContext if HiveContext can not be initialized successfully.
                 # Only for spark-1.
