@@ -499,7 +499,7 @@ class InteractiveSession(
   }
 
   def executeStatement(content: ExecuteRequest): Statement = {
-    ensureRunning()
+    ensureRunningWithRetryWhileStarting()
     recordActivity()
 
     val id = client.get.submitReplCode(content.code, content.kind.orNull).get
@@ -588,6 +588,25 @@ class InteractiveSession(
       case _ =>
         throw new IllegalStateException("Session is in state %s" format serverSideState)
     }
+  }
+
+  private def isStarting(): Boolean = synchronized {
+    serverSideState match {
+      case SessionState.Starting => true
+      case _ => false
+    }
+  }
+
+  private def ensureRunningWithRetryWhileStarting(): Unit = {
+    val sleepMillis: Int = 500
+    val maxRetries: Int = 60
+    var numRetries: Int = 0
+    while (isStarting() && (numRetries < maxRetries)) {
+      info(s"Session still starting. Check status again in $sleepMillis msecs")
+      numRetries+=1
+      Thread.sleep(sleepMillis)
+    }
+    ensureRunning()
   }
 
   private def performOperation(job: Array[Byte], jobType: String, sync: Boolean): Long = {
