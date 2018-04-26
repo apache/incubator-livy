@@ -38,7 +38,7 @@ class LineBufferedStream(inputStream: InputStream, logSize: Int) extends Logging
     override def run() = {
       val lines = Source.fromInputStream(inputStream).getLines()
       for (line <- lines) {
-        info(s"stdout: $line")
+        info(line)
         _lock.lock()
         try {
           _lines.add(line)
