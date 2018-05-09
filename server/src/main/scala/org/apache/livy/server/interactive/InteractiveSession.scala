@@ -610,8 +610,9 @@ class InteractiveSession(
     synchronized {
       debug(s"$this app state changed from $oldState to $newState")
       newState match {
-        case SparkApp.State.FINISHED | SparkApp.State.KILLED | SparkApp.State.FAILED =>
+        case SparkApp.State.FINISHED | SparkApp.State.FAILED =>
           transition(SessionState.Dead())
+        case SparkApp.State.KILLED => transition(SessionState.Killed())
         case _ =>
       }
     }

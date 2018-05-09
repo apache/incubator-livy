@@ -39,6 +39,7 @@ object SessionState {
     case "shutting_down" => ShuttingDown
     case "error" => Error()
     case "dead" => Dead()
+    case "killed" => Killed()
     case "success" => Success()
     case _ => throw new IllegalArgumentException(s"Illegal session state: $s")
   }
@@ -56,6 +57,9 @@ object SessionState {
   object Busy extends SessionState("busy", true)
 
   object ShuttingDown extends SessionState("shutting_down", false)
+
+  case class Killed(override val time: Long = System.nanoTime()) extends
+    FinishedSessionState("killed", false, time)
 
   case class Error(override val time: Long = System.nanoTime()) extends
     FinishedSessionState("error", true, time)

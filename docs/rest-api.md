@@ -644,6 +644,10 @@ A session represents an interactive shell.
     <td>Session has exited</td>
   </tr>
   <tr>
+    <td>killed</td>
+    <td>Session has been killed</td>
+  </tr>
+  <tr>
     <td>success</td>
     <td>Session is successfully stopped</td>
   </tr>
