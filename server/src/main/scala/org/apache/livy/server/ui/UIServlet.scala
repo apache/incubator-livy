@@ -21,7 +21,7 @@ import scala.xml.Node
 
 import org.scalatra.ScalatraServlet
 
-class UIServlet extends ScalatraServlet {
+class UIServlet(val basePath: String) extends ScalatraServlet {
   before() { contentType = "text/html" }
 
   sealed trait Page { val name: String }
@@ -37,14 +37,21 @@ class UIServlet extends ScalatraServlet {
 
   private def getHeader(pageName: String): Seq[Node] =
     <head>
-      <link rel="stylesheet" href="/static/css/bootstrap.min.css" type="text/css"/>
-      <link rel="stylesheet" href="/static/css/dataTables.bootstrap.min.css" type="text/css"/>
-      <link rel="stylesheet" href="/static/css/livy-ui.css" type="text/css"/>
-      <script src="/static/js/jquery-3.2.1.min.js"></script>
-      <script src="/static/js/bootstrap.min.js"></script>
-      <script src="/static/js/jquery.dataTables.min.js"></script>
-      <script src="/static/js/dataTables.bootstrap.min.js"></script>
-      <script src="/static/js/livy-ui.js"></script>
+      <link rel="stylesheet"
+            href={basePath + "/static/css/bootstrap.min.css"}
+            type="text/css"/>
+      <link rel="stylesheet"
+            href={basePath + "/static/css/dataTables.bootstrap.min.css"}
+            type="text/css"/>
+      <link rel="stylesheet" href={basePath + "/static/css/livy-ui.css"} type="text/css"/>
+      <script src={basePath + "/static/js/jquery-3.2.1.min.js"}></script>
+      <script src={basePath + "/static/js/bootstrap.min.js"}></script>
+      <script src={basePath + "/static/js/jquery.dataTables.min.js"}></script>
+      <script src={basePath + "/static/js/dataTables.bootstrap.min.js"}></script>
+      <script src={basePath + "/static/js/livy-ui.js"}></script>
+      <script type="text/javascript">
+        setBasePath({"'" + basePath + "'"});
+      </script>
       <title>Livy - {pageName}</title>
     </head>
 
@@ -52,8 +59,8 @@ class UIServlet extends ScalatraServlet {
     <nav class="navbar navbar-default">
       <div class="container-fluid">
         <div class="navbar-header">
-          <a class="navbar-brand" href="/ui">
-            <img alt="Livy" src="/static/img/livy-mini-logo.png"/>
+          <a class="navbar-brand" href={basePath + "/ui"}>
+            <img alt="Livy" src={basePath + "/static/img/livy-mini-logo.png"}/>
           </a>
         </div>
         <div class="collapse navbar-collapse">
@@ -68,12 +75,14 @@ class UIServlet extends ScalatraServlet {
     val tabs: Seq[Node] = page match {
       case _: AllSessionsPage => <li class="active"><a href="#">Sessions</a></li>
       case sessionPage: SessionPage => {
-        <li><a href="/ui">Sessions</a></li> ++
+        <li><a href={basePath + "/ui"}>Sessions</a></li> ++
           <li class="active"><a href="#">{sessionPage.name}</a></li>
       }
       case logPage: LogPage => {
-        val sessionLink = if (logPage.sessionType == "Session") "/ui/session/" + logPage.id else "#"
-        <li><a href="/ui">Sessions</a></li> ++
+        val sessionLink = if (logPage.sessionType == "Session") {
+          basePath + "/ui/session/" + logPage.id
+        } else "#"
+        <li><a href={basePath + "/ui"}>Sessions</a></li> ++
           <li><a href={sessionLink}>{logPage.sessionName}</a></li> ++
           <li class="active"><a href="#">Log</a></li>
       }
@@ -102,7 +111,7 @@ class UIServlet extends ScalatraServlet {
       <div id="all-sessions">
         <div id="interactive-sessions"></div>
         <div id="batches"></div>
-        <script src="/static/js/all-sessions.js"></script>
+        <script src={basePath + "/static/js/all-sessions.js"}></script>
       </div>
 
     createPage(AllSessionsPage(), content)
@@ -113,7 +122,7 @@ class UIServlet extends ScalatraServlet {
       <div id="session-page">
         <div id="session-summary"></div>
         <div id="session-statements"></div>
-        <script src="/static/js/session.js"></script>
+        <script src={basePath + "/static/js/session.js"}></script>
       </div>
 
     createPage(SessionPage(params("id").toInt), content)
@@ -123,7 +132,7 @@ class UIServlet extends ScalatraServlet {
     val content =
       <div id="log-page">
         <div id="session-log"></div>
-        <script src="/static/js/session-log.js"></script>
+        <script src={basePath + "/static/js/session-log.js"}></script>
       </div>
 
     createPage(page, content)

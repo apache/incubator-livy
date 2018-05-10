@@ -27,6 +27,8 @@ var entityMap = {
   '=': '&#x3D;'
 };
 
+var basePath = "";
+
 function escapeHtml(string) {
   return String(string).replace(/[&<>"'`=\/]/g, function fromEntityMap (s) {
     return entityMap[s];
@@ -34,7 +36,7 @@ function escapeHtml(string) {
 }
 
 function uiLink(relativePath, inner) {
-  return anchorLink("/ui/" + relativePath, inner);
+  return anchorLink(prependBasePath("/ui/") + relativePath, inner);
 }
 
 function anchorLink(link, inner) {
@@ -89,8 +91,17 @@ function progressBar(double) {
 
 function getPathArray() {
   var pathArr = location.pathname.split("/");
-  pathArr.splice(0, 2);
+  var baseUrlEnd = 2 + (basePath.match(/\//g) || []).length;
+  pathArr.splice(0, baseUrlEnd);
   return pathArr;
+}
+
+function setBasePath(path) {
+  basePath = path;
+}
+
+function prependBasePath(path) {
+  return basePath + path;
 }
 
 $.extend( $.fn.dataTable.defaults, {

@@ -48,9 +48,9 @@ var numSessions = 0;
 var numBatches = 0;
 
 $(document).ready(function () {
-  var sessionsReq = $.getJSON(location.origin + "/sessions", function(response) {
+  var sessionsReq = $.getJSON(location.origin + prependBasePath("/sessions"), function(response) {
     if (response && response.total > 0) {
-      $("#interactive-sessions").load("/static/html/sessions-table.html .sessions-template", function() {
+      $("#interactive-sessions").load(prependBasePath("/static/html/sessions-table.html .sessions-template"), function() {
         loadSessionsTable(response.sessions);
         $("#interactive-sessions-table").DataTable();
         $('#interactive-sessions [data-toggle="tooltip"]').tooltip();
@@ -59,9 +59,9 @@ $(document).ready(function () {
     numSessions = response.total;
   });
 
-  var batchesReq = $.getJSON(location.origin + "/batches", function(response) {
+  var batchesReq = $.getJSON(location.origin + prependBasePath("/batches"), function(response) {
     if (response && response.total > 0) {
-      $("#batches").load("/static/html/batches-table.html .sessions-template", function() {
+      $("#batches").load(prependBasePath("/static/html/batches-table.html .sessions-template"), function() {
         loadBatchesTable(response.sessions);
         $("#batches-table").DataTable();
         $('#batches [data-toggle="tooltip"]').tooltip();
