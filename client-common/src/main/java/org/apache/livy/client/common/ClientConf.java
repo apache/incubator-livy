@@ -70,7 +70,11 @@ public abstract class ClientConf<T extends ClientConf>
 
   protected final ConcurrentMap<String, String> config;
 
+  /** Used to retrieve configuration value from environment variable. */
+  private EnvironmentService environmentService;
+
   protected ClientConf(Properties config) {
+    this.environmentService = new ClientEnvironmentService();
     this.config = new ConcurrentHashMap<>();
     if (config != null) {
       for (String key : config.stringPropertyNames()) {
@@ -81,7 +85,15 @@ public abstract class ClientConf<T extends ClientConf>
   }
 
   public String get(String key) {
-    String val = config.get(key);
+    // Environment variable overrides the correspondent configuration option if it was set before.
+    // For example, option "livy.spark.master" will be overridden by LIVY_SPARK_MASTER environment
+    // variable.
+    String val = environmentService.getVariable(key.toUpperCase().replaceAll("[.-]", "_"));
+    if (val != null) {
+      return val;
+    }
+
+    val = config.get(key);
     if (val != null) {
       return val;
     }
@@ -281,6 +293,26 @@ public abstract class ClientConf<T extends ClientConf>
      * @return Message to include in the deprecation warning for configs without alternatives
      */
     String deprecationMessage();
+  }
+
+  /**
+   * It should be used mostly for testing.
+   *
+   * @param environmentService
+   */
+  void setEnvironmentService(EnvironmentService environmentService) {
+    this.environmentService = environmentService;
+  }
+
+  protected interface EnvironmentService {
+    /** @return Environment variable value */
+    String getVariable(String name);
+  }
+
+  protected class ClientEnvironmentService implements EnvironmentService {
+    public String getVariable(String name) {
+      return System.getenv(name);
+    }
   }
 
 }

@@ -148,6 +148,27 @@ public class TestClientConf {
     assertEquals("new-val", conf.get("new-key"));
   }
 
+  @Test
+  public void testEnvVarsConfiguration() {
+    TestConf conf = new TestConf(null);
+    MockEnvironmentService environmentService = new MockEnvironmentService();
+    conf.setEnvironmentService(environmentService);
+
+    String configOption = "livy.spark.master";
+    String envOption = "LIVY_SPARK_MASTER";
+
+    // configuration option was not set
+    assertNull(conf.get(configOption));
+
+    // set configuration option in normal way
+    conf.set(configOption, "local");
+    assertEquals("local", conf.get(configOption));
+
+    // set environment variable which overrides the configuration option
+    environmentService.setVariable(envOption, "yarn");
+    assertEquals("yarn", conf.get(configOption));
+  }
+
   private static class TestConf extends ClientConf<TestConf> {
 
     static enum Entry implements ConfEntry {
@@ -224,6 +245,18 @@ public class TestClientConf {
 
       @Override
       public String deprecationMessage() { return deprecationMessage; }
+    }
+  }
+
+  protected class MockEnvironmentService implements ClientConf.EnvironmentService {
+    Map<String, String> env = new HashMap<>();
+
+    public void setVariable(String name, String value) {
+      env.put(name, value);
+    }
+
+    public String getVariable(String name) {
+      return env.get(name);
     }
   }
 
