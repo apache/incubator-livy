@@ -105,7 +105,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
 
       // Kill the YARN app and check batch state should be KILLED.
       cluster.yarnClient.killApplication(appId)
-      s.verifySessionDead()
+      s.verifySessionKilled()
 
       cluster.yarnClient.getApplicationReport(appId).getFinalApplicationStatus shouldBe
         FinalApplicationStatus.KILLED

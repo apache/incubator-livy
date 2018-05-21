@@ -31,7 +31,10 @@ class SparkProcApp (
 
   private var state = SparkApp.State.STARTING
 
+  private var killed = false
+
   override def kill(): Unit = {
+    killed = true
     if (process.isAlive) {
       process.destroy()
       waitThread.join()
@@ -53,8 +56,14 @@ class SparkProcApp (
     process.waitFor() match {
       case 0 => changeState(SparkApp.State.FINISHED)
       case exitCode =>
-        changeState(SparkApp.State.FAILED)
-        error(s"spark-submit exited with code $exitCode")
+        val message = if (killed) {
+          changeState(SparkApp.State.KILLED)
+          "job was killed by user"
+        } else {
+          changeState(SparkApp.State.FAILED)
+          s"spark-submit exited with code $exitCode"
+        }
+        error(message)
     }
   }
 }
