@@ -17,7 +17,7 @@
 
 package org.apache.livy.test
 
-import java.io.File
+import java.io.{File, FileOutputStream}
 import java.util.UUID
 
 import scala.language.postfixOps
@@ -37,7 +37,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
 
   protected override def beforeAll() = {
     super.beforeAll()
-    testLibPath = uploadToHdfs(new File(testLib))
+    testLibPath = new File(testLib).getAbsolutePath
   }
 
   test("submit spark app") {
@@ -67,7 +67,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
   }
 
   test("submit a pyspark application") {
-    val scriptPath = uploadResource("batch.py")
+    val scriptPath = getResource("batch.py")
     val output = newOutputPath()
     withScript(scriptPath, List(output)) { s =>
       s.verifySessionSuccess()
@@ -76,8 +76,8 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
   }
 
   test("submit a SparkR application") {
-    val hdfsPath = uploadResource("rtest.R")
-    withScript(hdfsPath, List.empty) { s =>
+    val scriptPath = getResource("rtest.R")
+    withScript(scriptPath, List.empty) { s =>
       s.verifySessionSuccess()
     }
   }
@@ -143,17 +143,17 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
     cluster.hdfsScratchDir().toString() + "/" + UUID.randomUUID().toString()
   }
 
-  private def uploadResource(name: String): String = {
-    val hdfsPath = new Path(cluster.hdfsScratchDir(), UUID.randomUUID().toString + "-" + name)
+  private def getResource(name: String): String = {
+    val tmpFile = new File(sys.props("java.io.tmpdir"), name)
     val in = getClass.getResourceAsStream("/" + name)
-    val out = cluster.fs.create(hdfsPath)
+    val out = new FileOutputStream(tmpFile)
     try {
       IOUtils.copy(in, out)
     } finally {
       in.close()
       out.close()
     }
-    hdfsPath.toUri().getPath()
+    tmpFile.getAbsolutePath
   }
 
   private def withScript[R]

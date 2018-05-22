@@ -294,9 +294,6 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     val procDir = mkdir(simpleName)
     val procTmp = mkdir("tmp", parent = procDir)
 
-    // Before starting anything, clean up previous running sessions.
-    sys.process.Process(s"pkill -f $simpleName") !
-
     val java = sys.props("java.home") + "/bin/java"
     val cmd =
       Seq(

@@ -26,7 +26,6 @@ import scala.concurrent.duration._
 
 import org.json4s.jackson.Json4sScalaModule
 import org.scalatra._
-import org.scalatra.servlet.FileUploadSupport
 
 import org.apache.livy.{CompletionRequest, ExecuteRequest, JobHandle, LivyConf, Logging}
 import org.apache.livy.client.common.HttpMessages
@@ -44,7 +43,6 @@ class InteractiveSessionServlet(
     accessManager: AccessManager)
   extends SessionServlet(sessionManager, livyConf, accessManager)
   with SessionHeartbeatNotifier[InteractiveSession, InteractiveRecoveryMetadata]
-  with FileUploadSupport
 {
 
   mapper.registerModule(new SessionKindModule())
@@ -54,11 +52,12 @@ class InteractiveSessionServlet(
     val createRequest = bodyAs[CreateInteractiveRequest](req)
     val proxyUser = checkImpersonation(createRequest.proxyUser, req)
     InteractiveSession.create(
-      sessionManager.nextId(),
+      getSessionIdFromReq(req).getOrElse(sessionManager.nextId()),
       remoteUser(req),
       proxyUser,
       livyConf,
       createRequest,
+      sessionManager,
       sessionStore)
   }
 

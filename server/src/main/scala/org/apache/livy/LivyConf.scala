@@ -151,6 +151,8 @@ object LivyConf {
   val SESSION_STATE_RETAIN_TIME = Entry("livy.server.session.state-retain.sec", "600s")
   // Max creating session in livyServer
   val SESSION_MAX_CREATION = Entry("livy.server.session.max-creation", 100)
+  // Livy directory to cache the upload resources.
+  val RESOURCE_DIR = Entry("livy.server.resource-dir", sys.props("java.io.tmpdir"))
 
   val SPARK_MASTER = "spark.master"
   val SPARK_DEPLOY_MODE = "spark.submit.deployMode"

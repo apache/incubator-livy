@@ -17,11 +17,10 @@
 
 package org.apache.livy.sessions
 
-import java.io.InputStream
+import java.io.{File, InputStream}
 import java.net.{URI, URISyntaxException}
 import java.security.PrivilegedExceptionAction
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,7 +31,7 @@ import org.apache.hadoop.security.UserGroupInformation
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.utils.AppInfo
 
-object Session {
+object Session extends Logging {
   trait RecoveryMetadata { val id: Int }
 
   lazy val configBlackList: Set[String] = {
@@ -54,7 +53,8 @@ object Session {
       files: Seq[String],
       archives: Seq[String],
       pyFiles: Seq[String],
-      livyConf: LivyConf): Map[String, String] = {
+      livyConf: LivyConf,
+      retrieveLocalRes: Option[String => Option[String]] = None): Map[String, String] = {
     if (conf == null) {
       return Map()
     }
@@ -77,10 +77,10 @@ object Session {
     val merged = userLists.flatMap { case (key, list) =>
       val confList = conf.get(key)
         .map { list =>
-          resolveURIs(list.split("[, ]+").toSeq, livyConf)
+          resolveURIs(list.split("[, ]+").toSeq, livyConf, retrieveLocalRes)
         }
         .getOrElse(Nil)
-      val userList = resolveURIs(list, livyConf)
+      val userList = resolveURIs(list, livyConf, retrieveLocalRes)
       if (confList.nonEmpty || userList.nonEmpty) {
         Some(key -> (userList ++ confList).mkString(","))
       } else {
@@ -100,27 +100,35 @@ object Session {
    *
    * @throws IllegalArgumentException If an invalid URI is found in the given list.
    */
-  def resolveURIs(uris: Seq[String], livyConf: LivyConf): Seq[String] = {
-    val defaultFS = livyConf.hadoopConf.get("fs.defaultFS").stripSuffix("/")
+  def resolveURIs(
+      uris: Seq[String],
+      livyConf: LivyConf,
+      retrieveLocalRes: Option[String => Option[String]] = None): Seq[String] = {
     uris.filter(_.nonEmpty).map { _uri =>
       val uri = try {
         new URI(_uri)
       } catch {
         case e: URISyntaxException => throw new IllegalArgumentException(e)
       }
-      resolveURI(uri, livyConf).toString()
+      resolveURI(uri, livyConf, retrieveLocalRes).toString()
     }
   }
 
-  def resolveURI(uri: URI, livyConf: LivyConf): URI = {
+  def resolveURI(
+      uri: URI,
+      livyConf: LivyConf,
+      retrieveLocalRes: Option[String => Option[String]] = None): URI = {
     val defaultFS = livyConf.hadoopConf.get("fs.defaultFS").stripSuffix("/")
     val resolved =
-      if (uri.getScheme() == null) {
-        val pathWithSegment =
-          if (uri.getFragment() != null) uri.getPath() + '#' + uri.getFragment() else uri.getPath()
-
-        require(pathWithSegment.startsWith("/"), s"Path '${uri.getPath()}' is not absolute.")
-        new URI(defaultFS + pathWithSegment)
+      if (uri.getScheme == null) {
+        retrieveLocalRes.flatMap(_(uri.toString)).map { res =>
+          new File(res).toURI
+        }.getOrElse {
+          val pathWithSegment =
+            if (uri.getFragment != null) s"${uri.getPath}#${uri.getFragment}" else uri.getPath
+          require(pathWithSegment.startsWith("/"), s"Path '${uri.getPath}' is not absolute.")
+          new URI(defaultFS + pathWithSegment)
+        }
       } else {
         uri
       }

@@ -27,8 +27,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.server.SessionServlet
-import org.apache.livy.sessions.{Session, SessionState}
+import org.apache.livy.sessions.{Session, SessionManager, SessionState}
 import org.apache.livy.sessions.Session._
 import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
 
@@ -57,16 +56,18 @@ object BatchSession extends Logging {
       livyConf: LivyConf,
       owner: String,
       proxyUser: Option[String],
+      sessionManager: SessionManager[_, _],
       sessionStore: SessionStore,
       mockApp: Option[SparkApp] = None): BatchSession = {
     val appTag = s"livy-batch-$id-${Random.alphanumeric.take(8).mkString}"
+    val retrieveLocalResFunc = Some(sessionManager.retrieveResource(id, _: String))
 
     def createSparkApp(s: BatchSession): SparkApp = {
       val conf = SparkApp.prepareSparkConf(
         appTag,
         livyConf,
-        prepareConf(
-          request.conf, request.jars, request.files, request.archives, request.pyFiles, livyConf))
+        prepareConf(request.conf, request.jars, request.files, request.archives,
+          request.pyFiles, livyConf, retrieveLocalResFunc))
       require(request.file != null, "File is required.")
 
       val builder = new SparkProcessBuilder(livyConf)
@@ -90,7 +91,7 @@ object BatchSession extends Logging {
       builder.redirectOutput(Redirect.PIPE)
       builder.redirectErrorStream(true)
 
-      val file = resolveURIs(Seq(request.file), livyConf)(0)
+      val file = resolveURIs(Seq(request.file), livyConf, retrieveLocalResFunc)(0)
       val sparkSubmit = builder.start(Some(file), request.args)
 
       Utils.startDaemonThread(s"batch-session-process-$id") {
