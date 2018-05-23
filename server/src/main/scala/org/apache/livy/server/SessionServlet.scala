@@ -156,9 +156,10 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     if (!requestedIds.contains(sessionId)) {
       BadRequest("Rejected, please request new session id first")
     } else {
-      createSession()
+      val ret = createSession()
       // Remove the cached session id which is actually used.
       requestedIds.remove(sessionId)
+      ret
     }
   }
 
