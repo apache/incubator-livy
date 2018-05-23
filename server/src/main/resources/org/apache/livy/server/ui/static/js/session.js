@@ -80,13 +80,13 @@ function loadStatementsTable(statements) {
 $(document).ready(function () {
   var id = getPathArray().pop();
 
-  $.getJSON(location.origin + "/sessions/" + id, function(response) {
+  $.getJSON(location.origin + prependBasePath("/sessions/") + id, function(response) {
     if (response) {
       appendSummary(response);
 
-      $.getJSON(location.origin + "/sessions/" + id + "/statements", function(statementsRes) {
+      $.getJSON(location.origin + prependBasePath("/sessions/") + id + "/statements", function(statementsRes) {
         if (statementsRes && statementsRes.total_statements > 0) {
-          $("#session-statements").load("/static/html/statements-table.html .statements-template",
+          $("#session-statements").load(prependBasePath("/static/html/statements-table.html .statements-template"),
           function() {
             loadStatementsTable(statementsRes.statements);
             $("#statements-table").DataTable();
