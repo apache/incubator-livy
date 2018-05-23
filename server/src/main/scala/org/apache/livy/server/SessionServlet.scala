@@ -27,6 +27,7 @@ import scala.util.Try
 
 import org.scalatra._
 import org.scalatra.servlet.FileUploadSupport
+
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.rsc.RSCClientFactory
 import org.apache.livy.server.batch.BatchSession
