@@ -35,7 +35,6 @@ import org.apache.hadoop.yarn.util.ConverterUtils
 
 import org.apache.livy.{LivyConf, Logging, Utils}
 
-
 object SparkYarnApp extends Logging {
 
   def init(livyConf: LivyConf): Unit = {
