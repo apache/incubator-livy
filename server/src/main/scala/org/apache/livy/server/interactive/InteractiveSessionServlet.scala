@@ -70,7 +70,7 @@ class InteractiveSessionServlet(
         Option(session.logLines())
           .map { lines =>
             val size = 10
-            var from = math.max(0, lines.length - size)
+            val from = math.max(0, lines.length - size)
             val until = from + size
 
             lines.view(from, until)
