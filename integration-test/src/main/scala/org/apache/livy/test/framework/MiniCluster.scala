@@ -18,8 +18,6 @@
 package org.apache.livy.test.framework
 
 import java.io._
-import java.nio.charset.Charset
-import java.nio.file.{Files, Paths}
 import javax.servlet.http.HttpServletResponse
 
 import scala.concurrent.duration._
@@ -48,24 +46,6 @@ private class MiniClusterConfig(val config: Map[String, String]) {
 
   private def getInt(key: String, default: Int): Int = {
     config.get(key).map(_.toInt).getOrElse(default)
-  }
-
-}
-
-sealed trait MiniClusterUtils extends ClusterUtils {
-
-  protected def saveConfig(conf: Configuration, dest: File): Unit = {
-    val redacted = new Configuration(conf)
-    // This setting references a test class that is not available when using a real Spark
-    // installation, so remove it from client configs.
-    redacted.unset("net.topology.node.switch.mapping.impl")
-
-    val out = new FileOutputStream(dest)
-    try {
-      redacted.writeXml(out)
-    } finally {
-      out.close()
-    }
   }
 
 }
@@ -117,7 +97,7 @@ object MiniYarnMain extends MiniClusterBase {
 
   override protected def start(config: MiniClusterConfig, configPath: String): Unit = {
     val baseConfig = new YarnConfiguration()
-    var yarnCluster = new MiniYARNCluster(getClass().getName(), config.nmCount,
+    val yarnCluster = new MiniYARNCluster(getClass().getName(), config.nmCount,
       config.localDirCount, config.logDirCount)
     yarnCluster.init(baseConfig)
 
