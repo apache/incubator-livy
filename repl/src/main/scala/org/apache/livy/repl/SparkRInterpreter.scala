@@ -24,6 +24,7 @@ import java.util.concurrent.{CountDownLatch, Semaphore, TimeUnit}
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe
+import scala.util.control.NonFatal
 
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang.StringEscapeUtils
@@ -80,8 +81,14 @@ object SparkRInterpreter {
     // Launch a SparkR backend server for the R process to connect to
     val backendThread = new Thread("SparkR backend") {
       override def run(): Unit = {
-        sparkRBackendPort = sparkRBackendClass.getMethod("init").invoke(backendInstance)
-          .asInstanceOf[Int]
+        sparkRBackendPort = try {
+          sparkRBackendClass.getMethod("init").invoke(backendInstance)
+            .asInstanceOf[Int]
+        } catch {
+          case NonFatal(e) =>
+            sparkRBackendClass.getMethod("init").invoke(backendInstance)
+              .asInstanceOf[(Int, _)]._1
+        }
 
         initialized.release()
         sparkRBackendClass.getMethod("run").invoke(backendInstance)
