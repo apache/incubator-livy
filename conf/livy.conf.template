@@ -23,6 +23,9 @@
 # Specify the key password.
 # livy.key-password =
 
+# Hadoop Credential Provider Path to get "livy.keystore.password" and "livy.key-password"
+# livy.hadoop.security.credential.provider.path =
+
 # What host address to start the server on. By default, Livy will bind to all network interfaces.
 # livy.server.host = 0.0.0.0
 

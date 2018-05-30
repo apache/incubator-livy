@@ -20,6 +20,7 @@ package org.apache.livy.server
 import java.net.InetAddress
 import javax.servlet.ServletContextListener
 
+import org.apache.hadoop.conf.Configuration
 import org.eclipse.jetty.server._
 import org.eclipse.jetty.server.handler.{HandlerCollection, RequestLogHandler}
 import org.eclipse.jetty.servlet.{DefaultServlet, ServletContextHandler}
@@ -48,9 +49,40 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
 
       val sslContextFactory = new SslContextFactory()
       sslContextFactory.setKeyStorePath(keystore)
-      Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD))
+
+      var keyStorePassword = livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD)
+      var keyPassword = livyConf.get(LivyConf.SSL_KEY_PASSWORD)
+
+      val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
+      val credentialProviderSupported = {
+        // Only supported in Hadoop 2.6.0+
+        try {
+          classOf[Configuration].getMethod("getPassword", classOf[String])
+          true
+        } catch {
+          case e: NoSuchMethodException => false
+        }
+      }
+
+      if (credentialProviderPath != null && credentialProviderSupported) {
+        val hadoopConf = new Configuration()
+        hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
+
+        val credentialKeyStorePassword = hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)
+        val credentialKeyPassword = hadoopConf.getPassword(LivyConf.SSL_KEY_PASSWORD.key)
+
+        if (credentialKeyStorePassword != null) {
+          keyStorePassword = credentialKeyStorePassword.mkString
+        }
+
+        if (credentialKeyPassword != null) {
+          keyPassword = credentialKeyPassword.mkString
+        }
+      }
+
+      Option(keyStorePassword)
         .foreach(sslContextFactory.setKeyStorePassword)
-      Option(livyConf.get(LivyConf.SSL_KEY_PASSWORD))
+      Option(keyPassword)
         .foreach(sslContextFactory.setKeyManagerPassword)
 
       (new ServerConnector(server,

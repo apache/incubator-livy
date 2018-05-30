@@ -85,6 +85,8 @@ object LivyConf {
   val SSL_KEYSTORE_PASSWORD = Entry("livy.keystore.password", null)
   val SSL_KEY_PASSWORD = Entry("livy.key-password", null)
 
+  val HADOOP_CREDENTIAL_PROVIDER_PATH = Entry("livy.hadoop.security.credential.provider.path", null)
+
   val AUTH_TYPE = Entry("livy.server.auth.type", null)
   val AUTH_KERBEROS_PRINCIPAL = Entry("livy.server.auth.kerberos.principal", null)
   val AUTH_KERBEROS_KEYTAB = Entry("livy.server.auth.kerberos.keytab", null)
