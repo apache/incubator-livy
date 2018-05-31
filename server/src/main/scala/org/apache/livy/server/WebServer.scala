@@ -20,6 +20,7 @@ package org.apache.livy.server
 import java.net.InetAddress
 import javax.servlet.ServletContextListener
 
+import org.apache.hadoop.conf.Configuration
 import org.eclipse.jetty.server._
 import org.eclipse.jetty.server.handler.{HandlerCollection, RequestLogHandler}
 import org.eclipse.jetty.servlet.{DefaultServlet, ServletContextHandler}
@@ -48,10 +49,25 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
 
       val sslContextFactory = new SslContextFactory()
       sslContextFactory.setKeyStorePath(keystore)
-      Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD))
-        .foreach(sslContextFactory.setKeyStorePassword)
-      Option(livyConf.get(LivyConf.SSL_KEY_PASSWORD))
-        .foreach(sslContextFactory.setKeyManagerPassword)
+
+      val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
+      val hadoopConf = new Configuration()
+      if (credentialProviderPath != null) {
+        hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
+      }
+
+      val keyStorePassword = Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD))
+        .orElse {
+          Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)).map(_.mkString)
+        }
+
+      val keyPassword = Option(livyConf.get(LivyConf.SSL_KEY_PASSWORD))
+        .orElse {
+          Option(hadoopConf.getPassword(LivyConf.SSL_KEY_PASSWORD.key)).map(_.mkString)
+        }
+
+      keyStorePassword.foreach(sslContextFactory.setKeyStorePassword)
+      keyPassword.foreach(sslContextFactory.setKeyManagerPassword)
 
       (new ServerConnector(server,
         new SslConnectionFactory(sslContextFactory, "http/1.1"),
