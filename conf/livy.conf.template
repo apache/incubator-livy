@@ -23,7 +23,9 @@
 # Specify the key password.
 # livy.key-password =
 
-# Hadoop Credential Provider Path to get "livy.keystore.password" and "livy.key-password"
+# Hadoop Credential Provider Path to get "livy.keystore.password" and "livy.key-password".
+# Credential Provider can be created using command as follow:
+# hadoop credential create "livy.keystore.password" -value "secret" -provider jceks://hdfs/path/to/livy.jceks
 # livy.hadoop.security.credential.provider.path =
 
 # What host address to start the server on. By default, Livy will bind to all network interfaces.

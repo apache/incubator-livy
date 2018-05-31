@@ -50,30 +50,25 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
       val sslContextFactory = new SslContextFactory()
       sslContextFactory.setKeyStorePath(keystore)
 
-      var keyStorePassword = livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD)
-      var keyPassword = livyConf.get(LivyConf.SSL_KEY_PASSWORD)
-
       val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
-
+      val hadoopConf = new Configuration()
       if (credentialProviderPath != null) {
-        val hadoopConf = new Configuration()
         hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
-
-        val credentialKeyStorePassword = hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)
-        val credentialKeyPassword = hadoopConf.getPassword(LivyConf.SSL_KEY_PASSWORD.key)
-
-        if (credentialKeyStorePassword != null) {
-          keyStorePassword = credentialKeyStorePassword.mkString
-        }
-
-        if (credentialKeyPassword != null) {
-          keyPassword = credentialKeyPassword.mkString
-        }
       }
 
-      Option(keyStorePassword)
+      val keyStorePassword = Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD))
+        .orElse {
+          Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key).mkString)
+        }
+
+      val keyPassword = Option(livyConf.get(LivyConf.SSL_KEY_PASSWORD))
+        .orElse {
+          Option(hadoopConf.getPassword(LivyConf.SSL_KEY_PASSWORD.key).mkString)
+        }
+
+      keyStorePassword
         .foreach(sslContextFactory.setKeyStorePassword)
-      Option(keyPassword)
+      keyPassword
         .foreach(sslContextFactory.setKeyManagerPassword)
 
       (new ServerConnector(server,
