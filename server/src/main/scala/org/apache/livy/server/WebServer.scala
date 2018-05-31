@@ -58,12 +58,12 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
 
       val keyStorePassword = Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD))
         .orElse {
-          Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key).mkString)
+          Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)).map(_.mkString)
         }
 
       val keyPassword = Option(livyConf.get(LivyConf.SSL_KEY_PASSWORD))
         .orElse {
-          Option(hadoopConf.getPassword(LivyConf.SSL_KEY_PASSWORD.key).mkString)
+          Option(hadoopConf.getPassword(LivyConf.SSL_KEY_PASSWORD.key)).map(_.mkString)
         }
 
       keyStorePassword
