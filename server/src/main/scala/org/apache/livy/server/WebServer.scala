@@ -54,17 +54,8 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
       var keyPassword = livyConf.get(LivyConf.SSL_KEY_PASSWORD)
 
       val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
-      val credentialProviderSupported = {
-        // Only supported in Hadoop 2.6.0+
-        try {
-          classOf[Configuration].getMethod("getPassword", classOf[String])
-          true
-        } catch {
-          case e: NoSuchMethodException => false
-        }
-      }
 
-      if (credentialProviderPath != null && credentialProviderSupported) {
+      if (credentialProviderPath != null) {
         val hadoopConf = new Configuration()
         hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
 
