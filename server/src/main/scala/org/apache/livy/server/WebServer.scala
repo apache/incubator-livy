@@ -66,10 +66,8 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
           Option(hadoopConf.getPassword(LivyConf.SSL_KEY_PASSWORD.key)).map(_.mkString)
         }
 
-      keyStorePassword
-        .foreach(sslContextFactory.setKeyStorePassword)
-      keyPassword
-        .foreach(sslContextFactory.setKeyManagerPassword)
+      keyStorePassword.foreach(sslContextFactory.setKeyStorePassword)
+      keyPassword.foreach(sslContextFactory.setKeyManagerPassword)
 
       (new ServerConnector(server,
         new SslConnectionFactory(sslContextFactory, "http/1.1"),
