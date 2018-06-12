@@ -18,8 +18,10 @@
 package org.apache.livy.repl
 
 import java.io._
+import java.lang.{Integer => JInteger}
 import java.lang.ProcessBuilder.Redirect
 import java.lang.reflect.Proxy
+import java.net.InetAddress
 import java.nio.file.{Files, Paths}
 
 import scala.annotation.tailrec
@@ -35,7 +37,7 @@ import org.json4s.jackson.Serialization.write
 import py4j._
 import py4j.reflection.PythonProxyHandler
 
-import org.apache.livy.Logging
+import org.apache.livy.{Logging, Utils}
 import org.apache.livy.client.common.ClientConf
 import org.apache.livy.rsc.driver.SparkEntries
 import org.apache.livy.sessions._
@@ -49,7 +51,8 @@ object PythonInterpreter extends Logging {
       .orElse(sys.props.get("pyspark.python")) // This java property is only used for internal UT.
       .getOrElse("python")
 
-    val gatewayServer = new GatewayServer(sparkEntries, 0)
+    val secretKey = Utils.createSecret(256)
+    val gatewayServer = createGatewayServer(sparkEntries, secretKey)
     gatewayServer.start()
 
     val builder = new ProcessBuilder(Seq(pythonExec, createFakeShell().toString).asJava)
@@ -65,6 +68,7 @@ object PythonInterpreter extends Logging {
     env.put("PYTHONPATH", pythonPath.mkString(File.pathSeparator))
     env.put("PYTHONUNBUFFERED", "YES")
     env.put("PYSPARK_GATEWAY_PORT", "" + gatewayServer.getListeningPort)
+    env.put("PYSPARK_GATEWAY_SECRET", secretKey)
     env.put("SPARK_HOME", sys.env.getOrElse("SPARK_HOME", "."))
     env.put("LIVY_SPARK_MAJOR_VERSION", conf.get("spark.livy.spark_major_version", "1"))
     builder.redirectError(Redirect.PIPE)
@@ -129,6 +133,28 @@ object PythonInterpreter extends Logging {
     sink.close()
 
     file
+  }
+
+  private def createGatewayServer(sparkEntries: SparkEntries, secretKey: String): GatewayServer = {
+    try {
+      val clz = Class.forName("py4j.GatewayServer$GatewayServerBuilder", true,
+        Thread.currentThread().getContextClassLoader)
+      val builder = clz.getConstructor(classOf[Object])
+        .newInstance(sparkEntries)
+
+      val localhost = InetAddress.getLoopbackAddress()
+      builder.getClass.getMethod("authToken", classOf[String]).invoke(builder, secretKey)
+      builder.getClass.getMethod("javaPort", classOf[Int]).invoke(builder, 0: JInteger)
+      builder.getClass.getMethod("javaAddress", classOf[InetAddress]).invoke(builder, localhost)
+      builder.getClass
+        .getMethod("callbackClient", classOf[Int], classOf[InetAddress], classOf[String])
+        .invoke(builder, GatewayServer.DEFAULT_PYTHON_PORT: JInteger, localhost, secretKey)
+      builder.getClass.getMethod("build").invoke(builder).asInstanceOf[GatewayServer]
+    } catch {
+      case NonFatal(e) =>
+        warn("Fail to create GatewayServer with auth parameter, downgrade to old constructor", e)
+        new GatewayServer(sparkEntries, 0)
+    }
   }
 
   private def initiatePy4jCallbackGateway(server: GatewayServer): PySparkJobProcessor = {

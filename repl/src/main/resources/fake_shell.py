@@ -569,7 +569,13 @@ def main():
             from pyspark.sql import SQLContext, HiveContext, Row
             # Connect to the gateway
             gateway_port = int(os.environ["PYSPARK_GATEWAY_PORT"])
-            gateway = JavaGateway(GatewayClient(port=gateway_port), auto_convert=True)
+            try:
+                from py4j.java_gateway import GatewayParameters
+                gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
+                gateway = JavaGateway(gateway_parameters=GatewayParameters(
+                    port=gateway_port, auth_token=gateway_secret, auto_convert=True))
+            except:
+                gateway = JavaGateway(GatewayClient(port=gateway_port), auto_convert=True)
 
             # Import the classes used by PySpark
             java_import(gateway.jvm, "org.apache.spark.SparkConf")
@@ -613,12 +619,17 @@ def main():
 
             #Start py4j callback server
             from py4j.protocol import ENTRY_POINT_OBJECT_ID
-            from py4j.java_gateway import JavaGateway, GatewayClient, CallbackServerParameters
+            from py4j.java_gateway import CallbackServerParameters
 
-            gateway_client_port = int(os.environ.get("PYSPARK_GATEWAY_PORT"))
-            gateway = JavaGateway(GatewayClient(port=gateway_client_port))
-            gateway.start_callback_server(
-                callback_server_parameters=CallbackServerParameters(port=0))
+            try:
+                gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
+                gateway.start_callback_server(
+                    callback_server_parameters=CallbackServerParameters(
+                        port=0, auth_token=gateway_secret))
+            except:
+                gateway.start_callback_server(
+                    callback_server_parameters=CallbackServerParameters(port=0))
+
             socket_info = gateway._callback_server.server_socket.getsockname()
             listening_port = socket_info[1]
             pyspark_job_processor = PySparkJobProcessorImpl()
