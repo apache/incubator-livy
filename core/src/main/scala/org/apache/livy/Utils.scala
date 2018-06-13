@@ -21,12 +21,14 @@ import java.io.{Closeable, File, InputStreamReader}
 import java.net.URL
 import java.nio.charset.StandardCharsets.UTF_8
 import java.security.SecureRandom
-import java.util.{Base64, Properties}
+import java.util.Properties
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
+
+import org.apache.commons.codec.binary.Base64
 
 object Utils {
   def getPropertiesFromFile(file: File): Map[String, String] = {
@@ -111,6 +113,7 @@ object Utils {
     val rnd = new SecureRandom()
     val secretBytes = new Array[Byte](secretBitLength / java.lang.Byte.SIZE)
     rnd.nextBytes(secretBytes)
-    Base64.getEncoder.encodeToString(secretBytes)
+
+    Base64.encodeBase64String(secretBytes)
   }
 }
