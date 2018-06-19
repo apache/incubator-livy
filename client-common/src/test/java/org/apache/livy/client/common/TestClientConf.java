@@ -24,8 +24,9 @@ import java.util.Properties;
 
 import org.junit.Test;
 
-import static org.apache.livy.client.common.ClientConf.LIVY_CONF_ENV_WHITELIST_PROPERTY;
 import static org.junit.Assert.*;
+
+import static org.apache.livy.client.common.ClientConf.LIVY_CONF_ENV_WHITELIST_PROPERTY;
 
 public class TestClientConf {
 
