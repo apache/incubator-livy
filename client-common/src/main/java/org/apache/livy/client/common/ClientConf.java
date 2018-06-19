@@ -38,6 +38,9 @@ public abstract class ClientConf<T extends ClientConf>
 
   protected Logger LOG = LoggerFactory.getLogger(getClass());
 
+  /** Option to configure the list of options that can be overridden by environment variables. */
+  static final String LIVY_CONF_ENV_WHITELIST_PROPERTY = "livy.conf.env.whitelist";
+
   public static interface ConfEntry {
 
     /**
@@ -70,7 +73,14 @@ public abstract class ClientConf<T extends ClientConf>
 
   protected final ConcurrentMap<String, String> config;
 
+  /** Used to keep a set of whitelisted options that can be overridden by environment variables. */
+  private Set<String> whitelistEnvOptions;
+
+  /** Used to retrieve configuration value from environment variable. */
+  private EnvironmentService environmentService;
+
   protected ClientConf(Properties config) {
+    this.environmentService = new ClientEnvironmentService();
     this.config = new ConcurrentHashMap<>();
     if (config != null) {
       for (String key : config.stringPropertyNames()) {
@@ -80,8 +90,37 @@ public abstract class ClientConf<T extends ClientConf>
     }
   }
 
+  /**
+   * Split whitelist config option by commas, trim spaces and create new set of whitelisted options.
+   */
+  private void initWhitelistEnvOptions() {
+    String whitelist = config.get(LIVY_CONF_ENV_WHITELIST_PROPERTY);
+    if (whitelist == null) {
+      whitelistEnvOptions = new HashSet<>();
+    } else {
+      whitelistEnvOptions = new HashSet<String>(Arrays.asList(whitelist.split("\\s*,\\s*")));
+    }
+  }
+
   public String get(String key) {
-    String val = config.get(key);
+    String val;
+
+    // lazy initialization
+    if (whitelistEnvOptions == null) {
+      initWhitelistEnvOptions();
+    }
+    // Environment variable overrides the correspondent configuration option if it was set before
+    // and this option was found in whitelist.
+    // For example, option "livy.spark.master" will be overridden by LIVY_SPARK_MASTER environment
+    // variable.
+    if (!key.equals(LIVY_CONF_ENV_WHITELIST_PROPERTY) && whitelistEnvOptions.contains(key)) {
+      val = environmentService.getVariable(key.toUpperCase().replaceAll("[.-]", "_"));
+      if (val != null) {
+        return val;
+      }
+    }
+
+    val = config.get(key);
     if (val != null) {
       return val;
     }
@@ -281,6 +320,26 @@ public abstract class ClientConf<T extends ClientConf>
      * @return Message to include in the deprecation warning for configs without alternatives
      */
     String deprecationMessage();
+  }
+
+  /**
+   * It should be used mostly for testing.
+   *
+   * @param environmentService
+   */
+  void setEnvironmentService(EnvironmentService environmentService) {
+    this.environmentService = environmentService;
+  }
+
+  protected interface EnvironmentService {
+    /** @return Environment variable value */
+    String getVariable(String name);
+  }
+
+  protected class ClientEnvironmentService implements EnvironmentService {
+    public String getVariable(String name) {
+      return System.getenv(name);
+    }
   }
 
 }

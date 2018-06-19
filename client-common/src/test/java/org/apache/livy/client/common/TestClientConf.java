@@ -23,7 +23,10 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.junit.Test;
+
 import static org.junit.Assert.*;
+
+import static org.apache.livy.client.common.ClientConf.LIVY_CONF_ENV_WHITELIST_PROPERTY;
 
 public class TestClientConf {
 
@@ -148,6 +151,52 @@ public class TestClientConf {
     assertEquals("new-val", conf.get("new-key"));
   }
 
+  @Test
+  public void testNotAllowedEnvVarsConfiguration() {
+    TestConf conf = new TestConf(null);
+    MockEnvironmentService environmentService = new MockEnvironmentService();
+    conf.setEnvironmentService(environmentService);
+
+    String configOption = "livy.spark.master";
+    String envOption = "LIVY_SPARK_MASTER";
+
+    // configuration option was not set
+    assertNull(conf.get(configOption));
+
+    // set configuration option in normal way
+    conf.set(configOption, "local");
+    assertEquals("local", conf.get(configOption));
+
+    // set environment variable which overrides the configuration option
+    environmentService.setVariable(envOption, "yarn");
+    // it still has to return value from config file option, not from environment variable
+    assertEquals("local", conf.get(configOption));
+    }
+
+  @Test
+  public void testAllowedEnvVarsConfiguration() {
+    MockEnvironmentService environmentService = new MockEnvironmentService();
+
+    String configOption = "livy.spark.master";
+    String envOption = "LIVY_SPARK_MASTER";
+
+    // create new config object with whitelist config option which contains a list of allowed config
+    // options as environment variables
+    Properties properties = new Properties();
+    properties.setProperty(LIVY_CONF_ENV_WHITELIST_PROPERTY, "key1, " + configOption);
+    TestConf conf = new TestConf(properties);
+    conf.setEnvironmentService(environmentService);
+
+    // set configuration option in normal way
+    conf.set(configOption, "local");
+    assertEquals("local", conf.get(configOption));
+
+    // set environment variable which overrides the configuration option
+    environmentService.setVariable(envOption, "yarn");
+    // it has to return value from environment variable, not from config file option
+    assertEquals("yarn", conf.get(configOption));
+  }
+
   private static class TestConf extends ClientConf<TestConf> {
 
     static enum Entry implements ConfEntry {
@@ -224,6 +273,18 @@ public class TestClientConf {
 
       @Override
       public String deprecationMessage() { return deprecationMessage; }
+    }
+  }
+
+  protected class MockEnvironmentService implements ClientConf.EnvironmentService {
+    Map<String, String> env = new HashMap<>();
+
+    public void setVariable(String name, String value) {
+      env.put(name, value);
+    }
+
+    public String getVariable(String name) {
+      return env.get(name);
     }
   }
 
