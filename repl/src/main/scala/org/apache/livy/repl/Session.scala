@@ -57,8 +57,13 @@ class Session(
   extends Logging {
   import Session._
 
-  private val interpreterExecutor = ExecutionContext.fromExecutorService(
+  private val pool = Executors.newFixedThreadPool(3)
+  private val interpreterInitExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
+
+  private var runStartLock = true
+
+  private val interpreterExecutor = ExecutionContext.fromExecutorService(pool)
 
   private val cancelExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
@@ -120,6 +125,7 @@ class Session(
 
   def start(): Future[SparkEntries] = {
     val future = Future {
+      runStartLock = true
       changeState(SessionState.Starting)
 
       // Always start SparkInterpreter after beginning, because we rely on SparkInterpreter to
@@ -134,10 +140,14 @@ class Session(
       }
 
       changeState(SessionState.Idle)
+      runStartLock = false
       entries
-    }(interpreterExecutor)
+    }(interpreterInitExecutor)
 
-    future.onFailure { case _ => changeState(SessionState.Error()) }(interpreterExecutor)
+    future.onFailure { case _ =>
+      runStartLock = false
+      changeState(SessionState.Error()) }(interpreterInitExecutor)
+
     future
   }
 
@@ -161,6 +171,10 @@ class Session(
     _statements.synchronized { _statements(statementId) = statement }
 
     Future {
+      while (runStartLock) {
+
+      }
+
       setJobGroup(tpe, statementId)
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
@@ -225,6 +239,7 @@ class Session(
 
   def close(): Unit = {
     interpreterExecutor.shutdown()
+    interpreterInitExecutor.shutdown()
     cancelExecutor.shutdown()
     interpGroup.values.foreach(_.close())
   }
