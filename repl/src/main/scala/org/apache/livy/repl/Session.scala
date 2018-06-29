@@ -20,19 +20,17 @@ package org.apache.livy.repl
 import java.util.{LinkedHashMap => JLinkedHashMap}
 import java.util.Map.Entry
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
 import org.apache.spark.{SparkConf, SparkContext}
 import org.json4s.jackson.JsonMethods.{compact, render}
 import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
-
 import org.apache.livy.Logging
 import org.apache.livy.rsc.RSCConf
 import org.apache.livy.rsc.driver.{SparkEntries, Statement, StatementState}
@@ -57,8 +55,15 @@ class Session(
   extends Logging {
   import Session._
 
-  private val interpreterExecutor = ExecutionContext.fromExecutorService(
+  private val pool = Executors.newCachedThreadPool() //.newFixedThreadPool(3)
+  private val interpreterInitExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
+
+  private var runStartLock = new AtomicBoolean(true)
+
+  private var activeJobs = new AtomicInteger(0)
+
+  private val interpreterExecutor = ExecutionContext.fromExecutorService(pool)
 
   private val cancelExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
@@ -120,6 +125,7 @@ class Session(
 
   def start(): Future[SparkEntries] = {
     val future = Future {
+      runStartLock.set(true)
       changeState(SessionState.Starting)
 
       // Always start SparkInterpreter after beginning, because we rely on SparkInterpreter to
@@ -134,10 +140,14 @@ class Session(
       }
 
       changeState(SessionState.Idle)
+      runStartLock.set(false)
       entries
-    }(interpreterExecutor)
+    }(interpreterInitExecutor)
 
-    future.onFailure { case _ => changeState(SessionState.Error()) }(interpreterExecutor)
+    future.onFailure { case _ =>
+      runStartLock.set(false)
+      changeState(SessionState.Error()) }(interpreterInitExecutor)
+
     future
   }
 
@@ -161,6 +171,10 @@ class Session(
     _statements.synchronized { _statements(statementId) = statement }
 
     Future {
+      while (runStartLock.get()) {
+
+      }
+
       setJobGroup(tpe, statementId)
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
@@ -225,6 +239,7 @@ class Session(
 
   def close(): Unit = {
     interpreterExecutor.shutdown()
+    interpreterInitExecutor.shutdown()
     cancelExecutor.shutdown()
     interpGroup.values.foreach(_.close())
   }
@@ -260,11 +275,14 @@ class Session(
   private def executeCode(interp: Option[Interpreter],
      executionCount: Int,
      code: String): String = {
+    activeJobs.incrementAndGet()
     changeState(SessionState.Busy)
 
     def transitToIdle() = {
-      val executingLastStatement = executionCount == newStatementId.intValue() - 1
-      if (_statements.isEmpty || executingLastStatement) {
+      activeJobs.decrementAndGet()
+      //val executingLastStatement = executionCount == newStatementId.intValue() - 1
+      //if (_statements.isEmpty || executingLastStatement) {
+      if (_statements.isEmpty || activeJobs.get() == 0) {
         changeState(SessionState.Idle)
       }
     }
