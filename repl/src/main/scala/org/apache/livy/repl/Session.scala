@@ -55,7 +55,7 @@ class Session(
   extends Logging {
   import Session._
 
-  private val pool = Executors.newFixedThreadPool(3)
+  private val pool = Executors.newCachedThreadPool() //.newFixedThreadPool(3)
   private val interpreterInitExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
 
@@ -275,11 +275,14 @@ class Session(
   private def executeCode(interp: Option[Interpreter],
      executionCount: Int,
      code: String): String = {
+    activeJobs.incrementAndGet()
     changeState(SessionState.Busy)
 
     def transitToIdle() = {
-      val executingLastStatement = executionCount == newStatementId.intValue() - 1
-      if (_statements.isEmpty || executingLastStatement) {
+      activeJobs.decrementAndGet()
+      //val executingLastStatement = executionCount == newStatementId.intValue() - 1
+      //if (_statements.isEmpty || executingLastStatement) {
+      if (_statements.isEmpty || activeJobs.get() == 0) {
         changeState(SessionState.Idle)
       }
     }
