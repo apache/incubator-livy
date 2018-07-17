@@ -43,5 +43,11 @@ class BlackholeStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
     it("remove should not throw") {
       stateStore.remove("")
     }
+
+    it("increment should return consecutive numbers starting from 0") {
+      stateStore.increment("") shouldBe 0
+      stateStore.increment("") shouldBe 1
+      stateStore.increment("") shouldBe 2
+    }
   }
 }
