@@ -17,6 +17,8 @@
 
 package org.apache.livy.server.recovery
 
+import java.util.concurrent.atomic.AtomicLong
+
 import scala.reflect.ClassTag
 
 import org.apache.livy.LivyConf
@@ -26,6 +28,9 @@ import org.apache.livy.LivyConf
  * Livy will use this when session recovery is disabled.
  */
 class BlackholeStateStore(livyConf: LivyConf) extends StateStore(livyConf) {
+
+  private val atomicLong: AtomicLong = new AtomicLong(-1L)
+
   def set(key: String, value: Object): Unit = {}
 
   def get[T: ClassTag](key: String): Option[T] = None
@@ -33,4 +38,6 @@ class BlackholeStateStore(livyConf: LivyConf) extends StateStore(livyConf) {
   def getChildren(key: String): Seq[String] = List.empty[String]
 
   def remove(key: String): Unit = {}
+
+  override def increment(ket: String): Long = atomicLong.incrementAndGet()
 }

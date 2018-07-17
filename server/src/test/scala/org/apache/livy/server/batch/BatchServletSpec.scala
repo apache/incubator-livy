@@ -25,7 +25,10 @@ import javax.servlet.http.HttpServletResponse._
 
 import scala.concurrent.duration.Duration
 
+import org.mockito.Matchers.anyString
 import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.mock.MockitoSugar.mock
 
 import org.apache.livy.{LivyConf, Utils}
@@ -54,6 +57,17 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
   override def createServlet(): BatchSessionServlet = {
     val livyConf = createConf()
     val sessionStore = mock[SessionStore]
+    val nextSessionIdAnswer = new Answer[Int] {
+      private var lastUsedId = -1
+
+      def answer(invokation: InvocationOnMock): Int = {
+        lastUsedId += 1
+        lastUsedId
+      }
+    }
+
+    when(sessionStore.getNextSessionId(anyString)).thenAnswer(nextSessionIdAnswer)
+
     val accessManager = new AccessManager(livyConf)
     new BatchSessionServlet(
       new BatchSessionManager(livyConf, sessionStore, Some(Seq.empty)),

@@ -19,9 +19,12 @@ package org.apache.livy.server.recovery
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 import scala.util.Try
+import scala.util.matching.Regex
 
+import org.apache.curator.RetryPolicy
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.framework.api.UnhandledErrorListener
+import org.apache.curator.framework.recipes.atomic.{DistributedAtomicLong => DistributedLong}
 import org.apache.curator.retry.RetryNTimes
 import org.apache.zookeeper.KeeperException.NoNodeException
 
@@ -111,6 +114,16 @@ class ZooKeeperStateStore(
       curatorClient.delete().guaranteed().forPath(prefixKey(key))
     } catch {
       case _: NoNodeException =>
+    }
+  }
+
+  override def increment(key: String): Long = {
+    val distributedSessionId = new DistributedLong(curatorClient, key, retryPolicy)
+    distributedSessionId.increment() match {
+      case atomicValue if atomicValue.succeeded() =>
+        atomicValue.postValue()
+      case _ =>
+        throw new java.io.IOException(s"Failed to atomically increment the value for $key")
     }
   }
 
