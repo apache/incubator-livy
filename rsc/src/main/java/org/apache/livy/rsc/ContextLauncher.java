@@ -100,7 +100,7 @@ class ContextLauncher {
       // In some scenarios the user may need to configure this endpoint setting explicitly.
       String address = conf.get(LAUNCHER_ADDRESS);
       // If not specified, use the RPC server address; otherwise use the specified address.
-      if (address == null) {
+      if (address == null || address.trim().isEmpty()) {
         address = factory.getServer().getAddress();
       }
       conf.set(LAUNCHER_ADDRESS, address);
