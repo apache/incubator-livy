@@ -89,7 +89,7 @@
     <httpcore.version>4.4.4</httpcore.version>
     <jackson.version>2.9.5</jackson.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
-    <jetty.version>9.2.16.v20160414</jetty.version>
+    <jetty.version>9.3.8.v20160314</jetty.version>
     <json4s.version>3.2.10</json4s.version>
     <junit.version>4.11</junit.version>
     <kryo.version>2.22</kryo.version>
@@ -106,6 +106,10 @@
     <scala.version>${scala-2.11.version}</scala.version>
     <scalatest.version>2.2.4</scalatest.version>
     <scalatra.version>2.3.0</scalatra.version>
+    <datanucleus-api-jdo.version>4.2.4</datanucleus-api-jdo.version>
+    <datanucleus-core.version>4.1.17</datanucleus-core.version>
+    <datanucleus-jdo.version>3.2.0-m3</datanucleus-jdo.version>
+    <datanucleus-rdbms.version>4.1.19</datanucleus-rdbms.version>
     <java.version>1.7</java.version>
     <minJavaVersion>1.7</minJavaVersion>
     <maxJavaVersion>1.8</maxJavaVersion>
@@ -570,10 +574,11 @@
         <version>${py4j.version}</version>
       </dependency>
 
+      <!-- we need a version > 1.7.13 because of SLF4J-324 -->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.0</version>
+        <version>1.7.25</version>
       </dependency>
 
     </dependencies>
@@ -1077,6 +1082,12 @@
   </distributionManagement>
 
   <profiles>
+    <profile>
+      <id>thriftserver</id>
+      <modules>
+        <module>thriftserver</module>
+      </modules>
+    </profile>
     <!-- Spark version profile -->
     <profile>
       <id>spark-1.6</id>
