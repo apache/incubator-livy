@@ -18,6 +18,7 @@
 package org.apache.livy.thriftserver
 
 import java.net.URI
+import java.security.PrivilegedExceptionAction
 import java.util.{Map => JMap, UUID}
 import java.util.concurrent.ConcurrentHashMap
 
@@ -29,6 +30,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 
 import org.apache.hadoop.hive.conf.HiveConf
+import org.apache.hadoop.hive.shims.Utils
 import org.apache.hive.service.cli.SessionHandle
 import org.apache.hive.service.cli.session.SessionManager
 import org.apache.hive.service.rpc.thrift.TProtocolVersion
@@ -218,11 +220,16 @@ class LivyThriftSessionManager(val server: LivyThriftServer)
       newSession
     }
     val futureLivySession = Future({
-      val livySession =
-        getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
-      incrementManagedSessionActiveUsers(livySession.id)
-      initSession(sessionHandle, livySession, initStatements)
-      livySession
+      val livyServiceUGI = Utils.getUGI
+      livyServiceUGI.doAs(new PrivilegedExceptionAction[InteractiveSession] {
+        override def run(): InteractiveSession = {
+          val livySession =
+            getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
+          incrementManagedSessionActiveUsers(livySession.id)
+          initSession(sessionHandle, livySession, initStatements)
+          livySession
+        }
+      })
     })
     sessionHandleToLivySession.put(sessionHandle, futureLivySession)
     sessionHandle
