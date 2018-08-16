@@ -99,6 +99,10 @@ object LivyConf {
   val LAUNCH_KERBEROS_REFRESH_INTERVAL = Entry("livy.server.launch.kerberos.refresh-interval", "1h")
   val KINIT_FAIL_THRESHOLD = Entry("livy.server.launch.kerberos.kinit-fail-threshold", 5)
 
+  val THRIFT_INCR_COLLECT_ENABLED = Entry("livy.server.thrift.incrementalCollect", false)
+  val THRIFT_SESSION_CREATION_TIMEOUT = Entry("livy.server.thrift.session.creationTimeout", "10m")
+  val THRIFT_SERVER_JAR_LOCATION = Entry("livy.server.thrift.jarLocation", null)
+
   /**
    * Recovery mode of Livy. Possible values:
    * off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
