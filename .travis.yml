@@ -66,7 +66,7 @@ before_install:
   - sudo python3 -m pip install cloudpickle
 
 install:
-  - mvn $MVN_FLAG install -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
+  - mvn $MVN_FLAG install -Pthriftserver -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
 
 before_script:
   - sudo pip2 install "requests >= 2.10.0" pytest flaky flake8 requests-kerberos
