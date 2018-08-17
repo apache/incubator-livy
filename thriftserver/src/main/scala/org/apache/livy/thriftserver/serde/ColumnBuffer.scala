@@ -26,6 +26,8 @@ import org.apache.livy.thriftserver.types.{DataType, DataTypeUtils}
 
 object ColumnBuffer {
   private val DEFAULT_SIZE = 100
+  private val EMPTY_BINARY = ByteBuffer.allocate(0)
+  private val EMPTY_STRING = ""
 }
 
 class ColumnBuffer(val dataType: DataType) {
@@ -90,6 +92,11 @@ class ColumnBuffer(val dataType: DataType) {
   def addValue(field: Any): Unit = {
     if (field == null) {
       nulls += currentSize
+      if (dataType.name == "string") {
+        stringVars.add(ColumnBuffer.EMPTY_STRING)
+      } else if (dataType.name == "binary") {
+        binaryVars.add(ColumnBuffer.EMPTY_BINARY)
+      }
     } else {
       dataType.name match {
         case "boolean" =>
