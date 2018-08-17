@@ -54,7 +54,7 @@ trait CommonThriftTests {
 
 class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
   override def mode: ServerMode.Value = ServerMode.binary
-  override def port: Int = 10001
+  override def port: Int = 20000
 
   test("Reuse existing session") {
     withJdbcConnection { _ =>
@@ -108,7 +108,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
 
 class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
   override def mode: ServerMode.Value = ServerMode.http
-  override def port: Int = 20000
+  override def port: Int = 20001
 
   test("fetch different data types") {
     val supportMap = formattedSparkVersion._1 > 1 ||

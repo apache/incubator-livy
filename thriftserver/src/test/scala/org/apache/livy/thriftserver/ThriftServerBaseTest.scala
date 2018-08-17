@@ -22,6 +22,7 @@ import java.sql.{Connection, DriverManager, Statement}
 
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hive.jdbc.HiveDriver
+import org.apache.hive.service.Service.STATE
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 import org.apache.livy.LIVY_VERSION
@@ -40,7 +41,7 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
   def mode: ServerMode.Value
   def port: Int
 
-  val THRIFT_SERVER_STARTUP_TIMEOUT = 3000 // ms
+  val THRIFT_SERVER_STARTUP_TIMEOUT = 30000 // ms
 
   val livyConf = new LivyConf()
   val (sparkVersion, scalaVersionFromSparkSubmit) = sparkSubmitVersion(livyConf)
@@ -85,6 +86,7 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
     LivyThriftServer.start(livyConf, sessionManager, ss, accessManager)
     LivyThriftServer.thriftServerThread.join(THRIFT_SERVER_STARTUP_TIMEOUT)
     assert(LivyThriftServer.getInstance.isDefined)
+    assert(LivyThriftServer.getInstance.get.getServiceState == STATE.STARTED)
   }
 
   override def afterAll() {
