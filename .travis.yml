@@ -66,14 +66,14 @@ before_install:
   - sudo python3 -m pip install cloudpickle
 
 install:
-  - mvn $MVN_FLAG install -Pthriftserver -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
+  - mvn $MVN_FLAG install -DthriftserverEnabled -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
 
 before_script:
   - sudo pip2 install "requests >= 2.10.0" pytest flaky flake8 requests-kerberos
   - sudo pip3 install "requests >= 2.10.0" pytest flaky requests-kerberos
 
 script:
-  - mvn $MVN_FLAG verify -e
+  - mvn $MVN_FLAG -DthriftserverEnabled verify -e
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
