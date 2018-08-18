@@ -20,6 +20,8 @@ package org.apache.hive.service.auth;
 import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -87,11 +89,29 @@ public class HiveAuthFactory {
       }
     }
     if (isSASLWithKerberizedHadoop()) {
-      saslServer =
-          HadoopThriftAuthBridge.getBridge().createServer(
-              conf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_KEYTAB),
-              conf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_PRINCIPAL),
-              conf.getVar(ConfVars.HIVE_SERVER2_CLIENT_KERBEROS_PRINCIPAL));
+      saslServer = new HadoopThriftAuthBridge.Server();
+      try {
+        String principal = conf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_PRINCIPAL);
+        String keyTabFile = conf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_KEYTAB);
+        UserGroupInformation ugi =
+            UserGroupInformation.loginUserFromKeytabAndReturnUGI(
+                SecurityUtil.getServerPrincipal(principal, "0.0.0.0"), keyTabFile);
+
+        Field realUgiField = HadoopThriftAuthBridge.Server.class.getDeclaredField("realUgi");
+        realUgiField.setAccessible(true);
+        Field modifiersField = Field.class.getDeclaredField("modifiers");
+        modifiersField.setAccessible(true);
+        modifiersField.setInt(realUgiField, realUgiField.getModifiers() & ~Modifier.FINAL);
+        Field clientValidationUGIField =
+            HadoopThriftAuthBridge.Server.class.getDeclaredField("clientValidationUGI");
+        clientValidationUGIField.setAccessible(true);
+        modifiersField.setInt(clientValidationUGIField,
+            clientValidationUGIField.getModifiers() & ~Modifier.FINAL);
+        realUgiField.set(saslServer, ugi);
+        clientValidationUGIField.set(saslServer, ugi);
+      } catch (Exception e) {
+        LOG.error("Error setting the UGI for the SASL server", e);
+      }
 
       // Start delegation token manager
       delegationTokenManager = new MetastoreDelegationTokenManager();
@@ -208,17 +228,6 @@ public class HiveAuthFactory {
   public boolean isSASLKerberosUser() {
     return AuthMethod.KERBEROS.getMechanismName().equals(getUserAuthMechanism())
             || AuthMethod.TOKEN.getMechanismName().equals(getUserAuthMechanism());
-  }
-
-  // Perform kerberos login using the hadoop shim API if the configuration is available
-  public static void loginFromKeytab(HiveConf hiveConf) throws IOException {
-    String principal = hiveConf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_PRINCIPAL);
-    String keyTabFile = hiveConf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_KEYTAB);
-    if (principal.isEmpty() || keyTabFile.isEmpty()) {
-      throw new IOException("HiveServer2 Kerberos principal or keytab is not correctly configured");
-    } else {
-      UserGroupInformation.loginUserFromKeytab(SecurityUtil.getServerPrincipal(principal, "0.0.0.0"), keyTabFile);
-    }
   }
 
   // Perform SPNEGO login using the hadoop shim API if the configuration is available
