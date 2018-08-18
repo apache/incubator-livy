@@ -31,13 +31,14 @@ env:
 matrix:
   include:
       # Spark 2.2+ will only be verified using JDK8
-    - env: MVN_FLAG='-Pspark-2.2-it -DskipTests'
+      # Thriftserver requires JDK8
+    - env: MVN_FLAG='-Pthriftserver -Pspark-2.2-it -DskipTests'
       jdk: oraclejdk8
-    - env: MVN_FLAG='-Pspark-2.2 -DskipITs'
+    - env: MVN_FLAG='-Pthriftserver -Pspark-2.2 -DskipITs'
       jdk: oraclejdk8
-    - env: MVN_FLAG='-Pspark-2.3-it -DskipTests'
+    - env: MVN_FLAG='-Pthriftserver -Pspark-2.3-it -DskipTests'
       jdk: oraclejdk8
-    - env: MVN_FLAG='-Pspark-2.3 -DskipITs'
+    - env: MVN_FLAG='-Pthriftserver -Pspark-2.3 -DskipITs'
       jdk: oraclejdk8
 
 
@@ -66,14 +67,14 @@ before_install:
   - sudo python3 -m pip install cloudpickle
 
 install:
-  - mvn $MVN_FLAG install -DthriftserverEnabled -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
+  - mvn $MVN_FLAG install -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
 
 before_script:
   - sudo pip2 install "requests >= 2.10.0" pytest flaky flake8 requests-kerberos
   - sudo pip3 install "requests >= 2.10.0" pytest flaky requests-kerberos
 
 script:
-  - mvn $MVN_FLAG -DthriftserverEnabled verify -e
+  - mvn $MVN_FLAG verify -e
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

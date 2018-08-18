@@ -1080,12 +1080,6 @@
   <profiles>
     <profile>
       <id>thriftserver</id>
-      <activation>
-        <jdk>1.8</jdk>
-        <property>
-          <name>thriftserverEnabled</name>
-        </property>
-      </activation>
       <modules>
         <module>thriftserver</module>
       </modules>
@@ -1096,6 +1090,30 @@
         <datanucleus-jdo.version>3.2.0-m3</datanucleus-jdo.version>
         <datanucleus-rdbms.version>4.1.19</datanucleus-rdbms.version>
       </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-java</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireJavaVersion>
+                      <version>1.8</version>
+                    </requireJavaVersion>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <!-- Spark version profile -->
     <profile>
