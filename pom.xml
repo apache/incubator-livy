@@ -1089,6 +1089,7 @@
         <datanucleus-core.version>4.1.17</datanucleus-core.version>
         <datanucleus-jdo.version>3.2.0-m3</datanucleus-jdo.version>
         <datanucleus-rdbms.version>4.1.19</datanucleus-rdbms.version>
+        <libthrift.version>0.9.3</libthrift.version>
       </properties>
 
       <build>
