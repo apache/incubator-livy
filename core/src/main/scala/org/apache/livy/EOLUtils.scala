@@ -21,28 +21,19 @@ package org.apache.livy
  * Helper class to deal with end-of-line markers in text files.
  */
 object EOLUtils {
-  /**
-   * Unix-style end-of-line marker (LF)
-   */
+  /** Unix-style end-of-line marker (LF) */
   private val EOL_UNIX: String = "\n"
 
-  /**
-   * Windows-style end-of-line marker (CRLF)
-   */
+  /** Windows-style end-of-line marker (CRLF) */
   private val EOL_WINDOWS: String = "\r\n"
 
-  /**
-   * "Old Mac"-style end-of-line marker (CR)
-   */
+  /** "Old Mac"-style end-of-line marker (CR) */
   private val EOL_OLD_MAC: String = "\r"
 
-  /**
-   * Default end-of-line marker on current system
-   */
+  /** Default end-of-line marker on current syste */
   private val EOL_SYSTEM_DEFAULT: String = System.getProperty("line.separator")
 
   object Mode extends Enumeration {
-
     type Mode = Value
 
     val LF, CRLF, CR = Value
@@ -64,7 +55,7 @@ object EOLUtils {
       tmp
     }
 
-    def determineEOL(s: String): Mode = {
+    private def determineEOL(s: String): Mode = {
       val charArray = s.toCharArray
 
       var prev: Char = null.asInstanceOf[Char]
@@ -84,30 +75,24 @@ object EOLUtils {
 
       null
     }
+
+    def hasWindowsEOL(s: String): Boolean = determineEOL(s) == CRLF
+
+    def hasUnixEOL(s: String): Boolean = determineEOL(s) == LF
+
+    def hasOldMacEOL(s: String): Boolean = determineEOL(s) == CR
+
+    def hasSystemDefaultEOL(s: String): Boolean = determineEOL(s) == SYSTEM_DEFAULT
   }
-
-  def hasWindowsEOL(s: String): Boolean = Mode.determineEOL(s) == Mode.CRLF
-
-  def hasUnixEOL(s: String): Boolean = Mode.determineEOL(s) == Mode.LF
-
-  def hasOldMacEOL(s: String): Boolean = Mode.determineEOL(s) == Mode.CR
-
-  def hasSystemDefaultEOL(s: String): Boolean = Mode.determineEOL(s) == Mode.SYSTEM_DEFAULT
-
-  def convertToUnixEOL(s: String): String = convertLineEndings(s, EOL_UNIX)
-
-  def convertToWindowsEOL(s: String): String = convertLineEndings(s, EOL_WINDOWS)
-
-  def convertToOldMacEOL(s: String): String = convertLineEndings(s, EOL_OLD_MAC)
 
   def convertToSystemEOL(s: String): String = convertLineEndings(s, EOL_SYSTEM_DEFAULT)
 
   private def convertLineEndings(s: String, eol: String): String = {
-    if (hasWindowsEOL(s)) {
+    if (Mode.hasWindowsEOL(s)) {
       s.replaceAll(EOL_WINDOWS, eol)
-    } else if (hasUnixEOL(s)) {
+    } else if (Mode.hasUnixEOL(s)) {
       s.replaceAll(EOL_UNIX, eol)
-    } else if (hasOldMacEOL(s)) {
+    } else if (Mode.hasOldMacEOL(s)) {
       s.replaceAll(EOL_OLD_MAC, eol)
     } else {
       s

@@ -23,24 +23,24 @@ class EOLUtilsSuite extends FunSuite with LivyBaseUnitTestSuite {
 
   test("check EOL") {
     val s1 = "test\r\ntest"
-    assert(!EOLUtils.hasUnixEOL(s1))
-    assert(!EOLUtils.hasOldMacEOL(s1))
-    assert(EOLUtils.hasWindowsEOL(s1))
+    assert(!EOLUtils.Mode.hasUnixEOL(s1))
+    assert(!EOLUtils.Mode.hasOldMacEOL(s1))
+    assert(EOLUtils.Mode.hasWindowsEOL(s1))
 
     val s2 = "test\ntest"
-    assert(EOLUtils.hasUnixEOL(s2))
-    assert(!EOLUtils.hasOldMacEOL(s2))
-    assert(!EOLUtils.hasWindowsEOL(s2))
+    assert(EOLUtils.Mode.hasUnixEOL(s2))
+    assert(!EOLUtils.Mode.hasOldMacEOL(s2))
+    assert(!EOLUtils.Mode.hasWindowsEOL(s2))
 
     val s3 = "test\rtest"
-    assert(!EOLUtils.hasUnixEOL(s3))
-    assert(EOLUtils.hasOldMacEOL(s3))
-    assert(!EOLUtils.hasWindowsEOL(s3))
+    assert(!EOLUtils.Mode.hasUnixEOL(s3))
+    assert(EOLUtils.Mode.hasOldMacEOL(s3))
+    assert(!EOLUtils.Mode.hasWindowsEOL(s3))
 
     val s4 = "testtest"
-    assert(!EOLUtils.hasUnixEOL(s4))
-    assert(!EOLUtils.hasOldMacEOL(s4))
-    assert(!EOLUtils.hasWindowsEOL(s4))
+    assert(!EOLUtils.Mode.hasUnixEOL(s4))
+    assert(!EOLUtils.Mode.hasOldMacEOL(s4))
+    assert(!EOLUtils.Mode.hasWindowsEOL(s4))
   }
 
   test("convert EOL") {
@@ -49,20 +49,9 @@ class EOLUtilsSuite extends FunSuite with LivyBaseUnitTestSuite {
     val s3 = "test\rtest"
     val s4 = "testtest"
 
-    assert(EOLUtils.convertToUnixEOL(s1) === s2)
-    assert(EOLUtils.convertToWindowsEOL(s1) === s1)
-    assert(EOLUtils.convertToOldMacEOL(s1) === s3)
-
-    assert(EOLUtils.convertToUnixEOL(s2) === s2)
-    assert(EOLUtils.convertToWindowsEOL(s2) === s1)
-    assert(EOLUtils.convertToOldMacEOL(s2) === s3)
-
-    assert(EOLUtils.convertToUnixEOL(s3) === s2)
-    assert(EOLUtils.convertToWindowsEOL(s3) === s1)
-    assert(EOLUtils.convertToOldMacEOL(s3) === s3)
-
-    assert(EOLUtils.convertToUnixEOL(s4) === s4)
-    assert(EOLUtils.convertToWindowsEOL(s4) === s4)
-    assert(EOLUtils.convertToOldMacEOL(s4) === s4)
+    assert(EOLUtils.convertToSystemEOL(s1) === EOLUtils.convertToSystemEOL(s2))
+    assert(EOLUtils.convertToSystemEOL(s1) === EOLUtils.convertToSystemEOL(s3))
+    assert(EOLUtils.convertToSystemEOL(s2) === EOLUtils.convertToSystemEOL(s3))
+    assert(EOLUtils.convertToSystemEOL(s4) === s4)
   }
 }
