@@ -97,6 +97,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       s.run("%table x").verifyResult(".*headers.*type.*name.*data.*")
       s.run("abcde").verifyError(ename = "NameError", evalue = "name 'abcde' is not defined")
       s.run("raise KeyError, 'foo'").verifyError(ename = "KeyError", evalue = "'foo'")
+      s.run("print(1)\r\nprint(1)").verifyResult("1\n1")
     }
   }
 
@@ -115,6 +116,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
         """|root
           | |-- name: string (nullable = true)
           | |-- age: double (nullable = true)""".stripMargin))
+      s.run("print(1)\r\nprint(1)").verifyResult(".*1\n.*1")
     }
   }
 
