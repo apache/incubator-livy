@@ -536,6 +536,7 @@ object LivyThriftSessionManager extends Logging {
   // variable
   private val livySessionIdConfigKey = "set:hiveconf:livy.server.sessionId"
   private val livySessionConfRegexp = "set:hiveconf:livy.session.conf.(.*)".r
+  private val hiveVarPattern = "set:hivevar:(.*)".r
   private val JAR_LOCATION = getClass.getProtectionDomain.getCodeSource.getLocation.toURI
 
   def thriftserverJarLocation(livyConf: LivyConf): URI = {
@@ -583,6 +584,8 @@ object LivyThriftSessionManager extends Logging {
                 createInteractiveRequest.heartbeatTimeoutInSecond = heartbeatTimeoutInSecond
               }
             case livySessionConfRegexp(livyConfKey) => extraLivyConf += (livyConfKey -> value)
+            // set the hivevars specified by the user
+            case hiveVarPattern(confKey) => statements += s"set hivevar:${confKey.trim}=$value"
             case _ if key == livySessionIdConfigKey => // Ignore it, we handle it later
             case _ =>
               info(s"Ignoring key: $key = '$value'")

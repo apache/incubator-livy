@@ -97,9 +97,13 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
     withJdbcConnection("default", Seq.empty)(f)
   }
 
-  def withJdbcConnection(db: String, sessionConf: Seq[String])(f: (Connection => Unit)) {
+  def withJdbcConnection(db: String, sessionConf: Seq[String])(f: (Connection => Unit)): Unit = {
+    withJdbcConnection(jdbcUri(db, sessionConf: _*))(f)
+  }
+
+  def withJdbcConnection(uri: String)(f: (Connection => Unit)) {
     val user = System.getProperty("user.name")
-    val connection = DriverManager.getConnection(jdbcUri(db, sessionConf: _*), user, "")
+    val connection = DriverManager.getConnection(uri, user, "")
     try {
       f(connection)
     } finally {

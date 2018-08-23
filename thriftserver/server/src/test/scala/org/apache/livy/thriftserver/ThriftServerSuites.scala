@@ -23,6 +23,10 @@ import org.apache.livy.LivyConf
 
 
 trait CommonThriftTests {
+  def hiveSupportEnabled(sparkMajorVersion: Int, livyConf: LivyConf): Boolean = {
+    sparkMajorVersion > 1 || livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
+  }
+
   def dataTypesTest(statement: Statement, mapSupported: Boolean): Unit = {
     val resultSet = statement.executeQuery(
       "select 1, 'a', cast(null as int), 1.2345, CAST('2018-08-06' as date)")
@@ -74,15 +78,14 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
   }
 
   test("fetch different data types") {
-    val supportMap = formattedSparkVersion._1 > 1 ||
-      livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
+    val supportMap = hiveSupportEnabled(formattedSparkVersion._1, livyConf)
     withJdbcStatement { statement =>
       dataTypesTest(statement, supportMap)
     }
   }
 
   test("support default database in connection URIs") {
-    assume(formattedSparkVersion._1 > 1 || livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT))
+    assume(hiveSupportEnabled(formattedSparkVersion._1, livyConf))
     val db = "new_db"
     withJdbcConnection { c =>
       val s1 = c.createStatement()
@@ -104,6 +107,18 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       s2.close()
     }
   }
+
+  test("support hivevar") {
+    assume(hiveSupportEnabled(formattedSparkVersion._1, livyConf))
+    withJdbcConnection(jdbcUri("default") + "#myVar1=val1;myVar2=val2") { c =>
+      val statement = c.createStatement()
+      val selectRes = statement.executeQuery("select \"${myVar1}\", \"${myVar2}\"")
+      selectRes.next()
+      assert(selectRes.getString(1) === "val1")
+      assert(selectRes.getString(2) === "val2")
+      statement.close()
+    }
+  }
 }
 
 class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
@@ -111,8 +126,7 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
   override def port: Int = 20001
 
   test("fetch different data types") {
-    val supportMap = formattedSparkVersion._1 > 1 ||
-      livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
+    val supportMap = hiveSupportEnabled(formattedSparkVersion._1, livyConf)
     withJdbcStatement { statement =>
       dataTypesTest(statement, supportMap)
     }
