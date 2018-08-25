@@ -128,7 +128,7 @@ object RpcClient {
   val SESSION_SPARK_ENTRY_MAP = "livy.thriftserver.rpc_sessionIdToSparkSQLSession"
   val STATEMENT_RESULT_ITER_MAP = "livy.thriftserver.rpc_statementIdToResultIter"
   val STATEMENT_SCHEMA_MAP = "livy.thriftserver.rpc_statementIdToSchema"
-  
+
   private def registerSessionJob(sessionId: String, isSpark1: Boolean): Job[_] = new Job[Boolean] {
     override def call(jc: JobContext): Boolean = {
       val spark: Any = if (isSpark1) {
