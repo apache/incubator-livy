@@ -118,13 +118,17 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
   }
 }
 
+/**
+ * As remotely we don't have any class instance, all the job definitions are placed here in
+ * order to enforce that we are not accessing any class attribute
+ */
 object RpcClient {
-  val SPARK_CONTEXT_MAP = "sparkContextMap"
-  val STATEMENT_RESULT_ITER_MAP = "statementIdToResultIter"
-  val STATEMENT_SCHEMA_MAP = "statementIdToSchema"
-
-  // As remotely we don't have any class instance, all the job definitions are placed here in
-  // order to enforce that we are not accessing any class attribute
+  // Maps a session ID to its SparkSession (or HiveContext/SQLContext according to the Spark
+  // version used)
+  val SESSION_SPARK_ENTRY_MAP = "livy.thriftserver.rpc_sessionIdToSparkSQLSession"
+  val STATEMENT_RESULT_ITER_MAP = "livy.thriftserver.rpc_statementIdToResultIter"
+  val STATEMENT_SCHEMA_MAP = "livy.thriftserver.rpc_statementIdToSchema"
+  
   private def registerSessionJob(sessionId: String, isSpark1: Boolean): Job[_] = new Job[Boolean] {
     override def call(jc: JobContext): Boolean = {
       val spark: Any = if (isSpark1) {
@@ -135,9 +139,9 @@ object RpcClient {
       val sessionSpecificSpark = spark.getClass.getMethod("newSession").invoke(spark)
       jc.sc().synchronized {
         val existingMap =
-          Try(jc.getSharedObject[HashMap[String, AnyRef]](SPARK_CONTEXT_MAP))
+          Try(jc.getSharedObject[HashMap[String, AnyRef]](SESSION_SPARK_ENTRY_MAP))
             .getOrElse(new HashMap[String, AnyRef]())
-        jc.setSharedObject(SPARK_CONTEXT_MAP,
+        jc.setSharedObject(SESSION_SPARK_ENTRY_MAP,
           existingMap + ((sessionId, sessionSpecificSpark)))
         Try(jc.getSharedObject[HashMap[String, String]](STATEMENT_SCHEMA_MAP))
           .failed.foreach { _ =>
@@ -156,8 +160,8 @@ object RpcClient {
     override def call(jobContext: JobContext): Boolean = {
       jobContext.sc().synchronized {
         val existingMap =
-          jobContext.getSharedObject[HashMap[String, AnyRef]](SPARK_CONTEXT_MAP)
-        jobContext.setSharedObject(SPARK_CONTEXT_MAP, existingMap - sessionId)
+          jobContext.getSharedObject[HashMap[String, AnyRef]](SESSION_SPARK_ENTRY_MAP)
+        jobContext.setSharedObject(SESSION_SPARK_ENTRY_MAP, existingMap - sessionId)
       }
       true
     }
@@ -233,7 +237,7 @@ object RpcClient {
       sparkContext.synchronized {
         sparkContext.setJobGroup(statementId, statement)
       }
-      val spark = jc.getSharedObject[HashMap[String, AnyRef]](SPARK_CONTEXT_MAP)(sessionId)
+      val spark = jc.getSharedObject[HashMap[String, AnyRef]](SESSION_SPARK_ENTRY_MAP)(sessionId)
       try {
         val result = spark.getClass.getMethod("sql", classOf[String]).invoke(spark, statement)
         val schema = result.getClass.getMethod("schema").invoke(result)
