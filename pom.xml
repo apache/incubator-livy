@@ -1083,7 +1083,6 @@
       <id>thriftserver</id>
       <modules>
         <module>thriftserver/server</module>
-        <module>thriftserver/client</module>
       </modules>
       <properties>
         <jetty.version>9.3.8.v20160314</jetty.version>
