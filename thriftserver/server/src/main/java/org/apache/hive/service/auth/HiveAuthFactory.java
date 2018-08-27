@@ -20,8 +20,6 @@ package org.apache.hive.service.auth;
 import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -90,28 +88,6 @@ public class HiveAuthFactory {
     }
     if (isSASLWithKerberizedHadoop()) {
       saslServer = new HadoopThriftAuthBridge.Server();
-      try {
-        String principal = conf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_PRINCIPAL);
-        String keyTabFile = conf.getVar(ConfVars.HIVE_SERVER2_KERBEROS_KEYTAB);
-        UserGroupInformation ugi =
-            UserGroupInformation.loginUserFromKeytabAndReturnUGI(
-                SecurityUtil.getServerPrincipal(principal, "0.0.0.0"), keyTabFile);
-
-        Field realUgiField = HadoopThriftAuthBridge.Server.class.getDeclaredField("realUgi");
-        realUgiField.setAccessible(true);
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(realUgiField, realUgiField.getModifiers() & ~Modifier.FINAL);
-        Field clientValidationUGIField =
-            HadoopThriftAuthBridge.Server.class.getDeclaredField("clientValidationUGI");
-        clientValidationUGIField.setAccessible(true);
-        modifiersField.setInt(clientValidationUGIField,
-            clientValidationUGIField.getModifiers() & ~Modifier.FINAL);
-        realUgiField.set(saslServer, ugi);
-        clientValidationUGIField.set(saslServer, ugi);
-      } catch (Exception e) {
-        LOG.error("Error setting the UGI for the SASL server", e);
-      }
 
       // Start delegation token manager
       delegationTokenManager = new MetastoreDelegationTokenManager();
