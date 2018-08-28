@@ -49,6 +49,7 @@ import org.apache.livy.utils.LivySparkUtils
 
 class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
   extends CompositeService(classOf[LivyThriftSessionManager].getName) with Logging {
+
   private[thriftserver] val operationManager = new LivyOperationManager(this)
   private val sessionHandleToLivySession =
     new ConcurrentHashMap[SessionHandle, Future[InteractiveSession]]()
@@ -92,7 +93,6 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
 
   private var backgroundOperationPool: ThreadPoolExecutor = _
 
-
   def getLivySession(sessionHandle: SessionHandle): InteractiveSession = {
     val future = sessionHandleToLivySession.get(sessionHandle)
     assert(future != null, s"Looking for not existing session: $sessionHandle.")
@@ -123,16 +123,12 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
     }
   }
 
-  def numberOfActiveUsers(livySessionId: Int): Int = synchronized[Int] {
+  def numberOfActiveUsers(livySessionId: Int): Int = synchronized {
     managedLivySessionActiveUsers.getOrElse(livySessionId, 0)
   }
 
   def onLivySessionOpened(livySession: InteractiveSession): Unit = {
     server.livySessionManager.register(livySession)
-  }
-
-  private def incrementManagedSessionActiveUsers(livySessionId: Int): Unit = synchronized {
-    managedLivySessionActiveUsers(livySessionId) = numberOfActiveUsers(livySessionId) + 1
   }
 
   def onUserSessionClosed(sessionHandle: SessionHandle, livySession: InteractiveSession): Unit = {
@@ -178,13 +174,14 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
           case Some(session) if !server.isAllowedToUse(username, session) =>
             warn(s"Session id $id doesn't belong to $username, so we will ignore it.")
             createLivySession()
-          case Some(session) => if (session.state.isActive) {
-            info(s"Reusing Session $id for $sessionHandle.")
-            session
-          } else {
-            warn(s"Session id $id is not active anymore, so we will ignore it.")
-            createLivySession()
-          }
+          case Some(session) =>
+            if (session.state.isActive) {
+              info(s"Reusing Session $id for $sessionHandle.")
+              session
+            } else {
+              warn(s"Session id $id is not active anymore, so we will ignore it.")
+              createLivySession()
+            }
         }
       case None =>
         createLivySession()
@@ -260,7 +257,9 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
         override def run(): InteractiveSession = {
           val livySession =
             getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
-          incrementManagedSessionActiveUsers(livySession.id)
+          synchronized {
+            managedLivySessionActiveUsers(livySession.id) = numberOfActiveUsers(livySession.id) + 1
+          }
           initSession(sessionHandle, livySession, initStatements)
           livySession
         }

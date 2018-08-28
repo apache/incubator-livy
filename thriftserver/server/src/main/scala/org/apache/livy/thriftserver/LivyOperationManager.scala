@@ -195,7 +195,8 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
   def cancelOperation(opHandle: OperationHandle, errMsg: String): Unit = {
     val operation = getOperation(opHandle)
     val opState = operation.getStatus.getState
-    if (opState.isTerminal) { // Cancel should be a no-op in either cases
+    if (opState.isTerminal) {
+      // Cancel should be a no-op
       debug(s"$opHandle: Operation is already aborted in state - $opState")
     } else {
       debug(s"$opHandle: Attempting to cancel from state - $opState")

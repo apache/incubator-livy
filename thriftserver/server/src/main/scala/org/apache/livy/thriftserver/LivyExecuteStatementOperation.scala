@@ -190,7 +190,7 @@ class LivyExecuteStatementOperation(
    * order not to send them twice.
    */
   def getOperationMessages: Seq[String] = {
-    val fetchNext: (mutable.ListBuffer[String]) => Boolean = (acc: mutable.ListBuffer[String]) => {
+    def fetchNext: (mutable.ListBuffer[String]) => Boolean = (acc: mutable.ListBuffer[String]) => {
       val m = operationMessages.poll()
       if (m == null) {
         false

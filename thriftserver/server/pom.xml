@@ -27,9 +27,6 @@
 
   <artifactId>livy-thriftserver</artifactId>
 
-  <properties>
-    <libthrift.version>0.9.3</libthrift.version>
-  </properties>
   <dependencies>
     <dependency>
       <groupId>org.apache.hive</groupId>

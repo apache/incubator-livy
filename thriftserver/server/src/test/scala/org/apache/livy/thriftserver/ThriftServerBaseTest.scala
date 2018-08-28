@@ -56,7 +56,7 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
     s"jdbc:hive2://localhost:$port/$defaultDb?${sessionConf.mkString(";")}"
   }
 
-  override def beforeAll() {
+  override def beforeAll(): Unit = {
     Class.forName(classOf[HiveDriver].getCanonicalName)
     livyConf.set(s"livy.${HiveConf.ConfVars.HIVE_SERVER2_TRANSPORT_MODE}", mode.toString)
     val portConfKey = if (mode == ServerMode.http) {
@@ -89,11 +89,11 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
     assert(LivyThriftServer.getInstance.get.getServiceState == STATE.STARTED)
   }
 
-  override def afterAll() {
-    LivyThriftServer.stopServer
+  override def afterAll(): Unit = {
+    LivyThriftServer.stopServer()
   }
 
-  def withJdbcConnection(f: (Connection => Unit)) {
+  def withJdbcConnection(f: (Connection => Unit)): Unit = {
     withJdbcConnection("default", Seq.empty)(f)
   }
 
@@ -101,7 +101,7 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
     withJdbcConnection(jdbcUri(db, sessionConf: _*))(f)
   }
 
-  def withJdbcConnection(uri: String)(f: (Connection => Unit)) {
+  def withJdbcConnection(uri: String)(f: (Connection => Unit)): Unit = {
     val user = System.getProperty("user.name")
     val connection = DriverManager.getConnection(uri, user, "")
     try {
@@ -111,7 +111,7 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
     }
   }
 
-  def withJdbcStatement(f: (Statement => Unit)) {
+  def withJdbcStatement(f: (Statement => Unit)): Unit = {
     withJdbcConnection { connection =>
       val s = connection.createStatement()
       try {

@@ -90,6 +90,7 @@ class LivyCLIService(server: LivyThriftServer)
       case GetInfoType.CLI_SERVER_NAME => new GetInfoValue("Livy JDBC")
       case GetInfoType.CLI_DBMS_NAME => new GetInfoValue("Livy JDBC")
       case GetInfoType.CLI_DBMS_VER => new GetInfoValue(LIVY_VERSION)
+      // below values are copied from Hive
       case GetInfoType.CLI_MAX_COLUMN_NAME_LEN => new GetInfoValue(128)
       case GetInfoType.CLI_MAX_SCHEMA_NAME_LEN => new GetInfoValue(128)
       case GetInfoType.CLI_MAX_TABLE_NAME_LEN => new GetInfoValue(128)
@@ -99,9 +100,9 @@ class LivyCLIService(server: LivyThriftServer)
     }
   }
 
-
   @throws[HiveSQLException]
-  def openSession(protocol: TProtocolVersion,
+  def openSession(
+      protocol: TProtocolVersion,
       username: String,
       password: String,
       ipAddress: String,
@@ -113,7 +114,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  def openSessionWithImpersonation(protocol: TProtocolVersion,
+  def openSessionWithImpersonation(
+      protocol: TProtocolVersion,
       username: String,
       password: String,
       ipAddress: String,
@@ -126,7 +128,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def openSession(username: String,
+  override def openSession(
+      username: String,
       password: String,
       configuration: util.Map[String, String]): SessionHandle = {
     val sessionHandle = sessionManager.openSession(
@@ -136,7 +139,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def openSessionWithImpersonation(username: String,
+  override def openSessionWithImpersonation(
+      username: String,
       password: String,
       configuration: util.Map[String, String], delegationToken: String): SessionHandle = {
     val sessionHandle = sessionManager.openSession(
@@ -152,7 +156,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def executeStatement(sessionHandle: SessionHandle,
+  override def executeStatement(
+      sessionHandle: SessionHandle,
       statement: String,
       confOverlay: util.Map[String, String]): OperationHandle = {
     executeStatement(sessionHandle, statement, confOverlay, 0)
@@ -162,7 +167,8 @@ class LivyCLIService(server: LivyThriftServer)
    * Execute statement on the server with a timeout. This is a blocking call.
    */
   @throws[HiveSQLException]
-  override def executeStatement(sessionHandle: SessionHandle,
+  override def executeStatement(
+      sessionHandle: SessionHandle,
       statement: String,
       confOverlay: util.Map[String, String],
       queryTimeout: Long): OperationHandle = {
@@ -173,7 +179,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def executeStatementAsync(sessionHandle: SessionHandle,
+  override def executeStatementAsync(
+      sessionHandle: SessionHandle,
       statement: String,
       confOverlay: util.Map[String, String]): OperationHandle = {
     executeStatementAsync(sessionHandle, statement, confOverlay, 0)
@@ -183,7 +190,8 @@ class LivyCLIService(server: LivyThriftServer)
    * Execute statement asynchronously on the server with a timeout. This is a non-blocking call
    */
   @throws[HiveSQLException]
-  override def executeStatementAsync(sessionHandle: SessionHandle,
+  override def executeStatementAsync(
+      sessionHandle: SessionHandle,
       statement: String,
       confOverlay: util.Map[String, String],
       queryTimeout: Long): OperationHandle = {
@@ -206,7 +214,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getSchemas(sessionHandle: SessionHandle,
+  override def getSchemas(
+      sessionHandle: SessionHandle,
       catalogName: String,
       schemaName: String): OperationHandle = {
     // TODO
@@ -231,7 +240,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getColumns(sessionHandle: SessionHandle,
+  override def getColumns(
+      sessionHandle: SessionHandle,
       catalogName: String,
       schemaName: String,
       tableName: String,
@@ -241,7 +251,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getFunctions(sessionHandle: SessionHandle,
+  override def getFunctions(
+      sessionHandle: SessionHandle,
       catalogName: String,
       schemaName: String,
       functionName: String): OperationHandle = {
@@ -250,7 +261,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getPrimaryKeys(sessionHandle: SessionHandle,
+  override def getPrimaryKeys(
+      sessionHandle: SessionHandle,
       catalog: String,
       schema: String,
       table: String): OperationHandle = {
@@ -259,7 +271,8 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getCrossReference(sessionHandle: SessionHandle,
+  override def getCrossReference(
+      sessionHandle: SessionHandle,
       primaryCatalog: String,
       primarySchema: String,
       primaryTable: String,
@@ -349,11 +362,12 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getDelegationToken(sessionHandle: SessionHandle,
+  override def getDelegationToken(
+      sessionHandle: SessionHandle,
       authFactory: HiveAuthFactory,
       owner: String,
       renewer: String): String = {
-    throw new RuntimeException("Operation not yet supported.")
+    throw new HiveSQLException("Operation not yet supported.")
   }
 
   @throws[HiveSQLException]
@@ -361,13 +375,15 @@ class LivyCLIService(server: LivyThriftServer)
     throw new HiveSQLException("Operation not yet supported.")
   }
 
-  override def cancelDelegationToken(sessionHandle: SessionHandle,
+  override def cancelDelegationToken(
+      sessionHandle: SessionHandle,
       authFactory: HiveAuthFactory,
       tokenStr: String): Unit = {
     throw new HiveSQLException("Operation not yet supported.")
   }
 
-  override def renewDelegationToken(sessionHandle: SessionHandle,
+  override def renewDelegationToken(
+      sessionHandle: SessionHandle,
       authFactory: HiveAuthFactory,
       tokenStr: String): Unit = {
     throw new HiveSQLException("Operation not yet supported.")
