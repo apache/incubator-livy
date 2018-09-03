@@ -103,10 +103,10 @@ object LivyThriftServer extends Logging {
 
 
 class LivyThriftServer(
-      private[thriftserver] val livyConf: LivyConf,
-      private[thriftserver] val livySessionManager: InteractiveSessionManager,
-      private[thriftserver] val sessionStore: SessionStore,
-      private val accessManager: AccessManager) extends HiveServer2 {
+    private[thriftserver] val livyConf: LivyConf,
+    private[thriftserver] val livySessionManager: InteractiveSessionManager,
+    private[thriftserver] val sessionStore: SessionStore,
+    private val accessManager: AccessManager) extends HiveServer2 {
   override def init(hiveConf: HiveConf): Unit = {
     this.cliService = new LivyCLIService(this)
     super.init(hiveConf)

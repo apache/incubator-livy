@@ -144,7 +144,10 @@ class LivyExecuteStatementOperation(
   }
 
   protected def execute(): Unit = {
-    info(s"Running query '$statement' with id $statementId")
+    if (logger.isDebugEnabled) {
+      debug(s"Running query '$statement' with id $statementId (session = " +
+        s"${sessionHandle.getSessionId})")
+    }
     setState(OperationState.RUNNING)
 
     try {
@@ -190,7 +193,7 @@ class LivyExecuteStatementOperation(
    * order not to send them twice.
    */
   def getOperationMessages: Seq[String] = {
-    def fetchNext: (mutable.ListBuffer[String]) => Boolean = (acc: mutable.ListBuffer[String]) => {
+    def fetchNext(acc: mutable.ListBuffer[String]): Boolean = {
       val m = operationMessages.poll()
       if (m == null) {
         false
