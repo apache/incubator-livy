@@ -28,6 +28,8 @@ object ColumnBuffer {
   private val DEFAULT_SIZE = 100
   private val EMPTY_BINARY = ByteBuffer.allocate(0)
   private val EMPTY_STRING = ""
+  private val HANDLED_TYPES =
+    Set("boolean", "byte", "short", "integer", "long", "float", "double", "binary")
 }
 
 class ColumnBuffer(val dataType: DataType) {
@@ -92,7 +94,7 @@ class ColumnBuffer(val dataType: DataType) {
   def addValue(field: Any): Unit = {
     if (field == null) {
       nulls += currentSize
-      if (dataType.name == "string") {
+      if (!ColumnBuffer.HANDLED_TYPES.contains(dataType.name)) {
         stringVars.add(ColumnBuffer.EMPTY_STRING)
       } else if (dataType.name == "binary") {
         binaryVars.add(ColumnBuffer.EMPTY_BINARY)

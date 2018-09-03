@@ -39,6 +39,21 @@ trait CommonThriftTests {
     assert(resultSet.getDate(5) == Date.valueOf("2018-08-06"))
     assert(!resultSet.next())
 
+    val resultSetWithNulls = statement.executeQuery("select cast(null as string), " +
+      "cast(null as decimal), cast(null as double), cast(null as date), null")
+    resultSetWithNulls.next()
+    assert(resultSetWithNulls.getString(1) == null)
+    assert(resultSetWithNulls.wasNull())
+    assert(resultSetWithNulls.getBigDecimal(2) == null)
+    assert(resultSetWithNulls.wasNull())
+    assert(resultSetWithNulls.getDouble(3) == 0.0)
+    assert(resultSetWithNulls.wasNull())
+    assert(resultSetWithNulls.getDate(4) == null)
+    assert(resultSetWithNulls.wasNull())
+    assert(resultSetWithNulls.getString(5) == null)
+    assert(resultSetWithNulls.wasNull())
+    assert(!resultSetWithNulls.next())
+
     val complexTypesQuery = if (mapSupported) {
       "select array(1.5, 2.4, 1.3), struct('a', 1, 1.5), map(1, 'a', 2, 'b')"
     } else {
