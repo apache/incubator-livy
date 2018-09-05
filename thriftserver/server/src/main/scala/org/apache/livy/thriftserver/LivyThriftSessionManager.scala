@@ -17,6 +17,7 @@
 
 package org.apache.livy.thriftserver
 
+import java.lang.reflect.UndeclaredThrowableException
 import java.net.URI
 import java.security.PrivilegedExceptionAction
 import java.util
@@ -100,12 +101,12 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
     if (!future.isCompleted) {
       Try(Await.result(future, maxSessionWait)) match {
         case Success(session) => session
-        case Failure(e) => throw e
+        case Failure(e) => throw e.getCause
       }
     } else {
       future.value match {
         case Some(Success(session)) => session
-        case Some(Failure(e)) => throw e
+        case Some(Failure(e)) => throw e.getCause
         case None => throw new RuntimeException("Future cannot be None when it is completed")
       }
     }
@@ -254,22 +255,30 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
       onLivySessionOpened(newSession)
       newSession
     }
-    val futureLivySession = Future({
+    val futureLivySession = Future {
       val livyServiceUGI = Utils.getUGI
-      livyServiceUGI.doAs(new PrivilegedExceptionAction[InteractiveSession] {
-        override def run(): InteractiveSession = {
-          val livySession =
-            getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
-          synchronized {
-            managedLivySessionActiveUsers.get(livySession.id).foreach { numUsers =>
-              managedLivySessionActiveUsers(livySession.id) = numUsers + 1
+      var livySession: InteractiveSession = null
+      try {
+        livyServiceUGI.doAs(new PrivilegedExceptionAction[InteractiveSession] {
+          override def run(): InteractiveSession = {
+            livySession =
+              getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
+            synchronized {
+              managedLivySessionActiveUsers.get(livySession.id).foreach { numUsers =>
+                managedLivySessionActiveUsers(livySession.id) = numUsers + 1
+              }
             }
+            initSession(sessionHandle, livySession, initStatements)
+            livySession
           }
-          initSession(sessionHandle, livySession, initStatements)
-          livySession
-        }
-      })
-    })
+        })
+      } catch {
+        case e: UndeclaredThrowableException =>
+          throw new ThriftSessionCreationException(Option(livySession), e.getCause)
+        case e: Throwable =>
+          throw new ThriftSessionCreationException(Option(livySession), e)
+      }
+    }
     sessionHandleToLivySession.put(sessionHandle, futureLivySession)
     sessionHandle
   }
@@ -281,11 +290,16 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
       removedSession.value match {
         case Some(Success(interactiveSession)) =>
           onUserSessionClosed(sessionHandle, interactiveSession)
+        case Some(Failure(e: ThriftSessionCreationException)) =>
+          e.livySession.foreach(onUserSessionClosed(sessionHandle, _))
         case None =>
-          removedSession.onSuccess {
-            case interactiveSession => onUserSessionClosed(sessionHandle, interactiveSession)
+          removedSession.onComplete {
+            case Success(interactiveSession) =>
+              onUserSessionClosed(sessionHandle, interactiveSession)
+            case Failure(e: ThriftSessionCreationException) =>
+              e.livySession.foreach(onUserSessionClosed(sessionHandle, _))
           }
-        case _ => // nothing to do
+        case _ => // We should never get here
       }
     } finally {
       decrementConnections(removedSessionInfo)
@@ -611,3 +625,10 @@ object LivyThriftSessionManager extends Logging {
     }
   }
 }
+
+/**
+ * Exception which happened during the session creation and/or initialization. It contains the
+ * `livySession` (if it was created) where the error occurred and the `cause` of the error.
+ */
+class ThriftSessionCreationException(val livySession: Option[InteractiveSession], cause: Throwable)
+  extends Exception(cause)
