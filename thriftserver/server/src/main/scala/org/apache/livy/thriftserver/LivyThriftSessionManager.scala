@@ -123,24 +123,27 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
     }
   }
 
-  def numberOfActiveUsers(livySessionId: Int): Int = synchronized {
-    managedLivySessionActiveUsers.getOrElse(livySessionId, 0)
-  }
-
   def onLivySessionOpened(livySession: InteractiveSession): Unit = {
     server.livySessionManager.register(livySession)
+    synchronized {
+      managedLivySessionActiveUsers += livySession.id -> 0
+    }
   }
 
   def onUserSessionClosed(sessionHandle: SessionHandle, livySession: InteractiveSession): Unit = {
     val closeSession = synchronized[Boolean] {
-      val activeUsers = managedLivySessionActiveUsers(livySession.id)
-      if (activeUsers == 1) {
-        // it was the last user, so we can close the LivySession
-        managedLivySessionActiveUsers -= livySession.id
-        true
-      } else {
-        managedLivySessionActiveUsers(livySession.id) = activeUsers - 1
-        false
+      managedLivySessionActiveUsers.get(livySession.id) match {
+        case Some(1) =>
+          // it was the last user, so we can close the LivySession
+          managedLivySessionActiveUsers -= livySession.id
+          true
+        case Some(activeUsers) =>
+          managedLivySessionActiveUsers(livySession.id) = activeUsers - 1
+          false
+        case None =>
+          // This case can happen when we don't track the number of active users because the session
+          // has not been created in the thriftserver (ie. it has been created in the REST API).
+          false
       }
     }
     if (closeSession) {
@@ -258,7 +261,9 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
           val livySession =
             getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
           synchronized {
-            managedLivySessionActiveUsers(livySession.id) = numberOfActiveUsers(livySession.id) + 1
+            managedLivySessionActiveUsers.get(livySession.id).foreach { numUsers =>
+              managedLivySessionActiveUsers(livySession.id) = numUsers + 1
+            }
           }
           initSession(sessionHandle, livySession, initStatements)
           livySession
