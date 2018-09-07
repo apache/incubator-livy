@@ -360,7 +360,7 @@ class InteractiveSession(
     id: Int,
     appIdHint: Option[String],
     appTag: String,
-    client: Option[RSCClient],
+    val client: Option[RSCClient],
     initialState: SessionState,
     val kind: Kind,
     heartbeatTimeoutS: Int,

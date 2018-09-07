@@ -83,6 +83,7 @@
     <spark.scala-2.11.version>1.6.2</spark.scala-2.11.version>
     <spark.scala-2.10.version>1.6.2</spark.scala-2.10.version>
     <spark.version>${spark.scala-2.11.version}</spark.version>
+    <hive.version>3.0.0</hive.version>
     <commons-codec.version>1.9</commons-codec.version>
     <guava.version>15.0</guava.version>
     <httpclient.version>4.5.3</httpclient.version>
@@ -92,6 +93,7 @@
     <jetty.version>9.2.16.v20160414</jetty.version>
     <json4s.version>3.2.10</json4s.version>
     <junit.version>4.11</junit.version>
+    <libthrift.version>0.9.3</libthrift.version>
     <kryo.version>2.22</kryo.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.9.5</mockito.version>
@@ -570,10 +572,11 @@
         <version>${py4j.version}</version>
       </dependency>
 
+      <!-- we need a version > 1.7.13 because of SLF4J-324 -->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.0</version>
+        <version>1.7.25</version>
       </dependency>
 
     </dependencies>
@@ -1077,6 +1080,39 @@
   </distributionManagement>
 
   <profiles>
+    <profile>
+      <id>thriftserver</id>
+      <modules>
+        <module>thriftserver/server</module>
+      </modules>
+      <properties>
+        <jetty.version>9.3.8.v20160314</jetty.version>
+      </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-java</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireJavaVersion>
+                      <version>1.8</version>
+                    </requireJavaVersion>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <!-- Spark version profile -->
     <profile>
       <id>spark-1.6</id>
