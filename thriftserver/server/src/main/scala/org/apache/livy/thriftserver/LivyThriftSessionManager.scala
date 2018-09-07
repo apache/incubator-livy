@@ -173,18 +173,19 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
       case Some(id) =>
         server.livySessionManager.get(id) match {
           case None =>
-            warn(s"Session id $id doesn't exist, so we will ignore it.")
-            createLivySession()
+            warn(s"InteractiveSession $id doesn't exist.")
+            throw new IllegalArgumentException(s"Session $id doesn't exist.")
           case Some(session) if !server.isAllowedToUse(username, session) =>
-            warn(s"Session id $id doesn't belong to $username, so we will ignore it.")
-            createLivySession()
+            warn(s"$username has no modify permissions to InteractiveSession $id.")
+            throw new IllegalAccessException(
+              s"$username is not allowed to use InteractiveSession $id.")
           case Some(session) =>
             if (session.state.isActive) {
               info(s"Reusing Session $id for $sessionHandle.")
               session
             } else {
-              warn(s"Session id $id is not active anymore, so we will ignore it.")
-              createLivySession()
+              warn(s"InteractiveSession $id is not active anymore.")
+              throw new IllegalArgumentException(s"Session $id is not active anymore.")
             }
         }
       case None =>
