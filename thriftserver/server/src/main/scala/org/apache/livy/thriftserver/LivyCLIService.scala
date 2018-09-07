@@ -66,7 +66,7 @@ class LivyCLIService(server: LivyThriftServer)
       val principal = hiveConf.getVar(ConfVars.HIVE_SERVER2_SPNEGO_PRINCIPAL)
       val keyTabFile = hiveConf.getVar(ConfVars.HIVE_SERVER2_SPNEGO_KEYTAB)
       if (principal.isEmpty || keyTabFile.isEmpty) {
-        info(s"SPNego httpUGI not created, spNegoPrincipal: $principal, ketabFile: $keyTabFile")
+        info(s"SPNego httpUGI not created, SPNegoPrincipal: $principal, ketabFile: $keyTabFile")
       } else try {
         httpUGI = HiveAuthFactory.loginFromSpnegoKeytabAndReturnUGI(hiveConf)
         info("SPNego httpUGI successfully created.")
