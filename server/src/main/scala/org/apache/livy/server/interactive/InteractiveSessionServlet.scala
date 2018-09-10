@@ -52,14 +52,15 @@ class InteractiveSessionServlet(
 
   override protected def createSession(req: HttpServletRequest): InteractiveSession = {
     val createRequest = bodyAs[CreateInteractiveRequest](req)
-    val proxyUser = checkImpersonation(createRequest.proxyUser, req)
-    InteractiveSession.create(
-      sessionManager.nextId(),
-      remoteUser(req),
-      proxyUser,
-      livyConf,
-      createRequest,
-      sessionStore)
+    withHaltOnForbiddenAction {
+      InteractiveSession.create(
+        sessionManager.nextId(),
+        remoteUser(req),
+        livyConf,
+        accessManager,
+        createRequest,
+        sessionStore)
+    }
   }
 
   override protected[interactive] def clientSessionView(

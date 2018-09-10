@@ -56,6 +56,8 @@ class LivyServer extends Logging {
   private var executor: ScheduledExecutorService = _
   private var accessManager: AccessManager = _
 
+  private var ugi: UserGroupInformation = _
+
   def start(): Unit = {
     livyConf = new LivyConf().loadFromFile("livy.conf")
     accessManager = new AccessManager(livyConf)
@@ -115,6 +117,15 @@ class LivyServer extends Logging {
         error("Failed to run kinit, stopping the server.")
         sys.exit(1)
       }
+      // This is and should be the only place where a login() on the UGI is performed. Any
+      // other login should be avoided as it would change the current UGI leading to potential
+      // very bad conditions which may vary from not finding valid Kerberos credentials to other
+      // issues. If an other login in the codebase is strictly needed, a needLogin check should
+      // be added in order to avoid anyway that 2 login are performed.
+      if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+        UserGroupInformation.loginUserFromKeytab(launch_principal, launch_keytab)
+      }
+      ugi = UserGroupInformation.getCurrentUser
       startKinitThread(launch_keytab, launch_principal)
     }
 
@@ -133,6 +144,14 @@ class LivyServer extends Logging {
 
     server = new WebServer(livyConf, host, port)
     server.context.setResourceBase("src/main/org/apache/livy/server")
+
+    def invokeOnStaticThriftserver(method: String, args: (Class[_], Object)*): Object = {
+      val thriftserverObj = Class.forName("org.apache.livy.thriftserver.LivyThriftServer$")
+        .getField("MODULE$").get(null)
+      val (classes, values) = args.unzip
+      val m = thriftserverObj.getClass.getMethod(method, classes: _*)
+      m.invoke(thriftserverObj, values: _*)
+    }
 
     val livyVersionServlet = new JsonServlet {
       before() { contentType = "application/json" }
@@ -266,6 +285,15 @@ class LivyServer extends Logging {
       }
     })
 
+    if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+      invokeOnStaticThriftserver(
+        "start",
+        (classOf[LivyConf], livyConf),
+        (classOf[InteractiveSessionManager], interactiveSessionManager),
+        (classOf[SessionStore], sessionStore),
+        (classOf[AccessManager], accessManager))
+    }
+
     _serverUrl = Some(s"${server.protocol}://${server.host}:${server.port}")
     sys.props("livy.server.server-url") = _serverUrl.get
   }
@@ -292,6 +320,12 @@ class LivyServer extends Logging {
       new Runnable() {
         override def run(): Unit = {
           if (runKinit(keytab, principal)) {
+            // The current UGI should never change. If that happens, it is an error condition and
+            // relogin the original UGI would not update the current UGI. So the server will fail
+            // due to no valid credentials. The assert here allows to fast detect this error
+            // condition and fail immediately with a meaningful error.
+            assert(ugi.equals(UserGroupInformation.getCurrentUser), "Current UGI has changed.")
+            ugi.reloginFromTicketCache()
             // schedule another kinit run with a fixed delay.
             executor.schedule(this, refreshInterval, TimeUnit.MILLISECONDS)
           } else {

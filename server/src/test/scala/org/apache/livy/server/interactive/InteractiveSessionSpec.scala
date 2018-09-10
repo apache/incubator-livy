@@ -36,6 +36,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.apache.livy.{ExecuteRequest, JobHandle, LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.rsc.{PingJob, RSCClient, RSCConf}
 import org.apache.livy.rsc.driver.StatementState
+import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{PySpark, SessionState, Spark}
 import org.apache.livy.utils.{AppInfo, SparkApp}
@@ -51,6 +52,7 @@ class InteractiveSessionSpec extends FunSpec
   implicit val formats = DefaultFormats
 
   private var session: InteractiveSession = null
+  private val accessManager = new AccessManager(livyConf)
 
   private def createSession(
       sessionStore: SessionStore = mock[SessionStore],
@@ -68,7 +70,7 @@ class InteractiveSessionSpec extends FunSpec
       SparkLauncher.DRIVER_EXTRA_CLASSPATH -> sys.props("java.class.path"),
       RSCConf.Entry.LIVY_JARS.key() -> ""
     )
-    InteractiveSession.create(0, null, None, livyConf, req, sessionStore, mockApp)
+    InteractiveSession.create(0, null, livyConf, accessManager, req, sessionStore, mockApp)
   }
 
   private def executeStatement(code: String, codeType: Option[String] = None): JValue = {

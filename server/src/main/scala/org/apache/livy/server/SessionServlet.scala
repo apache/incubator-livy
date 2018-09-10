@@ -17,6 +17,7 @@
 
 package org.apache.livy.server
 
+import java.security.InvalidParameterException
 import javax.servlet.http.HttpServletRequest
 
 import org.scalatra._
@@ -157,24 +158,12 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser()
 
   /**
-   * Checks that the request's user can impersonate the target user.
-   *
-   * If the user does not have permission to impersonate, then halt execution.
-   *
-   * @return The user that should be impersonated. That can be the target user if defined, the
-   *         request's user - which may not be defined - otherwise, or `None` if impersonation is
-   *         disabled.
+   * Halts with `Forbidden` result when an `InvalidParameterException` occurs. This happens when a
+   * user tries to impersonate another user without having the right.
    */
-  protected def checkImpersonation(
-      target: Option[String],
-      req: HttpServletRequest): Option[String] = {
-    if (livyConf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
-      if (!target.map(hasSuperAccess(_, req)).getOrElse(true)) {
-        halt(Forbidden(s"User '${remoteUser(req)}' not allowed to impersonate '$target'."))
-      }
-      target.orElse(Option(remoteUser(req)))
-    } else {
-      None
+  protected def withHaltOnForbiddenAction(f: => S): S = {
+    try f catch {
+      case e: InvalidParameterException => halt(Forbidden(e.getMessage))
     }
   }
 
@@ -198,8 +187,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
    * Check that the request's user has admin access to resources owned by the given target user.
    */
   protected def hasSuperAccess(target: String, req: HttpServletRequest): Boolean = {
-    val user = remoteUser(req)
-    user == target || accessManager.checkSuperUser(user)
+    Session.hasSuperAccess(target, remoteUser(req), accessManager)
   }
 
   /**
