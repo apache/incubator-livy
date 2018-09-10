@@ -189,13 +189,6 @@
         <enabled>false</enabled>
       </snapshots>
     </repository>
-    <repository>
-      <id>repository.jboss.org</id>
-      <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
   </repositories>
 
   <modules>
@@ -1066,19 +1059,6 @@
     </plugins>
   </reporting>
 
-  <distributionManagement>
-    <repository>
-      <id>cdh.releases.repo</id>
-      <url>${repository.root}/cdh-staging-local</url>
-      <name>CDH Releases Repository</name>
-    </repository>
-    <snapshotRepository>
-      <id>cdh.snapshots.repo</id>
-      <url>${repository.root}/cdh-snapshot-local</url>
-      <name>CDH Snapshots Repository</name>
-    </snapshotRepository>
-  </distributionManagement>
-
   <profiles>
     <profile>
       <id>thriftserver</id>
@@ -1113,7 +1093,8 @@
         </plugins>
       </build>
     </profile>
-    <!-- Spark version profile -->
+
+    <!-- Spark version profiles -->
     <profile>
       <id>spark-1.6</id>
       <activation>
@@ -1279,39 +1260,39 @@
       </build>
     </profile>
 
-  <profile>
-    <!-- This will search remote and local repos to generate THIRD-PARTY license file, make sure
-    livy artifacts existed in either remote or local repos, otherwise run mvn install before. -->
-    <id>generate-third-party</id>
-    <activation>
-      <property>
-        <name>generate-third-party</name>
-      </property>
-    </activation>
-    <build>
-      <plugins>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <inherited>false</inherited>
-          <configuration>
-            <outputDirectory>${execution.root}</outputDirectory>
-            <thirdPartyFilename>THIRD-PARTY</thirdPartyFilename>
-            <sortArtifactByName>true</sortArtifactByName>
-            <fileTemplate>${execution.root}/dev/third-party-file.ftl</fileTemplate>
-          </configuration>
-          <executions>
-            <execution>
-              <phase>prepare-package</phase>
-              <goals>
-                <goal>aggregate-add-third-party</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </build>
-  </profile>
+    <profile>
+      <!-- This will search remote and local repos to generate THIRD-PARTY license file, make sure
+      livy artifacts existed in either remote or local repos, otherwise run mvn install before. -->
+      <id>generate-third-party</id>
+      <activation>
+        <property>
+          <name>generate-third-party</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <inherited>false</inherited>
+            <configuration>
+              <outputDirectory>${execution.root}</outputDirectory>
+              <thirdPartyFilename>THIRD-PARTY</thirdPartyFilename>
+              <sortArtifactByName>true</sortArtifactByName>
+              <fileTemplate>${execution.root}/dev/third-party-file.ftl</fileTemplate>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>aggregate-add-third-party</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
     <profile>
       <id>public-docs</id>
