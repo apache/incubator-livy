@@ -17,10 +17,13 @@
 
 package org.apache.livy.thriftserver
 
+import org.scalatra.ScalatraServlet
+
 import org.apache.livy.LivyConf
 import org.apache.livy.server.{AccessManager, ThriftServerFactory}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
+import org.apache.livy.thriftserver.ui.ThriftUIServlet
 
 class ThriftServerFactoryImpl extends ThriftServerFactory {
   override def start(
@@ -34,4 +37,6 @@ class ThriftServerFactoryImpl extends ThriftServerFactory {
     }
     LivyThriftServer.start(livyConf, livySessionManager, sessionStore, accessManager)
   }
+
+  override def getUI(basePath: String): ScalatraServlet = new ThriftUIServlet(basePath)
 }

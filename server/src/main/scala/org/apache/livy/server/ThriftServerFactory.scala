@@ -17,6 +17,8 @@
 
 package org.apache.livy.server
 
+import org.scalatra.ScalatraServlet
+
 import org.apache.livy.LivyConf
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
@@ -30,6 +32,8 @@ trait ThriftServerFactory {
     livySessionManager: InteractiveSessionManager,
     sessionStore: SessionStore,
     accessManager: AccessManager): Unit
+
+  def getUI(basePath: String): ScalatraServlet
 }
 
 object ThriftServerFactory {

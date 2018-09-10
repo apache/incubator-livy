@@ -19,91 +19,41 @@ package org.apache.livy.server.ui
 
 import scala.xml.Node
 
-import org.scalatra.ScalatraServlet
+import org.apache.livy.LivyConf
 
-class UIServlet(val basePath: String) extends ScalatraServlet {
+class UIServlet(val basePath: String, livyConf: LivyConf) extends BaseServlet {
   before() { contentType = "text/html" }
 
-  sealed trait Page { val name: String }
-  private case class SimplePage(name: String) extends Page
-  private case class AllSessionsPage(name: String = "Sessions") extends Page
+  def thriftServerNavTab: Seq[Node] = if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+    <li><a href={basePath + "/thriftserver/"}>Thrift Server</a></li>
+  } else {
+    Seq.empty
+  }
+
+  private case class AllSessionsPage(name: String = "Sessions") extends Page {
+    override def getNavTabs: Seq[Node] = thriftServerNavTab ++
+      <li class="active"><a href="#">Sessions</a></li>
+  }
   private case class SessionPage(id: Int) extends Page {
     val name: String = "Session " + id
+    override def getNavTabs: Seq[Node] = {
+      thriftServerNavTab ++
+        <li><a href={basePath + "/ui"}>Sessions</a></li> ++
+        <li class="active"><a href="#">{name}</a></li>
+    }
   }
   private case class LogPage(sessionType: String, id: Int) extends Page {
     val sessionName: String = sessionType + " " + id
     val name: String = sessionName + " Log"
-  }
-
-  private def getHeader(pageName: String): Seq[Node] =
-    <head>
-      <link rel="stylesheet"
-            href={basePath + "/static/css/bootstrap.min.css"}
-            type="text/css"/>
-      <link rel="stylesheet"
-            href={basePath + "/static/css/dataTables.bootstrap.min.css"}
-            type="text/css"/>
-      <link rel="stylesheet" href={basePath + "/static/css/livy-ui.css"} type="text/css"/>
-      <script src={basePath + "/static/js/jquery-3.2.1.min.js"}></script>
-      <script src={basePath + "/static/js/bootstrap.min.js"}></script>
-      <script src={basePath + "/static/js/jquery.dataTables.min.js"}></script>
-      <script src={basePath + "/static/js/dataTables.bootstrap.min.js"}></script>
-      <script src={basePath + "/static/js/livy-ui.js"}></script>
-      <script type="text/javascript">
-        setBasePath({"'" + basePath + "'"});
-      </script>
-      <title>Livy - {pageName}</title>
-    </head>
-
-  private def wrapNavTabs(tabs: Seq[Node]): Seq[Node] =
-    <nav class="navbar navbar-default">
-      <div class="container-fluid">
-        <div class="navbar-header">
-          <a class="navbar-brand" href={basePath + "/ui"}>
-            <img alt="Livy" src={basePath + "/static/img/livy-mini-logo.png"}/>
-          </a>
-        </div>
-        <div class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
-            {tabs}
-          </ul>
-        </div>
-      </div>
-    </nav>
-
-  private def getNavBar(page: Page): Seq[Node] = {
-    val tabs: Seq[Node] = page match {
-      case _: AllSessionsPage => <li class="active"><a href="#">Sessions</a></li>
-      case sessionPage: SessionPage => {
+    override def getNavTabs: Seq[Node] = {
+      val sessionLink = if (sessionType == "Session") {
+        basePath + "/ui/session/" + id
+      } else "#"
+      thriftServerNavTab ++
         <li><a href={basePath + "/ui"}>Sessions</a></li> ++
-          <li class="active"><a href="#">{sessionPage.name}</a></li>
-      }
-      case logPage: LogPage => {
-        val sessionLink = if (logPage.sessionType == "Session") {
-          basePath + "/ui/session/" + logPage.id
-        } else "#"
-        <li><a href={basePath + "/ui"}>Sessions</a></li> ++
-          <li><a href={sessionLink}>{logPage.sessionName}</a></li> ++
-          <li class="active"><a href="#">Log</a></li>
-      }
-      case _ => Seq.empty
+        <li><a href={sessionLink}>{sessionName}</a></li> ++
+        <li class="active"><a href="#">Log</a></li>
     }
-    wrapNavTabs(tabs)
-  }
-
-  private def createPage(pageInfo: Page, pageContents: Seq[Node]): Seq[Node] =
-    <html>
-      {getHeader(pageInfo.name)}
-      <body>
-        <div class="container-fluid">
-          {getNavBar(pageInfo)}
-          {pageContents}
-        </div>
-      </body>
-    </html>
-
-  notFound {
-    createPage(SimplePage("404"), <h3>404 No Such Page</h3>)
   }
 
   get("/") {
