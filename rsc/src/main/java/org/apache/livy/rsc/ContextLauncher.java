@@ -160,14 +160,28 @@ class ContextLauncher {
       Utils.checkState(livyHome != null,
         "Need one of LIVY_HOME or %s set.", LIVY_JARS.key());
       File rscJars = new File(livyHome, "rsc-jars");
+      List<File> allJars = new ArrayList<>();
       if (!rscJars.isDirectory()) {
         rscJars = new File(livyHome, "rsc/target/jars");
+
+        // To ease development, also add the thriftserver's session jars to the Spark app.
+        // On a release package, these jars should have been packaged in the proper "rsc-jars"
+        // directory.
+        File tsJars = new File(livyHome, "thriftserver/session/target/jars");
+        if (tsJars.isDirectory()) {
+          allJars.add(tsJars);
+        }
       }
+
       Utils.checkState(rscJars.isDirectory(),
-        "Cannot find 'client-jars' directory under LIVY_HOME.");
+        "Cannot find rsc jars directory under LIVY_HOME.");
+      allJars.add(rscJars);
+
       List<String> jars = new ArrayList<>();
-      for (File f : rscJars.listFiles()) {
-         jars.add(f.getAbsolutePath());
+      for (File dir : allJars) {
+        for (File f : dir.listFiles()) {
+           jars.add(f.getAbsolutePath());
+        }
       }
       livyJars = Utils.join(jars, ",");
     }

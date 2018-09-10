@@ -22,12 +22,11 @@
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
     <version>0.6.0-incubating-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-rsc</artifactId>
-  <version>0.6.0-incubating-SNAPSHOT</version>
-  <packaging>jar</packaging>
 
   <properties>
     <copyright.header>${asf.copyright.header}</copyright.header>
@@ -153,7 +152,6 @@
                   <shadedPattern>org.apache.livy.shaded.kryo</shadedPattern>
                 </relocation>
               </relocations>
-              <outputFile>${project.build.directory}/jars/${project.artifactId}-${project.version}.jar</outputFile>
             </configuration>
           </execution>
         </executions>
@@ -174,6 +172,25 @@
                 spark-launcher_${scala.binary.version},
               </excludeArtifactIds>
               <outputDirectory>${project.build.directory}/jars</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-rsc-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.apache.livy</groupId>
+                  <artifactId>livy-rsc</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}/jars</outputDirectory>
+                </artifactItem>
+              </artifactItems>
             </configuration>
           </execution>
         </executions>

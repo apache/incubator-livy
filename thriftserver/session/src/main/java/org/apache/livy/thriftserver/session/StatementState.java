@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.livy.thriftserver.types
+package org.apache.livy.thriftserver.session;
 
-private[thriftserver] trait DataType {
-  def name: String
-}
+import java.util.Iterator;
 
-private[thriftserver] case class BasicDataType(name: String) extends DataType
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.types.StructType;
 
-private[thriftserver] case class StructField(name: String, dataType: DataType)
+import org.apache.livy.JobContext;
 
-private[thriftserver]case class StructType(fields: Array[StructField]) extends DataType {
-  val name = "struct"
-}
+/**
+ * State related to one user statement.
+ */
+class StatementState {
 
-private[thriftserver] case class ArrayType(elementsType: DataType) extends DataType {
-  val name = "array"
-}
+  final String schema;
+  final Iterator<Row> iter;
+  final DataType[] types;
 
-private[thriftserver] case class MapType(keyType: DataType, valueType: DataType) extends DataType {
-  val name = "map"
+  StatementState(StructType schema, Iterator<Row> iter) {
+    this.schema = schema.json();
+    this.iter = iter;
+    this.types = DataType.fromSpark(schema);
+  }
+
 }

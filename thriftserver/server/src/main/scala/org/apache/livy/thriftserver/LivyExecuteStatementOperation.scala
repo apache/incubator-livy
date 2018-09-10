@@ -26,7 +26,7 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
-import org.apache.hadoop.hive.serde2.thrift.ColumnBuffer
+import org.apache.hadoop.hive.serde2.thrift.{ColumnBuffer => ThriftColumnBuffer}
 import org.apache.hadoop.hive.shims.Utils
 import org.apache.hive.service.cli._
 import org.apache.hive.service.cli.operation.Operation
@@ -74,18 +74,17 @@ class LivyExecuteStatementOperation(
 
     // maxRowsL here typically maps to java.sql.Statement.getFetchSize, which is an int
     val maxRows = maxRowsL.toInt
-    val jsonSchema = rpcClient.fetchResultSchema(statementId).get()
-    val types = getInternalTypes(jsonSchema)
-    val livyColumnResultSet = rpcClient.fetchResult(statementId, types, maxRows).get()
+    val resultSet = rpcClient.fetchResult(sessionHandle, statementId, maxRows).get()
 
-    val thriftColumns = livyColumnResultSet.columns.map { col =>
-      new ColumnBuffer(toHiveThriftType(col.dataType), col.getNulls, col.getColumnValues)
+    val thriftColumns = resultSet.getColumns().map { col =>
+      new ThriftColumnBuffer(toHiveThriftType(col.getType()), col.getNulls(), col.getValues())
     }
-    val result = new ColumnBasedSet(tableSchemaFromSparkJson(jsonSchema).toTypeDescriptors,
+    val result = new ColumnBasedSet(
+      toHiveTableSchema(resultSet.getSchema()).toTypeDescriptors,
       thriftColumns.toList.asJava,
       rowOffset)
-    livyColumnResultSet.columns.headOption.foreach { c =>
-      rowOffset += c.size
+    if (resultSet.getColumns() != null && resultSet.getColumns().length > 0) {
+      rowOffset += resultSet.getColumns()(0).size()
     }
     result
   }
@@ -173,7 +172,8 @@ class LivyExecuteStatementOperation(
   }
 
   def getResultSetSchema: TableSchema = {
-    val tableSchema = tableSchemaFromSparkJson(rpcClient.fetchResultSchema(statementId).get())
+    val tableSchema = toHiveTableSchema(
+      rpcClient.fetchResultSchema(sessionHandle, statementId).get())
     // Workaround for operations returning an empty schema (eg. CREATE, INSERT, ...)
     if (tableSchema.getSize == 0) {
       tableSchema.addStringColumn("Result", "")
@@ -183,7 +183,7 @@ class LivyExecuteStatementOperation(
 
   private def cleanup(state: OperationState) {
     if (statementId != null && rpcClientValid) {
-      rpcClient.cleanupStatement(statementId).get()
+      rpcClient.cleanupStatement(sessionHandle, statementId).get()
     }
     setState(state)
   }

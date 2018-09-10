@@ -15,21 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.livy.thriftserver.serde
+package org.apache.livy.thriftserver.session;
 
-import org.apache.livy.thriftserver.types.DataType
+import org.apache.livy.Job;
+import org.apache.livy.JobContext;
 
 /**
- * Utility class for (de-)serialize the results from the Spark application and Livy thriftserver.
+ * Job used to fetch the schema of query's results.
  */
-class ColumnOrientedResultSet(val types: Array[DataType]) {
-  val columns: Array[ColumnBuffer] = types.map(new ColumnBuffer(_))
-  def addRow(fields: Array[AnyRef]): Unit = {
-    var i = 0
-    while (i < fields.length) {
-      val field = fields(i)
-      columns(i).addValue(field)
-      i += 1
-    }
+public class FetchResultSchemaJob implements Job<String> {
+
+  private final String sessionId;
+  private final String statementId;
+
+  public FetchResultSchemaJob() {
+    this(null, null);
   }
+
+  public FetchResultSchemaJob(String sessionId, String statementId) {
+    this.sessionId = sessionId;
+    this.statementId = statementId;
+  }
+
+  @Override
+  public String call(JobContext ctx) {
+    ThriftSessionState session = ThriftSessionState.get(ctx, sessionId);
+    return session.findStatement(statementId).schema;
+  }
+
 }
