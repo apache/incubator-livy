@@ -249,7 +249,12 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val uploadPyFilePath = createTempFilesForTest("upload_pyfile", ".py",
       uploadPyFileContent, false)
 
-    val builder = new ProcessBuilder(Seq("python", createPyTestsForPythonAPI().toString).asJava)
+    val tmpDir = new File(sys.props("java.io.tmpdir")).getAbsoluteFile()
+    val testDir = Files.createTempDirectory(tmpDir.toPath(), "python-tests-").toFile()
+    val testFile = createPyTestsForPythonAPI(testDir)
+
+    val builder = new ProcessBuilder(Seq("python", testFile.getAbsolutePath()).asJava)
+    builder.directory(testDir)
 
     val env = builder.environment()
     env.put("LIVY_END_POINT", livyEndpoint)
@@ -258,8 +263,8 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     env.put("UPLOAD_FILE_URL", uploadFilePath)
     env.put("UPLOAD_PYFILE_URL", uploadPyFilePath)
 
-    builder.redirectOutput(new File(sys.props("java.io.tmpdir") + "/pytest_results.log"))
     builder.redirectErrorStream(true)
+    builder.redirectOutput(new File(tmpDir, "pytest_results.log"))
 
     val process = builder.start()
 
@@ -268,11 +273,10 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     assert(process.exitValue() === 0)
   }
 
-  private def createPyTestsForPythonAPI(): File = {
-    var source: InputStream = null
+  private def createPyTestsForPythonAPI(testDir: File): File = {
+    val file = Files.createTempFile(testDir.toPath(), "test_python_api-", ".py").toFile()
+    val source = getClass().getClassLoader().getResourceAsStream("test_python_api.py")
     try {
-      source = getClass.getClassLoader.getResourceAsStream("test_python_api.py")
-      val file = Files.createTempFile("", "").toFile
       Files.copy(source, file.toPath, StandardCopyOption.REPLACE_EXISTING)
       file
     } finally {
