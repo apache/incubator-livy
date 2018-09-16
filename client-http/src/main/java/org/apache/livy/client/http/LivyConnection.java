@@ -41,6 +41,7 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.NoConnectionReuseStrategy;
@@ -49,6 +50,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.util.CharsetUtils;
 import org.apache.http.util.EntityUtils;
 
 import static org.apache.livy.client.http.HttpConf.Entry.*;
@@ -188,6 +190,8 @@ class LivyConnection {
     HttpPost post = new HttpPost();
     MultipartEntityBuilder builder = MultipartEntityBuilder.create();
     builder.addPart(paramName, new FileBody(f));
+    builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+    builder.setCharset(CharsetUtils.get("UTF-8"));
     post.setEntity(builder.build());
     return sendRequest(post, retType, uri, uriParams);
   }

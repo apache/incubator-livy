@@ -34,6 +34,8 @@ add_file_url = os.environ.get("ADD_FILE_URL")
 add_pyfile_url = os.environ.get("ADD_PYFILE_URL")
 upload_file_url = os.environ.get("UPLOAD_FILE_URL")
 upload_pyfile_url = os.environ.get("UPLOAD_PYFILE_URL")
+add_non_ascii_file_url = os.environ.get("ADD_NON_ASCII_FILE_URL")
+upload_non_ascii_file_url = os.environ.get("UPLOAD_NON_ASCII_FILE_URL")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -214,6 +216,43 @@ def test_upload_pyfile():
         pyfile_module = __import__ (upload_pyfile_name)
         return pyfile_module.test_upload_pyfile()
     process_job(upload_pyfile_job, "hello from uploadpyfile")
+
+
+def test_add_non_ascii_file():
+    add_non_ascii_file_name = os.path.basename(add_non_ascii_file_url).decode('utf-8')
+    json_data = json.dumps({'uri': add_non_ascii_file_url})
+    request_url = livy_end_point + "/sessions/" + str(session_id) + "/add-file"
+    header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
+    response = requests.request('POST', request_url, headers=header, data=json_data)
+
+    assert response.status_code == httplib.OK
+
+    def add_non_ascii_file_job(context):
+        from pyspark import SparkFiles
+        with open(SparkFiles.get(add_non_ascii_file_name)) as testFile:
+            file_val = testFile.readline()
+        return file_val
+
+    process_job(add_non_ascii_file_job, "hello from non-ascii addfile")
+
+
+def test_upload_non_ascii_file():
+    upload_non_ascii_file = open(upload_non_ascii_file_url)
+    upload_non_ascii_file_name = os.path.basename(upload_non_ascii_file.name).decode('utf-8')
+    request_url = livy_end_point + "/sessions/" + str(session_id) + "/upload-file"
+    files = {'file': upload_non_ascii_file}
+    header = {'X-Requested-By': 'livy'}
+    response = requests.request('POST', request_url, headers=header, files=files)
+
+    assert response.status_code == httplib.OK
+
+    def upload_non_ascii_file_job(context):
+        from pyspark import SparkFiles
+        with open(SparkFiles.get(upload_non_ascii_file_name)) as testFile:
+            file_val = testFile.readline()
+        return file_val
+
+    process_job(upload_non_ascii_file_job, "hello from non-ascii uploadfile")
 
 
 if __name__ == '__main__':

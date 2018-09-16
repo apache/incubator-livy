@@ -130,6 +130,8 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     withClient("should upload files and jars") {
       uploadAndVerify("file")
       uploadAndVerify("jar")
+      uploadNonASCIIAndVerify("file")
+      uploadNonASCIIAndVerify("jar")
     }
 
     withClient("should cancel jobs") {
@@ -214,6 +216,27 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     captor.getValue.read(b)
     assert(expectedStr === new String(b))
   }
+
+  // Scalastyle is treating unicode escape as non ascii characters. Turn off the check.
+  // scalastyle:off non.ascii.character.disallowed
+  private def uploadNonASCIIAndVerify(cmd: String): Unit = {
+    val f = File.createTempFile("файл", cmd)
+    val expectedStr = "Test data"
+    val expectedData = expectedStr.getBytes()
+    Files.write(Paths.get(f.getAbsolutePath), expectedData)
+    val b = new Array[Byte](expectedData.length)
+    val captor = ArgumentCaptor.forClass(classOf[InputStream])
+    if (cmd == "file") {
+      client.uploadFile(f).get(TIMEOUT_S, TimeUnit.SECONDS)
+      verify(session, times(1)).addFile(captor.capture(), meq(f.getName))
+    } else {
+      client.uploadJar(f).get(TIMEOUT_S, TimeUnit.SECONDS)
+      verify(session, times(1)).addJar(captor.capture(), meq(f.getName))
+    }
+    captor.getValue.read(b)
+    assert(expectedStr === new String(b))
+  }
+  // scalastyle:on non.ascii.character.disallowed
 
   private def runJob(sync: Boolean, genStatusFn: Long => Seq[JobStatus]): (Long, JFuture[Int]) = {
     val jobId = java.lang.Long.valueOf(ID_GENERATOR.incrementAndGet())

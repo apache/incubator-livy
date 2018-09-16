@@ -17,7 +17,7 @@
 
 package org.apache.livy.server.interactive
 
-import java.net.URI
+import java.net.{URI, URLDecoder}
 import javax.servlet.http.HttpServletRequest
 
 import scala.collection.JavaConverters._
@@ -181,7 +181,7 @@ class InteractiveSessionServlet(
     withModifyAccessSession { lsession =>
       fileParams.get("jar") match {
         case Some(file) =>
-          lsession.addJar(file.getInputStream, file.name)
+          lsession.addJar(file.getInputStream, resolveResourceName(file.name))
         case None =>
           BadRequest("No jar sent!")
       }
@@ -192,7 +192,7 @@ class InteractiveSessionServlet(
     withModifyAccessSession { lsession =>
       fileParams.get("file") match {
         case Some(file) =>
-          lsession.addJar(file.getInputStream, file.name)
+          lsession.addJar(file.getInputStream, resolveResourceName(file.name))
         case None =>
           BadRequest("No file sent!")
       }
@@ -203,7 +203,7 @@ class InteractiveSessionServlet(
     withModifyAccessSession { lsession =>
       fileParams.get("file") match {
         case Some(file) =>
-          lsession.addFile(file.getInputStream, file.name)
+          lsession.addFile(file.getInputStream, resolveResourceName(file.name))
         case None =>
           BadRequest("No file sent!")
       }
@@ -247,4 +247,21 @@ class InteractiveSessionServlet(
     val uri = new URI(req.uri)
     session.addJar(uri)
   }
+
+  /**
+    * This function used to decode fileName which is uploaded to spark through python api.
+    * see detail: https://github.com/requests/requests/issues/2117
+    * @param utf8EncodeName
+    * @return
+    */
+  private def resolveResourceName(utf8EncodeName: String): String = {
+    val utf8EncodeTag = "utf-8\'\'"
+    if (utf8EncodeName != null && utf8EncodeName.startsWith(utf8EncodeTag)) {
+      val utf8FileName = utf8EncodeName.substring(utf8EncodeTag.length)
+      URLDecoder.decode(utf8FileName, "utf-8")
+    } else {
+      utf8EncodeName
+    }
+  }
+
 }
