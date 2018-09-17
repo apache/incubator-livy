@@ -39,7 +39,7 @@ matrix:
 
 
 jdk:
-  - openjdk8
+  - oraclejdk8
 
 addons:
   apt:
