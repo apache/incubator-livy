@@ -101,6 +101,10 @@ object MiniYarnMain extends MiniClusterBase {
       config.localDirCount, config.logDirCount)
     yarnCluster.init(baseConfig)
 
+    // This allows applications run by YARN during the integration tests to find PIP modules
+    // installed in the user's home directory (instead of just the global ones).
+    baseConfig.set(YarnConfiguration.NM_USER_HOME_DIR, sys.env("HOME"))
+
     // Install a shutdown hook for stop the service and kill all running applications.
     Runtime.getRuntime().addShutdownHook(new Thread() {
       override def run(): Unit = yarnCluster.stop()
@@ -283,8 +287,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
         sys.props("java.home") + "/bin/java",
         "-Dtest.appender=console",
         "-Djava.io.tmpdir=" + procTmp.getAbsolutePath(),
-        "-cp", childClasspath + File.pathSeparator + configDir.getAbsolutePath(),
-        "-XX:MaxPermSize=256m") ++
+        "-cp", childClasspath + File.pathSeparator + configDir.getAbsolutePath()) ++
       extraJavaArgs ++
       Seq(
         klass.getName().stripSuffix("$"),
