@@ -137,8 +137,7 @@ object Session {
 
   /**
    * Checks that the requesting user can impersonate the target user.
-   *
-   * If the user does not have permission to impersonate, then halt execution.
+   * If the user does not have permission to impersonate, then throws an `AccessControlException`.
    *
    * @return The user that should be impersonated. That can be the target user if defined, the
    *         request's user - which may not be defined - otherwise, or `None` if impersonation is
