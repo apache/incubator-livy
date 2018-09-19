@@ -19,7 +19,7 @@ package org.apache.livy.sessions
 
 import java.io.InputStream
 import java.net.{URI, URISyntaxException}
-import java.security.{InvalidParameterException, PrivilegedExceptionAction}
+import java.security.{AccessControlException, PrivilegedExceptionAction}
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -151,7 +151,7 @@ object Session {
       accessManager: AccessManager): Option[String] = {
     if (livyConf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
       if (!target.forall(hasSuperAccess(_, requestUser, accessManager))) {
-        throw new InvalidParameterException(
+        throw new AccessControlException(
           s"User '$requestUser' not allowed to impersonate '$target'.")
       }
       target.orElse(Option(requestUser))

@@ -17,7 +17,7 @@
 
 package org.apache.livy.server
 
-import java.security.InvalidParameterException
+import java.security.AccessControlException
 import javax.servlet.http.HttpServletRequest
 
 import org.scalatra._
@@ -150,22 +150,13 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
 
   error {
     case e: IllegalArgumentException => BadRequest(e.getMessage)
+    case e: AccessControlException => Forbidden(e.getMessage)
   }
 
   /**
    * Returns the remote user for the given request. Separate method so that tests can override it.
    */
   protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser()
-
-  /**
-   * Halts with `Forbidden` result when an `InvalidParameterException` occurs. This happens when a
-   * user tries to impersonate another user without having the right.
-   */
-  protected def withHaltOnForbiddenAction(f: => S): S = {
-    try f catch {
-      case e: InvalidParameterException => halt(Forbidden(e.getMessage))
-    }
-  }
 
   /**
    * Check that the request's user has view access to resources owned by the given target user.

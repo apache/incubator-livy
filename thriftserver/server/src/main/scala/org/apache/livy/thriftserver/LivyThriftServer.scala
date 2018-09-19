@@ -26,7 +26,7 @@ import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hive.service.server.HiveServer2
 
 import org.apache.livy.{LivyConf, Logging}
-import org.apache.livy.server.AccessManager
+import org.apache.livy.server.{AccessManager, ThriftServerFactory}
 import org.apache.livy.server.interactive.InteractiveSession
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
@@ -35,7 +35,7 @@ import org.apache.livy.sessions.InteractiveSessionManager
  * The main entry point for the Livy thrift server leveraging HiveServer2. Starts up a
  * `HiveThriftServer2` thrift server.
  */
-object LivyThriftServer extends Logging {
+object LivyThriftServer extends ThriftServerFactory with Logging {
 
   // Visible for testing
   private[thriftserver] var thriftServerThread: Thread = _

@@ -117,11 +117,12 @@ class LivyServer extends Logging {
         error("Failed to run kinit, stopping the server.")
         sys.exit(1)
       }
-      // This is and should be the only place where a login() on the UGI is performed. Any
-      // other login should be avoided as it would change the current UGI leading to potential
-      // very bad conditions which may vary from not finding valid Kerberos credentials to other
-      // issues. If an other login in the codebase is strictly needed, a needLogin check should
-      // be added in order to avoid anyway that 2 login are performed.
+      // This is and should be the only place where a login() on the UGI is performed.
+      // If an other login in the codebase is strictly needed, a needLogin check should be added to
+      // avoid anyway that 2 logins are performed.
+      // This is needed because the thriftserver requires the UGI to be created from a keytab in
+      // order to work properly and previously Livy was using a UGI generated from the cached TGT
+      // (created by the kinit command).
       if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
         UserGroupInformation.loginUserFromKeytab(launch_principal, launch_keytab)
       }
@@ -144,14 +145,6 @@ class LivyServer extends Logging {
 
     server = new WebServer(livyConf, host, port)
     server.context.setResourceBase("src/main/org/apache/livy/server")
-
-    def invokeOnStaticThriftserver(method: String, args: (Class[_], Object)*): Object = {
-      val thriftserverObj = Class.forName("org.apache.livy.thriftserver.LivyThriftServer$")
-        .getField("MODULE$").get(null)
-      val (classes, values) = args.unzip
-      val m = thriftserverObj.getClass.getMethod(method, classes: _*)
-      m.invoke(thriftserverObj, values: _*)
-    }
 
     val livyVersionServlet = new JsonServlet {
       before() { contentType = "application/json" }
@@ -286,12 +279,8 @@ class LivyServer extends Logging {
     })
 
     if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
-      invokeOnStaticThriftserver(
-        "start",
-        (classOf[LivyConf], livyConf),
-        (classOf[InteractiveSessionManager], interactiveSessionManager),
-        (classOf[SessionStore], sessionStore),
-        (classOf[AccessManager], accessManager))
+      ThriftServerFactory.getInstance.start(
+        livyConf, interactiveSessionManager, sessionStore, accessManager)
     }
 
     _serverUrl = Some(s"${server.protocol}://${server.host}:${server.port}")
