@@ -15,26 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.livy.server
+package org.apache.livy.thriftserver
 
 import org.apache.livy.LivyConf
+import org.apache.livy.server.{AccessManager, ThriftServerFactory}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
 
-/**
- * Its implementation starts Livy ThriftServer
- */
-trait ThriftServerFactory {
-  def start(
-    livyConf: LivyConf,
-    livySessionManager: InteractiveSessionManager,
-    sessionStore: SessionStore,
-    accessManager: AccessManager): Unit
-}
-
-object ThriftServerFactory {
-  def getInstance: ThriftServerFactory = {
-    Class.forName("org.apache.livy.thriftserver.ThriftServerFactoryImpl").newInstance()
-      .asInstanceOf[ThriftServerFactory]
+class ThriftServerFactoryImpl extends ThriftServerFactory {
+  override def start(
+      livyConf: LivyConf,
+      livySessionManager: InteractiveSessionManager,
+      sessionStore: SessionStore,
+      accessManager: AccessManager): Unit = {
+    if (LivyThriftServer.getInstance.isDefined) {
+      throw new RuntimeException(s"A ${classOf[LivyThriftServer].getName} has been already " +
+        s"started, so a new one cannot be started.")
+    }
+    LivyThriftServer.start(livyConf, livySessionManager, sessionStore, accessManager)
   }
 }
