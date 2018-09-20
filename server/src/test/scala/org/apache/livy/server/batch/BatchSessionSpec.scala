@@ -17,7 +17,7 @@
 
 package org.apache.livy.server.batch
 
-import java.io.FileWriter
+import java.io.{ByteArrayInputStream, FileWriter}
 import java.nio.file.{Files, Path}
 import java.util.concurrent.TimeUnit
 
@@ -32,6 +32,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf, Utils}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.SessionState
+import org.apache.livy.sessions.SessionState.{NotStarted, Starting}
 import org.apache.livy.utils.{AppInfo, SparkApp}
 
 class BatchSessionSpec
@@ -57,6 +58,7 @@ class BatchSessionSpec
 
   describe("A Batch process") {
     var sessionStore: SessionStore = null
+    val tmpDir = sys.props("java.io.tmpdir")
 
     before {
       sessionStore = mock[SessionStore]
@@ -67,7 +69,7 @@ class BatchSessionSpec
       req.file = script.toString
       req.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
 
-      val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
+      val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, tmpDir)
       val batch = BatchSession.create(0, req, conf, null, None, sessionStore)
 
       Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
@@ -108,6 +110,34 @@ class BatchSessionSpec
       batch.appIdKnown("appId")
       verify(sessionStore, atLeastOnce()).save(
         Matchers.eq(BatchSession.RECOVERY_SESSION_TYPE), anyObject())
+    }
+
+    it("should upload file and create delayed process") {
+      val req = new CreateBatchRequest()
+      req.delayed = Some("true")
+      req.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
+
+      val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, tmpDir)
+        .set(LivyConf.SESSION_STAGING_DIR, tmpDir)
+      val batch = BatchSession.create(0, req,
+        conf, null, None, sessionStore)
+
+      batch.state should be(NotStarted)
+
+      val fileName = script.getFileName.toString
+      batch.setFile(new ByteArrayInputStream(Files.readAllBytes(script)), fileName)
+      req.file should not be empty
+
+      val startedBatch = batch.startDelayed()
+      startedBatch.state should be(Starting)
+
+      Utils.waitUntil({ () => !startedBatch.state.isActive }, Duration(10, TimeUnit.SECONDS))
+      (startedBatch.state match {
+        case SessionState.Success(_) => true
+        case _ => false
+      }) should be (true)
+
+      startedBatch.logLines() should contain("hello world")
     }
   }
 }

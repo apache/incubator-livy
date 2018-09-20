@@ -19,6 +19,9 @@ package org.apache.livy.server.batch
 
 import javax.servlet.http.HttpServletRequest
 
+import org.scalatra.{BadRequest, Ok}
+import org.scalatra.servlet.FileUploadSupport
+
 import org.apache.livy.LivyConf
 import org.apache.livy.server.{AccessManager, SessionServlet}
 import org.apache.livy.server.recovery.SessionStore
@@ -38,6 +41,7 @@ class BatchSessionServlet(
     livyConf: LivyConf,
     accessManager: AccessManager)
   extends SessionServlet(sessionManager, livyConf, accessManager)
+    with FileUploadSupport
 {
 
   override protected def createSession(req: HttpServletRequest): BatchSession = {
@@ -65,4 +69,54 @@ class BatchSessionServlet(
     BatchSessionView(session.id, session.state.toString, session.appId, session.appInfo, logs)
   }
 
+  get("/:id/start") {
+    withModifyAccessSession { lsession =>
+      sessionManager.register(lsession.startDelayed())
+      Ok(Map("msg" -> "started"))
+    }
+  }
+
+  post("/:id/add-jar") {
+    withModifyAccessSession { lsession =>
+      fileParams.get("jar") match {
+        case Some(file) =>
+          lsession.addJar(file.getInputStream, file.name)
+        case None =>
+          BadRequest("No jar sent!")
+      }
+    }
+  }
+
+  post("/:id/add-pyfile") {
+    withModifyAccessSession { lsession =>
+      fileParams.get("file") match {
+        case Some(file) =>
+          lsession.addPyFile(file.getInputStream, file.name)
+        case None =>
+          BadRequest("No file sent!")
+      }
+    }
+  }
+
+  post("/:id/add-file") {
+    withModifyAccessSession { lsession =>
+      fileParams.get("file") match {
+        case Some(file) =>
+          lsession.addFile(file.getInputStream, file.name)
+        case None =>
+          BadRequest("No file sent!")
+      }
+    }
+  }
+
+  post("/:id/set-file") {
+    withModifyAccessSession { lsession =>
+      fileParams.get("file") match {
+        case Some(file) =>
+          lsession.setFile(file.getInputStream, file.name)
+        case None =>
+          BadRequest("No file sent!")
+      }
+    }
+  }
 }

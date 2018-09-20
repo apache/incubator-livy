@@ -57,12 +57,14 @@ abstract class BaseSessionServletSpec[S <: Session, R <: RecoveryMetadata]
 
   /** Create a LivyConf with impersonation enabled and a superuser. */
   protected def createConf(): LivyConf = {
+    val tmpDir = sys.props("java.io.tmpdir")
     new LivyConf()
       .set(LivyConf.IMPERSONATION_ENABLED, true)
       .set(LivyConf.SUPERUSERS, ADMIN)
       .set(LivyConf.ACCESS_CONTROL_VIEW_USERS, VIEW_USER)
       .set(LivyConf.ACCESS_CONTROL_MODIFY_USERS, MODIFY_USER)
-      .set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
+      .set(LivyConf.LOCAL_FS_WHITELIST, tmpDir)
+      .set(LivyConf.SESSION_STAGING_DIR, tmpDir)
   }
 
   override def afterAll(): Unit = {

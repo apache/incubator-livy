@@ -17,7 +17,9 @@
 
 package org.apache.livy.server.batch
 
+import java.io.InputStream
 import java.lang.ProcessBuilder.Redirect
+import java.net.URI
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -27,7 +29,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.server.SessionServlet
 import org.apache.livy.sessions.{Session, SessionState}
 import org.apache.livy.sessions.Session._
 import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
@@ -110,15 +111,28 @@ object BatchSession extends Logging {
 
     info(s"Creating batch session $id: [owner: $owner, request: $request]")
 
-    new BatchSession(
-      id,
-      appTag,
-      SessionState.Starting,
-      livyConf,
-      owner,
-      proxyUser,
-      sessionStore,
-      mockApp.map { m => (_: BatchSession) => m }.getOrElse(createSparkApp))
+    request.delayed.map("true".equalsIgnoreCase(_)).getOrElse(false) match {
+      case true => new BatchSession(
+        id,
+        appTag,
+        SessionState.NotStarted,
+        livyConf,
+        owner,
+        proxyUser,
+        Some(request),
+        sessionStore,
+        _ => null)
+      case false => new BatchSession(
+        id,
+        appTag,
+        SessionState.Starting,
+        livyConf,
+        owner,
+        proxyUser,
+        None,
+        sessionStore,
+        mockApp.map { m => (_: BatchSession) => m }.getOrElse(createSparkApp))
+    }
   }
 
   def recover(
@@ -133,6 +147,7 @@ object BatchSession extends Logging {
       livyConf,
       m.owner,
       m.proxyUser,
+      None,
       sessionStore,
       mockApp.map { m => (_: BatchSession) => m }.getOrElse { s =>
         SparkApp.create(m.appTag, m.appId, None, livyConf, Option(s))
@@ -147,6 +162,7 @@ class BatchSession(
     livyConf: LivyConf,
     owner: String,
     override val proxyUser: Option[String],
+    request: Option[CreateBatchRequest],
     sessionStore: SessionStore,
     sparkApp: BatchSession => SparkApp)
   extends Session(id, owner, livyConf) with SparkAppListener {
@@ -159,10 +175,10 @@ class BatchSession(
 
   override def state: SessionState = _state
 
-  override def logLines(): IndexedSeq[String] = app.log()
+  override def logLines(): IndexedSeq[String] = if (app == null) IndexedSeq() else app.log()
 
   override def stopSession(): Unit = {
-    app.kill()
+    if (app != null) app.kill()
   }
 
   override def appIdKnown(appId: String): Unit = {
@@ -190,4 +206,59 @@ class BatchSession(
 
   override def recoveryMetadata: RecoveryMetadata =
     BatchRecoveryMetadata(id, appId, appTag, owner, proxyUser)
+
+  def startDelayed(): BatchSession = {
+    ensureDelayed()
+    recordActivity()
+
+    val req = request.get
+    req.delayed = None
+
+    create(id, req, livyConf, owner, proxyUser, sessionStore)
+  }
+
+  private def ensureDelayed(): Unit = synchronized {
+    val delayed = request.flatMap(_.delayed).map("true".equalsIgnoreCase(_)).getOrElse(false)
+    require(delayed, "Session isn't delayed.")
+  }
+
+  def setFile(fileStream: InputStream, fileName: String): Unit = {
+    setFile(copyResourceToHDFS(fileStream, fileName))
+  }
+
+  def addFile(fileStream: InputStream, fileName: String): Unit = {
+    addFile(copyResourceToHDFS(fileStream, fileName))
+  }
+
+  def addJar(jarStream: InputStream, jarName: String): Unit = {
+    addJar(copyResourceToHDFS(jarStream, jarName))
+  }
+
+  def addPyFile(pyFileStream: InputStream, pyFileName: String): Unit = {
+    addPyFile(copyResourceToHDFS(pyFileStream, pyFileName))
+  }
+
+  def setFile(uri: URI): Unit = {
+    ensureDelayed()
+    recordActivity()
+    request.foreach(req => req.file = resolveURI(uri, livyConf).toString)
+  }
+
+  def addFile(uri: URI): Unit = {
+    ensureDelayed()
+    recordActivity()
+    request.foreach(req => req.files = req.files :+ resolveURI(uri, livyConf).toString)
+  }
+
+  def addJar(uri: URI): Unit = {
+    ensureDelayed()
+    recordActivity()
+    request.foreach(req => req.jars = req.jars :+ resolveURI(uri, livyConf).toString)
+  }
+
+  def addPyFile(uri: URI): Unit = {
+    ensureDelayed()
+    recordActivity()
+    request.foreach(req => req.pyFiles = req.pyFiles :+ resolveURI(uri, livyConf).toString)
+  }
 }
