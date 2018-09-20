@@ -45,8 +45,8 @@ class InteractiveSessionSpec extends FunSpec
 
   private val livyConf = new LivyConf()
   livyConf.set(LivyConf.REPL_JARS, "dummy.jar")
-    .set(LivyConf.LIVY_SPARK_VERSION, "1.6.0")
-    .set(LivyConf.LIVY_SPARK_SCALA_VERSION, "2.10.5")
+    .set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
+    .set(LivyConf.LIVY_SPARK_SCALA_VERSION, sys.env("LIVY_SCALA_VERSION"))
 
   implicit val formats = DefaultFormats
 
@@ -111,7 +111,7 @@ class InteractiveSessionSpec extends FunSpec
       )
       val livyConf = new LivyConf(false)
         .set(LivyConf.REPL_JARS, testedJars.mkString(","))
-        .set(LivyConf.LIVY_SPARK_VERSION, "1.6.2")
+        .set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
         .set(LivyConf.LIVY_SPARK_SCALA_VERSION, "2.10")
       val properties = InteractiveSession.prepareBuilderProp(Map.empty, Spark, livyConf)
       assert(properties(LivyConf.SPARK_JARS).split(",").toSet === Set("test_2.10-0.1.jar",
@@ -137,7 +137,7 @@ class InteractiveSessionSpec extends FunSpec
       val livyConf = new LivyConf(false)
         .set(LivyConf.REPL_JARS, "dummy.jar")
         .set(LivyConf.RSC_JARS, rscJars.mkString(","))
-        .set(LivyConf.LIVY_SPARK_VERSION, "1.6.2")
+        .set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
         .set(LivyConf.LIVY_SPARK_SCALA_VERSION, "2.10")
       val properties = InteractiveSession.prepareBuilderProp(Map.empty, Spark, livyConf)
       // if livy.rsc.jars is configured in LivyConf, it should be passed to RSCConf.

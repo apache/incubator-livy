@@ -65,7 +65,7 @@ class PiJob implements
 
 /**
  * Example execution:
- * java -cp /pathTo/spark-core_2.10-*version*.jar:/pathTo/livy-api-*version*.jar:
+ * java -cp /pathTo/spark-core_2.11-*version*.jar:/pathTo/livy-api-*version*.jar:
  * /pathTo/livy-client-http-*version*.jar:/pathTo/livy-examples-*version*.jar
  * org.apache.livy.examples.PiApp http://livy-host:8998 2
  */

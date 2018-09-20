@@ -54,16 +54,14 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
         |SELECT * FROM people
       """.stripMargin)
 
-    // In Spark 1.6, 2.0, 2.2 the "nullable" field of column "age" is false. In spark 2.1, this
-    // field is true.
-    val expectedResult = (nullable: Boolean) => {
+    resp1 should equal(
       Interpreter.ExecuteSuccess(
         APPLICATION_JSON -> (("schema" ->
           (("type" -> "struct") ~
             ("fields" -> List(
               ("name" -> "name") ~ ("type" -> "string") ~ ("nullable" -> true) ~
                 ("metadata" -> List()),
-              ("name" -> "age") ~ ("type" -> "integer") ~ ("nullable" -> nullable) ~
+              ("name" -> "age") ~ ("type" -> "integer") ~ ("nullable" -> false) ~
                 ("metadata" -> List())
             )))) ~
           ("data" -> List(
@@ -71,13 +69,7 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
             List[JValue]("Michael", 21)
           )))
       )
-    }
-
-    val result = Try { resp1 should equal(expectedResult(false))}
-      .orElse(Try { resp1 should equal(expectedResult(true)) })
-    if (result.isFailure) {
-      fail(s"$resp1 doesn't equal to expected result")
-    }
+    )
 
     // Test empty result
      val resp2 = interpreter.execute(
@@ -107,14 +99,14 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
         |SELECT * FROM test
       """.stripMargin)
 
-    val expectedResult = (nullable: Boolean) => {
+    resp1 should equal(
       Interpreter.ExecuteSuccess(
         APPLICATION_JSON -> (("schema" ->
           (("type" -> "struct") ~
             ("fields" -> List(
               ("name" -> "col1") ~ ("type" -> "string") ~ ("nullable" -> true) ~
                 ("metadata" -> List()),
-              ("name" -> "col2") ~ ("type" -> "decimal(38,18)") ~ ("nullable" -> nullable) ~
+              ("name" -> "col2") ~ ("type" -> "decimal(38,18)") ~ ("nullable" -> true) ~
                 ("metadata" -> List())
             )))) ~
           ("data" -> List(
@@ -122,13 +114,7 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
             List[JValue]("2", 2.0d)
           )))
       )
-    }
-
-    val result = Try { resp1 should equal(expectedResult(false))}
-      .orElse(Try { resp1 should equal(expectedResult(true)) })
-    if (result.isFailure) {
-      fail(s"$resp1 doesn't equal to expected result")
-    }
+    )
   }
 
   it should "throw exception for illegal query" in withInterpreter { interpreter =>

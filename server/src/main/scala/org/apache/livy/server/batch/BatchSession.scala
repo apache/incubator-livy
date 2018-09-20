@@ -82,9 +82,6 @@ object BatchSession extends Logging {
       request.queue.foreach(builder.queue)
       request.name.foreach(builder.name)
 
-      // Spark 1.x does not support specifying deploy mode in conf and needs special handling.
-      livyConf.sparkDeployMode().foreach(builder.deployMode)
-
       sessionStore.save(BatchSession.RECOVERY_SESSION_TYPE, s.recoveryMetadata)
 
       builder.redirectOutput(Redirect.PIPE)
