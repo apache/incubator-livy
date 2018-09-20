@@ -201,9 +201,11 @@ object PythonInterpreter extends Logging {
           .newInstance(parts(0), gateway)
       } catch {
         case NonFatal(e) =>
-          classOf[PythonProxyHandler].getConstructor(classOf[String],
-            Class.forName("py4j.CallbackClient"), classOf[Gateway])
-            .newInstance(parts(0), gateway.getCallbackClient, gateway)
+          val cbClient = gateway.getClass().getMethod("getCallbackClient").invoke(gateway)
+          val cbClass = Class.forName("py4j.CallbackClient")
+          classOf[PythonProxyHandler]
+            .getConstructor(classOf[String], cbClass, classOf[Gateway])
+            .newInstance(parts(0), cbClient, gateway)
       }
 
       Proxy.newProxyInstance(Thread.currentThread.getContextClassLoader,
