@@ -26,8 +26,8 @@ import scala.util.Random
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 import org.apache.livy.{LivyConf, Logging, Utils}
+import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.server.SessionServlet
 import org.apache.livy.sessions.{Session, SessionState}
 import org.apache.livy.sessions.Session._
 import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
@@ -55,11 +55,12 @@ object BatchSession extends Logging {
       id: Int,
       request: CreateBatchRequest,
       livyConf: LivyConf,
+      accessManager: AccessManager,
       owner: String,
-      proxyUser: Option[String],
       sessionStore: SessionStore,
       mockApp: Option[SparkApp] = None): BatchSession = {
     val appTag = s"livy-batch-$id-${Random.alphanumeric.take(8).mkString}"
+    val impersonatedUser = accessManager.checkImpersonation(request.proxyUser, owner, livyConf)
 
     def createSparkApp(s: BatchSession): SparkApp = {
       val conf = SparkApp.prepareSparkConf(
@@ -72,7 +73,7 @@ object BatchSession extends Logging {
       val builder = new SparkProcessBuilder(livyConf)
       builder.conf(conf)
 
-      proxyUser.foreach(builder.proxyUser)
+      impersonatedUser.foreach(builder.proxyUser)
       request.className.foreach(builder.className)
       request.driverMemory.foreach(builder.driverMemory)
       request.driverCores.foreach(builder.driverCores)
@@ -116,7 +117,7 @@ object BatchSession extends Logging {
       SessionState.Starting,
       livyConf,
       owner,
-      proxyUser,
+      impersonatedUser,
       sessionStore,
       mockApp.map { m => (_: BatchSession) => m }.getOrElse(createSparkApp))
   }

@@ -17,11 +17,13 @@
 
 package org.apache.livy.thriftserver
 
+import java.security.PrivilegedExceptionAction
+
 import scala.collection.JavaConverters._
 
 import org.apache.hadoop.hive.conf.HiveConf
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hive.service.server.HiveServer2
-import org.scalatra.ScalatraServlet
 
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.server.AccessManager
@@ -61,6 +63,7 @@ object LivyThriftServer extends Logging {
       accessManager: AccessManager): Unit = synchronized {
     if (thriftServerThread == null) {
       info("Starting LivyThriftServer")
+      val ugi = UserGroupInformation.getCurrentUser
       val runThriftServer = new Runnable {
         override def run(): Unit = {
           try {
@@ -69,8 +72,15 @@ object LivyThriftServer extends Logging {
               livySessionManager,
               sessionStore,
               accessManager)
-            thriftServer.init(hiveConf(livyConf))
-            thriftServer.start()
+            if (UserGroupInformation.isSecurityEnabled) {
+              ugi.doAs(new PrivilegedExceptionAction[Unit] {
+                override def run(): Unit = {
+                  doStart(livyConf)
+                }
+              })
+            } else {
+              doStart(livyConf)
+            }
             info("LivyThriftServer started")
           } catch {
             case e: Exception =>
@@ -84,6 +94,11 @@ object LivyThriftServer extends Logging {
     } else {
       error("Livy Thriftserver is already started")
     }
+  }
+
+  private def doStart(livyConf: LivyConf): Unit = {
+    thriftServer.init(hiveConf(livyConf))
+    thriftServer.start()
   }
 
   private[thriftserver] def getInstance: Option[LivyThriftServer] = {
@@ -106,7 +121,7 @@ class LivyThriftServer(
     private[thriftserver] val livyConf: LivyConf,
     private[thriftserver] val livySessionManager: InteractiveSessionManager,
     private[thriftserver] val sessionStore: SessionStore,
-    private val accessManager: AccessManager) extends HiveServer2 {
+    private[thriftserver] val accessManager: AccessManager) extends HiveServer2 {
   override def init(hiveConf: HiveConf): Unit = {
     this.cliService = new LivyCLIService(this)
     super.init(hiveConf)
