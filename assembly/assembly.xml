@@ -75,5 +75,12 @@
         <include>*</include>
       </includes>
     </fileSet>
+    <fileSet>
+      <directory>${project.parent.basedir}/thriftserver/server/target/jars</directory>
+      <outputDirectory>${assembly.name}/jars</outputDirectory>
+      <includes>
+        <include>*</include>
+      </includes>
+    </fileSet>
   </fileSets>
 </assembly>

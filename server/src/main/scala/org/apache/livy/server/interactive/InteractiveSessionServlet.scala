@@ -52,12 +52,11 @@ class InteractiveSessionServlet(
 
   override protected def createSession(req: HttpServletRequest): InteractiveSession = {
     val createRequest = bodyAs[CreateInteractiveRequest](req)
-    val proxyUser = checkImpersonation(createRequest.proxyUser, req)
     InteractiveSession.create(
       sessionManager.nextId(),
       remoteUser(req),
-      proxyUser,
       livyConf,
+      accessManager,
       createRequest,
       sessionStore)
   }
@@ -66,7 +65,7 @@ class InteractiveSessionServlet(
       session: InteractiveSession,
       req: HttpServletRequest): Any = {
     val logs =
-      if (hasViewAccess(session.owner, req)) {
+      if (accessManager.hasViewAccess(session.owner, remoteUser(req))) {
         Option(session.logLines())
           .map { lines =>
             val size = 10

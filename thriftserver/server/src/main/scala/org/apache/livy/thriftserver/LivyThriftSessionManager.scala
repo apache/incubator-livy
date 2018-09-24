@@ -249,8 +249,8 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
       val newSession = InteractiveSession.create(
         server.livySessionManager.nextId(),
         username,
-        None,
         server.livyConf,
+        server.accessManager,
         createInteractiveRequest,
         server.sessionStore)
       onLivySessionOpened(newSession)

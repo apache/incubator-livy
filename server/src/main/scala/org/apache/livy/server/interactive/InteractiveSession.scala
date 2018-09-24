@@ -39,6 +39,7 @@ import org.apache.livy._
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.rsc.{PingJob, RSCClient, RSCConf}
 import org.apache.livy.rsc.driver.Statement
+import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
 import org.apache.livy.sessions.Session._
@@ -66,13 +67,14 @@ object InteractiveSession extends Logging {
   def create(
       id: Int,
       owner: String,
-      proxyUser: Option[String],
       livyConf: LivyConf,
+      accessManager: AccessManager,
       request: CreateInteractiveRequest,
       sessionStore: SessionStore,
       mockApp: Option[SparkApp] = None,
       mockClient: Option[RSCClient] = None): InteractiveSession = {
     val appTag = s"livy-session-$id-${Random.alphanumeric.take(8).mkString}"
+    val impersonatedUser = accessManager.checkImpersonation(request.proxyUser, owner, livyConf)
 
     val client = mockClient.orElse {
       val conf = SparkApp.prepareSparkConf(appTag, livyConf, prepareConf(
@@ -101,7 +103,7 @@ object InteractiveSession extends Logging {
         .setAll(builderProperties.asJava)
         .setConf("livy.client.session-id", id.toString)
         .setConf(RSCConf.Entry.DRIVER_CLASS.key(), "org.apache.livy.repl.ReplDriver")
-        .setConf(RSCConf.Entry.PROXY_USER.key(), proxyUser.orNull)
+        .setConf(RSCConf.Entry.PROXY_USER.key(), impersonatedUser.orNull)
         .setURI(new URI("rsc:/"))
 
       Option(builder.build().asInstanceOf[RSCClient])
@@ -117,7 +119,7 @@ object InteractiveSession extends Logging {
       request.heartbeatTimeoutInSecond,
       livyConf,
       owner,
-      proxyUser,
+      impersonatedUser,
       sessionStore,
       mockApp)
   }

@@ -56,6 +56,8 @@ class LivyServer extends Logging {
   private var executor: ScheduledExecutorService = _
   private var accessManager: AccessManager = _
 
+  private var ugi: UserGroupInformation = _
+
   def start(): Unit = {
     livyConf = new LivyConf().loadFromFile("livy.conf")
     accessManager = new AccessManager(livyConf)
@@ -115,6 +117,16 @@ class LivyServer extends Logging {
         error("Failed to run kinit, stopping the server.")
         sys.exit(1)
       }
+      // This is and should be the only place where a login() on the UGI is performed.
+      // If an other login in the codebase is strictly needed, a needLogin check should be added to
+      // avoid anyway that 2 logins are performed.
+      // This is needed because the thriftserver requires the UGI to be created from a keytab in
+      // order to work properly and previously Livy was using a UGI generated from the cached TGT
+      // (created by the kinit command).
+      if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+        UserGroupInformation.loginUserFromKeytab(launch_principal, launch_keytab)
+      }
+      ugi = UserGroupInformation.getCurrentUser
       startKinitThread(launch_keytab, launch_principal)
     }
 
@@ -266,6 +278,11 @@ class LivyServer extends Logging {
       }
     })
 
+    if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+      ThriftServerFactory.getInstance.start(
+        livyConf, interactiveSessionManager, sessionStore, accessManager)
+    }
+
     _serverUrl = Some(s"${server.protocol}://${server.host}:${server.port}")
     sys.props("livy.server.server-url") = _serverUrl.get
   }
@@ -292,6 +309,12 @@ class LivyServer extends Logging {
       new Runnable() {
         override def run(): Unit = {
           if (runKinit(keytab, principal)) {
+            // The current UGI should never change. If that happens, it is an error condition and
+            // relogin the original UGI would not update the current UGI. So the server will fail
+            // due to no valid credentials. The assert here allows to fast detect this error
+            // condition and fail immediately with a meaningful error.
+            assert(ugi.equals(UserGroupInformation.getCurrentUser), "Current UGI has changed.")
+            ugi.reloginFromTicketCache()
             // schedule another kinit run with a fixed delay.
             executor.schedule(this, refreshInterval, TimeUnit.MILLISECONDS)
           } else {
