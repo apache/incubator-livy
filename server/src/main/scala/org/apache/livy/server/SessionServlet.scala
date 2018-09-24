@@ -17,11 +17,16 @@
 
 package org.apache.livy.server
 
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
-import org.scalatra._
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.util.Try
+
+import org.scalatra._
+import org.scalatra.servlet.FileUploadSupport
 
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.rsc.RSCClientFactory
@@ -47,7 +52,11 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   with MethodOverride
   with UrlGeneratorSupport
   with GZipSupport
-{
+  with FileUploadSupport {
+
+  private val requestedIds = Collections.newSetFromMap(
+    new ConcurrentHashMap[Int, java.lang.Boolean]())
+
   /**
    * Creates a new session based on the current request. The implementation is responsible for
    * parsing the body of the request.
@@ -119,13 +128,61 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     }
   }
 
-  def tooManySessions(): Boolean = {
-    val totalChildProceses = RSCClientFactory.childProcesses().get() +
-      BatchSession.childProcesses.get()
-    totalChildProceses >= livyConf.getInt(LivyConf.SESSION_MAX_CREATION)
+  post("/") {
+    createSession()
   }
 
-  post("/") {
+  get("/id") {
+    val newId = sessionManager.nextId()
+    requestedIds.add(newId)
+    newId
+  }
+
+  post("/:id/resources") {
+    val sessionId = params("id").toInt
+    if (!hasModifyAccess(null, request)) {
+      Forbidden()
+    } else if (!requestedIds.contains(sessionId)) {
+      BadRequest("Rejected, please request new session id first!")
+    } else {
+      fileParams.foreach { case (_, f) =>
+        sessionManager.saveResource(sessionId, f.name, f.getInputStream)
+      }
+    }
+  }
+
+  post("/:id") {
+    val sessionId = params("id").toInt
+    if (!requestedIds.contains(sessionId)) {
+      BadRequest("Rejected, please request new session id first")
+    } else {
+      val ret = createSession()
+      // Remove the cached session id which is actually used.
+      requestedIds.remove(sessionId)
+      ret
+    }
+  }
+
+  error {
+    case e: IllegalArgumentException => BadRequest(e.getMessage)
+    case e: IllegalStateException => BadRequest(e.getMessage)
+  }
+
+  def tooManySessions(): Boolean = {
+    val totalChildProcesses = RSCClientFactory.childProcesses().get() +
+      BatchSession.childProcesses.get()
+    totalChildProcesses >= livyConf.getInt(LivyConf.SESSION_MAX_CREATION)
+  }
+
+  private def getRequestPathInfo(request: HttpServletRequest): String = {
+    if (request.getPathInfo != null && request.getPathInfo != "/") {
+      request.getPathInfo
+    } else {
+      ""
+    }
+  }
+
+  protected def createSession(): Any = {
     if (tooManySessions) {
       BadRequest("Rejected, too many sessions are being created!")
     } else {
@@ -139,16 +196,13 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     }
   }
 
-  private def getRequestPathInfo(request: HttpServletRequest): String = {
-    if (request.getPathInfo != null && request.getPathInfo != "/") {
-      request.getPathInfo
-    } else {
-      ""
-    }
-  }
-
-  error {
-    case e: IllegalArgumentException => BadRequest(e.getMessage)
+  protected def getSessionIdFromReq(req: HttpServletRequest): Option[Int] = {
+    Try {
+      val pathInfo = getRequestPathInfo(req)
+      val stripped = pathInfo.stripSuffix("/")
+      val idx = stripped.lastIndexOf("/")
+      if (idx != -1) stripped.substring(idx + 1).toInt else "".toInt
+    }.toOption
   }
 
   /**

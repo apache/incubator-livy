@@ -24,14 +24,14 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 
 import org.mockito.Matchers
-import org.mockito.Matchers.anyObject
+import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfter, FunSpec, ShouldMatchers}
 import org.scalatest.mock.MockitoSugar.mock
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf, Utils}
 import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.sessions.SessionState
+import org.apache.livy.sessions.{SessionManager, SessionState}
 import org.apache.livy.utils.{AppInfo, SparkApp}
 
 class BatchSessionSpec
@@ -57,9 +57,12 @@ class BatchSessionSpec
 
   describe("A Batch process") {
     var sessionStore: SessionStore = null
+    var sessionManager: SessionManager[_, _] = null
 
     before {
       sessionStore = mock[SessionStore]
+      sessionManager = mock[SessionManager[_, _]]
+      when(sessionManager.retrieveResource(anyInt(), anyString())).thenReturn(None)
     }
 
     it("should create a process") {
@@ -68,7 +71,7 @@ class BatchSessionSpec
       req.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
 
       val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
-      val batch = BatchSession.create(0, req, conf, null, None, sessionStore)
+      val batch = BatchSession.create(0, req, conf, null, None, sessionManager, sessionStore)
 
       Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
       (batch.state match {
@@ -83,7 +86,8 @@ class BatchSessionSpec
       val conf = new LivyConf()
       val req = new CreateBatchRequest()
       val mockApp = mock[SparkApp]
-      val batch = BatchSession.create(0, req, conf, null, None, sessionStore, Some(mockApp))
+      val batch =
+        BatchSession.create(0, req, conf, null, None, sessionManager, sessionStore, Some(mockApp))
 
       val expectedAppId = "APPID"
       batch.appIdKnown(expectedAppId)

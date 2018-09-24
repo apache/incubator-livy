@@ -69,14 +69,17 @@ object InteractiveSession extends Logging {
       proxyUser: Option[String],
       livyConf: LivyConf,
       request: CreateInteractiveRequest,
+      sessionManager: SessionManager[_, _],
       sessionStore: SessionStore,
       mockApp: Option[SparkApp] = None,
       mockClient: Option[RSCClient] = None): InteractiveSession = {
     val appTag = s"livy-session-$id-${Random.alphanumeric.take(8).mkString}"
+    val retrieveResFunc = Some(sessionManager.retrieveResource(id, _: String))
 
     val client = mockClient.orElse {
-      val conf = SparkApp.prepareSparkConf(appTag, livyConf, prepareConf(
-        request.conf, request.jars, request.files, request.archives, request.pyFiles, livyConf))
+      val conf = SparkApp.prepareSparkConf(appTag, livyConf,
+        prepareConf(request.conf, request.jars, request.files, request.archives,
+          request.pyFiles, livyConf, retrieveResFunc))
 
       val builderProperties = prepareBuilderProp(conf, request.kind, livyConf)
 

@@ -16,10 +16,10 @@
  */
 package org.apache.livy.test.framework
 
+import java.io.File
 import java.util.regex.Pattern
 import javax.servlet.http.HttpServletResponse
 
-import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Either, Left, Right}
@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.ning.http.client.AsyncHttpClient
 import com.ning.http.client.Response
+import com.ning.http.client.multipart.FilePart
 import org.apache.hadoop.yarn.api.records.ApplicationId
 import org.apache.hadoop.yarn.util.ConverterUtils
 import org.scalatest.concurrent.Eventually._
@@ -253,13 +254,16 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
       className: Option[String],
       args: List[String],
       sparkConf: Map[String, String]): BatchSession = {
+    val newId = requestNewId(BATCH_TYPE)
+    uploadResource(BATCH_TYPE, newId, new File(file))
+
     val r = new CreateBatchRequest()
-    r.file = file
+    r.file = new File(file).getName
     r.className = className
     r.args = args
     r.conf = Map("spark.yarn.maxAppAttempts" -> "1") ++ sparkConf
 
-    val id = start(BATCH_TYPE, mapper.writeValueAsString(r))
+    val id = start(BATCH_TYPE, mapper.writeValueAsString(r), Some(newId))
     new BatchSession(id)
   }
 
@@ -278,8 +282,11 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
 
   def connectSession(id: Int): InteractiveSession = { new InteractiveSession(id) }
 
-  private def start(sessionType: String, body: String): Int = {
-    val r = httpClient.preparePost(s"$livyEndpoint/$sessionType")
+  private def start(sessionType: String, body: String, id: Option[Int] = None): Int = {
+    val url = id.map { i => s"$livyEndpoint/$sessionType/$i" }.getOrElse {
+      s"$livyEndpoint/$sessionType"
+    }
+    val r = httpClient.preparePost(url)
       .setBody(body)
       .execute()
       .get()
@@ -288,6 +295,23 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
 
     val newSession = mapper.readValue(r.getResponseBodyAsStream, classOf[SessionSnapshot])
     newSession.id
+  }
+
+  private def requestNewId(sessionType: String): Int = {
+    val r = httpClient.prepareGet(s"$livyEndpoint/$sessionType/id")
+      .execute()
+      .get()
+
+    r.getResponseBody.toInt
+  }
+
+  private def uploadResource(sessionType: String, id: Int, resource: File) = {
+    val r = httpClient.preparePost(s"$livyEndpoint/$sessionType/$id/resources")
+      .addBodyPart(new FilePart("resource", resource))
+      .execute()
+      .get()
+
+    assertStatusCode(r, HttpServletResponse.SC_OK)
   }
 
   private def assertStatusCode(r: Response, expected: Int): Unit = {

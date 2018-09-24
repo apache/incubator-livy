@@ -63,7 +63,8 @@ object SessionServletSpec {
       override protected def createSession(req: HttpServletRequest): Session = {
         val params = bodyAs[Map[String, String]](req)
         checkImpersonation(params.get(PROXY_USER), req)
-        new MockSession(sessionManager.nextId(), remoteUser(req), conf)
+        new MockSession(
+          getSessionIdFromReq(request).getOrElse(sessionManager.nextId()), remoteUser(req), conf)
       }
 
       override protected def clientSessionView(
@@ -139,6 +140,21 @@ class SessionServletSpec extends BaseSessionServletSpec[Session, RecoveryMetadat
     it("should allow admins to impersonate anyone") {
       jpost[MockSessionView]("/", Map(PROXY_USER -> "bob"), headers = adminHeaders) { res =>
         delete(res.id, adminHeaders, SC_OK)
+      }
+    }
+
+    it("should get session id") {
+      jget[Int]("/id") { res =>
+        assert(res >= 0)
+      }
+    }
+
+    it("should create new session") {
+      jget[Int]("/id") { res =>
+        val sessionId = res
+        jpost[MockSessionView](s"/$sessionId", Map()) { res =>
+          res.id should be (sessionId)
+        }
       }
     }
   }

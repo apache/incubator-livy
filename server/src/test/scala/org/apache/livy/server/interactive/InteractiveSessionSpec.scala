@@ -37,7 +37,7 @@ import org.apache.livy.{ExecuteRequest, JobHandle, LivyBaseUnitTestSuite, LivyCo
 import org.apache.livy.rsc.{PingJob, RSCClient, RSCConf}
 import org.apache.livy.rsc.driver.StatementState
 import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.sessions.{PySpark, SessionState, Spark}
+import org.apache.livy.sessions.{PySpark, SessionManager, SessionState, Spark}
 import org.apache.livy.utils.{AppInfo, SparkApp}
 
 class InteractiveSessionSpec extends FunSpec
@@ -53,6 +53,7 @@ class InteractiveSessionSpec extends FunSpec
   private var session: InteractiveSession = null
 
   private def createSession(
+      sessionManager: SessionManager[_, _] = mock[SessionManager[_, _]],
       sessionStore: SessionStore = mock[SessionStore],
       mockApp: Option[SparkApp] = None): InteractiveSession = {
     assume(sys.env.get("SPARK_HOME").isDefined, "SPARK_HOME is not set.")
@@ -68,7 +69,7 @@ class InteractiveSessionSpec extends FunSpec
       SparkLauncher.DRIVER_EXTRA_CLASSPATH -> sys.props("java.class.path"),
       RSCConf.Entry.LIVY_JARS.key() -> ""
     )
-    InteractiveSession.create(0, null, None, livyConf, req, sessionStore, mockApp)
+    InteractiveSession.create(0, null, None, livyConf, req, sessionManager, sessionStore, mockApp)
   }
 
   private def executeStatement(code: String, codeType: Option[String] = None): JValue = {
@@ -157,7 +158,7 @@ class InteractiveSessionSpec extends FunSpec
     it("should update appId and appInfo and session store") {
       val mockApp = mock[SparkApp]
       val sessionStore = mock[SessionStore]
-      session = createSession(sessionStore, Some(mockApp))
+      session = createSession(sessionStore = sessionStore, mockApp = Some(mockApp))
 
       val expectedAppId = "APPID"
       session.appIdKnown(expectedAppId)

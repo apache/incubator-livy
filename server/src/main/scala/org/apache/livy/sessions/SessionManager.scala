@@ -17,6 +17,7 @@
 
 package org.apache.livy.sessions
 
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -73,6 +74,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
 
   protected[this] final val idCounter = new AtomicInteger(0)
   protected[this] final val sessions = mutable.LinkedHashMap[Int, S]()
+  protected[this] final val resourceManager = new ResourceManager(livyConf)
 
   private[this] final val sessionTimeoutCheck = livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK)
   private[this] final val sessionTimeout =
@@ -86,6 +88,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   def nextId(): Int = synchronized {
     val id = idCounter.getAndIncrement()
     sessionStore.saveNextSessionId(sessionType, idCounter.get())
+    resourceManager.registerSession(id)
     id
   }
 
@@ -95,6 +98,14 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
       sessions.put(session.id, session)
     }
     session
+  }
+
+  def saveResource(id: Int, name: String, is: InputStream): Unit = {
+    resourceManager.saveResource(id, name, is)
+  }
+
+  def retrieveResource(id: Int, name: String): Option[String] = {
+    resourceManager.retrieveResource(id, name)
   }
 
   def get(id: Int): Option[S] = sessions.get(id)
@@ -111,6 +122,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     session.stop().map { case _ =>
       try {
         sessionStore.remove(sessionType, session.id)
+        resourceManager.unregisterSession(session.id)
         synchronized {
           sessions.remove(session.id)
         }
@@ -129,6 +141,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
         Await.ready(future, Duration.Inf)
       }
     }
+    resourceManager.clean()
   }
 
   def collectGarbage(): Future[Iterable[Unit]] = {
