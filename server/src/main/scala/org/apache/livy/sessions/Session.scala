@@ -19,7 +19,7 @@ package org.apache.livy.sessions
 
 import java.io.InputStream
 import java.net.{URI, URISyntaxException}
-import java.security.{AccessControlException, PrivilegedExceptionAction}
+import java.security.PrivilegedExceptionAction
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -30,7 +30,6 @@ import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.security.UserGroupInformation
 
 import org.apache.livy.{LivyConf, Logging, Utils}
-import org.apache.livy.server.AccessManager
 import org.apache.livy.utils.AppInfo
 
 object Session {
@@ -133,40 +132,6 @@ object Session {
     }
 
     resolved
-  }
-
-  /**
-   * Checks that the requesting user can impersonate the target user.
-   * If the user does not have permission to impersonate, then throws an `AccessControlException`.
-   *
-   * @return The user that should be impersonated. That can be the target user if defined, the
-   *         request's user - which may not be defined - otherwise, or `None` if impersonation is
-   *         disabled.
-   */
-  def checkImpersonation(
-      target: Option[String],
-      requestUser: String,
-      livyConf: LivyConf,
-      accessManager: AccessManager): Option[String] = {
-    if (livyConf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
-      if (!target.forall(hasSuperAccess(_, requestUser, accessManager))) {
-        throw new AccessControlException(
-          s"User '$requestUser' not allowed to impersonate '$target'.")
-      }
-      target.orElse(Option(requestUser))
-    } else {
-      None
-    }
-  }
-
-  /**
-   * Check that the requesting user has admin access to resources owned by the given target user.
-   */
-  def hasSuperAccess(
-      target: String,
-      requestUser: String,
-      accessManager: AccessManager): Boolean = {
-    requestUser == target || accessManager.checkSuperUser(requestUser)
   }
 }
 

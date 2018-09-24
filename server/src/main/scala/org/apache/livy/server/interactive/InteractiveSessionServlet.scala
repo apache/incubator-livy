@@ -65,7 +65,7 @@ class InteractiveSessionServlet(
       session: InteractiveSession,
       req: HttpServletRequest): Any = {
     val logs =
-      if (hasViewAccess(session.owner, req)) {
+      if (accessManager.hasViewAccess(session.owner, remoteUser(req))) {
         Option(session.logLines())
           .map { lines =>
             val size = 10

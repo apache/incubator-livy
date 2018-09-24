@@ -159,29 +159,6 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser()
 
   /**
-   * Check that the request's user has view access to resources owned by the given target user.
-   */
-  protected def hasViewAccess(target: String, req: HttpServletRequest): Boolean = {
-    val user = remoteUser(req)
-    user == target || accessManager.checkViewPermissions(user)
-  }
-
-  /**
-   * Check that the request's user has modify access to resources owned by the given target user.
-   */
-  protected def hasModifyAccess(target: String, req: HttpServletRequest): Boolean = {
-    val user = remoteUser(req)
-    user == target || accessManager.checkModifyPermissions(user)
-  }
-
-  /**
-   * Check that the request's user has admin access to resources owned by the given target user.
-   */
-  protected def hasSuperAccess(target: String, req: HttpServletRequest): Boolean = {
-    Session.hasSuperAccess(target, remoteUser(req), accessManager)
-  }
-
-  /**
    * Performs an operation on the session, without checking for ownership. Operations executed
    * via this method must not modify the session in any way, or return potentially sensitive
    * information.
@@ -193,22 +170,22 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
    * session.
    */
   protected def withViewAccessSession(fn: (S => Any)): Any =
-    doWithSession(fn, false, Some(hasViewAccess))
+    doWithSession(fn, false, Some(accessManager.hasViewAccess))
 
   /**
    * Performs an operation on the session, verifying whether the caller has view access of the
    * session.
    */
   protected def withModifyAccessSession(fn: (S => Any)): Any =
-    doWithSession(fn, false, Some(hasModifyAccess))
+    doWithSession(fn, false, Some(accessManager.hasModifyAccess))
 
   private def doWithSession(fn: (S => Any),
       allowAll: Boolean,
-      checkFn: Option[(String, HttpServletRequest) => Boolean]): Any = {
+      checkFn: Option[(String, String) => Boolean]): Any = {
     val sessionId = params("id").toInt
     sessionManager.get(sessionId) match {
       case Some(session) =>
-        if (allowAll || checkFn.map(_(session.owner, request)).getOrElse(false)) {
+        if (allowAll || checkFn.map(_(session.owner, remoteUser(request))).getOrElse(false)) {
           fn(session)
         } else {
           Forbidden()
