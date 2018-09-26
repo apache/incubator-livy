@@ -127,7 +127,7 @@ object Session {
 
     if (resolved.getScheme() == "file") {
       // Make sure the location is whitelisted before allowing local files to be added.
-      require(livyConf.localFsWhitelist.find(resolved.getPath().startsWith).isDefined,
+      require(livyConf.localFsWhitelist.exists(resolved.getPath().startsWith),
         s"Local path ${uri.getPath()} cannot be added to user sessions.")
     }
 
