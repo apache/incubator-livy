@@ -24,6 +24,8 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.hive.HiveContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +38,7 @@ public class SparkEntries {
   private final SparkConf conf;
   private volatile SQLContext sqlctx;
   private volatile HiveContext hivectx;
-  private volatile Object sparksession;
+  private volatile SparkSession sparksession;
 
   public SparkEntries(SparkConf conf) {
     this.conf = conf;
@@ -58,41 +60,29 @@ public class SparkEntries {
     return sc;
   }
 
-  @SuppressWarnings("unchecked")
-  public Object sparkSession() throws Exception {
+  public SparkSession sparkSession() throws Exception {
     if (sparksession == null) {
       synchronized (this) {
         if (sparksession == null) {
+          SparkSession.Builder builder = SparkSession.builder().sparkContext(sc().sc());
           try {
-            Class<?> clz = Class.forName("org.apache.spark.sql.SparkSession$");
-            Object spark = clz.getField("MODULE$").get(null);
-            Method m = clz.getMethod("builder");
-            Object builder = m.invoke(spark);
-            builder.getClass().getMethod("sparkContext", SparkContext.class)
-              .invoke(builder, sc().sc());
-
             SparkConf conf = sc().getConf();
-            if (conf.get("spark.sql.catalogImplementation", "in-memory").toLowerCase()
-              .equals("hive")) {
-              if ((boolean) clz.getMethod("hiveClassesArePresent").invoke(spark)) {
-                ClassLoader loader = Thread.currentThread().getContextClassLoader() != null ?
-                  Thread.currentThread().getContextClassLoader() : getClass().getClassLoader();
-                if (loader.getResource("hive-site.xml") == null) {
-                  LOG.warn("livy.repl.enable-hive-context is true but no hive-site.xml found on " +
-                   "classpath");
-                }
+            String catalog = conf.get("spark.sql.catalogImplementation", "in-memory").toLowerCase();
 
-                builder.getClass().getMethod("enableHiveSupport").invoke(builder);
-                sparksession = builder.getClass().getMethod("getOrCreate").invoke(builder);
-                LOG.info("Created Spark session (with Hive support).");
-              } else {
-                builder.getClass().getMethod("config", String.class, String.class)
-                  .invoke(builder, "spark.sql.catalogImplementation", "in-memory");
-                sparksession = builder.getClass().getMethod("getOrCreate").invoke(builder);
-                LOG.info("Created Spark session.");
+            if (catalog.equals("hive") && SparkSession$.MODULE$.hiveClassesArePresent()) {
+              ClassLoader loader = Thread.currentThread().getContextClassLoader() != null ?
+                Thread.currentThread().getContextClassLoader() : getClass().getClassLoader();
+              if (loader.getResource("hive-site.xml") == null) {
+                LOG.warn("livy.repl.enable-hive-context is true but no hive-site.xml found on " +
+                 "classpath");
               }
+
+              builder.enableHiveSupport();
+              sparksession = builder.getOrCreate();
+              LOG.info("Created Spark session (with Hive support).");
             } else {
-              sparksession = builder.getClass().getMethod("getOrCreate").invoke(builder);
+              builder.config("spark.sql.catalogImplementation", "in-memory");
+              sparksession = builder.getOrCreate();
               LOG.info("Created Spark session.");
             }
           } catch (Exception e) {

@@ -57,12 +57,8 @@ Required python packages for building Livy:
 To run Livy, you will also need a Spark installation. You can get Spark releases at
 https://spark.apache.org/downloads.html.
 
-Livy requires at least Spark 1.6 and supports both Scala 2.10 and 2.11 builds of Spark, Livy
-will automatically pick repl dependencies through detecting the Scala version of Spark.
-
-Livy also supports Spark 2.0+ for both interactive and batch submission, you could seamlessly
-switch to different versions of Spark through ``SPARK_HOME`` configuration, without needing to
-rebuild Livy.
+Livy requires Spark 2.2 or 2.3. You can switch to a different version of Spark by setting the
+``SPARK_HOME`` environment variable in the Livy server process, without needing to rebuild Livy.
 
 
 ## Building Livy
@@ -75,8 +71,9 @@ cd livy
 mvn package
 ```
 
-By default Livy is built against Apache Spark 1.6.2, but the version of Spark used when running
-Livy does not need to match the version used to build Livy. Livy internally uses reflection to
-mitigate the gaps between different Spark versions, also Livy package itself does not
-contain a Spark distribution, so it will work with any supported version of Spark (Spark 1.6+)
-without needing to rebuild against specific version of Spark.
+By default Livy is built against Apache Spark 2.2.0, but the version of Spark used when running
+Livy does not need to match the version used to build Livy. Livy internally handles the differences
+between different Spark versions.
+
+The Livy package itself does not contain a Spark distribution. It will work with any supported
+version of Spark without needing to rebuild.

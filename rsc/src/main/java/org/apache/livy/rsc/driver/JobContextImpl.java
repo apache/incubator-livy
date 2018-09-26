@@ -63,8 +63,8 @@ class JobContextImpl implements JobContext {
 
   @SuppressWarnings("unchecked")
   @Override
-  public Object sparkSession() throws Exception {
-    return sparkEntries.sparkSession();
+  public <E> E sparkSession() throws Exception {
+    return (E) sparkEntries.sparkSession();
   }
 
   @Override
@@ -85,7 +85,7 @@ class JobContextImpl implements JobContext {
 
   @SuppressWarnings("unchecked")
   @Override
-  public Object getSharedObject(String name) throws NoSuchElementException {
+  public <E> E getSharedObject(String name) throws NoSuchElementException {
     Object obj;
     synchronized (sharedVariables) {
       // Remove the entry and insert again to achieve LRU.
@@ -96,7 +96,7 @@ class JobContextImpl implements JobContext {
       sharedVariables.put(name, obj);
     }
 
-    return obj;
+    return (E) obj;
 
   }
 
@@ -109,13 +109,13 @@ class JobContextImpl implements JobContext {
 
   @SuppressWarnings("unchecked")
   @Override
-  public Object removeSharedObject(String name) {
+  public <E> E removeSharedObject(String name) {
     Object obj;
     synchronized (sharedVariables) {
       obj = sharedVariables.remove(name);
     }
 
-    return obj;
+    return (E) obj;
   }
 
   @Override

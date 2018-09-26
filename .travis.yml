@@ -19,24 +19,16 @@ sudo: required
 dist: trusty
 language: scala
 
-env:
-  matrix:
-    - MVN_FLAG='-DskipTests'
-    - MVN_FLAG='-Pspark-2.0-it -DskipTests'
-    - MVN_FLAG='-Pspark-2.1-it -DskipTests'
-    - MVN_FLAG='-Pspark-1.6 -DskipITs'
-    - MVN_FLAG='-Pspark-2.0 -DskipITs'
-    - MVN_FLAG='-Pspark-2.1 -DskipITs'
-
 matrix:
   include:
-      # Spark 2.2+ will only be verified using JDK8
-      # Thriftserver requires JDK8
-    - env: MVN_FLAG='-Pthriftserver -Pspark-2.2-it -DskipTests'
-    - env: MVN_FLAG='-Pthriftserver -Pspark-2.2 -DskipITs'
-    - env: MVN_FLAG='-Pthriftserver -Pspark-2.3-it -DskipTests'
-    - env: MVN_FLAG='-Pthriftserver -Pspark-2.3 -DskipITs'
-
+  - name: "Spark 2.2 Unit Tests"
+    env: MVN_FLAG='-Pthriftserver -DskipITs'
+  - name: "Spark 2.2 ITs"
+    env: MVN_FLAG='-Pthriftserver -DskipTests'
+  - name: "Spark 2.3 Unit Tests"
+    env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipITs'
+  - name: "Spark 2.3 ITs"
+    env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipTests'
 
 jdk:
   - oraclejdk8

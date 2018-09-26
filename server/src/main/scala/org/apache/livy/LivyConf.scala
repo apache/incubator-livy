@@ -47,8 +47,7 @@ object LivyConf {
 
   // Two configurations to specify Spark and related Scala version. These are internal
   // configurations will be set by LivyServer and used in session creation. It is not required to
-  // set usually unless running with unofficial Spark + Scala versions
-  // (like Spark 2.0 + Scala 2.10, Spark 1.6 + Scala 2.11)
+  // set usually unless running with unofficial Spark + Scala combinations.
   val LIVY_SPARK_SCALA_VERSION = Entry("livy.spark.scala-version", null)
   val LIVY_SPARK_VERSION = Entry("livy.spark.version", null)
 

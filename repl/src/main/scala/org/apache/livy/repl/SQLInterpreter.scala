@@ -23,6 +23,7 @@ import scala.util.control.NonFatal
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.SparkSession
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
@@ -67,7 +68,7 @@ class SQLInterpreter(
 
   private implicit def formats = DefaultFormats
 
-  private var spark: AnyRef = null
+  private var spark: SparkSession = null
 
   private val maxResult = rscConf.getInt(RSCConf.Entry.SQL_NUM_ROWS)
 
@@ -75,28 +76,16 @@ class SQLInterpreter(
 
   override def start(): Unit = {
     require(!sparkEntries.sc().sc.isStopped)
-
-    val sparkVersion = sparkConf.getInt("spark.livy.spark_major_version", 1)
-    if (sparkVersion == 1) {
-      spark = Option(sparkEntries.hivectx()).getOrElse(sparkEntries.sqlctx())
-    } else {
-      spark = sparkEntries.sparkSession()
-    }
+    spark = sparkEntries.sparkSession()
   }
 
   override protected[repl] def execute(code: String): Interpreter.ExecuteResponse = {
     try {
-      val result = spark.getClass.getMethod("sql", classOf[String]).invoke(spark, code)
-
-      // Get the schema info
-      val schema = result.getClass.getMethod("schema").invoke(result)
-      val jsonString = schema.getClass.getMethod("json").invoke(schema).asInstanceOf[String]
-      val jSchema = parse(jsonString)
+      val result = spark.sql(code)
+      val schema = parse(result.schema.json)
 
       // Get the row data
-      val rows = result.getClass.getMethod("take", classOf[Int])
-        .invoke(result, maxResult: java.lang.Integer)
-        .asInstanceOf[Array[Row]]
+      val rows = result.take(maxResult)
         .map {
           _.toSeq.map {
             // Convert java BigDecimal type to Scala BigDecimal, because current version of
@@ -109,7 +98,7 @@ class SQLInterpreter(
       val jRows = Extraction.decompose(rows)
 
       Interpreter.ExecuteSuccess(
-        APPLICATION_JSON -> (("schema" -> jSchema) ~ ("data" -> jRows)))
+        APPLICATION_JSON -> (("schema" -> schema) ~ ("data" -> jRows)))
     } catch {
       case e: InvocationTargetException =>
         warn(s"Fail to execute query $code", e.getTargetException)

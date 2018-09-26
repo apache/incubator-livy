@@ -218,15 +218,8 @@ class ContextLauncher {
       return new ChildProcess(conf, promise, child, confFile);
     } else {
       final SparkLauncher launcher = new SparkLauncher();
-
-      // Spark 1.x does not support specifying deploy mode in conf and needs special handling.
-      String deployMode = conf.get(SPARK_DEPLOY_MODE);
-      if (deployMode != null) {
-        launcher.setDeployMode(deployMode);
-      }
-
       launcher.setSparkHome(System.getenv(SPARK_HOME_ENV));
-      launcher.setAppResource("spark-internal");
+      launcher.setAppResource(SparkLauncher.NO_RESOURCE);
       launcher.setPropertiesFile(confFile.getAbsolutePath());
       launcher.setMainClass(RSCDriverBootstrapper.class.getName());
 
