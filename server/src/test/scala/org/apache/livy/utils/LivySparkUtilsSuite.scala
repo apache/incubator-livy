@@ -43,33 +43,20 @@ class LivySparkUtilsSuite extends FunSuite with Matchers with LivyBaseUnitTestSu
     testSparkSubmit(livyConf)
   }
 
-  test("should support Spark 1.6") {
-    testSparkVersion("1.6.0")
-    testSparkVersion("1.6.1")
-    testSparkVersion("1.6.1-SNAPSHOT")
-    testSparkVersion("1.6.2")
-    testSparkVersion("1.6")
-    testSparkVersion("1.6.3.2.5.0-12")
-  }
-
-  test("should support Spark 2.0.x") {
-    testSparkVersion("2.0.0")
-    testSparkVersion("2.0.1")
-    testSparkVersion("2.0.2")
-    testSparkVersion("2.0.3-SNAPSHOT")
-    testSparkVersion("2.0.0.2.5.1.0-56") // LIVY-229
-    testSparkVersion("2.0")
-    testSparkVersion("2.1.0")
-    testSparkVersion("2.1.1")
+  test("should recognize supported Spark versions") {
     testSparkVersion("2.2.0")
+    testSparkVersion("2.3.0")
   }
 
-  test("should not support Spark older than 1.6") {
+  test("should complain about unsupported Spark versions") {
     intercept[IllegalArgumentException] { testSparkVersion("1.4.0") }
     intercept[IllegalArgumentException] { testSparkVersion("1.5.0") }
     intercept[IllegalArgumentException] { testSparkVersion("1.5.1") }
     intercept[IllegalArgumentException] { testSparkVersion("1.5.2") }
     intercept[IllegalArgumentException] { testSparkVersion("1.5.0-cdh5.6.1") }
+    intercept[IllegalArgumentException] { testSparkVersion("1.6.0") }
+    intercept[IllegalArgumentException] { testSparkVersion("2.0.1") }
+    intercept[IllegalArgumentException] { testSparkVersion("2.1.3") }
   }
 
   test("should fail on bad version") {
@@ -96,14 +83,8 @@ class LivySparkUtilsSuite extends FunSuite with Matchers with LivyBaseUnitTestSu
   }
 
   test("defaultSparkScalaVersion() should return default Scala version") {
-    defaultSparkScalaVersion(formatSparkVersion("1.6.0")) shouldBe "2.10"
-    defaultSparkScalaVersion(formatSparkVersion("1.6.1")) shouldBe "2.10"
-    defaultSparkScalaVersion(formatSparkVersion("1.6.2")) shouldBe "2.10"
-    defaultSparkScalaVersion(formatSparkVersion("2.0.0")) shouldBe "2.11"
-    defaultSparkScalaVersion(formatSparkVersion("2.0.1")) shouldBe "2.11"
-
-    // Throw exception for unsupported Spark version.
-    intercept[IllegalArgumentException] { defaultSparkScalaVersion(formatSparkVersion("1.5.0")) }
+    defaultSparkScalaVersion(formatSparkVersion("2.2.1")) shouldBe "2.11"
+    defaultSparkScalaVersion(formatSparkVersion("2.3.0")) shouldBe "2.11"
   }
 
   test("sparkScalaVersion() should use spark-submit detected Scala version.") {
@@ -120,23 +101,8 @@ class LivySparkUtilsSuite extends FunSuite with Matchers with LivyBaseUnitTestSu
     }
   }
 
-  test("sparkScalaVersion() should use configured Scala version if spark-submit doesn't tell.") {
-    sparkScalaVersion(formatSparkVersion("1.6.0"), None, livyConf210) shouldBe "2.10"
-    sparkScalaVersion(formatSparkVersion("1.6.2"), None, livyConf210) shouldBe "2.10"
-    sparkScalaVersion(formatSparkVersion("2.0.0"), None, livyConf210) shouldBe "2.10"
-    sparkScalaVersion(formatSparkVersion("2.0.1"), None, livyConf210) shouldBe "2.10"
-    sparkScalaVersion(formatSparkVersion("1.6.0"), None, livyConf211) shouldBe "2.11"
-    sparkScalaVersion(formatSparkVersion("1.6.2"), None, livyConf211) shouldBe "2.11"
-    sparkScalaVersion(formatSparkVersion("2.0.0"), None, livyConf211) shouldBe "2.11"
-    sparkScalaVersion(formatSparkVersion("2.0.1"), None, livyConf211) shouldBe "2.11"
-  }
-
   test("sparkScalaVersion() should use default Spark Scala version.") {
-    sparkScalaVersion(formatSparkVersion("1.6.0"), None, livyConf) shouldBe "2.10"
-    sparkScalaVersion(formatSparkVersion("1.6.2"), None, livyConf) shouldBe "2.10"
-    sparkScalaVersion(formatSparkVersion("2.0.0"), None, livyConf) shouldBe "2.11"
-    sparkScalaVersion(formatSparkVersion("2.0.1"), None, livyConf) shouldBe "2.11"
-    sparkScalaVersion(formatSparkVersion("2.1.0"), None, livyConf) shouldBe "2.11"
     sparkScalaVersion(formatSparkVersion("2.2.0"), None, livyConf) shouldBe "2.11"
+    sparkScalaVersion(formatSparkVersion("2.3.1"), None, livyConf) shouldBe "2.11"
   }
 }

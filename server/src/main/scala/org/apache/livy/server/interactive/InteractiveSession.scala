@@ -201,22 +201,14 @@ object InteractiveSession extends Logging {
       } else {
         val sparkHome = livyConf.sparkHome().get
         val libdir = sparkMajorVersion match {
-          case 1 =>
-            if (new File(sparkHome, "RELEASE").isFile) {
-              new File(sparkHome, "lib")
-            } else {
-              new File(sparkHome, "lib_managed/jars")
-            }
           case 2 =>
             if (new File(sparkHome, "RELEASE").isFile) {
               new File(sparkHome, "jars")
-            } else if (new File(sparkHome, "assembly/target/scala-2.11/jars").isDirectory) {
-              new File(sparkHome, "assembly/target/scala-2.11/jars")
             } else {
-              new File(sparkHome, "assembly/target/scala-2.10/jars")
+              new File(sparkHome, "assembly/target/scala-2.11/jars")
             }
           case v =>
-            throw new RuntimeException("Unsupported spark major version:" + sparkMajorVersion)
+            throw new RuntimeException(s"Unsupported Spark major version: $sparkMajorVersion")
         }
         val jars = if (!libdir.isDirectory) {
           Seq.empty[String]
@@ -342,13 +334,8 @@ object InteractiveSession extends Logging {
     // pass spark.livy.spark_major_version to driver
     builderProperties.put("spark.livy.spark_major_version", sparkMajorVersion.toString)
 
-    if (sparkMajorVersion <= 1) {
-      builderProperties.put("spark.repl.enableHiveContext",
-        livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT).toString)
-    } else {
-      val confVal = if (enableHiveContext) "hive" else "in-memory"
-      builderProperties.put("spark.sql.catalogImplementation", confVal)
-    }
+    val confVal = if (enableHiveContext) "hive" else "in-memory"
+    builderProperties.put("spark.sql.catalogImplementation", confVal)
 
     if (enableHiveContext) {
       mergeHiveSiteAndHiveDeps(sparkMajorVersion)
