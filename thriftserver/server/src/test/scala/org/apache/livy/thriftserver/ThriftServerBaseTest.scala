@@ -20,9 +20,7 @@ package org.apache.livy.thriftserver
 import java.io.File
 import java.sql.{Connection, DriverManager, Statement}
 
-import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hive.jdbc.HiveDriver
-import org.apache.hive.service.Service.STATE
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 import org.apache.livy.LIVY_VERSION
@@ -31,7 +29,7 @@ import org.apache.livy.LivyConf.{LIVY_SPARK_SCALA_VERSION, LIVY_SPARK_VERSION}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.{SessionStore, StateStore}
 import org.apache.livy.sessions.InteractiveSessionManager
-import org.apache.livy.utils.LivySparkUtils.{formatSparkVersion, sparkScalaVersion, sparkSubmitVersion, testSparkVersion}
+import org.apache.livy.utils.LivySparkUtils.{formatSparkVersion, sparkScalaVersion, sparkSubmitVersion}
 
 object ServerMode extends Enumeration {
   val binary, http = Value
@@ -58,15 +56,10 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     Class.forName(classOf[HiveDriver].getCanonicalName)
-    livyConf.set(s"livy.${HiveConf.ConfVars.HIVE_SERVER2_TRANSPORT_MODE}", mode.toString)
-    val portConfKey = if (mode == ServerMode.http) {
-      s"livy.${HiveConf.ConfVars.HIVE_SERVER2_THRIFT_HTTP_PORT}"
-    } else {
-      s"livy.${HiveConf.ConfVars.HIVE_SERVER2_THRIFT_PORT}"
-    }
-    livyConf.set(portConfKey, port.toString)
+    livyConf.set(LivyConf.THRIFT_TRANSPORT_MODE, mode.toString)
+    livyConf.set(LivyConf.THRIFT_SERVER_PORT, port)
     val home = sys.env("LIVY_HOME")
-    val thriftserverJarName = s"livy-thriftserver-${LIVY_VERSION}.jar"
+    val thriftserverJarName = s"livy-thriftserver-$LIVY_VERSION.jar"
     val thriftserverJarFile = Option(new File(home, s"jars/$thriftserverJarName"))
       .filter(_.exists())
       .getOrElse(new File(home, s"thriftserver/server/target/jars/$thriftserverJarName"))

@@ -22,40 +22,36 @@ import java.util
 import java.util.concurrent.{CancellationException, ExecutionException, TimeoutException, TimeUnit}
 import javax.security.auth.login.LoginException
 
-import scala.collection.JavaConverters._
-
-import org.apache.hadoop.hive.common.log.ProgressMonitor
-import org.apache.hadoop.hive.conf.HiveConf
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars
-import org.apache.hadoop.hive.ql.parse.ParseUtils
-import org.apache.hadoop.hive.shims.Utils
-import org.apache.hadoop.security.UserGroupInformation
-import org.apache.hive.service.{CompositeService, ServiceException}
-import org.apache.hive.service.auth.HiveAuthFactory
-import org.apache.hive.service.cli._
-import org.apache.hive.service.cli.operation.Operation
+import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
+import org.apache.hive.service.ServiceException
+import org.apache.hive.service.cli.{FetchOrientation, FetchType, GetInfoType, GetInfoValue, HiveSQLException, OperationHandle, SessionHandle}
 import org.apache.hive.service.rpc.thrift.{TOperationHandle, TProtocolVersion}
 
-import org.apache.livy.{LIVY_VERSION, Logging}
+import org.apache.livy.{LIVY_VERSION, LivyConf, Logging}
+import org.apache.livy.thriftserver.auth.AuthFactory
+import org.apache.livy.thriftserver.operation.{Operation, OperationStatus}
+import org.apache.livy.thriftserver.serde.ResultSet
+import org.apache.livy.thriftserver.types.Schema
 
 class LivyCLIService(server: LivyThriftServer)
-  extends CompositeService(classOf[LivyCLIService].getName) with ICLIService with Logging {
+  extends ThriftService(classOf[LivyCLIService].getName) with Logging {
   import LivyCLIService._
 
   private var sessionManager: LivyThriftSessionManager = _
   private var defaultFetchRows: Int = _
   private var serviceUGI: UserGroupInformation = _
   private var httpUGI: UserGroupInformation = _
+  private var maxTimeout: Long = _
 
-  override def init(hiveConf: HiveConf): Unit = {
-    sessionManager = new LivyThriftSessionManager(server, hiveConf)
+  override def init(livyConf: LivyConf): Unit = {
+    sessionManager = new LivyThriftSessionManager(server, livyConf)
     addService(sessionManager)
-    defaultFetchRows =
-      hiveConf.getIntVar(ConfVars.HIVE_SERVER2_THRIFT_RESULTSET_DEFAULT_FETCH_SIZE)
+    defaultFetchRows = livyConf.getInt(LivyConf.THRIFT_RESULTSET_DEFAULT_FETCH_SIZE)
+    maxTimeout = livyConf.getTimeAsMs(LivyConf.THRIFT_LONG_POLLING_TIMEOUT)
     //  If the hadoop cluster is secure, do a kerberos login for the service from the keytab
     if (UserGroupInformation.isSecurityEnabled) {
       try {
-        serviceUGI = Utils.getUGI
+        serviceUGI = UserGroupInformation.getCurrentUser
       } catch {
         case e: IOException =>
           throw new ServiceException("Unable to login to kerberos with given principal/keytab", e)
@@ -63,19 +59,20 @@ class LivyCLIService(server: LivyThriftServer)
           throw new ServiceException("Unable to login to kerberos with given principal/keytab", e)
       }
       // Also try creating a UGI object for the SPNego principal
-      val principal = hiveConf.getVar(ConfVars.HIVE_SERVER2_SPNEGO_PRINCIPAL)
-      val keyTabFile = hiveConf.getVar(ConfVars.HIVE_SERVER2_SPNEGO_KEYTAB)
+      val principal = livyConf.get(LivyConf.THRIFT_SPNEGO_PRINCIPAL)
+      val keyTabFile = livyConf.get(LivyConf.THRIFT_SPNEGO_KEYTAB)
       if (principal.isEmpty || keyTabFile.isEmpty) {
         info(s"SPNego httpUGI not created, SPNegoPrincipal: $principal, ketabFile: $keyTabFile")
       } else try {
-        httpUGI = HiveAuthFactory.loginFromSpnegoKeytabAndReturnUGI(hiveConf)
+        httpUGI = UserGroupInformation.loginUserFromKeytabAndReturnUGI(
+          SecurityUtil.getServerPrincipal(principal, "0.0.0.0"), keyTabFile)
         info("SPNego httpUGI successfully created.")
       } catch {
         case e: IOException =>
           warn("SPNego httpUGI creation failed: ", e)
       }
     }
-    super.init(hiveConf)
+    super.init(livyConf)
   }
 
   def getServiceUGI: UserGroupInformation = this.serviceUGI
@@ -85,7 +82,7 @@ class LivyCLIService(server: LivyThriftServer)
   def getSessionManager: LivyThriftSessionManager = sessionManager
 
   @throws[HiveSQLException]
-  override def getInfo(sessionHandle: SessionHandle, getInfoType: GetInfoType): GetInfoValue = {
+  def getInfo(sessionHandle: SessionHandle, getInfoType: GetInfoType): GetInfoValue = {
     getInfoType match {
       case GetInfoType.CLI_SERVER_NAME => new GetInfoValue("Livy JDBC")
       case GetInfoType.CLI_DBMS_NAME => new GetInfoValue("Livy JDBC")
@@ -95,7 +92,7 @@ class LivyCLIService(server: LivyThriftServer)
       case GetInfoType.CLI_MAX_SCHEMA_NAME_LEN => new GetInfoValue(128)
       case GetInfoType.CLI_MAX_TABLE_NAME_LEN => new GetInfoValue(128)
       case GetInfoType.CLI_ODBC_KEYWORDS =>
-        new GetInfoValue(ParseUtils.getKeywords(LivyCLIService.ODBC_KEYWORDS))
+        new GetInfoValue(getKeywords)
       case _ => throw new HiveSQLException(s"Unrecognized GetInfoType value: $getInfoType")
     }
   }
@@ -128,7 +125,7 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def openSession(
+  def openSession(
       username: String,
       password: String,
       configuration: util.Map[String, String]): SessionHandle = {
@@ -139,7 +136,7 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def openSessionWithImpersonation(
+  def openSessionWithImpersonation(
       username: String,
       password: String,
       configuration: util.Map[String, String], delegationToken: String): SessionHandle = {
@@ -150,13 +147,13 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def closeSession(sessionHandle: SessionHandle): Unit = {
+  def closeSession(sessionHandle: SessionHandle): Unit = {
     sessionManager.closeSession(sessionHandle)
     debug(sessionHandle + ": closeSession()")
   }
 
   @throws[HiveSQLException]
-  override def executeStatement(
+  def executeStatement(
       sessionHandle: SessionHandle,
       statement: String,
       confOverlay: util.Map[String, String]): OperationHandle = {
@@ -167,7 +164,7 @@ class LivyCLIService(server: LivyThriftServer)
    * Execute statement on the server with a timeout. This is a blocking call.
    */
   @throws[HiveSQLException]
-  override def executeStatement(
+  def executeStatement(
       sessionHandle: SessionHandle,
       statement: String,
       confOverlay: util.Map[String, String],
@@ -179,7 +176,7 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def executeStatementAsync(
+  def executeStatementAsync(
       sessionHandle: SessionHandle,
       statement: String,
       confOverlay: util.Map[String, String]): OperationHandle = {
@@ -190,7 +187,7 @@ class LivyCLIService(server: LivyThriftServer)
    * Execute statement asynchronously on the server with a timeout. This is a non-blocking call
    */
   @throws[HiveSQLException]
-  override def executeStatementAsync(
+  def executeStatementAsync(
       sessionHandle: SessionHandle,
       statement: String,
       confOverlay: util.Map[String, String],
@@ -202,19 +199,19 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getTypeInfo(sessionHandle: SessionHandle): OperationHandle = {
+  def getTypeInfo(sessionHandle: SessionHandle): OperationHandle = {
     debug(sessionHandle + ": getTypeInfo()")
     sessionManager.operationManager.getTypeInfo(sessionHandle)
   }
 
   @throws[HiveSQLException]
-  override def getCatalogs(sessionHandle: SessionHandle): OperationHandle = {
+  def getCatalogs(sessionHandle: SessionHandle): OperationHandle = {
     debug(sessionHandle + ": getCatalogs()")
     sessionManager.operationManager.getCatalogs(sessionHandle)
   }
 
   @throws[HiveSQLException]
-  override def getSchemas(
+  def getSchemas(
       sessionHandle: SessionHandle,
       catalogName: String,
       schemaName: String): OperationHandle = {
@@ -223,7 +220,7 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getTables(
+  def getTables(
       sessionHandle: SessionHandle,
       catalogName: String,
       schemaName: String,
@@ -234,13 +231,13 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getTableTypes(sessionHandle: SessionHandle): OperationHandle = {
+  def getTableTypes(sessionHandle: SessionHandle): OperationHandle = {
     debug(sessionHandle + ": getTableTypes()")
     sessionManager.operationManager.getTableTypes(sessionHandle)
   }
 
   @throws[HiveSQLException]
-  override def getColumns(
+  def getColumns(
       sessionHandle: SessionHandle,
       catalogName: String,
       schemaName: String,
@@ -251,7 +248,7 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getFunctions(
+  def getFunctions(
       sessionHandle: SessionHandle,
       catalogName: String,
       schemaName: String,
@@ -261,7 +258,7 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getPrimaryKeys(
+  def getPrimaryKeys(
       sessionHandle: SessionHandle,
       catalog: String,
       schema: String,
@@ -271,7 +268,7 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getCrossReference(
+  def getCrossReference(
       sessionHandle: SessionHandle,
       primaryCatalog: String,
       primarySchema: String,
@@ -284,7 +281,7 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  override def getOperationStatus(
+  def getOperationStatus(
       opHandle: OperationHandle,
       getProgressUpdate: Boolean): OperationStatus = {
     val operation: Operation = sessionManager.operationManager.getOperation(opHandle)
@@ -294,10 +291,6 @@ class LivyCLIService(server: LivyThriftServer)
      * However, if the background operation is complete, we return immediately.
      */
     if (operation.shouldRunAsync) {
-      val maxTimeout: Long = HiveConf.getTimeVar(
-        getHiveConf,
-        HiveConf.ConfVars.HIVE_SERVER2_LONG_POLLING_TIMEOUT,
-        TimeUnit.MILLISECONDS)
       val elapsed: Long = System.currentTimeMillis - operation.getBeginTime
       // A step function to increase the polling timeout by 500 ms every 10 sec,
       // starting from 500 ms up to HIVE_SERVER2_LONG_POLLING_TIMEOUT
@@ -321,76 +314,75 @@ class LivyCLIService(server: LivyThriftServer)
         // In this case, the call might return sooner than long polling timeout
       }
     }
-    val opStatus: OperationStatus = operation.getStatus
+    val opStatus = operation.getStatus
     debug(opHandle + ": getOperationStatus()")
-    opStatus.setJobProgressUpdate(new JobProgressUpdate(ProgressMonitor.NULL))
     opStatus
   }
 
   @throws[HiveSQLException]
-  override def cancelOperation(opHandle: OperationHandle): Unit = {
+  def cancelOperation(opHandle: OperationHandle): Unit = {
     sessionManager.operationManager.cancelOperation(opHandle)
     debug(opHandle + ": cancelOperation()")
   }
 
   @throws[HiveSQLException]
-  override def closeOperation(opHandle: OperationHandle): Unit = {
+  def closeOperation(opHandle: OperationHandle): Unit = {
     sessionManager.operationManager.closeOperation(opHandle)
     debug(opHandle + ": closeOperation")
   }
 
   @throws[HiveSQLException]
-  override def getResultSetMetadata(opHandle: OperationHandle): TableSchema = {
+  def getResultSetMetadata(opHandle: OperationHandle): Schema = {
     debug(opHandle + ": getResultSetMetadata()")
     sessionManager.operationManager.getOperation(opHandle).getResultSetSchema
   }
 
   @throws[HiveSQLException]
-  override def fetchResults(opHandle: OperationHandle): RowSet = {
+  def fetchResults(opHandle: OperationHandle): ResultSet = {
     fetchResults(
       opHandle, Operation.DEFAULT_FETCH_ORIENTATION, defaultFetchRows, FetchType.QUERY_OUTPUT)
   }
 
   @throws[HiveSQLException]
-  override def fetchResults(
+  def fetchResults(
       opHandle: OperationHandle,
       orientation: FetchOrientation,
       maxRows: Long,
-      fetchType: FetchType): RowSet = {
+      fetchType: FetchType): ResultSet = {
     debug(opHandle + ": fetchResults()")
     sessionManager.operationManager.fetchResults(opHandle, orientation, maxRows, fetchType)
   }
 
   @throws[HiveSQLException]
-  override def getDelegationToken(
+  def getDelegationToken(
       sessionHandle: SessionHandle,
-      authFactory: HiveAuthFactory,
+      authFactory: AuthFactory,
       owner: String,
       renewer: String): String = {
     throw new HiveSQLException("Operation not yet supported.")
   }
 
   @throws[HiveSQLException]
-  override def setApplicationName(sh: SessionHandle, value: String): Unit = {
+  def setApplicationName(sh: SessionHandle, value: String): Unit = {
     throw new HiveSQLException("Operation not yet supported.")
   }
 
-  override def cancelDelegationToken(
+  def cancelDelegationToken(
       sessionHandle: SessionHandle,
-      authFactory: HiveAuthFactory,
+      authFactory: AuthFactory,
       tokenStr: String): Unit = {
     throw new HiveSQLException("Operation not yet supported.")
   }
 
-  override def renewDelegationToken(
+  def renewDelegationToken(
       sessionHandle: SessionHandle,
-      authFactory: HiveAuthFactory,
+      authFactory: AuthFactory,
       tokenStr: String): Unit = {
     throw new HiveSQLException("Operation not yet supported.")
   }
 
   @throws[HiveSQLException]
-  override def getQueryId(opHandle: TOperationHandle): String = {
+  def getQueryId(opHandle: TOperationHandle): String = {
     throw new HiveSQLException("Operation not yet supported.")
   }
 }
@@ -428,5 +420,36 @@ object LivyCLIService {
     "TIMESTAMP", "TIMEZONE_HOUR", "TIMEZONE_MINUTE", "TO", "TRAILING", "TRANSACTION", "TRANSLATE",
     "TRANSLATION", "TRIM", "TRUE", "UNION", "UNIQUE", "UNKNOWN", "UPDATE", "UPPER", "USAGE",
     "USER", "USING", "VALUE", "VALUES", "VARCHAR", "VARYING", "VIEW", "WHEN", "WHENEVER", "WHERE",
-    "WITH", "WORK", "WRITE", "YEAR", "ZONE").asJava
+    "WITH", "WORK", "WRITE", "YEAR", "ZONE")
+
+  // scalastyle:off line.size.limit
+  // https://github.com/apache/spark/blob/515708d5f33d5acdb4206c626192d1838f8e691f/sql/catalyst/src/main/antlr4/org/apache/spark/sql/catalyst/parser/SqlBase.g4#L744-L1013
+  // scalastyle:on line.size.limit
+  private val SPARK_KEYWORDS = Seq("SELECT", "FROM", "ADD", "AS", "ALL", "ANY", "DISTINCT",
+    "WHERE", "GROUP", "BY", "GROUPING", "SETS", "CUBE", "ROLLUP", "ORDER", "HAVING", "LIMIT",
+    "AT", "OR", "AND", "IN", "NOT", "NO", "EXISTS", "BETWEEN", "LIKE", "RLIKE", "REGEXP", "IS",
+    "NULL", "TRUE", "FALSE", "NULLS", "ASC", "DESC", "FOR", "INTERVAL", "CASE", "WHEN", "THEN",
+    "ELSE", "END", "JOIN", "CROSS", "OUTER", "INNER", "LEFT", "SEMI", "RIGHT", "FULL", "NATURAL",
+    "ON", "PIVOT", "LATERAL", "WINDOW", "OVER", "PARTITION", "RANGE", "ROWS", "UNBOUNDED",
+    "PRECEDING", "FOLLOWING", "CURRENT", "FIRST", "AFTER", "LAST", "ROW", "WITH", "VALUES",
+    "CREATE", "TABLE", "DIRECTORY", "VIEW", "REPLACE", "INSERT", "DELETE", "INTO", "DESCRIBE",
+    "EXPLAIN", "FORMAT", "LOGICAL", "CODEGEN", "COST", "CAST", "SHOW", "TABLES", "COLUMNS",
+    "COLUMN", "USE", "PARTITIONS", "FUNCTIONS", "DROP", "UNION", "EXCEPT", "MINUS", "INTERSECT",
+    "TO", "TABLESAMPLE", "STRATIFY", "ALTER", "RENAME", "ARRAY", "MAP", "STRUCT", "COMMENT", "SET",
+    "RESET", "DATA", "START", "TRANSACTION", "COMMIT", "ROLLBACK", "MACRO", "IGNORE", "BOTH",
+    "LEADING", "TRAILING", "IF", "POSITION", "EXTRACT", "DIV", "PERCENT", "BUCKET", "OUT", "OF",
+    "SORT", "CLUSTER", "DISTRIBUTE", "OVERWRITE", "TRANSFORM", "REDUCE", "USING", "SERDE",
+    "SERDEPROPERTIES", "RECORDREADER", "RECORDWRITER", "DELIMITED", "FIELDS", "TERMINATED",
+    "COLLECTION", "ITEMS", "KEYS", "ESCAPED", "LINES", "SEPARATED", "FUNCTION", "EXTENDED",
+    "REFRESH", "CLEAR", "CACHE", "UNCACHE", "LAZY", "FORMATTED", "GLOBAL", "TEMPORARY", "TEMP",
+    "OPTIONS", "UNSET", "TBLPROPERTIES", "DBPROPERTIES", "BUCKETS", "SKEWED", "STORED",
+    "DIRECTORIES", "LOCATION", "EXCHANGE", "ARCHIVE", "UNARCHIVE", "FILEFORMAT", "TOUCH",
+    "COMPACT", "CONCATENATE", "CHANGE", "CASCADE", "RESTRICT", "CLUSTERED", "SORTED", "PURGE",
+    "INPUTFORMAT", "OUTPUTFORMAT", "DATABASE", "SCHEMA", "DATABASES", "SCHEMAS", "DFS", "TRUNCATE",
+    "ANALYZE", "COMPUTE", "LIST", "STATISTICS", "PARTITIONED", "EXTERNAL", "DEFINED", "REVOKE",
+    "GRANT", "LOCK", "UNLOCK", "MSCK", "REPAIR", "RECOVER", "EXPORT", "IMPORT", "LOAD", "ROLE",
+    "ROLES", "COMPACTIONS", "PRINCIPALS", "TRANSACTIONS", "INDEX", "INDEXES", "LOCKS", "OPTION",
+    "ANTI", "LOCAL", "INPATH")
+
+  def getKeywords: String = SPARK_KEYWORDS.filter(ODBC_KEYWORDS.contains).mkString(",")
 }

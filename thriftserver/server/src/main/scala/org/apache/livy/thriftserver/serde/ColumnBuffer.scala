@@ -22,6 +22,9 @@ import java.util
 
 import scala.collection.mutable
 
+import com.google.common.primitives.{Booleans, Bytes, Doubles, Ints, Longs, Shorts}
+import org.apache.hive.service.rpc.thrift._
+
 import org.apache.livy.thriftserver.types.{DataType, DataTypeUtils}
 
 object ColumnBuffer {
@@ -170,17 +173,31 @@ class ColumnBuffer(val dataType: DataType) {
     doubleVars = newVars
   }
 
-  private[thriftserver] def getColumnValues: Any = dataType.name match {
-    case "boolean" => boolVars.take(currentSize)
-    case "byte" => byteVars.take(currentSize)
-    case "short" => shortVars.take(currentSize)
-    case "integer" => intVars.take(currentSize)
-    case "long" => longVars.take(currentSize)
-    case "float" => doubleVars.take(currentSize)
-    case "double" => doubleVars.take(currentSize)
-    case "binary" => binaryVars
-    case _ => stringVars
+  def toTColumn: TColumn = {
+    val value = new TColumn
+    val nullsArray = new Array[Byte]((currentSize + 7) / 8)
+    this.nulls.foreach { idx =>
+      nullsArray(idx / 8) = (nullsArray(idx / 8) | 1 << (idx % 8)).toByte
+    }
+    val nullMasks = ByteBuffer.wrap(nullsArray)
+    dataType.name match {
+      case "boolean" =>
+        value.setBoolVal(new TBoolColumn(Booleans.asList(boolVars.take(size): _*), nullMasks))
+      case "byte" =>
+        value.setByteVal(new TByteColumn(Bytes.asList(byteVars.take(size): _*), nullMasks))
+      case "short" =>
+        value.setI16Val(new TI16Column(Shorts.asList(shortVars.take(size): _*), nullMasks))
+      case "integer" =>
+        value.setI32Val(new TI32Column(Ints.asList(intVars.take(size): _*), nullMasks))
+      case "long" =>
+        value.setI64Val(new TI64Column(Longs.asList(longVars.take(size): _*), nullMasks))
+      case "float" | "double" =>
+        value.setDoubleVal(new TDoubleColumn(Doubles.asList(doubleVars.take(size): _*), nullMasks))
+      case "binary" =>
+        value.setBinaryVal(new TBinaryColumn(this.binaryVars, nullMasks))
+      case _ =>
+        value.setStringVal(new TStringColumn(this.stringVars, nullMasks))
+    }
+    value
   }
-
-  private[thriftserver] def getNulls: util.BitSet = util.BitSet.valueOf(nulls.toBitMask)
 }

@@ -32,10 +32,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 
-import org.apache.hadoop.hive.conf.HiveConf
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars
-import org.apache.hadoop.hive.shims.Utils
-import org.apache.hive.service.CompositeService
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hive.service.cli.{HiveSQLException, SessionHandle}
 import org.apache.hive.service.rpc.thrift.TProtocolVersion
 import org.apache.hive.service.server.ThreadFactoryWithGarbageCleanup
@@ -48,8 +45,9 @@ import org.apache.livy.thriftserver.SessionStates._
 import org.apache.livy.thriftserver.rpc.RpcClient
 import org.apache.livy.utils.LivySparkUtils
 
-class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
-  extends CompositeService(classOf[LivyThriftSessionManager].getName) with Logging {
+
+class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyConf)
+  extends ThriftService(classOf[LivyThriftSessionManager].getName) with Logging {
 
   private[thriftserver] val operationManager = new LivyOperationManager(this)
   private val sessionHandleToLivySession =
@@ -80,17 +78,13 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
   }
 
   // Configs from Hive
-  private val userLimit = hiveConf.getIntVar(ConfVars.HIVE_SERVER2_LIMIT_CONNECTIONS_PER_USER)
-  private val ipAddressLimit =
-    hiveConf.getIntVar(ConfVars.HIVE_SERVER2_LIMIT_CONNECTIONS_PER_IPADDRESS)
+  private val userLimit = livyConf.getInt(LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_USER)
+  private val ipAddressLimit = livyConf.getInt(LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_IPADDRESS)
   private val userIpAddressLimit =
-    hiveConf.getIntVar(ConfVars.HIVE_SERVER2_LIMIT_CONNECTIONS_PER_USER_IPADDRESS)
-  private val checkInterval = HiveConf.getTimeVar(
-    hiveConf, ConfVars.HIVE_SERVER2_SESSION_CHECK_INTERVAL, TimeUnit.MILLISECONDS)
-  private val sessionTimeout = HiveConf.getTimeVar(
-    hiveConf, ConfVars.HIVE_SERVER2_IDLE_SESSION_TIMEOUT, TimeUnit.MILLISECONDS)
-  private val checkOperation = HiveConf.getBoolVar(
-    hiveConf, ConfVars.HIVE_SERVER2_IDLE_SESSION_CHECK_OPERATION)
+    livyConf.getInt(LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_USER_IPADDRESS)
+  private val checkInterval = livyConf.getTimeAsMs(LivyConf.THRIFT_SESSION_CHECK_INTERVAL)
+  private val sessionTimeout = livyConf.getTimeAsMs(LivyConf.THRIFT_IDLE_SESSION_TIMEOUT)
+  private val checkOperation = livyConf.getBoolean(LivyConf.THRIFT_IDLE_SESSION_CHECK_OPERATION)
 
   private var backgroundOperationPool: ThreadPoolExecutor = _
 
@@ -257,7 +251,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
       newSession
     }
     val futureLivySession = Future {
-      val livyServiceUGI = Utils.getUGI
+      val livyServiceUGI = UserGroupInformation.getCurrentUser
       var livySession: InteractiveSession = null
       try {
         livyServiceUGI.doAs(new PrivilegedExceptionAction[InteractiveSession] {
@@ -308,21 +302,20 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
   }
 
   // Taken from Hive
-  override def init(hiveConf: HiveConf): Unit = {
-    createBackgroundOperationPool(hiveConf)
+  override def init(livyConf: LivyConf): Unit = {
+    createBackgroundOperationPool(livyConf)
     info("Connections limit are user: {} ipaddress: {} user-ipaddress: {}",
       userLimit, ipAddressLimit, userIpAddressLimit)
-    super.init(hiveConf)
+    super.init(livyConf)
   }
 
   // Taken from Hive
-  private def createBackgroundOperationPool(hiveConf: HiveConf): Unit = {
-    val poolSize = hiveConf.getIntVar(ConfVars.HIVE_SERVER2_ASYNC_EXEC_THREADS)
+  private def createBackgroundOperationPool(livyConf: LivyConf): Unit = {
+    val poolSize = livyConf.getInt(LivyConf.THRIFT_ASYNC_EXEC_THREADS)
     info("HiveServer2: Background operation thread pool size: " + poolSize)
-    val poolQueueSize = hiveConf.getIntVar(ConfVars.HIVE_SERVER2_ASYNC_EXEC_WAIT_QUEUE_SIZE)
+    val poolQueueSize = livyConf.getInt(LivyConf.THRIFT_ASYNC_EXEC_WAIT_QUEUE_SIZE)
     info("HiveServer2: Background operation thread wait queue size: " + poolQueueSize)
-    val keepAliveTime = HiveConf.getTimeVar(
-      hiveConf, ConfVars.HIVE_SERVER2_ASYNC_EXEC_KEEPALIVE_TIME, TimeUnit.SECONDS)
+    val keepAliveTime = livyConf.getTimeAsMs(LivyConf.THRIFT_ASYNC_EXEC_KEEPALIVE_TIME) / 1000
     info(s"HiveServer2: Background operation thread keepalive time: $keepAliveTime seconds")
     // Create a thread pool with #poolSize threads
     // Threads terminate when they are idle for more than the keepAliveTime
@@ -378,11 +371,11 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
                 if (operations.nonEmpty) {
                   operations.foreach { op =>
                     try {
-                      warn(s"Operation ${op.getHandle} is timed-out and will be closed")
-                      operationManager.closeOperation(op.getHandle)
+                      warn(s"Operation ${op.opHandle} is timed-out and will be closed")
+                      operationManager.closeOperation(op.opHandle)
                     } catch {
                       case e: Exception =>
-                        warn("Exception is thrown closing timed-out operation: " + op.getHandle, e)
+                        warn("Exception is thrown closing timed-out operation: " + op.opHandle, e)
                     }
                   }
                 }
@@ -419,14 +412,13 @@ class LivyThriftSessionManager(val server: LivyThriftServer, hiveConf: HiveConf)
     shutdownTimeoutChecker()
     if (backgroundOperationPool != null) {
       backgroundOperationPool.shutdown()
-      val timeout =
-        hiveConf.getTimeVar(ConfVars.HIVE_SERVER2_ASYNC_EXEC_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)
+      val timeout = livyConf.getTimeAsMs(LivyConf.THRIFT_ASYNC_EXEC_SHUTDOWN_TIMEOUT) / 1000
       try {
         backgroundOperationPool.awaitTermination(timeout, TimeUnit.SECONDS)
       } catch {
         case e: InterruptedException =>
-          warn("HIVE_SERVER2_ASYNC_EXEC_SHUTDOWN_TIMEOUT = " + timeout +
-            " seconds has been exceeded. RUNNING background operations will be shut down", e)
+          warn(s"THRIFT_ASYNC_EXEC_SHUTDOWN_TIMEOUT = $timeout seconds has been exceeded. " +
+            "RUNNING background operations will be shut down", e)
       }
       backgroundOperationPool = null
     }

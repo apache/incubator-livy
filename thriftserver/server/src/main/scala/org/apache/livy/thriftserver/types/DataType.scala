@@ -21,18 +21,16 @@ private[thriftserver] trait DataType {
   def name: String
 }
 
-private[thriftserver] case class BasicDataType(name: String) extends DataType
+case class BasicDataType(name: String) extends DataType
 
-private[thriftserver] case class StructField(name: String, dataType: DataType)
-
-private[thriftserver]case class StructType(fields: Array[StructField]) extends DataType {
+case class StructType(fields: Array[Field]) extends DataType {
   val name = "struct"
 }
 
-private[thriftserver] case class ArrayType(elementsType: DataType) extends DataType {
+case class ArrayType(elementsType: DataType) extends DataType {
   val name = "array"
 }
 
-private[thriftserver] case class MapType(keyType: DataType, valueType: DataType) extends DataType {
+case class MapType(keyType: DataType, valueType: DataType) extends DataType {
   val name = "map"
 }

@@ -98,10 +98,78 @@ object LivyConf {
   val LAUNCH_KERBEROS_REFRESH_INTERVAL = Entry("livy.server.launch.kerberos.refresh-interval", "1h")
   val KINIT_FAIL_THRESHOLD = Entry("livy.server.launch.kerberos.kinit-fail-threshold", 5)
 
+  // Thrift configurations
   val THRIFT_SERVER_ENABLED = Entry("livy.server.thrift.enabled", false)
   val THRIFT_INCR_COLLECT_ENABLED = Entry("livy.server.thrift.incrementalCollect", false)
   val THRIFT_SESSION_CREATION_TIMEOUT = Entry("livy.server.thrift.session.creationTimeout", "10m")
   val THRIFT_SERVER_JAR_LOCATION = Entry("livy.server.thrift.jarLocation", null)
+  // The following configs are the same present in Hive
+  val THRIFT_RESULTSET_DEFAULT_FETCH_SIZE =
+    Entry("livy.server.thrift.resultset.default.fetch.size", 1000)
+  val THRIFT_SPNEGO_PRINCIPAL = Entry("livy.server.thrift.authentication.spnego.principal", "")
+  val THRIFT_SPNEGO_KEYTAB = Entry("livy.server.thrift.authentication.spnego.keytab", "")
+  val THRIFT_TRANSPORT_MODE = Entry("livy.server.thrift.transport.mode", "binary")
+  val THRIFT_SERVER_PORT = Entry("livy.server.thrift.port", 10090)
+  val THRIFT_LONG_POLLING_TIMEOUT = Entry("livy.server.thrift.long.polling.timeout", "5000ms")
+  val THRIFT_LIMIT_CONNECTIONS_PER_USER = Entry("livy.server.thrift.limit.connections.per.user", 0)
+  val THRIFT_LIMIT_CONNECTIONS_PER_IPADDRESS =
+    Entry("livy.server.thrift.limit.connections.per.ipaddress", 0)
+  val THRIFT_LIMIT_CONNECTIONS_PER_USER_IPADDRESS =
+    Entry("livy.server.thrift.limit.connections.per.user.ipaddress", 0)
+  val THRIFT_SESSION_CHECK_INTERVAL = Entry("livy.server.thrift.session.check.interval", "6h")
+  val THRIFT_CLOSE_SESSION_ON_DISCONNECT =
+    Entry("livy.server.thrift.close.session.on.disconnect", true)
+  val THRIFT_IDLE_SESSION_TIMEOUT = Entry("livy.server.thrift.idle.session.timeout", "7d")
+  val THRIFT_IDLE_OPERATION_TIMEOUT = Entry("livy.server.thrift.idle.operation.timeout", "5d")
+  val THRIFT_IDLE_SESSION_CHECK_OPERATION =
+    Entry("livy.server.thrift.idle.session.check.operation", true)
+  val THRIFT_LOG_OPERATION_ENABLED = Entry("livy.server.thrift.logging.operation.enabled", true)
+  val THRIFT_ASYNC_EXEC_THREADS = Entry("livy.server.thrift.async.exec.threads", 100)
+  val THRIFT_ASYNC_EXEC_SHUTDOWN_TIMEOUT =
+    Entry("livy.server.thrift.async.exec.shutdown.timeout", "10s")
+  val THRIFT_ASYNC_EXEC_WAIT_QUEUE_SIZE =
+    Entry("livy.server.thrift.async.exec.wait.queue.size", 100)
+  val THRIFT_ASYNC_EXEC_KEEPALIVE_TIME =
+    Entry("livy.server.thrift.async.exec.keepalive.time", "10s")
+  val THRIFT_BIND_HOST = Entry("livy.server.thrift.bind.host", null)
+  val THRIFT_WORKER_KEEPALIVE_TIME = Entry("livy.server.thrift.worker.keepalive.time", "60s")
+  val THRIFT_MIN_WORKER_THREADS = Entry("livy.server.thrift.min.worker.threads", 5)
+  val THRIFT_MAX_WORKER_THREADS = Entry("livy.server.thrift.max.worker.threads", 500)
+  val THRIFT_RESULTSET_MAX_FETCH_SIZE = Entry("livy.server.thrift.resultset.max.fetch.size", 10000)
+  val THRIFT_ALLOW_USER_SUBSTITUTION = Entry("livy.server.thrift.allow.user.substitution", true)
+  val THRIFT_AUTHENTICATION = Entry("livy.server.thrift.authentication", "NONE")
+  val THRIFT_ENABLE_DOAS = Entry("livy.server.thrift.enable.doAs", true)
+  val THRIFT_SSL_PROTOCOL_BLACKLIST =
+    Entry("livy.server.thrift.ssl.protocol.blacklist", "SSLv2,SSLv3")
+  val THRIFT_USE_SSL = Entry("livy.server.thrift.use.SSL", false)
+  val THRIFT_MAX_MESSAGE_SIZE = Entry("livy.server.thrift.max.message.size", 100 * 1024 * 1024)
+  val THRIFT_LOGIN_TIMEOUT = Entry("livy.server.thrift.login.timeout", "20s")
+  val THRIFT_LOGIN_BEBACKOFF_SLOT_LENGTH =
+    Entry("livy.server.thrift.exponential.backoff.slot.length", "100ms")
+  val THRIFT_HTTP_REQUEST_HEADER_SIZE =
+    Entry("livy.server.thrift.http.request.header.size", 6*1024)
+  val THRIFT_HTTP_RESPONSE_HEADER_SIZE =
+    Entry("livy.server.thrift.http.response.header.size", 6*1024)
+  val THRIFT_HTTP_MAX_IDLE_TIME = Entry("livy.server.thrift.http.max.idle.time", "1800s")
+  val THRIFT_XSRF_FILTER_ENABLED = Entry("livy.server.thrift.xsrf.filter.enabled", false)
+  val THRIFT_HTTP_PATH = Entry("livy.server.thrift.http.path", "cliservice")
+  val THRIFT_HTTP_COMPRESSION_ENABLED = Entry("livy.server.thrift.http.compression.enabled", true)
+  val THRIFT_HTTP_COOKIE_AUTH_ENABLED = Entry("livy.server.thrift.http.cookie.auth.enabled", true)
+  val THRIFT_HTTP_COOKIE_MAX_AGE = Entry("livy.server.thrift.http.cookie.max.age", "86400s")
+  val THRIFT_HTTP_COOKIE_DOMAIN = Entry("livy.server.thrift.http.cookie.domain", null)
+  val THRIFT_HTTP_COOKIE_PATH = Entry("livy.server.thrift.http.cookie.path", null)
+  val THRIFT_HTTP_COOKIE_IS_HTTPONLY = Entry("livy.server.thrift.http.cookie.is.httponly", true)
+  val THRIFT_CUSTOM_AUTHENTICATION_CLASS =
+    Entry("livy.server.thrift.custom.authentication.class", null)
+  val THRIFT_SASL_QOP = Entry("livy.server.thrift.sasl.qop", "auth")
+  val THRIFT_DELEGATION_KEY_UPDATE_INTERVAL =
+    Entry("livy.server.thrift.delegation.key.update-interval", "1d")
+  val THRIFT_DELEGATION_TOKEN_GC_INTERVAL =
+    Entry("livy.server.thrift.delegation.token.gc-interval", "1h")
+  val THRIFT_DELEGATION_TOKEN_MAX_LIFETIME =
+    Entry("livy.server.thrift.delegation.token.max-lifetime", "7d")
+  val THRIFT_DELEGATION_TOKEN_RENEW_INTERVAL =
+    Entry("livy.server.thrift.delegation.token.renew-interval", "1d")
 
   /**
    * Recovery mode of Livy. Possible values:
