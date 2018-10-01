@@ -149,7 +149,10 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
       }
     }
 
-    Future.sequence(all().filter(expired).map(delete))
+    Future.sequence(all().filter(expired).map { s =>
+      info(s"Deleting $s because it was inactive for more than ${sessionTimeout / 1e6} ms.")
+      delete(s)
+    })
   }
 
   private def recover(): Seq[S] = {
