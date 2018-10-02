@@ -22,8 +22,10 @@
     <artifactId>livy-main</artifactId>
     <groupId>org.apache.livy</groupId>
     <version>0.6.0-incubating-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
+  <packaging>pom</packaging>
 
   <artifactId>livy-beeline</artifactId>
 
@@ -52,14 +54,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <outputDirectory>${project.build.directory}/jars</outputDirectory>
-        </configuration>
       </plugin>
     </plugins>
   </build>
