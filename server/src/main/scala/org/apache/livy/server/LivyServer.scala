@@ -222,7 +222,7 @@ class LivyServer extends Logging {
               mount(context, staticResourceServlet, "/static/*")
               mount(context, uiRedirectServlet(basePath + "/ui/"), "/*")
               thriftServerFactory.foreach { factory =>
-                mount(context, factory.getUI(basePath), "/thriftserver/*")
+                mount(context, factory.getUI(basePath), factory.getUIMappings: _*)
               }
             } else {
               mount(context, uiRedirectServlet(basePath + "/metrics"), "/*")

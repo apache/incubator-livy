@@ -17,7 +17,7 @@
 
 package org.apache.livy.thriftserver
 
-import org.scalatra.ScalatraServlet
+import javax.servlet.Servlet
 
 import org.apache.livy.LivyConf
 import org.apache.livy.server.{AccessManager, ThriftServerFactory}
@@ -38,5 +38,7 @@ class ThriftServerFactoryImpl extends ThriftServerFactory {
     LivyThriftServer.start(livyConf, livySessionManager, sessionStore, accessManager)
   }
 
-  override def getUI(basePath: String): ScalatraServlet = new ThriftUIServlet(basePath)
+  override def getUI(basePath: String): Servlet = new ThriftUIServlet(basePath)
+
+  override def getUIMappings: Seq[String] = Seq("/thriftserver/*")
 }
