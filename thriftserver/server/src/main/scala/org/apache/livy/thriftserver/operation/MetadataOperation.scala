@@ -23,18 +23,18 @@ import org.apache.livy.thriftserver.serde.ResultSet
 
 abstract class MetadataOperation(sessionHandle: SessionHandle, opType: OperationType)
   extends Operation(sessionHandle, opType) {
-  setHasResultSet (true)
+  setHasResultSet(true)
 
   protected def rowSet: ResultSet
 
   @throws[HiveSQLException]
-  override def close (): Unit = {
+  override def close(): Unit = {
     setState(OperationState.CLOSED)
   }
 
   @throws[HiveSQLException]
-  override def cancel (stateAfterCancel: OperationState): Unit = {
-    throw new UnsupportedOperationException ("MetadataOperation.cancel()")
+  override def cancel(stateAfterCancel: OperationState): Unit = {
+    throw new UnsupportedOperationException("MetadataOperation.cancel()")
   }
 
   @throws(classOf[HiveSQLException])

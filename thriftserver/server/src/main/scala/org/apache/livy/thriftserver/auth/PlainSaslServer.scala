@@ -65,7 +65,7 @@ class PlainSaslServer private[auth] (
       tokenList.addLast(messageToken.toString)
       // validate response
       if (tokenList.size < 2 || tokenList.size > 3) {
-        throw new SaslException ("Invalid message format")
+        throw new SaslException("Invalid message format")
       }
       val passwd: String = tokenList.removeLast()
       user = tokenList.removeLast()
@@ -82,23 +82,23 @@ class PlainSaslServer private[auth] (
       if (passwd == null || passwd.isEmpty) {
         throw new SaslException("No password name provided")
       }
-      val nameCallback = new NameCallback ("User")
-      nameCallback.setName (user)
-      val pcCallback = new PasswordCallback ("Password", false)
-      pcCallback.setPassword (passwd.toCharArray)
-      val acCallback = new AuthorizeCallback (user, authzId)
+      val nameCallback = new NameCallback("User")
+      nameCallback.setName(user)
+      val pcCallback = new PasswordCallback("Password", false)
+      pcCallback.setPassword(passwd.toCharArray)
+      val acCallback = new AuthorizeCallback(user, authzId)
       val cbList = Array[Callback](nameCallback, pcCallback, acCallback)
       handler.handle(cbList)
       if (!acCallback.isAuthorized) {
-        throw new SaslException ("Authentication failed")
+        throw new SaslException("Authentication failed")
       }
     } catch {
       case eL: IllegalStateException =>
-        throw new SaslException ("Invalid message format", eL)
+        throw new SaslException("Invalid message format", eL)
       case eI: IOException =>
-        throw new SaslException ("Error validating the login", eI)
+        throw new SaslException("Error validating the login", eI)
       case eU: UnsupportedCallbackException =>
-        throw new SaslException ("Error validating the login", eU)
+        throw new SaslException("Error validating the login", eU)
     }
     null
   }

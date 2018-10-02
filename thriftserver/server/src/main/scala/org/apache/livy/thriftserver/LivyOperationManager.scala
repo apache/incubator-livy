@@ -195,7 +195,7 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
     val operation = getOperation(opHandle)
     val opState = operation.getStatus.state
     if (opState.isTerminal) {
-      // Cancel should be a no-op in either cases
+      // Cancel should be a no-op either case
       debug(s"$opHandle: Operation is already aborted in state - $opState")
     } else {
       debug(s"$opHandle: Attempting to cancel from state - $opState")
@@ -232,5 +232,5 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
 }
 
 object LivyOperationManager {
- val LOG_SCHEMA: Array[DataType] = Array(BasicDataType("string"))
+  val LOG_SCHEMA: Array[DataType] = Array(BasicDataType("string"))
 }

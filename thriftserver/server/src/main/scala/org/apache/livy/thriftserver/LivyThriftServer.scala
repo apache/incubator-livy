@@ -130,9 +130,9 @@ class LivyThriftServer(
     }
     addService(thriftCLIService)
     super.init(livyConf)
-    Runtime.getRuntime.addShutdownHook(new Thread("Livy Server Shutdown") {
+    Runtime.getRuntime.addShutdownHook(new Thread("LivyThriftServer Shutdown") {
       override def run(): Unit = {
-        info("Shutting down Livy server.")
+        info("Shutting down LivyThriftServer.")
         LivyThriftServer.this.stop()
       }
     })
@@ -147,7 +147,7 @@ class LivyThriftServer(
   }
 
   override def stop(): Unit = {
-    info("Shutting down HiveServer2")
+    info("Shutting down LivyThriftServer")
     super.stop()
   }
 }

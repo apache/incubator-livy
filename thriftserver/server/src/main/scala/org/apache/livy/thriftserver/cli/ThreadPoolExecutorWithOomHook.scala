@@ -34,7 +34,7 @@ class ThreadPoolExecutorWithOomHook(
   extends ThreadPoolExecutor(
     corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory) {
 
-  override protected def afterExecute (r: Runnable, t: Throwable): Unit = {
+  override protected def afterExecute(r: Runnable, t: Throwable): Unit = {
     super.afterExecute(r, t)
     if (t == null && r.isInstanceOf[Future[_]] ) {
       try {

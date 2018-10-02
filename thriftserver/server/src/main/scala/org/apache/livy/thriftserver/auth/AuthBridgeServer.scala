@@ -134,7 +134,8 @@ class AuthBridgeServer(private val secretManager: LivyDelegationTokenSecretManag
  * This class is derived from Hive's one.
  */
 private[auth] class TUGIAssumingTransportFactory(
-    val wrapped: TTransportFactory, val ugi: UserGroupInformation) extends TTransportFactory {
+    val wrapped: TTransportFactory,
+    val ugi: UserGroupInformation) extends TTransportFactory {
   assert(wrapped != null)
   assert(ugi != null)
 
@@ -147,10 +148,11 @@ private[auth] class TUGIAssumingTransportFactory(
 
 /**
  * CallbackHandler for SASL DIGEST-MD5 mechanism.
+ *
+ * This code is pretty much completely based on Hadoop's SaslRpcServer.SaslDigestCallbackHandler -
+ * the only reason we could not use that Hadoop class as-is was because it needs a
+ * Server.Connection.
  */
-// This code is pretty much completely based on Hadoop's SaslRpcServer.SaslDigestCallbackHandler -
-// the only reason we could not use that Hadoop class as-is was because it needs a
-// Server.Connection.
 sealed class SaslDigestCallbackHandler(
     val secretManager: LivyDelegationTokenSecretManager) extends CallbackHandler with Logging {
   @throws[InvalidToken]
@@ -171,8 +173,11 @@ sealed class SaslDigestCallbackHandler(
       case ac: AuthorizeCallback =>
         val authid: String = ac.getAuthenticationID
         val authzid: String = ac.getAuthorizationID
-        if (authid == authzid) ac.setAuthorized(true)
-        else ac.setAuthorized(false)
+        if (authid == authzid) {
+          ac.setAuthorized(true)
+        } else {
+          ac.setAuthorized(false)
+        }
         if (ac.isAuthorized) {
           if (logger.isDebugEnabled) {
             val username = SaslRpcServer.getIdentifier(authzid, secretManager).getUser.getUserName
