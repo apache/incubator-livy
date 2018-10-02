@@ -1023,6 +1023,7 @@
       <id>thriftserver</id>
       <modules>
         <module>thriftserver/server</module>
+        <module>thriftserver/client</module> 
       </modules>
     </profile>
 
