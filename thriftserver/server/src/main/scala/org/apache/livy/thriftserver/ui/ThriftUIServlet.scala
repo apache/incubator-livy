@@ -19,22 +19,18 @@ package org.apache.livy.thriftserver.ui
 
 import java.text.SimpleDateFormat
 
-import scala.collection.JavaConverters._
 import scala.xml.Node
 
-import org.json4s.{DefaultFormats, Formats}
-import org.scalatra.json._
-
+import org.apache.livy.server.JsonServlet
 import org.apache.livy.server.ui.BaseServlet
 import org.apache.livy.thriftserver.LivyThriftServer
 
-class ThriftUIServlet(val basePath: String) extends BaseServlet with JacksonJsonSupport {
 
-  protected implicit val jsonFormats: Formats = DefaultFormats
+class ThriftUIServlet(val basePath: String) extends JsonServlet with BaseServlet {
 
   private val df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
-  private case class ThriftSessionsPage(name: String = "JDBC Sessions") extends Page {
+  private case class ThriftSessionsPage(name: String = "JDBC/ODBC Sessions") extends Page {
     override def getNavTabs: Seq[Node] = {
       <li><a href={basePath + "/ui"}>Sessions</a></li> ++
         <li class="active"><a href="#">Thrift Server</a></li>
@@ -56,7 +52,7 @@ class ThriftUIServlet(val basePath: String) extends BaseServlet with JacksonJson
   get("/") { withContentType("html") {
     val content =
       <div id="thrift-sessions">
-        <script src={basePath + "/static/js/thrift-sessions.js"}></script>
+        <script src={s"$basePath/static/js/thrift-sessions.js"}></script>
       </div>
 
     createPage(ThriftSessionsPage(), content)

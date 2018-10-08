@@ -44,7 +44,7 @@ $(document).ready(function () {
 
   $.when(sessionsReq).done(function () {
     if (numSessions == 0) {
-      $("#thrift-sessions").append('<h4>No open JDBC sessions.</h4>');
+      $("#thrift-sessions").append('<h4>No open JDBC/ODBC sessions.</h4>');
     }
   });
 });
