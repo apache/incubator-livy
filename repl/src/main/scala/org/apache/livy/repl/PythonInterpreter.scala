@@ -299,8 +299,8 @@ private class PythonInterpreter(
     }
   }
 
-  override def complete(code: String, cursor: Int): Array[String] ={
-    val r = pysparkJobProcessor.complete(code,cursor)
+  override def complete(code: String, cursor: Int): Array[String] = {
+    val r = pysparkJobProcessor.complete(code, cursor)
     r.split(",")
   }
 

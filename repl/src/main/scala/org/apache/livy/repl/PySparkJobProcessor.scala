@@ -25,5 +25,5 @@ trait PySparkJobProcessor {
 
   def getLocalTmpDirPath: String
 
-  def complete(code:String,cursor_pos:Int):String
+  def complete(code: String, cursor_pos: Int): String
 }
