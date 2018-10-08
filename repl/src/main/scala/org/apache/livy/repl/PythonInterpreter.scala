@@ -299,6 +299,11 @@ private class PythonInterpreter(
     }
   }
 
+  override def complete(code: String, cursor: Int): Array[String] ={
+    val r = pysparkJobProcessor.complete(code,cursor)
+    r.split(",")
+  }
+
   private def updatePythonGatewayPort(port: Int): Unit = {
     // The python gateway port can be 0 only when LivyConf.TEST_MODE is true
     // Py4j 0.10 has different API signature for "getCallbackClient", use reflection to handle it.

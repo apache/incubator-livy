@@ -24,4 +24,6 @@ trait PySparkJobProcessor {
   def addPyFile(path: String)
 
   def getLocalTmpDirPath: String
+
+  def complete(code:String,cursor_pos:Int):String
 }

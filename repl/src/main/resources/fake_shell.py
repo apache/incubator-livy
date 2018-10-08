@@ -46,8 +46,20 @@ LOG = logging.getLogger('fake_shell')
 global_dict = {}
 job_context = None
 local_tmp_dir_path = None
+completer = None
 
 TOP_FRAME_REGEX = re.compile(r'\s*File "<stdin>".*in <module>')
+
+def get_completer():
+    try:
+        __IPYTHON__
+        from IPython.core.completer import IPCompleter
+        ip = get_ipython()
+        completer = IPCompleter(ip,global_namespace=global_dict)
+    except NameError:
+        ##todo complete function can be runed in python
+        pass
+
 
 def execute_reply(status, content):
     return {
@@ -194,6 +206,14 @@ class PySparkJobProcessorImpl(object):
 
     def addFile(self, uri_path):
         job_context.sc.addFile(uri_path)
+
+
+
+
+    def complete(self,code,cursor_pos=None):
+        result = completer.complete(code,cursor_pos=cursor_pos)[1]
+        return ",".join(result)
+
 
     def addPyFile(self, uri_path):
         job_context.sc.addPyFile(uri_path)
