@@ -104,7 +104,7 @@ class LivyConnectionSpec extends FunSpecLike with BeforeAndAfterAll with LivyBas
         .set(LivyConf.RESPONSE_HEADER_SIZE, 1024)
       val pwd = "test-password" * 100
       val exception = intercept[IOException](test(pwd, livyConf))
-      exception.getMessage.contains("Request Entity Too Large") should be(true)
+      exception.getMessage.contains("Request Header Fields Too Large") should be(true)
     }
 
     it("should be succeeded with configured header size") {
