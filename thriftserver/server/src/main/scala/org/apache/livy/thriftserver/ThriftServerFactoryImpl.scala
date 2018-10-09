@@ -23,7 +23,7 @@ import org.apache.livy.LivyConf
 import org.apache.livy.server.{AccessManager, ThriftServerFactory}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
-import org.apache.livy.thriftserver.ui.ThriftUIServlet
+import org.apache.livy.thriftserver.ui.ThriftJsonServlet
 
 class ThriftServerFactoryImpl extends ThriftServerFactory {
   override def start(
@@ -38,7 +38,7 @@ class ThriftServerFactoryImpl extends ThriftServerFactory {
     LivyThriftServer.start(livyConf, livySessionManager, sessionStore, accessManager)
   }
 
-  override def getUI(basePath: String): Servlet = new ThriftUIServlet(basePath)
+  override def getServlet(basePath: String): Servlet = new ThriftJsonServlet(basePath)
 
-  override def getUIMappings: Seq[String] = Seq("/thriftserver/*")
+  override def getServletMappings: Seq[String] = Seq("/thriftserver/*")
 }

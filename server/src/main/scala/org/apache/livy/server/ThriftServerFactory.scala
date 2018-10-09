@@ -33,9 +33,9 @@ trait ThriftServerFactory {
     sessionStore: SessionStore,
     accessManager: AccessManager): Unit
 
-  def getUI(basePath: String): Servlet
+  def getServlet(basePath: String): Servlet
 
-  def getUIMappings: Seq[String]
+  def getServletMappings: Seq[String]
 }
 
 object ThriftServerFactory {
