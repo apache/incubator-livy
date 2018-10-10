@@ -115,7 +115,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
           Ok(Map("msg" -> "deleted"))
 
         case None =>
-          NotFound(s"Session ${session.id} already stopped.")
+          NotFound(Map("msg" -> s"Session ${session.id} already stopped."))
       }
     }
   }
@@ -128,7 +128,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
 
   post("/") {
     if (tooManySessions) {
-      BadRequest("Rejected, too many sessions are being created!")
+      BadRequest(Map("msg" -> "Rejected, too many sessions are being created!"))
     } else {
       val session = sessionManager.register(createSession(request))
       // Because it may take some time to establish the session, update the last activity
@@ -149,8 +149,8 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   error {
-    case e: IllegalArgumentException => BadRequest(e.getMessage)
-    case e: AccessControlException => Forbidden(e.getMessage)
+    case e: IllegalArgumentException => BadRequest(Map("msg" -> e.getMessage))
+    case e: AccessControlException => Forbidden(Map("msg" -> e.getMessage))
   }
 
   /**
@@ -191,7 +191,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
           Forbidden()
         }
       case None =>
-        NotFound(s"Session '$sessionId' not found.")
+        NotFound(Map("msg" -> s"Session '$sessionId' not found."))
     }
   }
 
