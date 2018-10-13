@@ -39,7 +39,7 @@ class UIServlet(val basePath: String, livyConf: LivyConf) extends ScalatraServle
     val name: String = "Session " + id
     override def getNavCrumbs: Seq[Node] = {
         <li><a href={basePath + "/ui"}>Sessions</a></li> ++
-        <li class="active"><a href="#">{name}</a></li>
+          <li class="active"><a href="#">{name}</a></li>
     }
   }
   private case class LogPage(sessionType: String, id: Int) extends Page {
@@ -51,10 +51,9 @@ class UIServlet(val basePath: String, livyConf: LivyConf) extends ScalatraServle
       } else {
         "#"
       }
-
       <li><a href={basePath + "/ui"}>Sessions</a></li> ++
-      <li><a href={sessionLink}>{sessionName}</a></li> ++
-      <li class="active"><a href="#">Log</a></li>
+        <li><a href={sessionLink}>{sessionName}</a></li> ++
+        <li class="active"><a href="#">Log</a></li>
     }
   }
 
@@ -113,7 +112,7 @@ class UIServlet(val basePath: String, livyConf: LivyConf) extends ScalatraServle
 
   private def thriftSessionsTable: Seq[Node] = {
     if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
-      <div id="thrift-sessions"></div>
+      <div id="thrift-sessions"></div> ++
         <script src={s"$basePath/static/js/thrift-sessions.js"}></script>
     } else {
       Seq.empty
