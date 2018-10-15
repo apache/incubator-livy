@@ -29,6 +29,10 @@ matrix:
     env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipITs'
   - name: "Spark 2.3 ITs"
     env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipTests'
+  - name: "Spark 2.4 Unit Tests"
+    env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipITs'
+  - name: "Spark 2.4 ITs"
+    env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipTests'
 
 jdk:
   - oraclejdk8
