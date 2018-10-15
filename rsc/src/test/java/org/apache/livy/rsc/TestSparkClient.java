@@ -57,6 +57,10 @@ public class TestSparkClient {
   private static final long TIMEOUT = 100;
 
   private Properties createConf(boolean local) {
+    return createConf(local, true);
+  }
+
+  private Properties createConf(boolean local, boolean hiveSupport) {
     Properties conf = new Properties();
     if (local) {
       conf.put(CLIENT_IN_PROCESS.key(), "true");
@@ -72,8 +76,8 @@ public class TestSparkClient {
 
     conf.put(CLIENT_SHUTDOWN_TIMEOUT.key(), "30s");
     conf.put(LIVY_JARS.key(), "");
-    conf.put("spark.repl.enableHiveContext", "true");
-    conf.put("spark.sql.catalogImplementation", "hive");
+    conf.put("spark.repl.enableHiveContext", hiveSupport);
+    conf.put("spark.sql.catalogImplementation", hiveSupport ? "hive" : "in-memory");
     conf.put(RETAINED_SHARE_VARIABLES.key(), "2");
     return conf;
   }
@@ -271,7 +275,7 @@ public class TestSparkClient {
 
   @Test
   public void testSparkSQLJob() throws Exception {
-    runTest(true, new TestFunction() {
+    runTest(true, false, new TestFunction() {
       @Override
       void call(LivyClient client) throws Exception {
         JobHandle<List<String>> handle = client.submit(new SQLGetTweets(false));
@@ -518,7 +522,11 @@ public class TestSparkClient {
   }
 
   private void runTest(boolean local, TestFunction test) throws Exception {
-    Properties conf = createConf(local);
+    runTest(local, true, test);
+  }
+
+  private void runTest(boolean local, boolean hiveSupport, TestFunction test) throws Exception {
+    Properties conf = createConf(local, hiveSupport);
     LivyClient client = null;
     try {
       test.config(conf);
