@@ -46,7 +46,6 @@ LOG = logging.getLogger('fake_shell')
 global_dict = {}
 job_context = None
 local_tmp_dir_path = None
-completer = None
 
 TOP_FRAME_REGEX = re.compile(r'\s*File "<stdin>".*in <module>')
 
@@ -55,10 +54,15 @@ def get_completer():
         __IPYTHON__
         from IPython.core.completer import IPCompleter
         ip = get_ipython()
-        completer = IPCompleter(ip,global_namespace=global_dict)
+        ip_completer = IPCompleter(ip,global_namespace=global_dict)
+        global_dict['ip_completer'] = ip_completer
     except NameError:
-        ##todo complete function can be runed in python
-        pass
+        try:
+            from rlcompleter import Completer
+            p_completer = Completer(namespace=global_dict)
+            global_dict['p_completer'] = p_completer
+        except:
+            pass
 
 
 def execute_reply(status, content):
@@ -211,8 +215,22 @@ class PySparkJobProcessorImpl(object):
 
 
     def complete(self,code,cursor_pos=None):
-        result = completer.complete(code,cursor_pos=cursor_pos)[1]
-        return ",".join(result)
+        results = []
+        ip_completer =global_dict.get('ip_completer')
+        p_completer = global_dict.get("p_completer")
+        if ip_completer is not None:
+            results = ip_completer.complete(code,cursor_pos=cursor_pos)[1]
+        elif p_completer is not None:
+            p_completer = global_dict.get("p_completer")
+            state = 0
+            result = None
+            while state == 0 or result is not None:
+                result = p_completer.complete(code,state)
+                if result is not None:
+                    results.append(result)
+                state += 1
+        return ",".join(results)
+
 
 
     def addPyFile(self, uri_path):
@@ -575,6 +593,7 @@ def main():
     sys.stderr = UnicodeDecodingStringIO()
 
     spark_major_version = os.getenv("LIVY_SPARK_MAJOR_VERSION")
+    get_completer()
     try:
         listening_port = 0
         if os.environ.get("LIVY_TEST") != "true":
