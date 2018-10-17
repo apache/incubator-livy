@@ -27,10 +27,11 @@ class ThriftJsonServlet(val basePath: String) extends JsonServlet {
 
   private val df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
-  case class SessionInfo(sessionId: String,
-    livySessionId: String,
-    owner: String,
-    createdAt: String)
+  case class SessionInfo(
+      sessionId: String,
+      livySessionId: String,
+      owner: String,
+      createdAt: String)
 
   get("/sessions") {
     val thriftSessions = LivyThriftServer.getInstance.map { server =>
