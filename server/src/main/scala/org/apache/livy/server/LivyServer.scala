@@ -93,6 +93,12 @@ class LivyServer extends Logging {
     livyConf.set(LIVY_SPARK_SCALA_VERSION.key,
       sparkScalaVersion(formattedSparkVersion, scalaVersionFromSparkSubmit, livyConf))
 
+    val thriftServerFactory = if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+      Some(ThriftServerFactory.getInstance)
+    } else {
+      None
+    }
+
     if (UserGroupInformation.isSecurityEnabled) {
       // If Hadoop security is enabled, run kinit periodically. runKinit() should be called
       // before any Hadoop operation, otherwise Kerberos exception will be thrown.
@@ -211,10 +217,13 @@ class LivyServer extends Logging {
             mount(context, batchServlet, "/batches/*")
 
             if (livyConf.getBoolean(UI_ENABLED)) {
-              val uiServlet = new UIServlet(basePath)
+              val uiServlet = new UIServlet(basePath, livyConf)
               mount(context, uiServlet, "/ui/*")
               mount(context, staticResourceServlet, "/static/*")
               mount(context, uiRedirectServlet(basePath + "/ui/"), "/*")
+              thriftServerFactory.foreach { factory =>
+                mount(context, factory.getServlet(basePath), factory.getServletMappings: _*)
+              }
             } else {
               mount(context, uiRedirectServlet(basePath + "/metrics"), "/*")
             }
@@ -278,9 +287,8 @@ class LivyServer extends Logging {
       }
     })
 
-    if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
-      ThriftServerFactory.getInstance.start(
-        livyConf, interactiveSessionManager, sessionStore, accessManager)
+    thriftServerFactory.foreach {
+      _.start(livyConf, interactiveSessionManager, sessionStore, accessManager)
     }
 
     _serverUrl = Some(s"${server.protocol}://${server.host}:${server.port}")

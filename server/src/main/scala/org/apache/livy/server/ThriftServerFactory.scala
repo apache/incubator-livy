@@ -17,6 +17,8 @@
 
 package org.apache.livy.server
 
+import javax.servlet.Servlet
+
 import org.apache.livy.LivyConf
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
@@ -30,6 +32,10 @@ trait ThriftServerFactory {
     livySessionManager: InteractiveSessionManager,
     sessionStore: SessionStore,
     accessManager: AccessManager): Unit
+
+  def getServlet(basePath: String): Servlet
+
+  def getServletMappings: Seq[String]
 }
 
 object ThriftServerFactory {
