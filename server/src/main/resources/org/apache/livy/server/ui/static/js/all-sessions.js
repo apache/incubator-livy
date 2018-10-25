@@ -26,7 +26,7 @@ function loadSessionsTable(sessions) {
         tdWrap(session.kind) +
         tdWrap(session.state) +
         tdWrap(logLinks(session, "session")) +
-       "</tr>"
+        "</tr>"
     );
   });
 }
@@ -39,7 +39,7 @@ function loadBatchesTable(sessions) {
         tdWrap(appIdLink(session)) +
         tdWrap(session.state) +
         tdWrap(logLinks(session, "batch")) +
-       "</tr>"
+        "</tr>"
     );
   });
 }

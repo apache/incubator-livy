@@ -89,7 +89,7 @@
     <httpcore.version>4.4.4</httpcore.version>
     <jackson.version>2.9.5</jackson.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
-    <jetty.version>9.3.8.v20160314</jetty.version>
+    <jetty.version>9.3.24.v20180605</jetty.version>
     <json4s.version>3.2.11</json4s.version>
     <junit.version>4.11</junit.version>
     <libthrift.version>0.9.3</libthrift.version>
@@ -1024,6 +1024,7 @@
       <modules>
         <module>thriftserver/server</module>
         <module>thriftserver/session</module>
+        <module>thriftserver/client</module>
       </modules>
     </profile>
 
@@ -1031,13 +1032,13 @@
     <profile>
       <id>spark-2.3</id>
       <properties>
-        <spark.scala-2.11.version>2.3.1</spark.scala-2.11.version>
+        <spark.scala-2.11.version>2.3.2</spark.scala-2.11.version>
         <spark.version>${spark.scala-2.11.version}</spark.version>
         <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
         <spark.bin.download.url>
-          http://mirrors.advancedhosters.com/apache/spark/spark-2.3.1/spark-2.3.1-bin-hadoop2.7.tgz
+          http://mirrors.advancedhosters.com/apache/spark/spark-2.3.2/spark-2.3.2-bin-hadoop2.7.tgz
         </spark.bin.download.url>
-        <spark.bin.name>spark-2.3.1-bin-hadoop2.7</spark.bin.name>
+        <spark.bin.name>spark-2.3.2-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 

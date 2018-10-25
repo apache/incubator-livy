@@ -17,10 +17,13 @@
 
 package org.apache.livy.thriftserver
 
+import javax.servlet.Servlet
+
 import org.apache.livy.LivyConf
 import org.apache.livy.server.{AccessManager, ThriftServerFactory}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
+import org.apache.livy.thriftserver.ui.ThriftJsonServlet
 
 class ThriftServerFactoryImpl extends ThriftServerFactory {
   override def start(
@@ -34,4 +37,8 @@ class ThriftServerFactoryImpl extends ThriftServerFactory {
     }
     LivyThriftServer.start(livyConf, livySessionManager, sessionStore, accessManager)
   }
+
+  override def getServlet(basePath: String): Servlet = new ThriftJsonServlet(basePath)
+
+  override def getServletMappings: Seq[String] = Seq("/thriftserver/*")
 }
