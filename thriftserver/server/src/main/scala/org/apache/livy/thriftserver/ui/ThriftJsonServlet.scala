@@ -25,7 +25,7 @@ import org.apache.livy.thriftserver.LivyThriftServer
 
 class ThriftJsonServlet(val basePath: String) extends JsonServlet {
 
-  private val df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+  private val df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z")
 
   case class SessionInfo(
       sessionId: String,
