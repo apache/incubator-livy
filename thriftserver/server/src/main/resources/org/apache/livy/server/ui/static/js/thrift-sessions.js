@@ -23,7 +23,7 @@ function loadThriftSessionsTable(sessions) {
         tdWrap(uiLink("session/" + session.livySessionId, session.livySessionId)) +
         tdWrap(session.owner) +
         tdWrap(session.createdAt) +
-       "</tr>"
+        "</tr>"
     );
   });
 }
