@@ -168,6 +168,10 @@ object LivyConf {
   val THRIFT_DELEGATION_TOKEN_RENEW_INTERVAL =
     Entry("livy.server.thrift.delegation.token.renew-interval", "1d")
 
+  val JWT_FILTER_ENABLED = Entry("livy.jwt.filter.enabled", false)
+  val JWT_HEADER_NAME = Entry("livy.jwt.header.name", "Authentication")
+  val JWT_SIGNATURE_PUBLIC_KEY_PATH = Entry("livy.jwt.public-key.path", null)
+
   /**
    * Recovery mode of Livy. Possible values:
    * off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
