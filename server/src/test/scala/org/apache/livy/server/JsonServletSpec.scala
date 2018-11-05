@@ -89,6 +89,13 @@ class JsonServletSpec extends BaseJsonServletSpec {
       }
     }
 
+    it("should send (error) response message as json") {
+      get("/responsemessage") {
+        assert(status === SC_NOT_FOUND)
+        assert(response.body === "{\"msg\":\"response message\"}" )
+      }
+    }
+
   }
 
 }
@@ -145,5 +152,8 @@ private class TestJsonServlet extends JsonServlet {
       ServiceUnavailable(e.getMessage())
   }
 
+  get("/responsemessage") {
+    NotFound(ResponseMessage("response message"))
+  }
 }
 
