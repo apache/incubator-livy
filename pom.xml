@@ -1067,7 +1067,7 @@
       </activation>
       <properties>
         <spark.bin.download.url>
-          https://dist.apache.org/repos/dist/dev/spark/v2.4.0-rc3-bin/spark-2.4.0-bin-hadoop2.7.tgz
+          http://mirrors.advancedhosters.com/apache/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz
         </spark.bin.download.url>
         <spark.bin.name>spark-2.4.0-bin-hadoop2.7</spark.bin.name>
       </properties>
