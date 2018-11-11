@@ -240,6 +240,11 @@ object LivyConf {
   val SPARK_FILES = "spark.files"
   val SPARK_ARCHIVES = "spark.yarn.dist.archives"
   val SPARK_PY_FILES = "spark.submit.pyFiles"
+  val SPARK_YARN_ARCHIVE = "spark.yarn.archive"
+  val SPARK_YARN_DIST_FILES = "spark.yarn.dist.files"
+  val SPARK_YARN_DIST_JARS = "spark.yarn.dist.jars"
+  val SPARK_YARN_JAR = "spark.yarn.jar"
+  val SPARK_YARN_JARS = "spark.yarn.jars"
 
   /**
    * These are Spark configurations that contain lists of files that the user can add to
@@ -257,11 +262,11 @@ object LivyConf {
     SPARK_FILES,
     SPARK_ARCHIVES,
     SPARK_PY_FILES,
-    "spark.yarn.archive",
-    "spark.yarn.dist.files",
-    "spark.yarn.dist.jars",
-    "spark.yarn.jar",
-    "spark.yarn.jars"
+    SPARK_YARN_ARCHIVE,
+    SPARK_YARN_DIST_FILES,
+    SPARK_YARN_DIST_JARS,
+    SPARK_YARN_JAR,
+    SPARK_YARN_JARS
   )
 
   case class DepConf(
