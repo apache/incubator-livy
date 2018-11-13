@@ -17,15 +17,12 @@
 
 package org.apache.livy.rsc.driver;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.spark.api.java.JavaFutureAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +35,10 @@ public class JobWrapper<T> implements Callable<Void> {
   public final String jobId;
 
   private final RSCDriver driver;
+
   private final Job<T> job;
-  private final AtomicInteger completed;
+
+  private boolean isCancelled = false;
 
   private Future<?> future;
 
@@ -47,12 +46,20 @@ public class JobWrapper<T> implements Callable<Void> {
     this.driver = driver;
     this.jobId = jobId;
     this.job = job;
-    this.completed = new AtomicInteger();
   }
 
   @Override
   public Void call() throws Exception {
     try {
+      // this is synchronized to avoid races with cancel()
+      synchronized (this) {
+        if (isCancelled) {
+          throw new CancellationException("Job has been cancelled");
+        } else {
+          driver.jobContext().sc().setJobGroup(jobId, "", true);
+        }
+      }
+
       jobStarted();
       T result = job.call(driver.jobContext());
       finished(result, null);
@@ -69,19 +76,20 @@ public class JobWrapper<T> implements Callable<Void> {
     return null;
   }
 
-  void submit(ExecutorService executor) {
-    this.future = executor.submit(this);
-  }
-
-  void jobDone() {
-    synchronized (completed) {
-      completed.incrementAndGet();
-      completed.notifyAll();
+  synchronized void submit(ExecutorService executor) {
+    if (!isCancelled) {
+      this.future = executor.submit(this);
     }
   }
 
-  boolean cancel() {
-    return future != null ? future.cancel(true) : true;
+  synchronized boolean cancel() {
+    if (isCancelled) {
+      return false;
+    } else {
+      isCancelled = true;
+      driver.jobContext().sc().cancelJobGroup(jobId);
+      return future != null ? future.cancel(true) : true;
+    }
   }
 
   protected void finished(T result, Throwable error) {
