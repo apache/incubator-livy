@@ -1055,7 +1055,6 @@
         <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
         <java.version>1.8</java.version>
         <py4j.version>0.10.7</py4j.version>
-        <json4s.version>3.5.3</json4s.version>
       </properties>
     </profile>
 
