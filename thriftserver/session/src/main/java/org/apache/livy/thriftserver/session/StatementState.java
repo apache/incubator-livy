@@ -36,7 +36,7 @@ class StatementState {
   StatementState(StructType schema, Iterator<Row> iter) {
     this.schema = schema.json();
     this.iter = iter;
-    this.types = DataType.fromSpark(schema);
+    this.types = SparkUtils.translateSchema(schema);
   }
 
 }

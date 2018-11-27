@@ -16,8 +16,6 @@
  */
 package org.apache.livy.thriftserver.session;
 
-import org.apache.spark.sql.types.*;
-
 /**
  * Enum representing the way user data is encoded on the wire between the Livy session and
  * the server.
@@ -33,37 +31,5 @@ public enum DataType {
   DOUBLE,
   BINARY,
   STRING;
-
-  /**
-   * @return the wire types used to encode the given Spark schema.
-   */
-  public static DataType[] fromSpark(StructType schema) {
-    DataType[] types = new DataType[schema.fields().length];
-    int idx = 0;
-    for (StructField f : schema.fields()) {
-      Object ftype = f.dataType();
-      if (ftype instanceof BooleanType) {
-        types[idx] = DataType.BOOLEAN;
-      } else if (ftype instanceof ByteType) {
-        types[idx] = DataType.BYTE;
-      } else if (ftype instanceof ShortType) {
-        types[idx] = DataType.SHORT;
-      } else if (ftype instanceof IntegerType) {
-        types[idx] = DataType.INTEGER;
-      } else if (ftype instanceof LongType) {
-        types[idx] = DataType.LONG;
-      } else if (ftype instanceof FloatType) {
-        types[idx] = DataType.FLOAT;
-      } else if (ftype instanceof DoubleType) {
-        types[idx] = DataType.DOUBLE;
-      } else if (ftype instanceof BinaryType) {
-        types[idx] = DataType.BINARY;
-      } else {
-        types[idx] = DataType.STRING;
-      }
-      idx++;
-    }
-    return types;
-  }
 
 }
