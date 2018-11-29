@@ -586,6 +586,8 @@ object LivyThriftSessionManager extends Logging {
               createInteractiveRequest.executorMemory = Some(value)
             case "set:hiveconf:livy.session.executorCores" =>
               createInteractiveRequest.executorCores = convertConfValueToInt(key, value)
+            case "set:hiveconf:livy.session.numExecutors" =>
+              createInteractiveRequest.numExecutors = convertConfValueToInt(key, value)
             case "set:hiveconf:livy.session.queue" =>
               createInteractiveRequest.queue = Some(value)
             case "set:hiveconf:livy.session.name" =>

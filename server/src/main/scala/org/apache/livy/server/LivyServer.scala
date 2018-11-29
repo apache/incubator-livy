@@ -58,8 +58,6 @@ class LivyServer extends Logging {
 
   private var ugi: UserGroupInformation = _
 
-  private var thriftServerFactory: Option[ThriftServerFactory] = None
-
   def start(): Unit = {
     livyConf = new LivyConf().loadFromFile("livy.conf")
     accessManager = new AccessManager(livyConf)
@@ -94,6 +92,12 @@ class LivyServer extends Logging {
     livyConf.set(LIVY_SPARK_VERSION.key, formattedSparkVersion.productIterator.mkString("."))
     livyConf.set(LIVY_SPARK_SCALA_VERSION.key,
       sparkScalaVersion(formattedSparkVersion, scalaVersionFromSparkSubmit, livyConf))
+
+    val thriftServerFactory = if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+      Some(ThriftServerFactory.getInstance)
+    } else {
+      None
+    }
 
     if (UserGroupInformation.isSecurityEnabled) {
       // If Hadoop security is enabled, run kinit periodically. runKinit() should be called
@@ -213,10 +217,13 @@ class LivyServer extends Logging {
             mount(context, batchServlet, "/batches/*")
 
             if (livyConf.getBoolean(UI_ENABLED)) {
-              val uiServlet = new UIServlet(basePath)
+              val uiServlet = new UIServlet(basePath, livyConf)
               mount(context, uiServlet, "/ui/*")
               mount(context, staticResourceServlet, "/static/*")
               mount(context, uiRedirectServlet(basePath + "/ui/"), "/*")
+              thriftServerFactory.foreach { factory =>
+                mount(context, factory.getServlet(basePath), factory.getServletMappings: _*)
+              }
             } else {
               mount(context, uiRedirectServlet(basePath + "/metrics"), "/*")
             }
@@ -273,10 +280,8 @@ class LivyServer extends Logging {
 
     server.start()
 
-    if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
-      thriftServerFactory = Some(ThriftServerFactory.getInstance)
-      thriftServerFactory.foreach(_.start(
-        livyConf, interactiveSessionManager, sessionStore, accessManager))
+    thriftServerFactory.foreach {
+      _.start(livyConf, interactiveSessionManager, sessionStore, accessManager)
     }
 
     Runtime.getRuntime().addShutdownHook(new Thread("Livy Server Shutdown") {

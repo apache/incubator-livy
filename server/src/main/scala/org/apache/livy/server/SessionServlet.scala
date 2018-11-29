@@ -112,10 +112,10 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
       sessionManager.delete(session.id) match {
         case Some(future) =>
           Await.ready(future, Duration.Inf)
-          Ok(Map("msg" -> "deleted"))
+          Ok(ResponseMessage("deleted"))
 
         case None =>
-          NotFound(s"Session ${session.id} already stopped.")
+          NotFound(ResponseMessage(s"Session ${session.id} already stopped."))
       }
     }
   }
@@ -127,16 +127,18 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   post("/") {
-    if (tooManySessions) {
-      BadRequest("Rejected, too many sessions are being created!")
-    } else {
-      val session = sessionManager.register(createSession(request))
-      // Because it may take some time to establish the session, update the last activity
-      // time before returning the session info to the client.
-      session.recordActivity()
-      Created(clientSessionView(session, request),
-        headers = Map("Location" ->
-          (getRequestPathInfo(request) + url(getSession, "id" -> session.id.toString))))
+    synchronized {
+      if (tooManySessions) {
+        BadRequest(ResponseMessage("Rejected, too many sessions are being created!"))
+      } else {
+        val session = sessionManager.register(createSession(request))
+        // Because it may take some time to establish the session, update the last activity
+        // time before returning the session info to the client.
+        session.recordActivity()
+        Created(clientSessionView(session, request),
+          headers = Map("Location" ->
+            (getRequestPathInfo(request) + url(getSession, "id" -> session.id.toString))))
+      }
     }
   }
 
@@ -149,8 +151,8 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   error {
-    case e: IllegalArgumentException => BadRequest(e.getMessage)
-    case e: AccessControlException => Forbidden(e.getMessage)
+    case e: IllegalArgumentException => BadRequest(ResponseMessage(e.getMessage))
+    case e: AccessControlException => Forbidden(ResponseMessage(e.getMessage))
   }
 
   /**
@@ -191,7 +193,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
           Forbidden()
         }
       case None =>
-        NotFound(s"Session '$sessionId' not found.")
+        NotFound(ResponseMessage(s"Session '$sessionId' not found."))
     }
   }
 
