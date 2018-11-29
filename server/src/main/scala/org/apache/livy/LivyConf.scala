@@ -101,7 +101,6 @@ object LivyConf {
   val THRIFT_SERVER_ENABLED = Entry("livy.server.thrift.enabled", false)
   val THRIFT_INCR_COLLECT_ENABLED = Entry("livy.server.thrift.incrementalCollect", false)
   val THRIFT_SESSION_CREATION_TIMEOUT = Entry("livy.server.thrift.session.creationTimeout", "10m")
-  val THRIFT_SERVER_JAR_LOCATION = Entry("livy.server.thrift.jarLocation", null)
 
   /**
    * Recovery mode of Livy. Possible values:
