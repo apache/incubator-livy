@@ -34,4 +34,9 @@ class ThriftServerFactoryImpl extends ThriftServerFactory {
     }
     LivyThriftServer.start(livyConf, livySessionManager, sessionStore, accessManager)
   }
+
+  override def stop(): Unit = {
+    assert(LivyThriftServer.getInstance.isDefined)
+    LivyThriftServer.getInstance.foreach(_.stop())
+  }
 }

@@ -41,6 +41,9 @@ import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.thriftserver.SessionInfo
 import org.apache.livy.thriftserver.auth.{AuthenticationProvider, AuthFactory}
 
+/**
+ * This class is a porting of the parts we use from `ThriftHttpServlet` by Hive.
+ */
 class ThriftHttpServlet(
     processor: TProcessor,
     protocolFactory: TProtocolFactory,

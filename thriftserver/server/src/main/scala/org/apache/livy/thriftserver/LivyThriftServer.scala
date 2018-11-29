@@ -19,8 +19,6 @@ package org.apache.livy.thriftserver
 
 import java.security.PrivilegedExceptionAction
 
-import scala.collection.JavaConverters._
-
 import org.apache.hadoop.security.UserGroupInformation
 
 import org.apache.livy.{LivyConf, Logging}
@@ -130,12 +128,6 @@ class LivyThriftServer(
     }
     addService(thriftCLIService)
     super.init(livyConf)
-    Runtime.getRuntime.addShutdownHook(new Thread("LivyThriftServer Shutdown") {
-      override def run(): Unit = {
-        info("Shutting down LivyThriftServer.")
-        LivyThriftServer.this.stop()
-      }
-    })
   }
 
   private[thriftserver] def getSessionManager = {

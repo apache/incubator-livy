@@ -30,6 +30,8 @@ trait ThriftServerFactory {
     livySessionManager: InteractiveSessionManager,
     sessionStore: SessionStore,
     accessManager: AccessManager): Unit
+
+  def stop(): Unit
 }
 
 object ThriftServerFactory {

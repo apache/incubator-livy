@@ -39,8 +39,6 @@ import org.apache.livy.Logging
 /**
  * The class is taken from Hive's `HadoopThriftAuthBridge.Server`. It bridges Thrift's SASL
  * transports to Hadoop's SASL callback handlers and authentication classes.
- *
- * This class is based on Hive's one.
  */
 class AuthBridgeServer(private val secretManager: LivyDelegationTokenSecretManager) {
   private val ugi = try {

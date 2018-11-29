@@ -28,10 +28,6 @@ import org.apache.livy.thriftserver.types.{BasicDataType, Field, Schema}
 sealed case class TypeInfo(name: String, sqlType: Int, precision: Option[Int],
   caseSensitive: Boolean, searchable: Short, unsignedAttribute: Boolean, numPrecRadix: Option[Int])
 
-/**
- * GetTypeInfoOperation.
- *
- */
 class GetTypeInfoOperation(sessionHandle: SessionHandle)
   extends MetadataOperation(sessionHandle, OperationType.GET_TYPE_INFO) with Logging {
 

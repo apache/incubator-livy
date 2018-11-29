@@ -23,10 +23,6 @@ import org.apache.livy.Logging
 import org.apache.livy.thriftserver.serde.ResultSet
 import org.apache.livy.thriftserver.types.{BasicDataType, Field, Schema}
 
-/**
- * GetTableTypesOperation.
- *
- */
 class GetTableTypesOperation(sessionHandle: SessionHandle)
   extends MetadataOperation(sessionHandle, OperationType.GET_TABLE_TYPES) with Logging {
 

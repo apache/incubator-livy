@@ -81,7 +81,6 @@ class AuthFactory(val conf: LivyConf) extends Logging {
     val isAuthOther = authTypeStr.equalsIgnoreCase(AuthTypes.NONE.getAuthName) ||
       authTypeStr.equalsIgnoreCase(AuthTypes.CUSTOM.getAuthName)
 
-
     saslServer.map { server =>
       val serverTransportFactory = try {
         server.createSaslServerTransportFactory(getSaslProperties)

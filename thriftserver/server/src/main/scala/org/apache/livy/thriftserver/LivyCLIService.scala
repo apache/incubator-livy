@@ -24,7 +24,7 @@ import javax.security.auth.login.LoginException
 
 import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hive.service.ServiceException
-import org.apache.hive.service.cli.{FetchOrientation, FetchType, GetInfoType, GetInfoValue, HiveSQLException, OperationHandle, SessionHandle}
+import org.apache.hive.service.cli._
 import org.apache.hive.service.rpc.thrift.{TOperationHandle, TProtocolVersion}
 
 import org.apache.livy.{LIVY_VERSION, LivyConf, Logging}
@@ -59,8 +59,8 @@ class LivyCLIService(server: LivyThriftServer)
           throw new ServiceException("Unable to login to kerberos with given principal/keytab", e)
       }
       // Also try creating a UGI object for the SPNego principal
-      val principal = livyConf.get(LivyConf.THRIFT_SPNEGO_PRINCIPAL)
-      val keyTabFile = livyConf.get(LivyConf.THRIFT_SPNEGO_KEYTAB)
+      val principal = livyConf.get(LivyConf.AUTH_KERBEROS_PRINCIPAL)
+      val keyTabFile = livyConf.get(LivyConf.AUTH_KERBEROS_KEYTAB)
       if (principal.isEmpty || keyTabFile.isEmpty) {
         info(s"SPNego httpUGI not created, SPNegoPrincipal: $principal, ketabFile: $keyTabFile")
       } else try {

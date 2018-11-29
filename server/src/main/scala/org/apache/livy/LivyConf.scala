@@ -106,8 +106,6 @@ object LivyConf {
   // The following configs are the same present in Hive
   val THRIFT_RESULTSET_DEFAULT_FETCH_SIZE =
     Entry("livy.server.thrift.resultset.default.fetch.size", 1000)
-  val THRIFT_SPNEGO_PRINCIPAL = Entry("livy.server.thrift.authentication.spnego.principal", "")
-  val THRIFT_SPNEGO_KEYTAB = Entry("livy.server.thrift.authentication.spnego.keytab", "")
   val THRIFT_TRANSPORT_MODE = Entry("livy.server.thrift.transport.mode", "binary")
   val THRIFT_SERVER_PORT = Entry("livy.server.thrift.port", 10090)
   val THRIFT_LONG_POLLING_TIMEOUT = Entry("livy.server.thrift.long.polling.timeout", "5000ms")

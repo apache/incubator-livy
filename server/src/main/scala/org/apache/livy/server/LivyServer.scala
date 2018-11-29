@@ -58,6 +58,8 @@ class LivyServer extends Logging {
 
   private var ugi: UserGroupInformation = _
 
+  private var thriftServerFactory: Option[ThriftServerFactory] = None
+
   def start(): Unit = {
     livyConf = new LivyConf().loadFromFile("livy.conf")
     accessManager = new AccessManager(livyConf)
@@ -271,17 +273,19 @@ class LivyServer extends Logging {
 
     server.start()
 
+    if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+      thriftServerFactory = Some(ThriftServerFactory.getInstance)
+      thriftServerFactory.foreach(_.start(
+        livyConf, interactiveSessionManager, sessionStore, accessManager))
+    }
+
     Runtime.getRuntime().addShutdownHook(new Thread("Livy Server Shutdown") {
       override def run(): Unit = {
         info("Shutting down Livy server.")
         server.stop()
+        thriftServerFactory.foreach(_.stop())
       }
     })
-
-    if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
-      ThriftServerFactory.getInstance.start(
-        livyConf, interactiveSessionManager, sessionStore, accessManager)
-    }
 
     _serverUrl = Some(s"${server.protocol}://${server.host}:${server.port}")
     sys.props("livy.server.server-url") = _serverUrl.get
