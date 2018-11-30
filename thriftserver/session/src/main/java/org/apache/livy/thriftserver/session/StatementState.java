@@ -22,8 +22,6 @@ import java.util.Iterator;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.types.StructType;
 
-import org.apache.livy.JobContext;
-
 /**
  * State related to one user statement.
  */

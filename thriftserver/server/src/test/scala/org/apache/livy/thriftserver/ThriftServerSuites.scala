@@ -77,7 +77,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
 
   test("Reuse existing session") {
     withJdbcConnection { _ =>
-      val sessionManager = LivyThriftServer.getInstance.get.getSessionManager()
+      val sessionManager = LivyThriftServer.getInstance.get.getSessionManager
       val sessionHandle = sessionManager.getSessions.head
       // Blocks until the session is ready
       val session = sessionManager.getLivySession(sessionHandle)
@@ -106,7 +106,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       val s1 = c.createStatement()
       s1.execute(s"create database $db")
       s1.close()
-      val sessionManager = LivyThriftServer.getInstance.get.getSessionManager()
+      val sessionManager = LivyThriftServer.getInstance.get.getSessionManager
       val sessionHandle = sessionManager.getSessions.head
       // Blocks until the session is ready
       val session = sessionManager.getLivySession(sessionHandle)

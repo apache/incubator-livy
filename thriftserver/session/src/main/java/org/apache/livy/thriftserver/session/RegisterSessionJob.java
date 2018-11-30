@@ -25,7 +25,6 @@ import org.apache.livy.JobContext;
  * job context.
  */
 public class RegisterSessionJob implements Job<Boolean> {
-
   private final String sessionId;
 
   public RegisterSessionJob() {
@@ -41,5 +40,4 @@ public class RegisterSessionJob implements Job<Boolean> {
     ThriftSessionState.create(ctx, sessionId);
     return true;
   }
-
 }

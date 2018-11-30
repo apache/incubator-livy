@@ -33,6 +33,8 @@ trait ThriftServerFactory {
     sessionStore: SessionStore,
     accessManager: AccessManager): Unit
 
+  def stop(): Unit
+
   def getServlet(basePath: String): Servlet
 
   def getServletMappings: Seq[String]

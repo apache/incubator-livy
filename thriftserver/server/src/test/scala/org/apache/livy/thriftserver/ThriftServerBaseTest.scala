@@ -19,9 +19,7 @@ package org.apache.livy.thriftserver
 
 import java.sql.{Connection, DriverManager, Statement}
 
-import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hive.jdbc.HiveDriver
-import org.apache.hive.service.Service.STATE
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 import org.apache.livy.LivyConf
@@ -56,13 +54,8 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     Class.forName(classOf[HiveDriver].getCanonicalName)
-    livyConf.set(s"livy.${HiveConf.ConfVars.HIVE_SERVER2_TRANSPORT_MODE}", mode.toString)
-    val portConfKey = if (mode == ServerMode.http) {
-      s"livy.${HiveConf.ConfVars.HIVE_SERVER2_THRIFT_HTTP_PORT}"
-    } else {
-      s"livy.${HiveConf.ConfVars.HIVE_SERVER2_THRIFT_PORT}"
-    }
-    livyConf.set(portConfKey, port.toString)
+    livyConf.set(LivyConf.THRIFT_TRANSPORT_MODE, mode.toString)
+    livyConf.set(LivyConf.THRIFT_SERVER_PORT, port)
 
     // Set formatted Spark and Scala version into livy configuration, this will be used by
     // session creation.

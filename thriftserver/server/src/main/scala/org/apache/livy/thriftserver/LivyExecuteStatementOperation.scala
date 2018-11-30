@@ -18,31 +18,27 @@
 package org.apache.livy.thriftserver
 
 import java.security.PrivilegedExceptionAction
-import java.util
-import java.util.{Map => JMap}
 import java.util.concurrent.{ConcurrentLinkedQueue, RejectedExecutionException}
 
 import scala.collection.mutable
-import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
-import org.apache.hadoop.hive.serde2.thrift.{ColumnBuffer => ThriftColumnBuffer}
-import org.apache.hadoop.hive.shims.Utils
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hive.service.cli._
-import org.apache.hive.service.cli.operation.Operation
 
 import org.apache.livy.Logging
 import org.apache.livy.thriftserver.SessionStates._
+import org.apache.livy.thriftserver.operation.Operation
 import org.apache.livy.thriftserver.rpc.RpcClient
-import org.apache.livy.thriftserver.types.DataTypeUtils._
+import org.apache.livy.thriftserver.serde.ThriftResultSet
+import org.apache.livy.thriftserver.types.{BasicDataType, DataTypeUtils, Field, Schema}
 
 class LivyExecuteStatementOperation(
     sessionHandle: SessionHandle,
     statement: String,
-    confOverlay: JMap[String, String],
     runInBackground: Boolean = true,
     sessionManager: LivyThriftSessionManager)
-  extends Operation(sessionHandle, confOverlay, OperationType.EXECUTE_STATEMENT)
+  extends Operation(sessionHandle, OperationType.EXECUTE_STATEMENT)
     with Logging {
 
   /**
@@ -62,31 +58,23 @@ class LivyExecuteStatementOperation(
   }
   private var rowOffset = 0L
 
-  private def statementId: String = getHandle.getHandleIdentifier.toString
+  private def statementId: String = opHandle.getHandleIdentifier.toString
 
   private def rpcClientValid: Boolean =
     sessionManager.livySessionState(sessionHandle) == CREATION_SUCCESS && rpcClient.isValid
 
-  override def getNextRowSet(order: FetchOrientation, maxRowsL: Long): RowSet = {
-    validateDefaultFetchOrientation(order)
-    assertState(util.Arrays.asList(OperationState.FINISHED))
+  override def getNextRowSet(order: FetchOrientation, maxRowsL: Long): ThriftResultSet = {
+    validateFetchOrientation(order)
+    assertState(Seq(OperationState.FINISHED))
     setHasResultSet(true)
 
     // maxRowsL here typically maps to java.sql.Statement.getFetchSize, which is an int
     val maxRows = maxRowsL.toInt
     val resultSet = rpcClient.fetchResult(sessionHandle, statementId, maxRows).get()
-
-    val thriftColumns = resultSet.getColumns().map { col =>
-      new ThriftColumnBuffer(toHiveThriftType(col.getType()), col.getNulls(), col.getValues())
-    }
-    val result = new ColumnBasedSet(
-      toHiveTableSchema(resultSet.getSchema()).toTypeDescriptors,
-      thriftColumns.toList.asJava,
-      rowOffset)
-    if (resultSet.getColumns() != null && resultSet.getColumns().length > 0) {
-      rowOffset += resultSet.getColumns()(0).size()
-    }
-    result
+    val livyColumnResultSet = ThriftResultSet(resultSet)
+    livyColumnResultSet.setRowOffset(rowOffset)
+    rowOffset += livyColumnResultSet.numRows
+    livyColumnResultSet
   }
 
   override def runInternal(): Unit = {
@@ -96,7 +84,7 @@ class LivyExecuteStatementOperation(
     if (!runInBackground) {
       execute()
     } else {
-      val livyServiceUGI = Utils.getUGI
+      val livyServiceUGI = UserGroupInformation.getCurrentUser
 
       // Runnable impl to call runInternal asynchronously,
       // from a different thread
@@ -153,7 +141,7 @@ class LivyExecuteStatementOperation(
       rpcClient.executeSql(sessionHandle, statementId, statement).get()
     } catch {
       case e: Throwable =>
-        val currentState = getStatus.getState
+        val currentState = getStatus.state
         info(s"Error executing query, currentState $currentState, ", e)
         setState(OperationState.ERROR)
         throw new HiveSQLException(e)
@@ -171,14 +159,17 @@ class LivyExecuteStatementOperation(
     cleanup(state)
   }
 
-  def getResultSetSchema: TableSchema = {
-    val tableSchema = toHiveTableSchema(
+  override def shouldRunAsync: Boolean = runInBackground
+
+  override def getResultSetSchema: Schema = {
+    val tableSchema = DataTypeUtils.schemaFromSparkJson(
       rpcClient.fetchResultSchema(sessionHandle, statementId).get())
     // Workaround for operations returning an empty schema (eg. CREATE, INSERT, ...)
-    if (tableSchema.getSize == 0) {
-      tableSchema.addStringColumn("Result", "")
+    if (!tableSchema.fields.isEmpty) {
+      tableSchema
+    } else {
+      Schema(Field("Result", BasicDataType("string"), ""))
     }
-    tableSchema
   }
 
   private def cleanup(state: OperationState) {

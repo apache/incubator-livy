@@ -35,7 +35,7 @@ class ThriftJsonServlet(val basePath: String) extends JsonServlet {
 
   get("/sessions") {
     val thriftSessions = LivyThriftServer.getInstance.map { server =>
-      val sessionManager = server.getSessionManager()
+      val sessionManager = server.getSessionManager
       sessionManager.getSessions.map { sessionHandle =>
         val info = sessionManager.getSessionInfo(sessionHandle)
         SessionInfo(sessionHandle.getSessionId.toString,
