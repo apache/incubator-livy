@@ -41,8 +41,7 @@ case class BasicDataType(name: String) extends FieldType {
     case "float" => DataType.FLOAT
     case "double" => DataType.DOUBLE
     case "binary" => DataType.BINARY
-    case "string" => DataType.STRING
-    case other => throw new UnsupportedOperationException(s"Unrecognized simple type: $other")
+    case _ => DataType.STRING
   }
 }
 
