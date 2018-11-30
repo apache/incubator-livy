@@ -19,13 +19,13 @@ package org.apache.livy.thriftserver.operation
 
 import org.apache.hive.service.cli.{FetchOrientation, HiveSQLException, OperationState, OperationType, SessionHandle}
 
-import org.apache.livy.thriftserver.serde.ResultSet
+import org.apache.livy.thriftserver.serde.ThriftResultSet
 
 abstract class MetadataOperation(sessionHandle: SessionHandle, opType: OperationType)
   extends Operation(sessionHandle, opType) {
   setHasResultSet(true)
 
-  protected def rowSet: ResultSet
+  protected def rowSet: ThriftResultSet
 
   @throws[HiveSQLException]
   override def close(): Unit = {
@@ -38,7 +38,7 @@ abstract class MetadataOperation(sessionHandle: SessionHandle, opType: Operation
   }
 
   @throws(classOf[HiveSQLException])
-  override def getNextRowSet(orientation: FetchOrientation, maxRows: Long): ResultSet = {
+  override def getNextRowSet(orientation: FetchOrientation, maxRows: Long): ThriftResultSet = {
     assertState(Seq(OperationState.FINISHED))
     validateFetchOrientation(orientation)
     if (orientation.equals(FetchOrientation.FETCH_FIRST)) {

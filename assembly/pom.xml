@@ -94,6 +94,11 @@
           <artifactId>livy-thriftserver</artifactId>
           <version>${project.version}</version>
         </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>livy-thriftserver-session</artifactId>
+          <version>${project.version}</version>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>

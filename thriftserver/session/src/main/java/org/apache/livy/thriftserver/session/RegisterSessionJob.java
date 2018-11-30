@@ -15,22 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.livy.thriftserver.types
+package org.apache.livy.thriftserver.session;
 
-private[thriftserver] trait DataType {
-  def name: String
-}
+import org.apache.livy.Job;
+import org.apache.livy.JobContext;
 
-case class BasicDataType(name: String) extends DataType
+/**
+ * Job used to register a new Thrift session. Initializes the session state and stores it in the
+ * job context.
+ */
+public class RegisterSessionJob implements Job<Boolean> {
+  private final String sessionId;
 
-case class StructType(fields: Array[Field]) extends DataType {
-  val name = "struct"
-}
+  public RegisterSessionJob() {
+    this(null);
+  }
 
-case class ArrayType(elementsType: DataType) extends DataType {
-  val name = "array"
-}
+  public RegisterSessionJob(String sessionId) {
+    this.sessionId = sessionId;
+  }
 
-case class MapType(keyType: DataType, valueType: DataType) extends DataType {
-  val name = "map"
+  @Override
+  public Boolean call(JobContext ctx) throws Exception {
+    ThriftSessionState.create(ctx, sessionId);
+    return true;
+  }
 }

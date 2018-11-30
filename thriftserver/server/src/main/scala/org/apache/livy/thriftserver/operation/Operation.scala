@@ -29,7 +29,7 @@ import org.apache.hive.service.cli.SessionHandle
 import org.apache.hive.service.rpc.thrift.TProtocolVersion
 
 import org.apache.livy.Logging
-import org.apache.livy.thriftserver.serde.ResultSet
+import org.apache.livy.thriftserver.serde.ThriftResultSet
 import org.apache.livy.thriftserver.types.Schema
 
 abstract class Operation(
@@ -126,7 +126,7 @@ abstract class Operation(
   def getResultSetSchema: Schema
 
   @throws[HiveSQLException]
-  def getNextRowSet(orientation: FetchOrientation, maxRows: Long): ResultSet
+  def getNextRowSet(orientation: FetchOrientation, maxRows: Long): ThriftResultSet
 
   /**
    * Verify if the given fetch orientation is part of the supported orientation types.

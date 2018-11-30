@@ -22,7 +22,7 @@ import java.sql.{DatabaseMetaData, Types}
 import org.apache.hive.service.cli.{HiveSQLException, OperationState, OperationType, SessionHandle}
 
 import org.apache.livy.Logging
-import org.apache.livy.thriftserver.serde.ResultSet
+import org.apache.livy.thriftserver.serde.ThriftResultSet
 import org.apache.livy.thriftserver.types.{BasicDataType, Field, Schema}
 
 sealed case class TypeInfo(name: String, sqlType: Int, precision: Option[Int],
@@ -33,7 +33,7 @@ class GetTypeInfoOperation(sessionHandle: SessionHandle)
 
   info("Starting GetTypeInfoOperation")
 
-  protected val rowSet = ResultSet.apply(GetTypeInfoOperation.SCHEMA, protocolVersion)
+  protected val rowSet = ThriftResultSet.apply(GetTypeInfoOperation.SCHEMA, protocolVersion)
 
   @throws(classOf[HiveSQLException])
   override def runInternal(): Unit = {

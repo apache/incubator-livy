@@ -17,13 +17,11 @@
 
 package org.apache.livy.thriftserver
 
-import java.io.File
 import java.sql.{Connection, DriverManager, Statement}
 
 import org.apache.hive.jdbc.HiveDriver
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-import org.apache.livy.LIVY_VERSION
 import org.apache.livy.LivyConf
 import org.apache.livy.LivyConf.{LIVY_SPARK_SCALA_VERSION, LIVY_SPARK_VERSION}
 import org.apache.livy.server.AccessManager
@@ -58,13 +56,6 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
     Class.forName(classOf[HiveDriver].getCanonicalName)
     livyConf.set(LivyConf.THRIFT_TRANSPORT_MODE, mode.toString)
     livyConf.set(LivyConf.THRIFT_SERVER_PORT, port)
-    val home = sys.env("LIVY_HOME")
-    val thriftserverJarName = s"livy-thriftserver-$LIVY_VERSION.jar"
-    val thriftserverJarFile = Option(new File(home, s"jars/$thriftserverJarName"))
-      .filter(_.exists())
-      .getOrElse(new File(home, s"thriftserver/server/target/jars/$thriftserverJarName"))
-    livyConf.set(LivyConf.THRIFT_SERVER_JAR_LOCATION, thriftserverJarFile.getAbsolutePath)
-    livyConf.set(LivyConf.LOCAL_FS_WHITELIST, thriftserverJarFile.getParent)
 
     // Set formatted Spark and Scala version into livy configuration, this will be used by
     // session creation.

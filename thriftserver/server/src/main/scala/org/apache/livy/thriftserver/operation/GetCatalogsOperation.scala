@@ -20,13 +20,13 @@ package org.apache.livy.thriftserver.operation
 import org.apache.hive.service.cli._
 
 import org.apache.livy.Logging
-import org.apache.livy.thriftserver.serde.ResultSet
+import org.apache.livy.thriftserver.serde.ThriftResultSet
 import org.apache.livy.thriftserver.types.{BasicDataType, Field, Schema}
 
 class GetCatalogsOperation(sessionHandle: SessionHandle)
   extends MetadataOperation(sessionHandle, OperationType.GET_TABLE_TYPES) with Logging {
 
-  protected val rowSet = ResultSet.apply(GetCatalogsOperation.SCHEMA, protocolVersion)
+  protected val rowSet = ThriftResultSet.apply(GetCatalogsOperation.SCHEMA, protocolVersion)
 
   info("Starting GetCatalogsOperation")
 

@@ -30,9 +30,8 @@ import org.apache.livy.Logging
 import org.apache.livy.thriftserver.SessionStates._
 import org.apache.livy.thriftserver.operation.Operation
 import org.apache.livy.thriftserver.rpc.RpcClient
-import org.apache.livy.thriftserver.serde.ResultSet
-import org.apache.livy.thriftserver.types.{BasicDataType, Field, Schema}
-import org.apache.livy.thriftserver.types.DataTypeUtils._
+import org.apache.livy.thriftserver.serde.ThriftResultSet
+import org.apache.livy.thriftserver.types.{BasicDataType, DataTypeUtils, Field, Schema}
 
 class LivyExecuteStatementOperation(
     sessionHandle: SessionHandle,
@@ -64,16 +63,15 @@ class LivyExecuteStatementOperation(
   private def rpcClientValid: Boolean =
     sessionManager.livySessionState(sessionHandle) == CREATION_SUCCESS && rpcClient.isValid
 
-  override def getNextRowSet(order: FetchOrientation, maxRowsL: Long): ResultSet = {
+  override def getNextRowSet(order: FetchOrientation, maxRowsL: Long): ThriftResultSet = {
     validateFetchOrientation(order)
     assertState(Seq(OperationState.FINISHED))
     setHasResultSet(true)
 
     // maxRowsL here typically maps to java.sql.Statement.getFetchSize, which is an int
     val maxRows = maxRowsL.toInt
-    val jsonSchema = rpcClient.fetchResultSchema(statementId).get()
-    val types = getInternalTypes(jsonSchema)
-    val livyColumnResultSet = rpcClient.fetchResult(statementId, types, maxRows).get()
+    val resultSet = rpcClient.fetchResult(sessionHandle, statementId, maxRows).get()
+    val livyColumnResultSet = ThriftResultSet(resultSet)
     livyColumnResultSet.setRowOffset(rowOffset)
     rowOffset += livyColumnResultSet.numRows
     livyColumnResultSet
@@ -164,7 +162,8 @@ class LivyExecuteStatementOperation(
   override def shouldRunAsync: Boolean = runInBackground
 
   override def getResultSetSchema: Schema = {
-    val tableSchema = schemaFromSparkJson(rpcClient.fetchResultSchema(statementId).get())
+    val tableSchema = DataTypeUtils.schemaFromSparkJson(
+      rpcClient.fetchResultSchema(sessionHandle, statementId).get())
     // Workaround for operations returning an empty schema (eg. CREATE, INSERT, ...)
     if (!tableSchema.fields.isEmpty) {
       tableSchema
@@ -175,7 +174,7 @@ class LivyExecuteStatementOperation(
 
   private def cleanup(state: OperationState) {
     if (statementId != null && rpcClientValid) {
-      rpcClient.cleanupStatement(statementId).get()
+      rpcClient.cleanupStatement(sessionHandle, statementId).get()
     }
     setState(state)
   }

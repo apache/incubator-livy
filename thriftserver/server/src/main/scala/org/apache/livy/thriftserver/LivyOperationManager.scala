@@ -27,8 +27,8 @@ import org.apache.hive.service.cli._
 
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.thriftserver.operation._
-import org.apache.livy.thriftserver.serde.ResultSet
-import org.apache.livy.thriftserver.types.{BasicDataType, DataType}
+import org.apache.livy.thriftserver.serde.ThriftResultSet
+import org.apache.livy.thriftserver.session.DataType
 
 class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManager)
   extends Logging {
@@ -109,9 +109,9 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
   def getOperationLogRowSet(
       opHandle: OperationHandle,
       orientation: FetchOrientation,
-      maxRows: Long): ResultSet = {
+      maxRows: Long): ThriftResultSet = {
     val session = livyThriftSessionManager.getSessionInfo(getOperation(opHandle).sessionHandle)
-    val logs = ResultSet(LivyOperationManager.LOG_SCHEMA, session.protocolVersion)
+    val logs = ThriftResultSet(LivyOperationManager.LOG_SCHEMA, session.protocolVersion)
 
     if (!livyThriftSessionManager.livyConf.getBoolean(LivyConf.THRIFT_LOG_OPERATION_ENABLED)) {
       warn(s"Try to get operation log when ${LivyConf.THRIFT_LOG_OPERATION_ENABLED.key} is " +
@@ -222,7 +222,7 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
       opHandle: OperationHandle,
       orientation: FetchOrientation,
       maxRows: Long,
-      fetchType: FetchType): ResultSet = {
+      fetchType: FetchType): ThriftResultSet = {
     if (fetchType == FetchType.QUERY_OUTPUT) {
       getOperation(opHandle).getNextRowSet(orientation, maxRows)
     } else {
@@ -232,5 +232,5 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
 }
 
 object LivyOperationManager {
-  val LOG_SCHEMA: Array[DataType] = Array(BasicDataType("string"))
+  val LOG_SCHEMA: Array[DataType] = Array(DataType.STRING)
 }

@@ -30,7 +30,7 @@ import org.apache.hive.service.rpc.thrift.{TOperationHandle, TProtocolVersion}
 import org.apache.livy.{LIVY_VERSION, LivyConf, Logging}
 import org.apache.livy.thriftserver.auth.AuthFactory
 import org.apache.livy.thriftserver.operation.{Operation, OperationStatus}
-import org.apache.livy.thriftserver.serde.ResultSet
+import org.apache.livy.thriftserver.serde.ThriftResultSet
 import org.apache.livy.thriftserver.types.Schema
 
 class LivyCLIService(server: LivyThriftServer)
@@ -338,7 +338,7 @@ class LivyCLIService(server: LivyThriftServer)
   }
 
   @throws[HiveSQLException]
-  def fetchResults(opHandle: OperationHandle): ResultSet = {
+  def fetchResults(opHandle: OperationHandle): ThriftResultSet = {
     fetchResults(
       opHandle, Operation.DEFAULT_FETCH_ORIENTATION, defaultFetchRows, FetchType.QUERY_OUTPUT)
   }
@@ -348,7 +348,7 @@ class LivyCLIService(server: LivyThriftServer)
       opHandle: OperationHandle,
       orientation: FetchOrientation,
       maxRows: Long,
-      fetchType: FetchType): ResultSet = {
+      fetchType: FetchType): ThriftResultSet = {
     debug(opHandle + ": fetchResults()")
     sessionManager.operationManager.fetchResults(opHandle, orientation, maxRows, fetchType)
   }

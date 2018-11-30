@@ -18,7 +18,6 @@
 package org.apache.livy.thriftserver
 
 import java.lang.reflect.UndeclaredThrowableException
-import java.net.URI
 import java.security.PrivilegedExceptionAction
 import java.util
 import java.util.{Date, Map => JMap, UUID}
@@ -28,8 +27,8 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 import org.apache.hadoop.security.UserGroupInformation
@@ -197,19 +196,6 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       sessionHandle: SessionHandle,
       livySession: InteractiveSession,
       initStatements: List[String]): Unit = {
-    // Add the thriftserver jar to Spark application as we need to deserialize there the classes
-    // which handle the job submission.
-    // Note: if this is an already existing session, adding the JARs multiple times is not a
-    // problem as Spark ignores JARs which have already been added.
-    try {
-      livySession.addJar(LivyThriftSessionManager.thriftserverJarLocation(server.livyConf))
-    } catch {
-      case e: java.util.concurrent.ExecutionException
-          if Option(e.getCause).forall(_.getMessage.contains("has already been uploaded")) =>
-        // We have already uploaded the jar to this session, we can ignore this error
-        debug(e.getMessage, e)
-    }
-
     val rpcClient = new RpcClient(livySession)
     rpcClient.executeRegisterSession(sessionHandle).get()
     initStatements.foreach { statement =>
@@ -217,7 +203,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       try {
         rpcClient.executeSql(sessionHandle, statementId, statement).get()
       } finally {
-        Try(rpcClient.cleanupStatement(statementId).get()).failed.foreach { e =>
+        Try(rpcClient.cleanupStatement(sessionHandle, statementId).get()).failed.foreach { e =>
           error(s"Failed to close init operation $statementId", e)
         }
       }
@@ -548,12 +534,6 @@ object LivyThriftSessionManager extends Logging {
   private val livySessionIdConfigKey = "set:hiveconf:livy.server.sessionId"
   private val livySessionConfRegexp = "set:hiveconf:livy.session.conf.(.*)".r
   private val hiveVarPattern = "set:hivevar:(.*)".r
-  private val JAR_LOCATION = getClass.getProtectionDomain.getCodeSource.getLocation.toURI
-
-  def thriftserverJarLocation(livyConf: LivyConf): URI = {
-    Option(livyConf.get(LivyConf.THRIFT_SERVER_JAR_LOCATION)).map(new URI(_))
-      .getOrElse(JAR_LOCATION)
-  }
 
   private def convertConfValueToInt(key: String, value: String) = {
     val res = Try(value.toInt)
