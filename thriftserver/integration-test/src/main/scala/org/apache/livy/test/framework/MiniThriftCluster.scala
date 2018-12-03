@@ -15,36 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.livy.server
-
-import javax.servlet.Servlet
+package org.apache.livy.test.framework
 
 import org.apache.livy.LivyConf
-import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.sessions.InteractiveSessionManager
 
-/**
- * Its implementation starts Livy ThriftServer
- */
-trait ThriftServerFactory {
-  def start(
-    livyConf: LivyConf,
-    livySessionManager: InteractiveSessionManager,
-    sessionStore: SessionStore,
-    accessManager: AccessManager): Unit
 
-  def stop(): Unit
-
-  def getServlet(basePath: String): Servlet
-
-  def getServletMappings: Seq[String]
-
-  def getJdbcUrl: String
+object MiniThriftLivyMain extends MiniLivyCluster {
+  override protected def baseLivyConf(configPath: String): Map[String, String] = {
+    super.baseLivyConf(configPath) ++ Map(LivyConf.THRIFT_SERVER_ENABLED.key -> "true")
+  }
 }
 
-object ThriftServerFactory {
-  def getInstance: ThriftServerFactory = {
-    Class.forName("org.apache.livy.thriftserver.ThriftServerFactoryImpl").newInstance()
-      .asInstanceOf[ThriftServerFactory]
-  }
+class MiniThriftCluster(config: Map[String, String]) extends MiniCluster(config) {
+  override def livyMainClass: Class[_] = MiniThriftLivyMain.getClass
+}
+
+object ClusterWithThrift extends ClusterBase {
+  override protected def newCluster(config: Map[String, String]): Cluster =
+    new MiniThriftCluster(config)
 }

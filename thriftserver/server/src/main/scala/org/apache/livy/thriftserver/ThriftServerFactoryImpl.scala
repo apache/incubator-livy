@@ -46,4 +46,10 @@ class ThriftServerFactoryImpl extends ThriftServerFactory {
   override def getServlet(basePath: String): Servlet = new ThriftJsonServlet(basePath)
 
   override def getServletMappings: Seq[String] = Seq("/thriftserver/*")
+
+  override def getJdbcUrl: String = {
+    assert(LivyThriftServer.thriftServerThread != null)
+    LivyThriftServer.thriftServerThread.join()
+    LivyThriftServer.getInstance.get.getJdbcUrl
+  }
 }

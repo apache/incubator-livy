@@ -42,6 +42,7 @@ trait Cluster {
   def runLivy(): Unit
   def stopLivy(): Unit
   def livyEndpoint: String
+  def jdbcEndpoint: Option[String]
   def hdfsScratchDir(): Path
 
   def doAsClusterUser[T](task: => T): T
@@ -74,7 +75,7 @@ trait Cluster {
   }
 }
 
-object Cluster extends Logging {
+trait ClusterBase extends Logging {
   private lazy val config = {
     sys.props.get("cluster.spec")
       .filter { path => path.nonEmpty && path != "default" }
@@ -96,7 +97,7 @@ object Cluster extends Logging {
   private lazy val cluster = {
     var _cluster: Cluster = null
     try {
-      _cluster = new MiniCluster(config)
+      _cluster = newCluster(config)
       Runtime.getRuntime.addShutdownHook(new Thread {
         override def run(): Unit = {
           info("Shutting down cluster pool.")
@@ -120,4 +121,10 @@ object Cluster extends Logging {
   def get(): Cluster = cluster
 
   def isRunningOnTravis: Boolean = sys.env.contains("TRAVIS")
+
+  protected def newCluster(config: Map[String, String]): Cluster
+}
+
+object Cluster extends ClusterBase {
+  override protected def newCluster(config: Map[String, String]): Cluster = new MiniCluster(config)
 }

@@ -15,36 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.livy.server
+package org.apache.livy.test.framework
 
-import javax.servlet.Servlet
+class BaseThriftIntegrationTestSuite extends BaseIntegrationTestSuite {
+  var thriftJdbcClient: ThriftJdbcClient = _
 
-import org.apache.livy.LivyConf
-import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.sessions.InteractiveSessionManager
-
-/**
- * Its implementation starts Livy ThriftServer
- */
-trait ThriftServerFactory {
-  def start(
-    livyConf: LivyConf,
-    livySessionManager: InteractiveSessionManager,
-    sessionStore: SessionStore,
-    accessManager: AccessManager): Unit
-
-  def stop(): Unit
-
-  def getServlet(basePath: String): Servlet
-
-  def getServletMappings: Seq[String]
-
-  def getJdbcUrl: String
-}
-
-object ThriftServerFactory {
-  def getInstance: ThriftServerFactory = {
-    Class.forName("org.apache.livy.thriftserver.ThriftServerFactoryImpl").newInstance()
-      .asInstanceOf[ThriftServerFactory]
+  override def beforeAll(): Unit = {
+    cluster = ClusterWithThrift.get()
+    // The JDBC endpoint must contain a valid value
+    thriftJdbcClient = new ThriftJdbcClient(cluster.jdbcEndpoint.get)
   }
 }

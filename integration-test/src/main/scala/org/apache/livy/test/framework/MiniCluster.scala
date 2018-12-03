@@ -50,7 +50,7 @@ private class MiniClusterConfig(val config: Map[String, String]) {
 
 }
 
-sealed abstract class MiniClusterBase extends MiniClusterUtils with Logging {
+private[framework] abstract class MiniClusterBase extends MiniClusterUtils with Logging {
 
   def main(args: Array[String]): Unit = {
     val klass = getClass().getSimpleName()
@@ -125,11 +125,9 @@ object MiniYarnMain extends MiniClusterBase {
 
 }
 
-object MiniLivyMain extends MiniClusterBase {
-  var livyUrl: Option[String] = None
-
-  def start(config: MiniClusterConfig, configPath: String): Unit = {
-    var livyConf = Map(
+trait MiniLivyCluster extends MiniClusterBase {
+  protected def baseLivyConf(configPath: String): Map[String, String] = {
+    Map(
       LivyConf.LIVY_SPARK_MASTER.key -> "yarn",
       LivyConf.LIVY_SPARK_DEPLOY_MODE.key -> "cluster",
       LivyConf.HEARTBEAT_WATCHDOG_INTERVAL.key -> "1s",
@@ -137,6 +135,10 @@ object MiniLivyMain extends MiniClusterBase {
       LivyConf.RECOVERY_MODE.key -> "recovery",
       LivyConf.RECOVERY_STATE_STORE.key -> "filesystem",
       LivyConf.RECOVERY_STATE_STORE_URL.key -> s"file://$configPath/state-store")
+  }
+
+  def start(config: MiniClusterConfig, configPath: String): Unit = {
+    var livyConf = baseLivyConf(configPath)
 
     if (Cluster.isRunningOnTravis) {
       livyConf ++= Map("livy.server.yarn.app-lookup-timeout" -> "2m")
@@ -151,11 +153,16 @@ object MiniLivyMain extends MiniClusterBase {
     // server. Do it atomically since it's used by MiniCluster to detect when the Livy server
     // is up and ready.
     eventually(timeout(30 seconds), interval(1 second)) {
-      val serverUrlConf = Map("livy.server.server-url" -> server.serverUrl())
+      var serverUrlConf = Map("livy.server.server-url" -> server.serverUrl())
+      server.getJdbcUrl.foreach { url =>
+        serverUrlConf += ("livy.server.thrift.jdbc-url" -> url)
+      }
       saveProperties(serverUrlConf, new File(configPath + "/serverUrl.conf"))
     }
   }
 }
+
+object MiniLivyMain extends MiniLivyCluster
 
 private case class ProcessInfo(process: Process, logFile: File)
 
@@ -180,6 +187,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
   private var yarn: Option[ProcessInfo] = None
   private var livy: Option[ProcessInfo] = None
   private var livyUrl: String = _
+  private var livyThriftJdbcUrl: Option[String] = None
   private var _hdfsScrathDir: Path = _
 
   override def configDir(): File = _configDir
@@ -231,6 +239,8 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     livy = None
   }
 
+  def livyMainClass: Class[_] = MiniLivyMain.getClass
+
   def runLivy(): Unit = {
     assert(!livy.isDefined)
     val confFile = new File(configDir, "serverUrl.conf")
@@ -238,10 +248,11 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
       .map { args =>
         Seq(args, s"-Djacoco.args=$args")
       }.getOrElse(Nil)
-    val localLivy = start(MiniLivyMain.getClass, confFile, extraJavaArgs = jacocoArgs)
+    val localLivy = start(livyMainClass, confFile, extraJavaArgs = jacocoArgs)
 
     val props = loadProperties(confFile)
     livyUrl = props("livy.server.server-url")
+    livyThriftJdbcUrl = props.get("livy.server.thrift.jdbc-url")
 
     // Wait until Livy server responds.
     val httpClient = new AsyncHttpClient()
@@ -257,10 +268,13 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     assert(livy.isDefined)
     livy.foreach(stop)
     livyUrl = null
+    livyThriftJdbcUrl = None
     livy = None
   }
 
   def livyEndpoint: String = livyUrl
+
+  def jdbcEndpoint: Option[String] = livyThriftJdbcUrl
 
   private def mkdir(name: String, parent: File = tempDir): File = {
     val dir = new File(parent, name)
@@ -281,7 +295,6 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     // Before starting anything, clean up previous running sessions.
     sys.process.Process(s"pkill -f $simpleName") !
 
-    val java = sys.props("java.home") + "/bin/java"
     val cmd =
       Seq(
         sys.props("java.home") + "/bin/java",

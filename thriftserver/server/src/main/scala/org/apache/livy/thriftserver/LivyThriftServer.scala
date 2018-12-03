@@ -26,7 +26,7 @@ import org.apache.livy.server.AccessManager
 import org.apache.livy.server.interactive.InteractiveSession
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
-import org.apache.livy.thriftserver.cli.{ThriftBinaryCLIService, ThriftHttpCLIService}
+import org.apache.livy.thriftserver.cli.{ThriftBinaryCLIService, ThriftCLIService, ThriftHttpCLIService}
 
 /**
  * The main entry point for the Livy thrift server leveraging HiveServer2. Starts up a
@@ -112,6 +112,7 @@ class LivyThriftServer(
   extends ThriftService(classOf[LivyThriftServer].getName) with Logging {
 
   val cliService = new LivyCLIService(this)
+  private var thriftCLIService: ThriftCLIService = _
 
   override def init(livyConf: LivyConf): Unit = {
     addService(cliService)
@@ -121,7 +122,7 @@ class LivyThriftServer(
         server.stop()
       }
     }
-    val thriftCLIService = if (LivyThriftServer.isHTTPTransportMode(livyConf)) {
+    thriftCLIService = if (LivyThriftServer.isHTTPTransportMode(livyConf)) {
       new ThriftHttpCLIService(cliService, oomHook)
     } else {
       new ThriftBinaryCLIService(cliService, oomHook)
@@ -136,6 +137,16 @@ class LivyThriftServer(
 
   def isAllowedToUse(user: String, session: InteractiveSession): Boolean = {
     session.owner == user || accessManager.checkModifyPermissions(user)
+  }
+
+  def getJdbcUrl: String = {
+    val additionalUrlParams = if (thriftCLIService.isInstanceOf[ThriftHttpCLIService]) {
+      "?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice"
+    } else {
+      ""
+    }
+    s"jdbc:hive2://${thriftCLIService.getServerIPAddress.getHostName}:" +
+      thriftCLIService.getPortNumber + additionalUrlParams
   }
 
   override def stop(): Unit = {

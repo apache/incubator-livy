@@ -15,36 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.livy.server
+package org.apache.livy.test.framework
 
-import javax.servlet.Servlet
+import java.sql.{Connection, DriverManager, ResultSet}
 
-import org.apache.livy.LivyConf
-import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.sessions.InteractiveSessionManager
+class ThriftJdbcClient(val jdbcUri: String) {
 
-/**
- * Its implementation starts Livy ThriftServer
- */
-trait ThriftServerFactory {
-  def start(
-    livyConf: LivyConf,
-    livySessionManager: InteractiveSessionManager,
-    sessionStore: SessionStore,
-    accessManager: AccessManager): Unit
+  private def newConnection: Connection = {
+    val user = System.getProperty("user.name")
+    DriverManager.getConnection(jdbcUri, user, "")
+  }
 
-  def stop(): Unit
+  def checkQuery(connection: Connection, query: String)(validate: ResultSet => Unit): Unit = {
+    val ps = connection.prepareStatement(query)
+    try {
+      val rs = ps.executeQuery()
+      try {
+        validate(rs)
+      } finally {
+        rs.close()
+      }
+    } finally {
+      ps.close()
+    }
+  }
 
-  def getServlet(basePath: String): Servlet
-
-  def getServletMappings: Seq[String]
-
-  def getJdbcUrl: String
-}
-
-object ThriftServerFactory {
-  def getInstance: ThriftServerFactory = {
-    Class.forName("org.apache.livy.thriftserver.ThriftServerFactoryImpl").newInstance()
-      .asInstanceOf[ThriftServerFactory]
+  def withConnection[T](f: Connection => T): T = {
+    val connection = newConnection
+    try {
+      f(connection)
+    } finally {
+      connection.close()
+    }
   }
 }
