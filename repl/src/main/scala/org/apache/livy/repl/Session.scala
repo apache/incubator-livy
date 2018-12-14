@@ -17,12 +17,10 @@
 
 package org.apache.livy.repl
 
-import java.util.{LinkedHashMap => JLinkedHashMap}
-import java.util.Map.Entry
-import java.util.concurrent.Executors
+import java.util.Date
+import java.util.concurrent.{Executors, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
@@ -70,11 +68,15 @@ class Session(
   // Number of statements kept in driver's memory
   private val numRetainedStatements = livyConf.getInt(RSCConf.Entry.RETAINED_STATEMENTS)
 
-  private val _statements = new JLinkedHashMap[Int, Statement] {
-    protected override def removeEldestEntry(eldest: Entry[Int, Statement]): Boolean = {
-      size() > numRetainedStatements
-    }
-  }.asScala
+  private val resultRetainedTimeout = livyConf.getTimeAsMs(RSCConf.Entry.STAETMENT_RESULT_RETAINED_TIMEOUT)
+
+  private val resultDiscardTimeout = livyConf.getTimeAsMs(RSCConf.Entry.STATEMENT_RESULT_DISCRAD_TIMEOUT)
+
+  private val _statements = mutable.HashMap[Int, Statement]()
+
+  private var _waitingRemove = mutable.HashMap[Int, Long]()
+
+  private var LAT: (Int, Long) = (0, 0)
 
   private val newStatementId = new AtomicInteger(0)
 
@@ -148,32 +150,44 @@ class Session(
   }
 
   def execute(code: String, codeType: String = null): Int = {
-    val tpe = if (codeType != null) {
-      Kind(codeType)
-    } else if (defaultInterpKind != Shared) {
-      defaultInterpKind
+    if (isOverload(newStatementId.get())) {
+      -1
     } else {
-      throw new IllegalArgumentException(s"Code type should be specified if session kind is shared")
-    }
-
-    val statementId = newStatementId.getAndIncrement()
-    val statement = new Statement(statementId, code, StatementState.Waiting, null)
-    _statements.synchronized { _statements(statementId) = statement }
-
-    Future {
-      this.synchronized { setJobGroup(tpe, statementId) }
-      statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
-
-      if (statement.state.get() == StatementState.Running) {
-        statement.output = executeCode(interpreter(tpe), statementId, code)
+      val tpe = if (codeType != null) {
+        Kind(codeType)
+      } else if (defaultInterpKind != Shared) {
+        defaultInterpKind
+      } else {
+        throw new IllegalArgumentException(s"Code type should be specified if session kind is shared")
       }
 
-      statement.compareAndTransit(StatementState.Running, StatementState.Available)
-      statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
-      statement.updateProgress(1.0)
-    }(interpreterExecutor)
+      val statementId = newStatementId.getAndIncrement()
+      val statement = new Statement(statementId, code, StatementState.Waiting, null)
+      _statements.synchronized { _statements(statementId) = statement }
 
-    statementId
+      Future {
+        this.synchronized { setJobGroup(tpe, statementId) }
+        statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
+
+        if (statement.state.get() == StatementState.Running) {
+          statement.output = executeCode(interpreter(tpe), statementId, code)
+        }
+
+        if (statement.state.get() == StatementState.Running) {
+          _waitingRemove.synchronized {
+            _waitingRemove(statement.id) = new Date().getTime + resultRetainedTimeout
+          }
+        } else {
+          markHasRead(statement.id)
+        }
+
+        statement.compareAndTransit(StatementState.Running, StatementState.Available)
+        statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
+        statement.updateProgress(1.0)
+      }(interpreterExecutor)
+
+      statementId
+    }
   }
 
   def complete(code: String, codeType: String, cursor: Int): Array[String] = {
@@ -356,4 +370,93 @@ class Session(
   private def statementIdToJobGroup(statementId: Int): String = {
     statementId.toString
   }
+
+  private def snapshot(id: Int, msg: String): Unit = {
+    debug(s"statement No.${id} ${msg}")
+    val (running, o) = _statements.values.partition(_.state.get() == StatementState.Running)
+    debug(s"Buffer Size: ${numRetainedStatements}\tUsed Size: ${_statements.size}\t" +
+      s"Finished: ${_waitingRemove.size} Running: ${running.size} Waiting: ${o.size-_waitingRemove.size}")
+  }
+
+  private def isOverload(proposer: Int): Boolean = _statements.synchronized {
+    if (_statements.size < numRetainedStatements) {
+      snapshot(proposer, "is accepted")
+      false
+    } else if (checkExpired) {
+      if(_statements.size >= numRetainedStatements) {
+        snapshot(proposer, s"will be accepted, cleanUpExpired now")
+        cleanUpExpired
+      } else {
+        snapshot(proposer, "is accepted after cleanUpExpired")
+      }
+      false
+    } else {
+      snapshot(proposer, "is rejected")
+      true
+    }
+  }
+
+  // checkExpired should have _statements's lock
+  private def checkExpired: Boolean = {
+    if (_waitingRemove.size == 0) {
+      false
+    } else if (LAT._2 == 0) {
+      // only compute LAT when _waitingRemove is nonEmpty
+      cleanUpExpired
+      _statements.size < numRetainedStatements
+    } else {
+      new Date().getTime > LAT._2
+    }
+  }
+  // Attention: do not use _statements.synchronized to prevent deadlock
+  private def cleanUpExpired: Unit = _waitingRemove.synchronized {
+    assert(_waitingRemove.size > 0)
+    val sorted = mutable.PriorityQueue[(Int, Long)](_waitingRemove.toSeq: _*)(Ordering.by[(Int, Long), Long](_._2).reverse)
+    LAT = sorted.dequeue()
+    val now = new Date().getTime
+    while (LAT._2 != 0 && LAT._2 <= now ) {
+      _statements.remove(LAT._1)
+      if (sorted.size > 0) {
+        LAT = sorted.dequeue()
+      } else {
+        LAT = (0, 0)
+      }
+    }
+    if (LAT._2 > 0) {
+      sorted.enqueue(LAT)
+    }
+    _waitingRemove = mutable.HashMap[Int, Long](sorted.toSeq: _*)
+  }
+
+  def markHasRead(id: Integer): Unit = {
+    if (resultDiscardTimeout == 0) {
+      _statements.synchronized {
+        _waitingRemove.synchronized {
+          _statements.remove(id)
+          _waitingRemove.remove(id)
+          if (LAT._1 == id){
+            LAT = (0, 0)
+          }
+        }
+      }
+    } else {
+      _waitingRemove.synchronized {
+        val newLAT =  new Date().getTime + resultDiscardTimeout
+        _waitingRemove(id) = newLAT
+        if (newLAT < LAT._2) {
+          LAT = (id, newLAT)
+        }
+      }
+    }
+    snapshot(id, s"read success, expired after ${resultDiscardTimeout} ms")
+  }
+
+  def getBufferState: String = _statements.synchronized {
+    if (_statements.size < numRetainedStatements || checkExpired) {
+      "buffer is free, please try to resubmit the code"
+    } else {
+      s"buffer is busy，maybe free after ${TimeUnit.SECONDS.convert(LAT._2 - new Date().getTime, TimeUnit.MILLISECONDS)}s"
+    }
+  }
+
 }

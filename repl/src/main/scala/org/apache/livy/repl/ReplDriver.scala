@@ -75,7 +75,9 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
     } else {
       assert(msg.from != null)
       assert(msg.size != null)
-      if (msg.size == 1) {
+      if (msg.from == -1) {
+        Array(new Statement(-1, session.getBufferState, StatementState.Rejected, null))
+      } else if (msg.size == 1) {
         session.statements.get(msg.from).toArray
       } else {
         val until = msg.from + msg.size
@@ -86,6 +88,9 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
     // Update progress of statements when queried
     statements.foreach { s =>
       s.updateProgress(session.progressOfStatement(s.id))
+      if (s.state.get() == StatementState.Available) {
+        session.markHasRead(s.id)
+      }
     }
 
     new ReplJobResults(statements.sortBy(_.id))

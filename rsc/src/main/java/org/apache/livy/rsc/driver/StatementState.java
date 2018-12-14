@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public enum StatementState {
+  Rejected("rejected"),
   Waiting("waiting"),
   Running("running"),
   Available("available"),
