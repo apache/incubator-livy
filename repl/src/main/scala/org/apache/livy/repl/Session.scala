@@ -68,9 +68,11 @@ class Session(
   // Number of statements kept in driver's memory
   private val numRetainedStatements = livyConf.getInt(RSCConf.Entry.RETAINED_STATEMENTS)
 
-  private val resultRetainedTimeout = livyConf.getTimeAsMs(RSCConf.Entry.STAETMENT_RESULT_RETAINED_TIMEOUT)
+  private val resultRetainedTimeout =
+    livyConf.getTimeAsMs(RSCConf.Entry.STAETMENT_RESULT_RETAINED_TIMEOUT)
 
-  private val resultDiscardTimeout = livyConf.getTimeAsMs(RSCConf.Entry.STATEMENT_RESULT_DISCRAD_TIMEOUT)
+  private val resultDiscardTimeout =
+    livyConf.getTimeAsMs(RSCConf.Entry.STATEMENT_RESULT_DISCRAD_TIMEOUT)
 
   private val _statements = mutable.HashMap[Int, Statement]()
 
@@ -158,7 +160,8 @@ class Session(
       } else if (defaultInterpKind != Shared) {
         defaultInterpKind
       } else {
-        throw new IllegalArgumentException(s"Code type should be specified if session kind is shared")
+        throw new IllegalArgumentException(
+          s"Code type should be specified if session kind is shared")
       }
 
       val statementId = newStatementId.getAndIncrement()
@@ -375,7 +378,8 @@ class Session(
     debug(s"statement No.${id} ${msg}")
     val (running, o) = _statements.values.partition(_.state.get() == StatementState.Running)
     debug(s"Buffer Size: ${numRetainedStatements}\tUsed Size: ${_statements.size}\t" +
-      s"Finished: ${_waitingRemove.size} Running: ${running.size} Waiting: ${o.size-_waitingRemove.size}")
+      s"Finished: ${_waitingRemove.size} Running: ${running.size} " +
+      s"Waiting: ${o.size-_waitingRemove.size}")
   }
 
   private def isOverload(proposer: Int): Boolean = _statements.synchronized {
@@ -383,7 +387,7 @@ class Session(
       snapshot(proposer, "is accepted")
       false
     } else if (checkExpired) {
-      if(_statements.size >= numRetainedStatements) {
+      if (_statements.size >= numRetainedStatements) {
         snapshot(proposer, s"will be accepted, cleanUpExpired now")
         cleanUpExpired
       } else {
@@ -411,7 +415,8 @@ class Session(
   // Attention: do not use _statements.synchronized to prevent deadlock
   private def cleanUpExpired: Unit = _waitingRemove.synchronized {
     assert(_waitingRemove.size > 0)
-    val sorted = mutable.PriorityQueue[(Int, Long)](_waitingRemove.toSeq: _*)(Ordering.by[(Int, Long), Long](_._2).reverse)
+    val sorted = mutable.PriorityQueue[(Int, Long)](_waitingRemove.toSeq: _*)
+    (Ordering.by[(Int, Long), Long](_._2).reverse)
     LAT = sorted.dequeue()
     val now = new Date().getTime
     while (LAT._2 != 0 && LAT._2 <= now ) {
@@ -441,7 +446,7 @@ class Session(
       }
     } else {
       _waitingRemove.synchronized {
-        val newLAT =  new Date().getTime + resultDiscardTimeout
+        val newLAT = new Date().getTime + resultDiscardTimeout
         _waitingRemove(id) = newLAT
         if (newLAT < LAT._2) {
           LAT = (id, newLAT)
@@ -455,7 +460,8 @@ class Session(
     if (_statements.size < numRetainedStatements || checkExpired) {
       "buffer is free, please try to resubmit the code"
     } else {
-      s"buffer is busy，maybe free after ${TimeUnit.SECONDS.convert(LAT._2 - new Date().getTime, TimeUnit.MILLISECONDS)}s"
+      "buffer is busy, maybe free after " +
+        s"${TimeUnit.SECONDS.convert(LAT._2 - new Date().getTime, TimeUnit.MILLISECONDS)}s"
     }
   }
 
