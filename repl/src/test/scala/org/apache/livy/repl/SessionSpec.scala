@@ -88,30 +88,5 @@ class SessionSpec extends FunSpec with Eventually with LivyBaseUnitTestSuite wit
       }
     }
 
-    it("should remove old statements when reaching threshold") {
-      rscConf.set(RSCConf.Entry.RETAINED_STATEMENTS, 2)
-      session = new Session(rscConf, new SparkConf())
-      session.start()
-
-      session.statements.size should be (0)
-      session.execute("")
-      session.statements.size should be (1)
-      session.statements.map(_._1).toSet should be (Set(0))
-      session.execute("")
-      session.statements.size should be (2)
-      session.statements.map(_._1).toSet should be (Set(0, 1))
-      session.execute("")
-      eventually {
-        session.statements.size should be (2)
-        session.statements.map(_._1).toSet should be (Set(1, 2))
-      }
-
-      // Continue submitting statements, total statements in memory should be 2.
-      session.execute("")
-      eventually {
-        session.statements.size should be (2)
-        session.statements.map(_._1).toSet should be (Set(2, 3))
-      }
-    }
   }
 }
