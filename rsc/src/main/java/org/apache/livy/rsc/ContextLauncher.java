@@ -97,7 +97,13 @@ class ContextLauncher {
       String replMode = conf.get("repl");
       boolean repl = replMode != null && replMode.equals("true");
 
-      conf.set(LAUNCHER_ADDRESS, factory.getServer().getAddress());
+      // In some scenarios the user may need to configure this endpoint setting explicitly.
+      String address = conf.get(LAUNCHER_ADDRESS);
+      // If not specified, use the RPC server address; otherwise use the specified address.
+      if (address == null || address.trim().isEmpty()) {
+        address = factory.getServer().getAddress();
+      }
+      conf.set(LAUNCHER_ADDRESS, address);
       conf.set(LAUNCHER_PORT, factory.getServer().getPort());
       conf.set(CLIENT_ID, clientId);
       conf.set(CLIENT_SECRET, secret);
