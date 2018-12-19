@@ -75,7 +75,7 @@ trait Cluster {
   }
 }
 
-trait ClusterBase extends Logging {
+object Cluster extends Logging {
   private lazy val config = {
     sys.props.get("cluster.spec")
       .filter { path => path.nonEmpty && path != "default" }
@@ -97,7 +97,7 @@ trait ClusterBase extends Logging {
   private lazy val cluster = {
     var _cluster: Cluster = null
     try {
-      _cluster = newCluster(config)
+      _cluster = new MiniCluster(config)
       Runtime.getRuntime.addShutdownHook(new Thread {
         override def run(): Unit = {
           info("Shutting down cluster pool.")
@@ -121,10 +121,4 @@ trait ClusterBase extends Logging {
   def get(): Cluster = cluster
 
   def isRunningOnTravis: Boolean = sys.env.contains("TRAVIS")
-
-  protected def newCluster(config: Map[String, String]): Cluster
-}
-
-object Cluster extends ClusterBase {
-  override protected def newCluster(config: Map[String, String]): Cluster = new MiniCluster(config)
 }

@@ -17,20 +17,13 @@
 
 package org.apache.livy.test.framework
 
-import org.apache.livy.LivyConf
+class BaseThriftIntegrationTestSuite extends BaseIntegrationTestSuite {
+  var thriftJdbcClient: ThriftJdbcClient = _
 
-
-object MiniThriftLivyMain extends MiniLivyCluster {
-  override protected def baseLivyConf(configPath: String): Map[String, String] = {
-    super.baseLivyConf(configPath) ++ Map(LivyConf.THRIFT_SERVER_ENABLED.key -> "true")
+  override def beforeAll(): Unit = {
+    cluster = Cluster.get()
+    // The JDBC endpoint must contain a valid value
+    assert(cluster.jdbcEndpoint.isDefined)
+    thriftJdbcClient = new ThriftJdbcClient(cluster.jdbcEndpoint.get)
   }
-}
-
-class MiniThriftCluster(config: Map[String, String]) extends MiniCluster(config) {
-  override def livyMainClass: Class[_] = MiniThriftLivyMain.getClass
-}
-
-object ClusterWithThrift extends ClusterBase {
-  override protected def newCluster(config: Map[String, String]): Cluster =
-    new MiniThriftCluster(config)
 }

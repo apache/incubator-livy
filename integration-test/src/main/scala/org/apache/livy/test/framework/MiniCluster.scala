@@ -50,7 +50,7 @@ private class MiniClusterConfig(val config: Map[String, String]) {
 
 }
 
-private[framework] abstract class MiniClusterBase extends MiniClusterUtils with Logging {
+sealed abstract class MiniClusterBase extends MiniClusterUtils with Logging {
 
   def main(args: Array[String]): Unit = {
     val klass = getClass().getSimpleName()
@@ -125,9 +125,9 @@ object MiniYarnMain extends MiniClusterBase {
 
 }
 
-trait MiniLivyCluster extends MiniClusterBase {
+object MiniLivyMain extends MiniClusterBase {
   protected def baseLivyConf(configPath: String): Map[String, String] = {
-    Map(
+    val baseConf = Map(
       LivyConf.LIVY_SPARK_MASTER.key -> "yarn",
       LivyConf.LIVY_SPARK_DEPLOY_MODE.key -> "cluster",
       LivyConf.HEARTBEAT_WATCHDOG_INTERVAL.key -> "1s",
@@ -135,6 +135,12 @@ trait MiniLivyCluster extends MiniClusterBase {
       LivyConf.RECOVERY_MODE.key -> "recovery",
       LivyConf.RECOVERY_STATE_STORE.key -> "filesystem",
       LivyConf.RECOVERY_STATE_STORE_URL.key -> s"file://$configPath/state-store")
+    val thriftEnabled = sys.env.get("LIVY_TEST_THRIFT_ENABLED")
+    if (thriftEnabled.nonEmpty && thriftEnabled.forall(_.toBoolean)) {
+      baseConf + (LivyConf.THRIFT_SERVER_ENABLED.key -> "true")
+    } else {
+      baseConf
+    }
   }
 
   def start(config: MiniClusterConfig, configPath: String): Unit = {
@@ -161,8 +167,6 @@ trait MiniLivyCluster extends MiniClusterBase {
     }
   }
 }
-
-object MiniLivyMain extends MiniLivyCluster
 
 private case class ProcessInfo(process: Process, logFile: File)
 

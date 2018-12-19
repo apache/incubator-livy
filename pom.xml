@@ -1025,7 +1025,6 @@
         <module>thriftserver/server</module>
         <module>thriftserver/session</module>
         <module>thriftserver/client</module>
-        <module>thriftserver/integration-test</module>
       </modules>
     </profile>
 
