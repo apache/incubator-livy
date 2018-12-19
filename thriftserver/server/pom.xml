@@ -50,6 +50,10 @@
           <groupId>org.apache.hive</groupId>
           <artifactId>*</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -104,11 +108,10 @@
       <version>2.25.1</version>
     </dependency>
 
-    <!-- needed for compiling successfully when using JobContext -->
     <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-hive_${scala.binary.version}</artifactId>
-      <scope>provided</scope>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-runner</artifactId>
+      <version>${jetty.version}</version>
     </dependency>
 
     <!-- needed for testing -->
