@@ -76,7 +76,7 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
       assert(msg.from != null)
       assert(msg.size != null)
       if (msg.from == -1) {
-        Array(new Statement(-1, session.getBufferState, StatementState.Rejected, null))
+        Array(new Statement(-1, session.getBufferState(), StatementState.Rejected, null))
       } else if (msg.size == 1) {
         session.statements.get(msg.from).toArray
       } else {

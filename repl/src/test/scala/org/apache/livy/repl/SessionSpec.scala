@@ -20,7 +20,11 @@ package org.apache.livy.repl
 import java.util.Properties
 import java.util.concurrent.{ConcurrentLinkedQueue, CountDownLatch, TimeUnit}
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import org.apache.spark.SparkConf
+import org.json4s.JsonAST
 import org.scalatest.{BeforeAndAfter, FunSpec}
 import org.scalatest.Matchers._
 import org.scalatest.concurrent.Eventually
@@ -29,7 +33,9 @@ import org.scalatest.time._
 import org.apache.livy.LivyBaseUnitTestSuite
 import org.apache.livy.repl.Interpreter.ExecuteResponse
 import org.apache.livy.rsc.RSCConf
+import org.apache.livy.rsc.driver.SparkEntries
 import org.apache.livy.sessions._
+
 
 class SessionSpec extends FunSpec with Eventually with LivyBaseUnitTestSuite with BeforeAndAfter {
   override implicit val patienceConfig =
@@ -88,5 +94,38 @@ class SessionSpec extends FunSpec with Eventually with LivyBaseUnitTestSuite wit
       }
     }
 
+    it("should remove expired statements when reaching threshold") {
+      rscConf.set(RSCConf.Entry.RETAINED_STATEMENTS, 2)
+      rscConf.set(RSCConf.Entry.STATEMENT_RESULT_RETAINED_TIMEOUT, "1s")
+      val interpreter = new SparkInterpreter(new SparkConf()) {
+        override def execute(code: String): ExecuteResponse = {
+          Interpreter.ExecuteSuccess(new org.json4s.JObject(List[JsonAST.JField]()))
+        }
+        override def postStart(): Unit = {
+          entries = new SparkEntries(conf)
+        }
+      }
+      session = new Session(rscConf, new SparkConf(), Some(interpreter))
+      Await.result(session.start(), Duration.Inf)
+
+      session.statements.size should be (0)
+      session.execute("")
+      session.statements.size should be (1)
+      session.statements.map(_._1).toSet should be (Set(0))
+      session.execute("")
+      session.statements.size should be (2)
+      session.statements.map(_._1).toSet should be (Set(0, 1))
+      eventually(timeout(Span(1500, Millis))) {
+        session.execute("")
+        session.statements.size should be (1)
+        session.statements.map(_._1).toSet should be (Set(2))
+      }
+      // Continue submitting statements, total statements in memory should be 2.
+      session.execute("")
+      eventually {
+        session.statements.size should be (2)
+        session.statements.map(_._1).toSet should be (Set(2, 3))
+      }
+    }
   }
 }

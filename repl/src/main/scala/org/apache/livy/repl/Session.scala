@@ -69,16 +69,16 @@ class Session(
   private val numRetainedStatements = livyConf.getInt(RSCConf.Entry.RETAINED_STATEMENTS)
 
   private val resultRetainedTimeout =
-    livyConf.getTimeAsMs(RSCConf.Entry.STAETMENT_RESULT_RETAINED_TIMEOUT)
+    livyConf.getTimeAsMs(RSCConf.Entry.STATEMENT_RESULT_RETAINED_TIMEOUT)
 
   private val resultDiscardTimeout =
-    livyConf.getTimeAsMs(RSCConf.Entry.STATEMENT_RESULT_DISCRAD_TIMEOUT)
+    livyConf.getTimeAsMs(RSCConf.Entry.STATEMENT_RESULT_DISCARD_TIMEOUT)
 
   private val _statements = mutable.HashMap[Int, Statement]()
 
-  private var _waitingRemove = mutable.HashMap[Int, Long]()
-
-  private var LAT: (Int, Long) = (0, 0)
+  private var _expiredTimestamps = mutable.HashMap[Int, Long]()
+  // record recently expired item to prevent search _expiredTimestamps all the time
+  private var _recentlyExpiredItem: (Int, Long) = (0, 0)
 
   private val newStatementId = new AtomicInteger(0)
 
@@ -153,6 +153,7 @@ class Session(
 
   def execute(code: String, codeType: String = null): Int = {
     if (isOverload(newStatementId.get())) {
+      // return statementId -1 means reject current code
       -1
     } else {
       val tpe = if (codeType != null) {
@@ -177,8 +178,8 @@ class Session(
         }
 
         if (statement.state.get() == StatementState.Running) {
-          _waitingRemove.synchronized {
-            _waitingRemove(statement.id) = new Date().getTime + resultRetainedTimeout
+          _expiredTimestamps.synchronized {
+            _expiredTimestamps(statement.id) = new Date().getTime + resultRetainedTimeout
           }
         } else {
           markHasRead(statement.id)
@@ -378,21 +379,21 @@ class Session(
     debug(s"statement No.${id} ${msg}")
     val (running, o) = _statements.values.partition(_.state.get() == StatementState.Running)
     debug(s"Buffer Size: ${numRetainedStatements}\tUsed Size: ${_statements.size}\t" +
-      s"Finished: ${_waitingRemove.size} Running: ${running.size} " +
-      s"Waiting: ${o.size-_waitingRemove.size}")
+      s"Finished: ${_expiredTimestamps.size} Running: ${running.size} " +
+      s"Waiting: ${o.size-_expiredTimestamps.size}")
   }
 
+  /**
+   * return false when _statements size have not reach upper limit (numRetainedStatements)
+   * or some expired statement can be remove from _statements, otherwise return true
+   */
   private def isOverload(proposer: Int): Boolean = _statements.synchronized {
     if (_statements.size < numRetainedStatements) {
-      snapshot(proposer, "is accepted")
+      snapshot(proposer, "will be accepted")
       false
     } else if (checkExpired) {
-      if (_statements.size >= numRetainedStatements) {
-        snapshot(proposer, s"will be accepted, cleanUpExpired now")
-        cleanUpExpired
-      } else {
-        snapshot(proposer, "is accepted after cleanUpExpired")
-      }
+        snapshot(proposer, s"will be accepted after cleanUpExpired")
+        cleanUpExpired()
       false
     } else {
       snapshot(proposer, "is rejected")
@@ -400,68 +401,69 @@ class Session(
     }
   }
 
-  // checkExpired should have _statements's lock
-  private def checkExpired: Boolean = {
-    if (_waitingRemove.size == 0) {
+  private def checkExpired: Boolean = _expiredTimestamps.synchronized {
+    if (_expiredTimestamps.size == 0) {
       false
-    } else if (LAT._2 == 0) {
-      // only compute LAT when _waitingRemove is nonEmpty
-      cleanUpExpired
-      _statements.size < numRetainedStatements
     } else {
-      new Date().getTime > LAT._2
+      if (_recentlyExpiredItem._2 == 0) {
+        _recentlyExpiredItem = _expiredTimestamps.toArray.sortBy(_._2).head
+      }
+      new Date().getTime > _recentlyExpiredItem._2
     }
   }
-  // Attention: do not use _statements.synchronized to prevent deadlock
-  private def cleanUpExpired: Unit = _waitingRemove.synchronized {
-    assert(_waitingRemove.size > 0)
-    val sorted = mutable.PriorityQueue[(Int, Long)](_waitingRemove.toSeq: _*)
-    (Ordering.by[(Int, Long), Long](_._2).reverse)
-    LAT = sorted.dequeue()
-    val now = new Date().getTime
-    while (LAT._2 != 0 && LAT._2 <= now ) {
-      _statements.remove(LAT._1)
-      if (sorted.size > 0) {
-        LAT = sorted.dequeue()
-      } else {
-        LAT = (0, 0)
+
+  private def cleanUpExpired(): Unit = _statements.synchronized {
+    _expiredTimestamps.synchronized {
+      assert(_expiredTimestamps.size > 0)
+      val sorted = mutable.PriorityQueue[(Int, Long)](_expiredTimestamps.toSeq: _*)
+      (Ordering.by[(Int, Long), Long](_._2).reverse)
+      _recentlyExpiredItem = sorted.dequeue()
+      val now = new Date().getTime
+      while (_recentlyExpiredItem._2 != 0 && _recentlyExpiredItem._2 <= now ) {
+        _statements.remove(_recentlyExpiredItem._1)
+        if (sorted.size > 0) {
+          _recentlyExpiredItem = sorted.dequeue()
+        } else {
+          _recentlyExpiredItem = (0, 0)
+        }
       }
+      if (_recentlyExpiredItem._2 > 0) {
+        sorted.enqueue(_recentlyExpiredItem)
+      }
+      _expiredTimestamps = mutable.HashMap[Int, Long](sorted.toSeq: _*)
     }
-    if (LAT._2 > 0) {
-      sorted.enqueue(LAT)
-    }
-    _waitingRemove = mutable.HashMap[Int, Long](sorted.toSeq: _*)
   }
 
   def markHasRead(id: Integer): Unit = {
     if (resultDiscardTimeout == 0) {
       _statements.synchronized {
-        _waitingRemove.synchronized {
+        _expiredTimestamps.synchronized {
           _statements.remove(id)
-          _waitingRemove.remove(id)
-          if (LAT._1 == id){
-            LAT = (0, 0)
+          _expiredTimestamps.remove(id)
+          if (_recentlyExpiredItem._1 == id){
+            _recentlyExpiredItem = (0, 0)
           }
         }
       }
     } else {
-      _waitingRemove.synchronized {
-        val newLAT = new Date().getTime + resultDiscardTimeout
-        _waitingRemove(id) = newLAT
-        if (newLAT < LAT._2) {
-          LAT = (id, newLAT)
+      _expiredTimestamps.synchronized {
+        val expiredTime = new Date().getTime + resultDiscardTimeout
+        _expiredTimestamps(id) = expiredTime
+        if (expiredTime < _recentlyExpiredItem._2) {
+          _recentlyExpiredItem = (id, expiredTime)
         }
       }
     }
     snapshot(id, s"read success, expired after ${resultDiscardTimeout} ms")
   }
 
-  def getBufferState: String = _statements.synchronized {
+  def getBufferState(): String = _statements.synchronized {
     if (_statements.size < numRetainedStatements || checkExpired) {
       "buffer is free, please try to resubmit the code"
     } else {
       "buffer is busy, maybe free after " +
-        s"${TimeUnit.SECONDS.convert(LAT._2 - new Date().getTime, TimeUnit.MILLISECONDS)}s"
+        s"${TimeUnit.SECONDS.convert(_recentlyExpiredItem._2
+          - new Date().getTime, TimeUnit.MILLISECONDS)}s"
     }
   }
 
