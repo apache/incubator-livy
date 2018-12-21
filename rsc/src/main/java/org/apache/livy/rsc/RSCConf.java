@@ -71,6 +71,9 @@ public class RSCConf extends ClientConf<RSCConf> {
     SASL_MECHANISMS("rpc.sasl.mechanisms", "DIGEST-MD5"),
     SASL_QOP("rpc.sasl.qop", null),
 
+    STATEMENT_RESULT_RETAINED_TIMEOUT("result-retained.timeout", "1h"),
+    STATEMENT_RESULT_DISCARD_TIMEOUT("result-discard.timeout", "10m"),
+
     TEST_STUCK_END_SESSION("test.do-not-use.stuck-end-session", false),
     TEST_STUCK_START_DRIVER("test.do-not-use.stuck-start-driver", false),
 
