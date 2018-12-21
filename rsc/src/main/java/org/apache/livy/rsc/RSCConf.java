@@ -44,6 +44,7 @@ public class RSCConf extends ClientConf<RSCConf> {
     CLIENT_SHUTDOWN_TIMEOUT("client.shutdown-timeout", "10s"),
     DRIVER_CLASS("driver-class", null),
     SESSION_KIND("session.kind", null),
+    SESSION_INTERPRETER_THREADS("session.interpreter.threadPool.size", 1),
 
     LIVY_JARS("jars", null),
     SPARKR_PACKAGE("sparkr.package", null),

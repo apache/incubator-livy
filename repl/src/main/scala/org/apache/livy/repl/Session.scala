@@ -58,7 +58,7 @@ class Session(
   import Session._
 
   private val interpreterExecutor = ExecutionContext.fromExecutorService(
-    Executors.newSingleThreadExecutor())
+    Executors.newFixedThreadPool(livyConf.getInt(RSCConf.Entry.SESSION_INTERPRETER_THREADS)))
 
   private val cancelExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
@@ -161,7 +161,7 @@ class Session(
     _statements.synchronized { _statements(statementId) = statement }
 
     Future {
-      setJobGroup(tpe, statementId)
+      this.synchronized { setJobGroup(tpe, statementId) }
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
       if (statement.state.get() == StatementState.Running) {
