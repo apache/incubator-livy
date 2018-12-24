@@ -23,8 +23,8 @@ import org.apache.livy.test.framework.BaseThriftIntegrationTestSuite
 
 class JdbcIT extends BaseThriftIntegrationTestSuite {
   test("basic JDBC test") {
-    thriftJdbcClient.withConnection { c =>
-      thriftJdbcClient.checkQuery(
+    withConnection { c =>
+      checkQuery(
         c, "select 1, 'a', cast(null as int), 1.2345, CAST('2018-08-06' as date)") { resultSet =>
           resultSet.next()
           assert(resultSet.getInt(1) == 1)
@@ -36,7 +36,7 @@ class JdbcIT extends BaseThriftIntegrationTestSuite {
           assert(!resultSet.next())
       }
 
-      thriftJdbcClient.checkQuery(
+      checkQuery(
         c, "select cast(null as string), cast(null as decimal), cast(null as double), " +
         "cast(null as date), null") { resultSetWithNulls =>
           resultSetWithNulls.next()
@@ -53,7 +53,7 @@ class JdbcIT extends BaseThriftIntegrationTestSuite {
           assert(!resultSetWithNulls.next())
       }
 
-      thriftJdbcClient.checkQuery(
+      checkQuery(
         c, "select array(1.5, 2.4, 1.3), struct('a', 1, 1.5), map(1, 'a', 2, 'b')") { resultSet =>
           resultSet.next()
           assert(resultSet.getString(1) == "[1.5,2.4,1.3]")

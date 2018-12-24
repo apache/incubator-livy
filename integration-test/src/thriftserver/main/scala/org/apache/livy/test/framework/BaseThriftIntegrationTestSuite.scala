@@ -17,13 +17,38 @@
 
 package org.apache.livy.test.framework
 
+import java.sql.{Connection, DriverManager, ResultSet}
+
 class BaseThriftIntegrationTestSuite extends BaseIntegrationTestSuite {
-  var thriftJdbcClient: ThriftJdbcClient = _
+  private var jdbcUri: String = _
 
   override def beforeAll(): Unit = {
     cluster = Cluster.get()
     // The JDBC endpoint must contain a valid value
     assert(cluster.jdbcEndpoint.isDefined)
-    thriftJdbcClient = new ThriftJdbcClient(cluster.jdbcEndpoint.get)
+    jdbcUri = cluster.jdbcEndpoint.get
+  }
+
+  def checkQuery(connection: Connection, query: String)(validate: ResultSet => Unit): Unit = {
+    val ps = connection.prepareStatement(query)
+    try {
+      val rs = ps.executeQuery()
+      try {
+        validate(rs)
+      } finally {
+        rs.close()
+      }
+    } finally {
+      ps.close()
+    }
+  }
+
+  def withConnection[T](f: Connection => T): T = {
+    val connection = DriverManager.getConnection(jdbcUri)
+    try {
+      f(connection)
+    } finally {
+      connection.close()
+    }
   }
 }
