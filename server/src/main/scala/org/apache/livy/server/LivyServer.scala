@@ -18,6 +18,7 @@
 package org.apache.livy.server
 
 import java.io.{BufferedInputStream, InputStream}
+import java.net.InetAddress
 import java.util.concurrent._
 import java.util.EnumSet
 import javax.servlet._
@@ -356,7 +357,17 @@ class LivyServer extends Logging {
 
   /** For ITs only */
   def getJdbcUrl: Option[String] = {
-    _thriftServerFactory.map(_.getJdbcUrl)
+    _thriftServerFactory.map { _ =>
+      val additionalUrlParams = if (livyConf.get(THRIFT_TRANSPORT_MODE) == "http") {
+        "?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice"
+      } else {
+        ""
+      }
+      val host = Option(livyConf.get(THRIFT_BIND_HOST)).getOrElse(
+        InetAddress.getLocalHost.getHostAddress)
+      val port = livyConf.get(THRIFT_SERVER_PORT)
+      s"jdbc:hive2://$host:$port$additionalUrlParams"
+    }
   }
 
   private[livy] def testRecovery(livyConf: LivyConf): Unit = {

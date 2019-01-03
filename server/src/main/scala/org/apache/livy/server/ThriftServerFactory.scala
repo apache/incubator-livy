@@ -38,8 +38,6 @@ trait ThriftServerFactory {
   def getServlet(basePath: String): Servlet
 
   def getServletMappings: Seq[String]
-
-  def getJdbcUrl: String
 }
 
 object ThriftServerFactory {
