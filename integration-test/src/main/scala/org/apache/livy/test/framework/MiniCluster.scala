@@ -262,11 +262,6 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     eventually(timeout(30 seconds), interval(1 second)) {
       val res = httpClient.prepareGet(livyUrl + "/metrics").execute().get()
       assert(res.getStatusCode() == HttpServletResponse.SC_OK)
-      // Check if JDBC endpoint is up and responding, when configured
-      livyThriftJdbcUrl.foreach { url =>
-        val connection = DriverManager.getConnection(url)
-        connection.close()
-      }
     }
 
     livy = Some(localLivy)
