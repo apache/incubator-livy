@@ -244,8 +244,6 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     livy = None
   }
 
-  def livyMainClass: Class[_] = MiniLivyMain.getClass
-
   def runLivy(): Unit = {
     assert(!livy.isDefined)
     val confFile = new File(configDir, "serverUrl.conf")
@@ -253,7 +251,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
       .map { args =>
         Seq(args, s"-Djacoco.args=$args")
       }.getOrElse(Nil)
-    val localLivy = start(livyMainClass, confFile, extraJavaArgs = jacocoArgs)
+    val localLivy = start(MiniLivyMain.getClass, confFile, extraJavaArgs = jacocoArgs)
 
     val props = loadProperties(confFile)
     livyUrl = props("livy.server.server-url")

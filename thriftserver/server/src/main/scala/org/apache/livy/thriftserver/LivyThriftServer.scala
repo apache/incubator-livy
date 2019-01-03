@@ -26,7 +26,7 @@ import org.apache.livy.server.AccessManager
 import org.apache.livy.server.interactive.InteractiveSession
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
-import org.apache.livy.thriftserver.cli.{ThriftBinaryCLIService, ThriftCLIService, ThriftHttpCLIService}
+import org.apache.livy.thriftserver.cli.{ThriftBinaryCLIService, ThriftHttpCLIService}
 
 /**
  * The main entry point for the Livy thrift server leveraging HiveServer2. Starts up a
