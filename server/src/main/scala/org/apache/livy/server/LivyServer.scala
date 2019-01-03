@@ -365,7 +365,7 @@ class LivyServer extends Logging {
       }
       val host = Option(livyConf.get(THRIFT_BIND_HOST)).getOrElse(
         InetAddress.getLocalHost.getHostAddress)
-      val port = livyConf.get(THRIFT_SERVER_PORT)
+      val port = livyConf.getInt(THRIFT_SERVER_PORT)
       s"jdbc:hive2://$host:$port$additionalUrlParams"
     }
   }
