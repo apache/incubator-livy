@@ -18,6 +18,7 @@
 package org.apache.livy.server
 
 import java.io.{BufferedInputStream, InputStream}
+import java.net.InetAddress
 import java.util.concurrent._
 import java.util.EnumSet
 import javax.servlet._
@@ -55,6 +56,7 @@ class LivyServer extends Logging {
   private var kinitFailCount: Int = 0
   private var executor: ScheduledExecutorService = _
   private var accessManager: AccessManager = _
+  private var _thriftServerFactory: Option[ThriftServerFactory] = None
 
   private var ugi: UserGroupInformation = _
 
@@ -93,10 +95,8 @@ class LivyServer extends Logging {
     livyConf.set(LIVY_SPARK_SCALA_VERSION.key,
       sparkScalaVersion(formattedSparkVersion, scalaVersionFromSparkSubmit, livyConf))
 
-    val thriftServerFactory = if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
-      Some(ThriftServerFactory.getInstance)
-    } else {
-      None
+    if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+      _thriftServerFactory = Some(ThriftServerFactory.getInstance)
     }
 
     if (UserGroupInformation.isSecurityEnabled) {
@@ -221,7 +221,7 @@ class LivyServer extends Logging {
               mount(context, uiServlet, "/ui/*")
               mount(context, staticResourceServlet, "/static/*")
               mount(context, uiRedirectServlet(basePath + "/ui/"), "/*")
-              thriftServerFactory.foreach { factory =>
+              _thriftServerFactory.foreach { factory =>
                 mount(context, factory.getServlet(basePath), factory.getServletMappings: _*)
               }
             } else {
@@ -280,7 +280,7 @@ class LivyServer extends Logging {
 
     server.start()
 
-    thriftServerFactory.foreach {
+    _thriftServerFactory.foreach {
       _.start(livyConf, interactiveSessionManager, sessionStore, accessManager)
     }
 
@@ -288,7 +288,7 @@ class LivyServer extends Logging {
       override def run(): Unit = {
         info("Shutting down Livy server.")
         server.stop()
-        thriftServerFactory.foreach(_.stop())
+        _thriftServerFactory.foreach(_.stop())
       }
     })
 
@@ -353,6 +353,21 @@ class LivyServer extends Logging {
 
   def serverUrl(): String = {
     _serverUrl.getOrElse(throw new IllegalStateException("Server not yet started."))
+  }
+
+  /** For ITs only */
+  def getJdbcUrl: Option[String] = {
+    _thriftServerFactory.map { _ =>
+      val additionalUrlParams = if (livyConf.get(THRIFT_TRANSPORT_MODE) == "http") {
+        "?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice"
+      } else {
+        ""
+      }
+      val host = Option(livyConf.get(THRIFT_BIND_HOST)).getOrElse(
+        InetAddress.getLocalHost.getHostAddress)
+      val port = livyConf.getInt(THRIFT_SERVER_PORT)
+      s"jdbc:hive2://$host:$port$additionalUrlParams"
+    }
   }
 
   private[livy] def testRecovery(livyConf: LivyConf): Unit = {
