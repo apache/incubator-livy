@@ -142,6 +142,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
             false
           } else if (session.isInstanceOf[BatchSession]) {
             false
+          } else if (SessionState.Busy.equals(session.state)) {
+            false
           } else {
             val currentTime = System.nanoTime()
             currentTime - session.lastActivity > sessionTimeout
