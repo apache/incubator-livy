@@ -191,7 +191,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       waitForIdle: Boolean = true,
       heartbeatTimeoutInSecond: Int = 0)
     (f: (LivyRestClient#InteractiveSession) => R): R = {
-    withSession(livyClient.startSession(null, kind, sparkConf, heartbeatTimeoutInSecond)) { s =>
+    withSession(livyClient.startSession(None, kind, sparkConf, heartbeatTimeoutInSecond)) { s =>
       if (waitForIdle) {
         s.verifySessionIdle()
       }
