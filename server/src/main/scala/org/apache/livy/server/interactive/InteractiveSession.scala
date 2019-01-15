@@ -422,7 +422,8 @@ class InteractiveSession(
 
         override def onJobSucceeded(job: JobHandle[Void], result: Void): Unit = {
           transition(SessionState.Running)
-          info(s"Interactive session $id created [appid: ${appId.orNull}, owner: $owner, proxyUser:" +
+          info(s"Interactive session $id created [appid: ${appId.orNull}, " +
+            s"owner: $owner, proxyUser:" +
             s" $proxyUser, state: ${state.toString}, kind: ${kind.toString}, " +
             s"info: ${appInfo.asJavaMap}]")
         }

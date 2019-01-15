@@ -94,7 +94,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   def register(session: S): S = {
     info(s"Registering new session ${session.id}")
     synchronized {
-      session.name.map { sessionName =>
+      session.name.foreach { sessionName =>
         if (sessionsByName.contains(sessionName)) {
           val msg = s"Session ${session.name} already exists!"
           error(msg)
