@@ -43,18 +43,23 @@ class BatchSessionServlet(
 
   override protected def createSession(req: HttpServletRequest): BatchSession = {
     val createRequest = bodyAs[CreateBatchRequest](req)
-    val proxyUser = checkImpersonation(createRequest.proxyUser, req)
     val sessionId = sessionManager.nextId()
     val sessionName = createRequest.name
     BatchSession.create(
-      sessionId, sessionName, createRequest, livyConf, remoteUser(req), proxyUser, sessionStore)
+      sessionId,
+      sessionName,
+      createRequest,
+      livyConf,
+      accessManager,
+      remoteUser(req),
+      sessionStore)
   }
 
   override protected[batch] def clientSessionView(
       session: BatchSession,
       req: HttpServletRequest): Any = {
     val logs =
-      if (hasViewAccess(session.owner, req)) {
+      if (accessManager.hasViewAccess(session.owner, remoteUser(req))) {
         val lines = session.logLines()
 
         val size = 10

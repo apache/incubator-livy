@@ -50,14 +50,14 @@ abstract class BaseInteractiveServletSpec
     super.createConf()
       .set(LivyConf.SESSION_STAGING_DIR, tempDir.toURI().toString())
       .set(LivyConf.REPL_JARS, "dummy.jar")
-      .set(LivyConf.LIVY_SPARK_VERSION, "1.6.0")
-      .set(LivyConf.LIVY_SPARK_SCALA_VERSION, "2.10.5")
+      .set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
+      .set(LivyConf.LIVY_SPARK_SCALA_VERSION, sys.env("LIVY_SCALA_VERSION"))
   }
 
   protected def createRequest(
       inProcess: Boolean = true,
       extraConf: Map[String, String] = Map(),
-      kind: Kind = Spark()): CreateInteractiveRequest = {
+      kind: Kind = Spark): CreateInteractiveRequest = {
     val classpath = sys.props("java.class.path")
     val request = new CreateInteractiveRequest()
     request.kind = kind

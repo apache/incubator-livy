@@ -23,6 +23,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.jar.JarOutputStream;
@@ -46,13 +47,7 @@ import org.apache.livy.LivyClient;
 import org.apache.livy.LivyClientBuilder;
 import org.apache.livy.client.common.Serializer;
 import org.apache.livy.rsc.rpc.RpcException;
-import org.apache.livy.test.jobs.Echo;
-import org.apache.livy.test.jobs.Failure;
-import org.apache.livy.test.jobs.FileReader;
-import org.apache.livy.test.jobs.GetCurrentUser;
-import org.apache.livy.test.jobs.SQLGetTweets;
-import org.apache.livy.test.jobs.Sleeper;
-import org.apache.livy.test.jobs.SmallCount;
+import org.apache.livy.test.jobs.*;
 import static org.apache.livy.rsc.RSCConf.Entry.*;
 
 public class TestSparkClient {
@@ -63,6 +58,10 @@ public class TestSparkClient {
   private static final long TIMEOUT = 100;
 
   private Properties createConf(boolean local) {
+    return createConf(local, true);
+  }
+
+  private Properties createConf(boolean local, boolean hiveSupport) {
     Properties conf = new Properties();
     if (local) {
       conf.put(CLIENT_IN_PROCESS.key(), "true");
@@ -76,9 +75,11 @@ public class TestSparkClient {
       conf.put(SparkLauncher.EXECUTOR_EXTRA_CLASSPATH, classpath);
     }
 
+    conf.put(CLIENT_SHUTDOWN_TIMEOUT.key(), "30s");
     conf.put(LIVY_JARS.key(), "");
-    conf.put("spark.repl.enableHiveContext", "true");
-    conf.put("spark.sql.catalogImplementation", "hive");
+    conf.put("spark.repl.enableHiveContext", hiveSupport);
+    conf.put("spark.sql.catalogImplementation", hiveSupport ? "hive" : "in-memory");
+    conf.put(RETAINED_SHARE_VARIABLES.key(), "2");
     return conf;
   }
 
@@ -110,6 +111,61 @@ public class TestSparkClient {
       public void call(LivyClient client) throws Exception {
         JobHandle<Long> handle = client.submit(new SmallCount(5));
         assertEquals(Long.valueOf(5L), handle.get(TIMEOUT, TimeUnit.SECONDS));
+      }
+    });
+  }
+
+  @Test
+  public void testSharedVariable() throws Exception {
+    runTest(true, new TestFunction() {
+      @Override
+      void call(LivyClient client) throws Exception {
+        for (int i = 0; i < 2; i ++) {
+          JobHandle<Integer> handler = client.submit(new SharedVariableCounter("test"));
+          assertEquals(Integer.valueOf(i), handler.get(TIMEOUT, TimeUnit.SECONDS));
+        }
+      }
+    });
+  }
+
+  private static class SharedVariableTest implements Job<Void> {
+
+    @Override
+    public Void call(JobContext jc) throws Exception {
+      jc.setSharedObject("1", 1);
+      jc.setSharedObject("2", 2);
+
+      Integer obj = jc.getSharedObject("1");
+      assertEquals(obj, Integer.valueOf(1));
+
+      jc.setSharedObject("3", 3);
+
+      Exception e = null;
+      try {
+        jc.getSharedObject("2");
+      } catch (NoSuchElementException exp) {
+        e = exp;
+      }
+
+      assertNotNull(e);
+
+      obj = jc.removeSharedObject("2");
+      assertNull(obj);
+
+      obj = jc.removeSharedObject("3");
+      assertEquals(obj, Integer.valueOf(3));
+
+      return null;
+    }
+  }
+
+  @Test
+  public void testRemoveSharedVariableWithLRU() throws Exception {
+    runTest(true, new TestFunction() {
+      @Override
+      void call(LivyClient client) throws Exception {
+        JobHandle<Void> handler = client.submit(new SharedVariableTest());
+        handler.get(TIMEOUT, TimeUnit.SECONDS);
       }
     });
   }
@@ -220,7 +276,7 @@ public class TestSparkClient {
 
   @Test
   public void testSparkSQLJob() throws Exception {
-    runTest(true, new TestFunction() {
+    runTest(true, false, new TestFunction() {
       @Override
       void call(LivyClient client) throws Exception {
         JobHandle<List<String>> handle = client.submit(new SQLGetTweets(false));
@@ -417,10 +473,7 @@ public class TestSparkClient {
         long sleep = 100;
         BypassJobStatus status = null;
         while (System.nanoTime() < deadline) {
-          BypassJobStatus currStatus = lclient.getBypassJobStatus(jobId).get(TIMEOUT,
-            TimeUnit.SECONDS);
-          assertNotEquals(JobHandle.State.CANCELLED, currStatus.state);
-          assertNotEquals(JobHandle.State.FAILED, currStatus.state);
+          BypassJobStatus currStatus = assertNotCancelledOrFailed(lclient, jobId);
           if (currStatus.state.equals(JobHandle.State.SUCCEEDED)) {
             status = currStatus;
             break;
@@ -435,19 +488,71 @@ public class TestSparkClient {
         String resultVal = (String) s.deserialize(ByteBuffer.wrap(status.result));
         assertEquals("hello", resultVal);
 
-        // After the result is retrieved, the driver should stop tracking the job and release
-        // resources associated with it.
-        try {
-          lclient.getBypassJobStatus(jobId).get(TIMEOUT, TimeUnit.SECONDS);
-          fail("Should have failed to retrieve status of released job.");
-        } catch (ExecutionException ee) {
-          assertTrue(ee.getCause() instanceof RpcException);
-          assertTrue(ee.getCause().getMessage().contains(
-            "java.util.NoSuchElementException: " + jobId));
-        }
+        assertJobIdUntracked(lclient, jobId);
       }
     });
   }
+
+  private void assertJobIdUntracked(RSCClient lclient, String jobId)
+      throws InterruptedException, TimeoutException {
+
+    // After the result is retrieved, the driver should stop tracking the job and release
+    // resources associated with it.
+    try {
+      lclient.getBypassJobStatus(jobId).get(TIMEOUT, TimeUnit.SECONDS);
+      fail("Should have failed to retrieve status of released job.");
+    } catch (ExecutionException ee) {
+      assertTrue(ee.getCause() instanceof RpcException);
+      assertTrue(ee.getCause().getMessage().contains(
+              "java.util.NoSuchElementException: " + jobId));
+    }
+  }
+
+  @Test
+  public void testBypassWithImmediateCancellation() throws Exception {
+    runBypassCancellationTest(0, Duration.ofMinutes(1).toMillis());
+  }
+
+  @Test
+  public void testBypassWithCancellation() throws Exception {
+    runBypassCancellationTest(500, Duration.ofMinutes(1).toMillis());
+  }
+
+  public void runBypassCancellationTest(long waitBeforeCancel, long jobDuration) throws Exception {
+    runTest(true, new TestFunction() {
+      @Override
+      public void call(LivyClient client) throws Exception {
+        Serializer s = new Serializer();
+        RSCClient lclient = (RSCClient) client;
+        ByteBuffer job = s.serialize(new Sleeper(jobDuration));
+        String jobId = lclient.bypass(job, "spark", false);
+
+        assertNotCancelledOrFailed(lclient, jobId);
+
+        if (waitBeforeCancel > 0) {
+          Thread.sleep(waitBeforeCancel);
+          assertNotCancelledOrFailed(lclient, jobId);
+        }
+
+        lclient.cancel(jobId);
+        BypassJobStatus currStatus = lclient.getBypassJobStatus(jobId).get(TIMEOUT,
+            TimeUnit.SECONDS);
+        assertEquals(JobHandle.State.CANCELLED, currStatus.state);
+        assertJobIdUntracked(lclient, jobId);
+      }
+    });
+  }
+
+  private BypassJobStatus assertNotCancelledOrFailed(RSCClient lclient, String jobId)
+      throws InterruptedException, ExecutionException, TimeoutException {
+
+    BypassJobStatus currStatus = lclient.getBypassJobStatus(jobId).get(TIMEOUT,
+        TimeUnit.SECONDS);
+    assertNotEquals(JobHandle.State.CANCELLED, currStatus.state);
+    assertNotEquals(JobHandle.State.FAILED, currStatus.state);
+    return currStatus;
+  }
+
 
   private <T> JobHandle.Listener<T> newListener() {
     @SuppressWarnings("unchecked")
@@ -467,7 +572,11 @@ public class TestSparkClient {
   }
 
   private void runTest(boolean local, TestFunction test) throws Exception {
-    Properties conf = createConf(local);
+    runTest(local, true, test);
+  }
+
+  private void runTest(boolean local, boolean hiveSupport, TestFunction test) throws Exception {
+    Properties conf = createConf(local, hiveSupport);
     LivyClient client = null;
     try {
       test.config(conf);

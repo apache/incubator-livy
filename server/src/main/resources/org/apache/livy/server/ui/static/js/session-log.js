@@ -70,7 +70,7 @@ $(document).ready(function () {
   var type = pathArr.shift();
   var id = pathArr.shift();
 
-  $.getJSON(location.origin + getLogPath(type, id), {size: -1}, function(response) {
+  $.getJSON(location.origin + prependBasePath(getLogPath(type, id)), {size: -1}, function(response) {
     if (response) {
       $("#session-log").append(parseLog(response.log));
       $('#session-log [data-toggle="tooltip"]').tooltip();

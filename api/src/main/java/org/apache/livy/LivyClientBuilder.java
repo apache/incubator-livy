@@ -40,6 +40,8 @@ public final class LivyClientBuilder {
   /**
    * Creates a new builder that will automatically load the default Livy and Spark configuration
    * from the classpath.
+   *
+   * @throws IOException If an error occurred when reading from the config files.
    */
   public LivyClientBuilder() throws IOException {
     this(true);
@@ -54,6 +56,10 @@ public final class LivyClientBuilder {
    * application's classpath. Livy configuration takes precedence over Spark's (in case
    * configuration entries are duplicated), and configuration set in this builder object will
    * override the values in those files.
+   *
+   * @param loadDefaults Whether to load configs from spark-defaults.conf and livy-client.conf
+   *                     if they are found in the application's classpath.
+   * @throws IOException If an error occurred when reading from the config files.
    */
   public LivyClientBuilder(boolean loadDefaults) throws IOException {
     this.config = new Properties();

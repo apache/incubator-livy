@@ -39,6 +39,7 @@ import org.apache.livy._
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.rsc.{PingJob, RSCClient, RSCConf}
 import org.apache.livy.rsc.driver.Statement
+import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
 import org.apache.livy.sessions.Session._
@@ -68,13 +69,14 @@ object InteractiveSession extends Logging {
       id: Int,
       name: Option[String],
       owner: String,
-      proxyUser: Option[String],
       livyConf: LivyConf,
+      accessManager: AccessManager,
       request: CreateInteractiveRequest,
       sessionStore: SessionStore,
       mockApp: Option[SparkApp] = None,
       mockClient: Option[RSCClient] = None): InteractiveSession = {
     val appTag = s"livy-session-$id-${Random.alphanumeric.take(8).mkString}"
+    val impersonatedUser = accessManager.checkImpersonation(request.proxyUser, owner, livyConf)
 
     val client = mockClient.orElse {
       val conf = SparkApp.prepareSparkConf(appTag, livyConf, prepareConf(
@@ -103,7 +105,7 @@ object InteractiveSession extends Logging {
         .setAll(builderProperties.asJava)
         .setConf("livy.client.session-id", id.toString)
         .setConf(RSCConf.Entry.DRIVER_CLASS.key(), "org.apache.livy.repl.ReplDriver")
-        .setConf(RSCConf.Entry.PROXY_USER.key(), proxyUser.orNull)
+        .setConf(RSCConf.Entry.PROXY_USER.key(), impersonatedUser.orNull)
         .setURI(new URI("rsc:/"))
 
       Option(builder.build().asInstanceOf[RSCClient])
@@ -115,12 +117,12 @@ object InteractiveSession extends Logging {
       None,
       appTag,
       client,
-      SessionState.Starting(),
+      SessionState.Starting,
       request.kind,
       request.heartbeatTimeoutInSecond,
       livyConf,
       owner,
-      proxyUser,
+      impersonatedUser,
       sessionStore,
       mockApp)
   }
@@ -142,7 +144,7 @@ object InteractiveSession extends Logging {
       metadata.appId,
       metadata.appTag,
       client,
-      SessionState.Recovering(),
+      SessionState.Recovering,
       metadata.kind,
       metadata.heartbeatTimeoutS,
       livyConf,
@@ -183,11 +185,15 @@ object InteractiveSession extends Logging {
 
     def findSparkRArchive(): Option[String] = {
       Option(livyConf.get(RSCConf.Entry.SPARKR_PACKAGE.key())).orElse {
-        sys.env.get("SPARK_HOME").map { case sparkHome =>
+        sys.env.get("SPARK_HOME").flatMap { case sparkHome =>
           val path = Seq(sparkHome, "R", "lib", "sparkr.zip").mkString(File.separator)
           val rArchivesFile = new File(path)
-          require(rArchivesFile.exists(), "sparkr.zip not found; cannot run sparkr application.")
-          rArchivesFile.getAbsolutePath()
+          if (rArchivesFile.exists()) {
+            Some(rArchivesFile.getAbsolutePath)
+          } else {
+            warn("sparkr.zip not found; cannot start R interpreter.")
+            None
+          }
         }
       }
     }
@@ -199,22 +205,14 @@ object InteractiveSession extends Logging {
       } else {
         val sparkHome = livyConf.sparkHome().get
         val libdir = sparkMajorVersion match {
-          case 1 =>
-            if (new File(sparkHome, "RELEASE").isFile) {
-              new File(sparkHome, "lib")
-            } else {
-              new File(sparkHome, "lib_managed/jars")
-            }
           case 2 =>
             if (new File(sparkHome, "RELEASE").isFile) {
               new File(sparkHome, "jars")
-            } else if (new File(sparkHome, "assembly/target/scala-2.11/jars").isDirectory) {
-              new File(sparkHome, "assembly/target/scala-2.11/jars")
             } else {
-              new File(sparkHome, "assembly/target/scala-2.10/jars")
+              new File(sparkHome, "assembly/target/scala-2.11/jars")
             }
           case v =>
-            throw new RuntimeException("Unsupported spark major version:" + sparkMajorVersion)
+            throw new RuntimeException(s"Unsupported Spark major version: $sparkMajorVersion")
         }
         val jars = if (!libdir.isDirectory) {
           Seq.empty[String]
@@ -256,17 +254,22 @@ object InteractiveSession extends Logging {
           sys.env.get("SPARK_HOME") .map { case sparkHome =>
             val pyLibPath = Seq(sparkHome, "python", "lib").mkString(File.separator)
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
-            require(pyArchivesFile.exists(),
-              "pyspark.zip not found; cannot run pyspark application in YARN mode.")
+            val py4jFile = Try {
+              Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
+                .iterator()
+                .next()
+                .toFile
+            }.toOption
 
-            val py4jFile = Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
-              .iterator()
-              .next()
-              .toFile
-
-            require(py4jFile.exists(),
-              "py4j-*-src.zip not found; cannot run pyspark application in YARN mode.")
-            Seq(pyArchivesFile.getAbsolutePath, py4jFile.getAbsolutePath)
+            if (!pyArchivesFile.exists()) {
+              warn("pyspark.zip not found; cannot start pyspark interpreter.")
+              Seq.empty
+            } else if (py4jFile.isEmpty || !py4jFile.get.exists()) {
+              warn("py4j-*-src.zip not found; can start pyspark interpreter.")
+              Seq.empty
+            } else {
+              Seq(pyArchivesFile.getAbsolutePath, py4jFile.get.getAbsolutePath)
+            }
           }.getOrElse(Seq())
         }
     }
@@ -301,11 +304,15 @@ object InteractiveSession extends Logging {
     }
 
     val pySparkFiles = if (!LivyConf.TEST_MODE) {
-      builderProperties.put(SPARK_YARN_IS_PYTHON, "true")
       findPySparkArchives()
     } else {
       Nil
     }
+
+    if (pySparkFiles.nonEmpty) {
+      builderProperties.put(SPARK_YARN_IS_PYTHON, "true")
+    }
+
     mergeConfList(pySparkFiles, LivyConf.SPARK_PY_FILES)
 
     val sparkRArchive = if (!LivyConf.TEST_MODE) findSparkRArchive() else None
@@ -331,13 +338,8 @@ object InteractiveSession extends Logging {
     // pass spark.livy.spark_major_version to driver
     builderProperties.put("spark.livy.spark_major_version", sparkMajorVersion.toString)
 
-    if (sparkMajorVersion <= 1) {
-      builderProperties.put("spark.repl.enableHiveContext",
-        livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT).toString)
-    } else {
-      val confVal = if (enableHiveContext) "hive" else "in-memory"
-      builderProperties.put("spark.sql.catalogImplementation", confVal)
-    }
+    val confVal = if (enableHiveContext) "hive" else "in-memory"
+    builderProperties.put("spark.sql.catalogImplementation", confVal)
 
     if (enableHiveContext) {
       mergeHiveSiteAndHiveDeps(sparkMajorVersion)
@@ -352,7 +354,7 @@ class InteractiveSession(
     name: Option[String],
     appIdHint: Option[String],
     appTag: String,
-    client: Option[RSCClient],
+    val client: Option[RSCClient],
     initialState: SessionState,
     val kind: Kind,
     heartbeatTimeoutS: Int,
@@ -385,30 +387,11 @@ class InteractiveSession(
 
   private var app: Option[SparkApp] = None
 
-  override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(sessionLog)
-
-  override def recoveryMetadata: RecoveryMetadata =
-    InteractiveRecoveryMetadata( id, name, appId, appTag, kind, heartbeatTimeout.toSeconds.toInt,
-      owner, proxyUser, rscDriverUri)
-
-  override def state: SessionState = {
-    if (serverSideState.isInstanceOf[SessionState.Running]) {
-      // If session is in running state, return the repl state from RSCClient.
-      client
-        .flatMap(s => Option(s.getReplState))
-        .map(SessionState(_))
-        .getOrElse(SessionState.Busy()) // If repl state is unknown, assume repl is busy.
-    } else {
-      serverSideState
-    }
-  }
-
   override def start(): Unit = {
     app = mockApp.orElse {
       val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
         .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
-      driverProcess.map { _ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this))
-      }
+      driverProcess.map { _ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)) }
     }
 
     if (client.isEmpty) {
@@ -430,25 +413,25 @@ class InteractiveSession(
       // Send a dummy job that will return once the client is ready to be used, and set the
       // state to "idle" at that point.
       client.get.submit(new PingJob()).addListener(new JobHandle.Listener[Void]() {
-        override def onJobQueued(job: JobHandle[Void]): Unit = { }
-        override def onJobStarted(job: JobHandle[Void]): Unit = { }
+      override def onJobQueued(job: JobHandle[Void]): Unit = { }
+      override def onJobStarted(job: JobHandle[Void]): Unit = { }
 
         override def onJobCancelled(job: JobHandle[Void]): Unit = errorOut()
 
         override def onJobFailed(job: JobHandle[Void], cause: Throwable): Unit = errorOut()
 
         override def onJobSucceeded(job: JobHandle[Void], result: Void): Unit = {
-          transition(SessionState.Running())
-          info(s"Interactive session $id created [appid: ${appId.orNull}, " +
-            s"owner: $owner, proxyUser: $proxyUser, state: ${state.toString}, " +
-            s"kind: ${kind.toString}, info: ${appInfo.asJavaMap}]")
+          transition(SessionState.Running)
+          info(s"Interactive session $id created [appid: ${appId.orNull}, owner: $owner, proxyUser:" +
+            s" $proxyUser, state: ${state.toString}, kind: ${kind.toString}, " +
+            s"info: ${appInfo.asJavaMap}]")
         }
 
         private def errorOut(): Unit = {
           // Other code might call stop() to close the RPC channel. When RPC channel is closing,
           // this callback might be triggered. Check and don't call stop() to avoid nested called
           // if the session is already shutting down.
-          if (serverSideState != SessionState.ShuttingDown()) {
+          if (serverSideState != SessionState.ShuttingDown) {
             transition(SessionState.Error())
             stop()
             app.foreach { a =>
@@ -461,9 +444,25 @@ class InteractiveSession(
     }
   }
 
+  override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(sessionLog)
+
+  override def recoveryMetadata: RecoveryMetadata =
+    InteractiveRecoveryMetadata(id, name, appId, appTag, kind,
+      heartbeatTimeout.toSeconds.toInt, owner, proxyUser, rscDriverUri)
+
+  override def state: SessionState = {
+    if (serverSideState == SessionState.Running) {
+      // If session is in running state, return the repl state from RSCClient.
+      client
+        .flatMap(s => Option(s.getReplState))
+        .map(SessionState(_))
+        .getOrElse(SessionState.Busy) // If repl state is unknown, assume repl is busy.
+    } else serverSideState
+  }
+
   override def stopSession(): Unit = {
     try {
-      transition(SessionState.ShuttingDown())
+      transition(SessionState.ShuttingDown)
       sessionStore.remove(RECOVERY_SESSION_TYPE, id)
       client.foreach { _.stop(true) }
     } catch {
@@ -509,6 +508,15 @@ class InteractiveSession(
     ensureRunning()
     recordActivity()
     client.get.cancelReplCode(statementId)
+  }
+
+  def completion(content: CompletionRequest): CompletionResponse = {
+    ensureRunning()
+    recordActivity()
+
+    val proposals = client.get.completeReplCode(content.code, content.kind,
+        content.cursor).get
+    CompletionResponse(proposals.toList)
   }
 
   def runJob(job: Array[Byte], jobType: String): Long = {
@@ -574,7 +582,7 @@ class InteractiveSession(
 
   private def ensureRunning(): Unit = synchronized {
     serverSideState match {
-      case SessionState.Running() =>
+      case SessionState.Running =>
       case _ =>
         throw new IllegalStateException("Session is in state %s" format serverSideState)
     }
@@ -600,8 +608,9 @@ class InteractiveSession(
     synchronized {
       debug(s"$this app state changed from $oldState to $newState")
       newState match {
-        case SparkApp.State.FINISHED | SparkApp.State.KILLED | SparkApp.State.FAILED =>
+        case SparkApp.State.FINISHED | SparkApp.State.FAILED =>
           transition(SessionState.Dead())
+        case SparkApp.State.KILLED => transition(SessionState.Killed())
         case _ =>
       }
     }

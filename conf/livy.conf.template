@@ -23,11 +23,20 @@
 # Specify the key password.
 # livy.key-password =
 
+# Hadoop Credential Provider Path to get "livy.keystore.password" and "livy.key-password".
+# Credential Provider can be created using command as follow:
+# hadoop credential create "livy.keystore.password" -value "secret" -provider jceks://hdfs/path/to/livy.jceks
+# livy.hadoop.security.credential.provider.path =
+
 # What host address to start the server on. By default, Livy will bind to all network interfaces.
 # livy.server.host = 0.0.0.0
 
 # What port to start the server on.
 # livy.server.port = 8998
+
+# What base path ui should work on. By default UI is mounted on "/".
+# E.g.: livy.ui.basePath = /my_livy - result in mounting UI on /my_livy/
+# livy.ui.basePath = ""
 
 # What spark master Livy sessions should use.
 # livy.spark.master = local
@@ -62,8 +71,8 @@
 # Comma-separated list of Livy REPL jars. By default Livy will upload jars from its installation
 # directory every time a session is started. By caching these files in HDFS, for example, startup
 # time of sessions on YARN can be reduced. Please list all the repl dependencies including
-# livy-repl_2.10 and livy-repl_2.11 jars, Livy will automatically pick the right dependencies in
-# session creation.
+# Scala version-specific livy-repl jars, Livy will automatically pick the right dependencies
+# during session creation.
 # livy.repl.jars =
 
 # Location of PySpark archives. By default Livy will upload the file from SPARK_HOME, but
@@ -107,7 +116,7 @@
 # livy.server.recovery.state-store.url =
 
 # If Livy can't find the yarn app within this time, consider it lost.
-# livy.server.yarn.app-lookup-timeout = 60s
+# livy.server.yarn.app-lookup-timeout = 120s
 # When the cluster is busy, we may fail to launch yarn app in app-lookup-timeout, then it would
 # cause session leakage, so we need to check session leakage.
 # How long to check livy session leakage
@@ -116,7 +125,7 @@
 # livy.server.yarn.app-leakage.check-interval = 60s
 
 # How often Livy polls YARN to refresh YARN app state.
-# livy.server.yarn.poll-interval = 1s
+# livy.server.yarn.poll-interval = 5s
 #
 # Days to keep Livy server request logs.
 # livy.server.request-log-retain.days = 5

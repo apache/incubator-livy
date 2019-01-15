@@ -38,28 +38,49 @@ public class BypassJobWrapper extends JobWrapper<byte[]> {
 
   @Override
   public Void call() throws Exception {
-    state = JobHandle.State.STARTED;
+    // we ignore the return value here, because super.call() will detect cancellation
+    // and still needs to perform some cleanup
+    tryTransitionToState(JobHandle.State.STARTED);
+
     return super.call();
   }
 
   @Override
   protected synchronized void finished(byte[] result, Throwable error) {
-    if (error == null) {
+    if (error == null && tryTransitionToState(JobHandle.State.SUCCEEDED)) {
       this.result = result;
-      this.state = JobHandle.State.SUCCEEDED;
-    } else {
+    } else if (error != null && tryTransitionToState(JobHandle.State.FAILED)) {
       this.error = error;
-      this.state = JobHandle.State.FAILED;
     }
   }
 
   @Override
-  boolean cancel() {
-    if (super.cancel()) {
-      this.state = JobHandle.State.CANCELLED;
-      return true;
+  synchronized boolean cancel() {
+    return tryTransitionToState(JobHandle.State.CANCELLED) && super.cancel();
+  }
+
+  private synchronized boolean tryTransitionToState(JobHandle.State newState) {
+    boolean success = false;
+
+    switch (this.state) {
+      case QUEUED:
+        if (newState == JobHandle.State.STARTED || newState == JobHandle.State.CANCELLED) {
+          this.state = newState;
+          success = true;
+        }
+        break;
+      case STARTED:
+        if (newState == JobHandle.State.CANCELLED || newState == JobHandle.State.SUCCEEDED  ||
+            newState == JobHandle.State.FAILED) {
+          this.state = newState;
+          success = true;
+        }
+        break;
+      default:
+        break;
     }
-    return false;
+
+    return success;
   }
 
   @Override
@@ -71,5 +92,4 @@ public class BypassJobWrapper extends JobWrapper<byte[]> {
     String stackTrace = error != null ? Utils.stackTraceAsString(error) : null;
     return new BypassJobStatus(state, result, stackTrace);
   }
-
 }

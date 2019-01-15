@@ -30,6 +30,7 @@ import org.scalatest.{BeforeAndAfter, FunSpec, ShouldMatchers}
 import org.scalatest.mock.MockitoSugar.mock
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf, Utils}
+import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.SessionState
 import org.apache.livy.utils.{AppInfo, SparkApp}
@@ -68,7 +69,8 @@ class BatchSessionSpec
       req.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
 
       val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
-      val batch = BatchSession.create(0, None, req, conf, null, None, sessionStore)
+      val accessManager = new AccessManager(conf)
+      val batch = BatchSession.create(0, None, req, conf, accessManager, null, sessionStore)
       batch.start()
 
       Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
@@ -84,9 +86,11 @@ class BatchSessionSpec
       val conf = new LivyConf()
       val req = new CreateBatchRequest()
       val mockApp = mock[SparkApp]
-      val batch = BatchSession.create( 0, None, req, conf, null, None, sessionStore, Some(mockApp))
-
+      val accessManager = new AccessManager(conf)
+      val batch = BatchSession.create(
+        0, None, req, conf, accessManager, null, sessionStore, Some(mockApp))
       batch.start()
+
       val expectedAppId = "APPID"
       batch.appIdKnown(expectedAppId)
       verify(sessionStore, atLeastOnce()).save(
@@ -105,7 +109,7 @@ class BatchSessionSpec
       val m = BatchRecoveryMetadata(99, Some("Test Batch Session"), None, "appTag", null, None)
       val batch = BatchSession.recover(m, conf, sessionStore, Some(mockApp))
 
-      batch.state shouldBe a[SessionState.Recovering]
+      batch.state shouldBe (SessionState.Recovering)
 
       batch.appIdKnown("appId")
       verify(sessionStore, atLeastOnce()).save(
@@ -119,7 +123,7 @@ class BatchSessionSpec
       val m = BatchRecoveryMetadata(999, None, None, "appTag", null, None)
       val batch = BatchSession.recover(m, conf, sessionStore, Some(mockApp))
 
-      batch.state shouldBe a[SessionState.Recovering]
+      batch.state shouldBe (SessionState.Recovering)
 
       batch.appIdKnown("appId")
       verify(sessionStore, atLeastOnce()).save(

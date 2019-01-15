@@ -40,7 +40,7 @@ object SessionServletSpec {
 
     override def recoveryMetadata: RecoveryMetadata = MockRecoveryMetadata(0)
 
-    override def state: SessionState = SessionState.Idle()
+    override def state: SessionState = SessionState.Idle
 
     override def start(): Unit = ()
 
@@ -64,14 +64,18 @@ object SessionServletSpec {
     new SessionServlet(sessionManager, conf, accessManager) with RemoteUserOverride {
       override protected def createSession(req: HttpServletRequest): Session = {
         val params = bodyAs[Map[String, String]](req)
-        checkImpersonation(params.get(PROXY_USER), req)
+        accessManager.checkImpersonation(params.get(PROXY_USER), remoteUser(req), livyConf)
         new MockSession(sessionManager.nextId(), remoteUser(req), conf)
       }
 
       override protected def clientSessionView(
           session: Session,
           req: HttpServletRequest): Any = {
-        val logs = if (hasViewAccess(session.owner, req)) session.logLines() else Nil
+        val logs = if (accessManager.hasViewAccess(session.owner, remoteUser(req))) {
+          session.logLines()
+        } else {
+          Nil
+        }
         MockSessionView(session.id, session.owner, logs)
       }
     }

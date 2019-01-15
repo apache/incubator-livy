@@ -19,7 +19,7 @@
   xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
   <id>livy-server</id>
   <formats>
-    <format>zip</format>
+    <format>${assembly.format}</format>
   </formats>
   <includeBaseDirectory>false</includeBaseDirectory>
   <fileSets>
@@ -55,13 +55,6 @@
       </includes>
     </fileSet>
     <fileSet>
-      <directory>${project.parent.basedir}/repl/scala-2.10/target/jars</directory>
-      <outputDirectory>${assembly.name}/repl_2.10-jars</outputDirectory>
-      <includes>
-        <include>*</include>
-      </includes>
-    </fileSet>
-    <fileSet>
       <directory>${project.parent.basedir}/repl/scala-2.11/target/jars</directory>
       <outputDirectory>${assembly.name}/repl_2.11-jars</outputDirectory>
       <includes>
@@ -71,6 +64,20 @@
     <fileSet>
       <directory>${project.parent.basedir}/server/target/jars</directory>
       <outputDirectory>${assembly.name}/jars</outputDirectory>
+      <includes>
+        <include>*</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>${project.parent.basedir}/thriftserver/server/target/jars</directory>
+      <outputDirectory>${assembly.name}/jars</outputDirectory>
+      <includes>
+        <include>*</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>${project.parent.basedir}/thriftserver/session/target/jars</directory>
+      <outputDirectory>${assembly.name}/rsc-jars</outputDirectory>
       <includes>
         <include>*</include>
       </includes>

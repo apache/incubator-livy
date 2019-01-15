@@ -97,7 +97,13 @@ class ContextLauncher {
       String replMode = conf.get("repl");
       boolean repl = replMode != null && replMode.equals("true");
 
-      conf.set(LAUNCHER_ADDRESS, factory.getServer().getAddress());
+      // In some scenarios the user may need to configure this endpoint setting explicitly.
+      String address = conf.get(LAUNCHER_ADDRESS);
+      // If not specified, use the RPC server address; otherwise use the specified address.
+      if (address == null || address.trim().isEmpty()) {
+        address = factory.getServer().getAddress();
+      }
+      conf.set(LAUNCHER_ADDRESS, address);
       conf.set(LAUNCHER_PORT, factory.getServer().getPort());
       conf.set(CLIENT_ID, clientId);
       conf.set(CLIENT_SECRET, secret);
@@ -160,14 +166,28 @@ class ContextLauncher {
       Utils.checkState(livyHome != null,
         "Need one of LIVY_HOME or %s set.", LIVY_JARS.key());
       File rscJars = new File(livyHome, "rsc-jars");
+      List<File> allJars = new ArrayList<>();
       if (!rscJars.isDirectory()) {
         rscJars = new File(livyHome, "rsc/target/jars");
+
+        // To ease development, also add the thriftserver's session jars to the Spark app.
+        // On a release package, these jars should have been packaged in the proper "rsc-jars"
+        // directory.
+        File tsJars = new File(livyHome, "thriftserver/session/target/jars");
+        if (tsJars.isDirectory()) {
+          allJars.add(tsJars);
+        }
       }
+
       Utils.checkState(rscJars.isDirectory(),
-        "Cannot find 'client-jars' directory under LIVY_HOME.");
+        "Cannot find rsc jars directory under LIVY_HOME.");
+      allJars.add(rscJars);
+
       List<String> jars = new ArrayList<>();
-      for (File f : rscJars.listFiles()) {
-         jars.add(f.getAbsolutePath());
+      for (File dir : allJars) {
+        for (File f : dir.listFiles()) {
+           jars.add(f.getAbsolutePath());
+        }
       }
       livyJars = Utils.join(jars, ",");
     }
@@ -218,15 +238,8 @@ class ContextLauncher {
       return new ChildProcess(conf, promise, child, confFile);
     } else {
       final SparkLauncher launcher = new SparkLauncher();
-
-      // Spark 1.x does not support specifying deploy mode in conf and needs special handling.
-      String deployMode = conf.get(SPARK_DEPLOY_MODE);
-      if (deployMode != null) {
-        launcher.setDeployMode(deployMode);
-      }
-
       launcher.setSparkHome(System.getenv(SPARK_HOME_ENV));
-      launcher.setAppResource("spark-internal");
+      launcher.setAppResource(SparkLauncher.NO_RESOURCE);
       launcher.setPropertiesFile(confFile.getAbsolutePath());
       launcher.setMainClass(RSCDriverBootstrapper.class.getName());
 
@@ -374,6 +387,7 @@ class ContextLauncher {
         @Override
         public void run() {
           try {
+            RSCClientFactory.childProcesses().incrementAndGet();
             int exitCode = child.waitFor();
             if (exitCode != 0) {
               LOG.warn("Child process exited with code {}.", exitCode);
@@ -385,6 +399,8 @@ class ContextLauncher {
             child.destroy();
           } catch (Exception e) {
             LOG.warn("Exception while waiting for child process.", e);
+          } finally {
+            RSCClientFactory.childProcesses().decrementAndGet();
           }
         }
       };

@@ -38,12 +38,11 @@ trait Cluster {
   def deploy(): Unit
   def cleanUp(): Unit
   def configDir(): File
-  def isRealSpark(): Boolean
-  def hasSparkR(): Boolean
 
   def runLivy(): Unit
   def stopLivy(): Unit
   def livyEndpoint: String
+  def jdbcEndpoint: Option[String]
   def hdfsScratchDir(): Path
 
   def doAsClusterUser[T](task: => T): T
@@ -77,8 +76,6 @@ trait Cluster {
 }
 
 object Cluster extends Logging {
-  private val CLUSTER_TYPE = "cluster.type"
-
   private lazy val config = {
     sys.props.get("cluster.spec")
       .filter { path => path.nonEmpty && path != "default" }
@@ -94,17 +91,13 @@ object Cluster extends Logging {
         }
         p.asScala.toMap
       }
-      .getOrElse(Map(CLUSTER_TYPE -> "mini"))
+      .getOrElse(Map.empty)
   }
 
   private lazy val cluster = {
     var _cluster: Cluster = null
     try {
-      _cluster = config.get(CLUSTER_TYPE) match {
-        case Some("real") => new RealCluster(config)
-        case Some("mini") => new MiniCluster(config)
-        case t => throw new Exception(s"Unknown or unset cluster.type $t")
-      }
+      _cluster = new MiniCluster(config)
       Runtime.getRuntime.addShutdownHook(new Thread {
         override def run(): Unit = {
           info("Shutting down cluster pool.")
@@ -128,33 +121,4 @@ object Cluster extends Logging {
   def get(): Cluster = cluster
 
   def isRunningOnTravis: Boolean = sys.env.contains("TRAVIS")
-}
-
-trait ClusterUtils {
-
-  protected def saveProperties(props: Map[String, String], dest: File): Unit = {
-    val jprops = new Properties()
-    props.foreach { case (k, v) => jprops.put(k, v) }
-
-    val tempFile = new File(dest.getAbsolutePath() + ".tmp")
-    val out = new OutputStreamWriter(new FileOutputStream(tempFile), UTF_8)
-    try {
-      jprops.store(out, "Configuration")
-    } finally {
-      out.close()
-    }
-    tempFile.renameTo(dest)
-  }
-
-  protected def loadProperties(file: File): Map[String, String] = {
-    val in = new InputStreamReader(new FileInputStream(file), UTF_8)
-    val props = new Properties()
-    try {
-      props.load(in)
-    } finally {
-      in.close()
-    }
-    props.asScala.toMap
-  }
-
 }

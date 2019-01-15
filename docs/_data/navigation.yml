@@ -21,6 +21,10 @@ topnav:
       url: rest-api.html
     - title: Programmatic API
       url: programmatic-api.html
+    - title: Java API Docs
+      url: api/java/index.html
+    - title: Scala API Docs
+      url: api/scala/index.html#org.apache.livy.scalaapi.package
 
 - title: Apache
   subcategories:

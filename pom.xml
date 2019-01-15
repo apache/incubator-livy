@@ -22,7 +22,7 @@
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-main</artifactId>
-  <version>0.5.0-incubating-SNAPSHOT</version>
+  <version>0.6.0-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Livy Project Parent POM</name>
   <description>Livy Project</description>
@@ -44,7 +44,7 @@
 
   <scm>
     <connection>scm:git:git@github.com:apache/incubator-livy.git</connection>
-    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-livy.git</developerConnection>
+    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/incubator-livy.git</developerConnection>
     <url>scm:git:git@github.com:apache/incubator-livy.git</url>
     <tag>HEAD</tag>
   </scm>
@@ -80,33 +80,39 @@
   <properties>
     <hadoop.version>2.7.3</hadoop.version>
     <hadoop.scope>compile</hadoop.scope>
-    <spark.version>1.6.2</spark.version>
+    <spark.scala-2.11.version>2.2.0</spark.scala-2.11.version>
+    <spark.version>${spark.scala-2.11.version}</spark.version>
+    <hive.version>3.0.0</hive.version>
     <commons-codec.version>1.9</commons-codec.version>
+    <guava.version>15.0</guava.version>
     <httpclient.version>4.5.3</httpclient.version>
     <httpcore.version>4.4.4</httpcore.version>
-    <jackson.version>2.4.4</jackson.version>
+    <jackson.version>2.9.5</jackson.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
-    <jetty.version>9.2.16.v20160414</jetty.version>
-    <json4s.version>3.2.10</json4s.version>
+    <jetty.version>9.3.24.v20180605</jetty.version>
+    <json4s.version>3.2.11</json4s.version>
     <junit.version>4.11</junit.version>
+    <libthrift.version>0.9.3</libthrift.version>
     <kryo.version>2.22</kryo.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.9.5</mockito.version>
-    <netty.version>4.0.29.Final</netty.version>
+    <netty.spark-2.11.version>4.0.37.Final</netty.spark-2.11.version>
+    <netty.version>${netty.spark-2.11.version}</netty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <py4j.version>0.9</py4j.version>
-    <scala-2.10.version>2.10.4</scala-2.10.version>
-    <scala-2.11.version>2.11.8</scala-2.11.version>
-    <scala.binary.version>2.10</scala.binary.version>
-    <scala.version>${scala-2.10.version}</scala.version>
+    <py4j.version>0.10.7</py4j.version>
+    <scala-2.11.version>2.11.12</scala-2.11.version>
+    <scala.binary.version>2.11</scala.binary.version>
+    <scala.version>${scala-2.11.version}</scala.version>
     <scalatest.version>2.2.4</scalatest.version>
     <scalatra.version>2.3.0</scalatra.version>
-    <java.version>1.7</java.version>
-    <minJavaVersion>1.7</minJavaVersion>
-    <maxJavaVersion>1.8</maxJavaVersion>
+    <java.version>1.8</java.version>
     <test.redirectToFile>true</test.redirectToFile>
     <execution.root>${user.dir}</execution.root>
     <spark.home>${execution.root}/dev/spark</spark.home>
+    <spark.bin.download.url>
+      https://d3kbcqa49mib13.cloudfront.net/spark-2.2.0-bin-hadoop2.7.tgz
+    </spark.bin.download.url>
+    <spark.bin.name>spark-2.2.0-bin-hadoop2.7</spark.bin.name>
     <!--  used for testing, NCSARequestLog use it for access log  -->
     <livy.log.dir>${basedir}/target</livy.log.dir>
 
@@ -178,32 +184,6 @@
         <enabled>false</enabled>
       </snapshots>
     </repository>
-    <repository>
-      <id>cdh.repo</id>
-      <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
-      <name>Cloudera Repositories</name>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>cdh.snapshots.repo</id>
-      <url>https://repository.cloudera.com/artifactory/libs-snapshot-local</url>
-      <name>Cloudera Snapshots Repository</name>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-    <repository>
-      <id>repository.jboss.org</id>
-      <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
   </repositories>
 
   <modules>
@@ -212,24 +192,18 @@
     <module>client-common</module>
     <module>client-http</module>
     <module>core</module>
-    <module>core/scala-2.10</module>
     <module>core/scala-2.11</module>
     <module>coverage</module>
     <module>examples</module>
     <module>python-api</module>
     <module>repl</module>
-    <module>repl/scala-2.10</module>
     <module>repl/scala-2.11</module>
     <module>rsc</module>
     <module>scala</module>
     <module>scala-api</module>
-    <module>scala-api/scala-2.10</module>
     <module>scala-api/scala-2.11</module>
     <module>server</module>
     <module>test-lib</module>
-    <module>integration-test/minicluster-dependencies</module>
-    <module>integration-test/minicluster-dependencies/scala-2.10</module>
-    <module>integration-test/minicluster-dependencies/scala-2.11</module>
     <module>integration-test</module>
   </modules>
 
@@ -307,6 +281,12 @@
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>${commons-codec.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
       </dependency>
 
       <dependency>
@@ -577,10 +557,11 @@
         <version>${py4j.version}</version>
       </dependency>
 
+      <!-- we need a version > 1.7.13 because of SLF4J-324 -->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.0</version>
+        <version>1.7.25</version>
       </dependency>
 
     </dependencies>
@@ -589,26 +570,6 @@
   <build>
     <pluginManagement>
       <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.4.1</version>
-          <executions>
-            <execution>
-              <id>enforce-versions</id>
-              <goals>
-                <goal>enforce</goal>
-              </goals>
-              <configuration>
-                <rules>
-                  <requireJavaVersion>
-                    <version>1.7</version>
-                  </requireJavaVersion>
-                </rules>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
@@ -686,7 +647,6 @@
             <jvmArgs>
               <jvmArg>-Xms1024m</jvmArg>
               <jvmArg>-Xmx1024m</jvmArg>
-              <jvmArg>-XX:MaxPermSize=${MaxPermGen}</jvmArg>
               <jvmArg>-XX:ReservedCodeCacheSize=${CodeCacheSize}</jvmArg>
             </jvmArgs>
           </configuration>
@@ -725,7 +685,7 @@
             </systemProperties>
             <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
             <useFile>${test.redirectToFile}</useFile>
-            <argLine>${argLine} -Xmx2g -XX:MaxPermSize=512m</argLine>
+            <argLine>${argLine} -Xmx2g</argLine>
             <failIfNoTests>false</failIfNoTests>
           </configuration>
         </plugin>
@@ -739,6 +699,8 @@
               <LIVY_TEST>true</LIVY_TEST>
               <SPARK_HOME>${spark.home}</SPARK_HOME>
               <LIVY_LOG_DIR>${livy.log.dir}</LIVY_LOG_DIR>
+              <LIVY_SPARK_VERSION>${spark.version}</LIVY_SPARK_VERSION>
+              <LIVY_SCALA_VERSION>${scala.binary.version}</LIVY_SCALA_VERSION>
             </environmentVariables>
             <systemProperties>
               <java.awt.headless>true</java.awt.headless>
@@ -754,7 +716,7 @@
             <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
             <junitxml>.</junitxml>
             <filereports>WDF TestSuite.txt</filereports>
-            <argLine>${argLine} -Xmx2g -XX:MaxPermSize=512m</argLine>
+            <argLine>${argLine} -Xmx2g</argLine>
           </configuration>
           <executions>
             <execution>
@@ -782,6 +744,22 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>license-maven-plugin</artifactId>
           <version>1.13</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.0.0-M1</version>
+          <configuration>
+            <doctitle>Livy ${project.version} Java API</doctitle>
+            <windowtitle>Livy ${project.version} JavaDoc</windowtitle>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>com.googlecode.maven-download-plugin</groupId>
+          <artifactId>download-maven-plugin</artifactId>
+          <version>1.3.0</version>
         </plugin>
 
       </plugins>
@@ -813,12 +791,12 @@
         <inherited>false</inherited>
         <configuration>
           <rules>
+            <requireJavaVersion>
+              <version>${java.version}</version>
+            </requireJavaVersion>
             <requireMavenVersion>
               <version>[3.0.0,)</version>
             </requireMavenVersion>
-            <requireJavaVersion>
-              <version>[${minJavaVersion}.0,${maxJavaVersion}.1000}]</version>
-            </requireJavaVersion>
             <requireOS>
               <family>unix</family>
             </requireOS>
@@ -826,25 +804,11 @@
         </configuration>
         <executions>
           <execution>
-            <id>clean</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <phase>pre-clean</phase>
-          </execution>
-          <execution>
             <id>default</id>
             <goals>
               <goal>enforce</goal>
             </goals>
             <phase>validate</phase>
-          </execution>
-          <execution>
-            <id>site</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <phase>pre-site</phase>
           </execution>
         </executions>
       </plugin>
@@ -991,7 +955,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.7.7.201606060606</version>
+        <version>0.8.2</version>
         <executions>
           <execution>
             <goals>
@@ -1054,67 +1018,58 @@
     </plugins>
   </reporting>
 
-  <distributionManagement>
-    <repository>
-      <id>cdh.releases.repo</id>
-      <url>${repository.root}/cdh-staging-local</url>
-      <name>CDH Releases Repository</name>
-    </repository>
-    <snapshotRepository>
-      <id>cdh.snapshots.repo</id>
-      <url>${repository.root}/cdh-snapshot-local</url>
-      <name>CDH Snapshots Repository</name>
-    </snapshotRepository>
-  </distributionManagement>
-
   <profiles>
-    <!-- Spark version profile -->
     <profile>
-      <id>spark-1.6</id>
-      <activation>
-        <property>
-          <name>!spark-2.0</name>
-        </property>
-      </activation>
+      <id>thriftserver</id>
+      <modules>
+        <module>thriftserver/server</module>
+        <module>thriftserver/session</module>
+        <module>thriftserver/client</module>
+      </modules>
+    </profile>
+
+    <!-- Spark version profiles -->
+    <profile>
+      <id>spark-2.3</id>
       <properties>
-        <spark.version>1.6.2</spark.version>
+        <spark.scala-2.11.version>2.3.2</spark.scala-2.11.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
+        <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
+        <spark.bin.download.url>
+          http://mirrors.advancedhosters.com/apache/spark/spark-2.3.2/spark-2.3.2-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.3.2-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
     <profile>
-      <id>spark-2.0</id>
+      <id>spark-2.4</id>
       <activation>
         <property>
-          <name>spark-2.0</name>
+          <name>spark-2.4</name>
         </property>
       </activation>
       <properties>
-        <spark.version>2.0.1</spark.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>spark-2.1</id>
-      <activation>
-        <property>
-          <name>spark-2.1</name>
-        </property>
-      </activation>
-      <properties>
-        <spark.version>2.1.0</spark.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>spark-2.2</id>
-      <activation>
-        <property>
-          <name>spark-2.2</name>
-        </property>
-      </activation>
-      <properties>
-        <spark.version>2.2.0</spark.version>
+        <spark.scala-2.11.version>2.4.0</spark.scala-2.11.version>
+        <spark.version>${spark.scala-2.11.version}</spark.version>
+        <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
         <java.version>1.8</java.version>
+        <py4j.version>0.10.7</py4j.version>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark-2.4-it</id>
+      <activation>
+        <property>
+          <name>spark-2.4-it</name>
+        </property>
+      </activation>
+      <properties>
+        <spark.bin.download.url>
+          http://mirrors.advancedhosters.com/apache/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.4.0-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
@@ -1139,39 +1094,60 @@
       </build>
     </profile>
 
-  <profile>
-    <!-- This will search remote and local repos to generate THIRD-PARTY license file, make sure
-    livy artifacts existed in either remote or local repos, otherwise run mvn install before. -->
-    <id>generate-third-party</id>
-    <activation>
-      <property>
-        <name>generate-third-party</name>
-      </property>
-    </activation>
-    <build>
-      <plugins>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <inherited>false</inherited>
-          <configuration>
-            <outputDirectory>${execution.root}</outputDirectory>
-            <thirdPartyFilename>THIRD-PARTY</thirdPartyFilename>
-            <sortArtifactByName>true</sortArtifactByName>
-            <fileTemplate>${execution.root}/dev/third-party-file.ftl</fileTemplate>
-          </configuration>
-          <executions>
-            <execution>
-              <phase>prepare-package</phase>
-              <goals>
-                <goal>aggregate-add-third-party</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </build>
-  </profile>
+    <profile>
+      <!-- This will search remote and local repos to generate THIRD-PARTY license file, make sure
+      livy artifacts existed in either remote or local repos, otherwise run mvn install before. -->
+      <id>generate-third-party</id>
+      <activation>
+        <property>
+          <name>generate-third-party</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <inherited>false</inherited>
+            <configuration>
+              <outputDirectory>${execution.root}</outputDirectory>
+              <thirdPartyFilename>THIRD-PARTY</thirdPartyFilename>
+              <sortArtifactByName>true</sortArtifactByName>
+              <fileTemplate>${execution.root}/dev/third-party-file.ftl</fileTemplate>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>aggregate-add-third-party</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>public-docs</id>
+      <activation>
+        <property>
+          <name>public-docs</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <failOnError>true</failOnError>
+              <excludePackageNames>*.test,*.example,*.client,*.annotations,*.rsc</excludePackageNames>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
   </profiles>
 

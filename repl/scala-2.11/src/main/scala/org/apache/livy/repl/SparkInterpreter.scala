@@ -22,6 +22,9 @@ import java.net.URLClassLoader
 import java.nio.file.{Files, Paths}
 
 import scala.tools.nsc.Settings
+import scala.tools.nsc.interpreter.Completion.ScalaCompleter
+import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.interpreter.JLineCompletion
 import scala.tools.nsc.interpreter.JPrintWriter
 import scala.tools.nsc.interpreter.Results.Result
 import scala.util.control.NonFatal
@@ -32,12 +35,11 @@ import org.apache.spark.repl.SparkILoop
 import org.apache.livy.rsc.driver.SparkEntries
 
 /**
- * Scala 2.11 version of SparkInterpreter
+ * This represents a Spark interpreter. It is not thread safe.
  */
 class SparkInterpreter(protected override val conf: SparkConf) extends AbstractSparkInterpreter {
 
   private var sparkILoop: SparkILoop = _
-  private var sparkHttpServer: Object = _
 
   override def start(): Unit = {
     require(sparkILoop == null)
@@ -46,12 +48,6 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
     val outputDir = Files.createTempDirectory(Paths.get(rootDir), "spark").toFile
     outputDir.deleteOnExit()
     conf.set("spark.repl.class.outputDir", outputDir.getAbsolutePath)
-
-    // Only Spark1 requires to create http server, Spark2 removes HttpServer class.
-    startHttpServer(outputDir).foreach { case (server, uri) =>
-      sparkHttpServer = server
-      conf.set("spark.repl.class.uri", uri)
-    }
 
     val settings = new Settings()
     settings.processArguments(List("-Yrepl-class-based",
@@ -100,13 +96,6 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
       sparkILoop.closeInterpreter()
       sparkILoop = null
     }
-
-    if (sparkHttpServer != null) {
-      val method = sparkHttpServer.getClass.getMethod("stop")
-      method.setAccessible(true)
-      method.invoke(sparkHttpServer)
-      sparkHttpServer = null
-    }
   }
 
   override protected def isStarted(): Boolean = {
@@ -115,6 +104,19 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
 
   override protected def interpret(code: String): Result = {
     sparkILoop.interpret(code)
+  }
+
+  override protected def completeCandidates(code: String, cursor: Int) : Array[String] = {
+    val completer : ScalaCompleter = {
+      try {
+        val cls = Class.forName("scala.tools.nsc.interpreter.PresentationCompilerCompleter")
+        cls.getDeclaredConstructor(classOf[IMain]).newInstance(sparkILoop.intp)
+          .asInstanceOf[ScalaCompleter]
+      } catch {
+        case e : ClassNotFoundException => new JLineCompletion(sparkILoop.intp).completer
+      }
+    }
+    completer.complete(code, cursor).candidates.toArray
   }
 
   override protected def valueOfTerm(name: String): Option[Any] = {
@@ -128,45 +130,6 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
       modifier: List[String]): Unit = {
     sparkILoop.beQuietDuring {
       sparkILoop.bind(name, tpe, value, modifier)
-    }
-  }
-
-  private def startHttpServer(outputDir: File): Option[(Object, String)] = {
-    try {
-      val httpServerClass = Class.forName("org.apache.spark.HttpServer")
-      val securityManager = {
-        val constructor = Class.forName("org.apache.spark.SecurityManager")
-          .getConstructor(classOf[SparkConf])
-        constructor.setAccessible(true)
-        constructor.newInstance(conf).asInstanceOf[Object]
-      }
-      val httpServerConstructor = httpServerClass
-        .getConstructor(classOf[SparkConf],
-          classOf[File],
-          Class.forName("org.apache.spark.SecurityManager"),
-          classOf[Int],
-          classOf[String])
-      httpServerConstructor.setAccessible(true)
-      // Create Http Server
-      val port = conf.getInt("spark.replClassServer.port", 0)
-      val server = httpServerConstructor
-        .newInstance(conf, outputDir, securityManager, new Integer(port), "HTTP server")
-        .asInstanceOf[Object]
-
-      // Start Http Server
-      val startMethod = server.getClass.getMethod("start")
-      startMethod.setAccessible(true)
-      startMethod.invoke(server)
-
-      // Get uri of this Http Server
-      val uriMethod = server.getClass.getMethod("uri")
-      uriMethod.setAccessible(true)
-      val uri = uriMethod.invoke(server).asInstanceOf[String]
-      Some((server, uri))
-    } catch {
-      // Spark 2.0+ removed HttpServer, so return null instead.
-      case NonFatal(e) =>
-        None
     }
   }
 }

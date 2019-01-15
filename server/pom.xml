@@ -23,11 +23,11 @@
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>0.5.0-incubating-SNAPSHOT</version>
+    <version>0.6.0-incubating-SNAPSHOT</version>
   </parent>
 
   <artifactId>livy-server</artifactId>
-  <version>0.5.0-incubating-SNAPSHOT</version>
+  <version>0.6.0-incubating-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <dependencies>
@@ -75,6 +75,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
     </dependency>
@@ -93,6 +98,12 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-auth</artifactId>
       <scope>${hadoop.scope}</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>jline</groupId>
+          <artifactId>jline</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -102,6 +113,10 @@
         <exclusion>
           <groupId>javax.servlet</groupId>
           <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-core</artifactId>
         </exclusion>
       </exclusions>
       <scope>${hadoop.scope}</scope>

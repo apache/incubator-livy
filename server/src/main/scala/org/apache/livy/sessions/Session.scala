@@ -115,8 +115,11 @@ object Session {
     val defaultFS = livyConf.hadoopConf.get("fs.defaultFS").stripSuffix("/")
     val resolved =
       if (uri.getScheme() == null) {
-        require(uri.getPath().startsWith("/"), s"Path '${uri.getPath()}' is not absolute.")
-        new URI(defaultFS + uri.getPath())
+        val pathWithSegment =
+          if (uri.getFragment() != null) uri.getPath() + '#' + uri.getFragment() else uri.getPath()
+
+        require(pathWithSegment.startsWith("/"), s"Path '${uri.getPath()}' is not absolute.")
+        new URI(defaultFS + pathWithSegment)
       } else {
         uri
       }

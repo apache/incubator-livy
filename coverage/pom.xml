@@ -23,11 +23,11 @@
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>0.5.0-incubating-SNAPSHOT</version>
+    <version>0.6.0-incubating-SNAPSHOT</version>
   </parent>
 
   <artifactId>livy-coverage-report</artifactId>
-  <version>0.5.0-incubating-SNAPSHOT</version>
+  <version>0.6.0-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <dependencies>
@@ -52,19 +52,7 @@
 
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>livy-core_2.10</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>livy-core_2.11</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>livy-repl_2.10</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -83,12 +71,6 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>livy-server</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>livy-scala-api_2.10</artifactId>
       <version>${project.version}</version>
     </dependency>
 

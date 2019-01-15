@@ -18,6 +18,9 @@
 package org.apache.livy.rsc.driver;
 
 import java.io.File;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SQLContext;
@@ -26,6 +29,7 @@ import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 import org.apache.livy.JobContext;
+import org.apache.livy.rsc.RSCConf;
 import org.apache.livy.rsc.Utils;
 
 class JobContextImpl implements JobContext {
@@ -35,10 +39,21 @@ class JobContextImpl implements JobContext {
   private final RSCDriver driver;
   private final SparkEntries sparkEntries;
 
+  // Map to store shared variables across different jobs.
+  private final LinkedHashMap<String, Object> sharedVariables;
+
   public JobContextImpl(SparkEntries sparkEntries, File localTmpDir, RSCDriver driver) {
     this.sparkEntries = sparkEntries;
+
     this.localTmpDir = localTmpDir;
     this.driver = driver;
+    final int retainedVariables = driver.livyConf.getInt(RSCConf.Entry.RETAINED_SHARE_VARIABLES);
+    this.sharedVariables = new LinkedHashMap<String, Object>() {
+      @Override
+      protected boolean removeEldestEntry(Map.Entry<String, Object> eldest) {
+        return size() > retainedVariables;
+      }
+    };
   }
 
   @Override
@@ -46,9 +61,10 @@ class JobContextImpl implements JobContext {
     return sparkEntries.sc();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public Object sparkSession() throws Exception {
-    return sparkEntries.sparkSession();
+  public <E> E sparkSession() throws Exception {
+    return (E) sparkEntries.sparkSession();
   }
 
   @Override
@@ -65,6 +81,41 @@ class JobContextImpl implements JobContext {
   public synchronized JavaStreamingContext streamingctx(){
     Utils.checkState(streamingctx != null, "method createStreamingContext must be called first.");
     return streamingctx;
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public <E> E getSharedObject(String name) throws NoSuchElementException {
+    Object obj;
+    synchronized (sharedVariables) {
+      // Remove the entry and insert again to achieve LRU.
+      obj = sharedVariables.remove(name);
+      if (obj == null) {
+        throw new NoSuchElementException("Cannot find shared variable named " + name);
+      }
+      sharedVariables.put(name, obj);
+    }
+
+    return (E) obj;
+
+  }
+
+  @Override
+  public void setSharedObject(String name, Object object) {
+    synchronized (sharedVariables) {
+      sharedVariables.put(name, object);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public <E> E removeSharedObject(String name) {
+    Object obj;
+    synchronized (sharedVariables) {
+      obj = sharedVariables.remove(name);
+    }
+
+    return (E) obj;
   }
 
   @Override

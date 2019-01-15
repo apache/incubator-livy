@@ -18,13 +18,15 @@
 package org.apache.livy.server.batch
 
 import java.lang.ProcessBuilder.Redirect
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.Random
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.{LivyConf, Logging, Utils}
+import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{Session, SessionState}
 import org.apache.livy.sessions.Session._
@@ -43,17 +45,24 @@ case class BatchRecoveryMetadata(
 
 object BatchSession extends Logging {
   val RECOVERY_SESSION_TYPE = "batch"
+  // batch session child processes number
+  private val bscpn = new AtomicInteger
+
+  def childProcesses(): AtomicInteger = {
+    bscpn
+  }
 
   def create(
       id: Int,
       name: Option[String],
       request: CreateBatchRequest,
       livyConf: LivyConf,
+      accessManager: AccessManager,
       owner: String,
-      proxyUser: Option[String],
       sessionStore: SessionStore,
       mockApp: Option[SparkApp] = None): BatchSession = {
     val appTag = s"livy-batch-$id-${Random.alphanumeric.take(8).mkString}"
+    val impersonatedUser = accessManager.checkImpersonation(request.proxyUser, owner, livyConf)
 
     def createSparkApp(s: BatchSession): SparkApp = {
       val conf = SparkApp.prepareSparkConf(
@@ -66,7 +75,7 @@ object BatchSession extends Logging {
       val builder = new SparkProcessBuilder(livyConf)
       builder.conf(conf)
 
-      proxyUser.foreach(builder.proxyUser)
+      impersonatedUser.foreach(builder.proxyUser)
       request.className.foreach(builder.className)
       request.driverMemory.foreach(builder.driverMemory)
       request.driverCores.foreach(builder.driverCores)
@@ -76,9 +85,6 @@ object BatchSession extends Logging {
       request.queue.foreach(builder.queue)
       request.name.foreach(builder.name)
 
-      // Spark 1.x does not support specifying deploy mode in conf and needs special handling.
-      livyConf.sparkDeployMode().foreach(builder.deployMode)
-
       sessionStore.save(BatchSession.RECOVERY_SESSION_TYPE, s.recoveryMetadata)
 
       builder.redirectOutput(Redirect.PIPE)
@@ -87,6 +93,18 @@ object BatchSession extends Logging {
       val file = resolveURIs(Seq(request.file), livyConf)(0)
       val sparkSubmit = builder.start(Some(file), request.args)
 
+      Utils.startDaemonThread(s"batch-session-process-$id") {
+        childProcesses.incrementAndGet()
+        try {
+          sparkSubmit.waitFor() match {
+            case 0 =>
+            case exitCode =>
+              warn(s"spark-submit exited with code $exitCode")
+          }
+        } finally {
+          childProcesses.decrementAndGet()
+        }
+      }
       SparkApp.create(appTag, None, Option(sparkSubmit), livyConf, Option(s))
     }
 
@@ -96,10 +114,10 @@ object BatchSession extends Logging {
       id,
       name,
       appTag,
-      SessionState.Starting(),
+      SessionState.Starting,
       livyConf,
       owner,
-      proxyUser,
+      impersonatedUser,
       sessionStore,
       mockApp.map { m => (_: BatchSession) => m }.getOrElse(createSparkApp))
   }
@@ -113,7 +131,7 @@ object BatchSession extends Logging {
       m.id,
       m.name,
       m.appTag,
-      SessionState.Recovering(),
+      SessionState.Recovering,
       livyConf,
       m.owner,
       m.proxyUser,
@@ -166,12 +184,12 @@ class BatchSession(
       debug(s"$this state changed from $oldState to $newState")
       newState match {
         case SparkApp.State.RUNNING =>
-          _state = SessionState.Running()
+          _state = SessionState.Running
           info(s"Batch session $id created [appid: ${appId.orNull}, state: ${state.toString}, " +
             s"info: ${appInfo.asJavaMap}]")
         case SparkApp.State.FINISHED => _state = SessionState.Success()
-        case SparkApp.State.KILLED | SparkApp.State.FAILED =>
-          _state = SessionState.Dead()
+        case SparkApp.State.KILLED => _state = SessionState.Killed()
+        case SparkApp.State.FAILED => _state = SessionState.Dead()
         case _ =>
       }
     }

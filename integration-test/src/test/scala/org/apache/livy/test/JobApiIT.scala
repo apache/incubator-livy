@@ -133,7 +133,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     assert(result === 100)
   }
 
-  test("run spark sql job") {
+  ignore("run spark sql job") {
     assume(client != null, "Client not active.")
     val result = waitFor(client.submit(new SQLGetTweets(false)))
     assert(result.size() > 0)
@@ -157,15 +157,21 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     assert(result === "hello")
   }
 
+  test("share variables across jobs") {
+    assume(client2 != null, "Client not active.")
+    waitFor(client2.submit(new SharedVariableCounter("x"))) shouldBe 0
+    waitFor(client2.submit(new SharedVariableCounter("x"))) shouldBe 1
+  }
+
   scalaTest("run scala jobs") {
     assume(client2 != null, "Client not active.")
 
     val jobs = Seq(
       new ScalaEcho("abcde"),
-      new ScalaEcho(Seq(1, 2, 3, 4)),
+      new ScalaEcho(IndexedSeq(1, 2, 3, 4)),
       new ScalaEcho(Map(1 -> 2, 3 -> 4)),
       new ScalaEcho(ValueHolder("abcde")),
-      new ScalaEcho(ValueHolder(Seq(1, 2, 3, 4))),
+      new ScalaEcho(ValueHolder(IndexedSeq(1, 2, 3, 4))),
       new ScalaEcho(Some("abcde"))
     )
 
@@ -173,12 +179,22 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
       val result = waitFor(client2.submit(job))
       assert(result === job.value)
     }
+
+    (0 until 2).foreach { i =>
+      val result = waitFor(client2.submit(new ScalaSharedVariableCounter("test")))
+      assert(i === result)
+    }
   }
 
   protected def scalaTest(desc: String)(testFn: => Unit): Unit = {
     test(desc) {
-      assume(sys.env("LIVY_SPARK_SCALA_VERSION") ==
-        LivySparkUtils.formatScalaVersion(Properties.versionNumberString),
+      val livyConf = new LivyConf()
+      val (sparkVersion, scalaVersion) = LivySparkUtils.sparkSubmitVersion(livyConf)
+      val formattedSparkVersion = LivySparkUtils.formatSparkVersion(sparkVersion)
+      val versionString =
+        LivySparkUtils.sparkScalaVersion(formattedSparkVersion, scalaVersion, livyConf)
+
+      assume(versionString == LivySparkUtils.formatScalaVersion(Properties.versionNumberString),
         s"Scala test can only be run with ${Properties.versionString}")
       testFn
     }
@@ -222,7 +238,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     sessionId = -1
   }
 
-  pytest("validate Python-API requests") {
+  test("validate Python-API requests") {
     val addFileContent = "hello from addfile"
     val addFilePath = createTempFilesForTest("add_file", ".txt", addFileContent, true)
     val addPyFileContent = "def test_add_pyfile(): return \"hello from addpyfile\""
@@ -233,7 +249,12 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val uploadPyFilePath = createTempFilesForTest("upload_pyfile", ".py",
       uploadPyFileContent, false)
 
-    val builder = new ProcessBuilder(Seq("python", createPyTestsForPythonAPI().toString).asJava)
+    val tmpDir = new File(sys.props("java.io.tmpdir")).getAbsoluteFile()
+    val testDir = Files.createTempDirectory(tmpDir.toPath(), "python-tests-").toFile()
+    val testFile = createPyTestsForPythonAPI(testDir)
+
+    val builder = new ProcessBuilder(Seq("python", testFile.getAbsolutePath()).asJava)
+    builder.directory(testDir)
 
     val env = builder.environment()
     env.put("LIVY_END_POINT", livyEndpoint)
@@ -242,8 +263,8 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     env.put("UPLOAD_FILE_URL", uploadFilePath)
     env.put("UPLOAD_PYFILE_URL", uploadPyFilePath)
 
-    builder.redirectOutput(new File(sys.props("java.io.tmpdir") + "/pytest_results.txt"))
     builder.redirectErrorStream(true)
+    builder.redirectOutput(new File(tmpDir, "pytest_results.log"))
 
     val process = builder.start()
 
@@ -252,11 +273,10 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     assert(process.exitValue() === 0)
   }
 
-  private def createPyTestsForPythonAPI(): File = {
-    var source: InputStream = null
+  private def createPyTestsForPythonAPI(testDir: File): File = {
+    val file = Files.createTempFile(testDir.toPath(), "test_python_api-", ".py").toFile()
+    val source = getClass().getClassLoader().getResourceAsStream("test_python_api.py")
     try {
-      source = getClass.getClassLoader.getResourceAsStream("test_python_api.py")
-      val file = Files.createTempFile("", "").toFile
       Files.copy(source, file.toPath, StandardCopyOption.REPLACE_EXISTING)
       file
     } finally {
@@ -279,7 +299,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
   }
 
   private def waitFor[T](future: JFuture[T]): T = {
-    future.get(30, TimeUnit.SECONDS)
+    future.get(60, TimeUnit.SECONDS)
   }
 
   private def sessionList(): SessionList = {

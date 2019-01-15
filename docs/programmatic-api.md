@@ -35,12 +35,9 @@ Add the Livy client dependency to your application's POM:
 <dependency>
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-client-http</artifactId>
-  <version>0.4.0-incubating-SNAPSHOT</version>
+  <version>0.6.0-incubating</version>
 </dependency>
 ```
-
-Note: Until Livy's first Apache release you will have to
-install the livy artifacts locally using `mvn install`.
 
 To be able to compile code that uses Spark APIs, also add the correspondent Spark dependencies.
 

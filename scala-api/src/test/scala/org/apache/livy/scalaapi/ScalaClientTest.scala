@@ -50,8 +50,11 @@ class ScalaClientTest extends FunSuite
 
   after {
     if (client != null) {
-      client.stop(true)
-      client = null
+      try {
+        client.stop(true)
+      } finally {
+        client = null
+      }
     }
   }
 
@@ -183,6 +186,7 @@ object ScalaClientTest {
       conf.put(SparkLauncher.DRIVER_EXTRA_CLASSPATH, classpath)
       conf.put(SparkLauncher.EXECUTOR_EXTRA_CLASSPATH, classpath)
     }
+    conf.put(CLIENT_SHUTDOWN_TIMEOUT.key(), "30s")
     conf.put(LIVY_JARS.key, "")
     conf
   }

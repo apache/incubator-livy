@@ -36,11 +36,11 @@ import org.apache.livy.rsc.Utils;
 /**
  * An implementation of ChannelInboundHandler that dispatches incoming messages to an instance
  * method based on the method signature.
- * <p/>
+ * <p>
  * A handler's signature must be of the form:
- * <p/>
+ * <p>
  * <blockquote><tt>protected void handle(ChannelHandlerContext, MessageType)</tt></blockquote>
- * <p/>
+ * <p>
  * Where "MessageType" must match exactly the type of the message to handle. Polymorphism is not
  * supported. Handlers can return a value, which becomes the RPC reply; if a null is returned, then
  * a reply is still sent, with an empty payload.
@@ -54,7 +54,10 @@ public abstract class RpcDispatcher extends SimpleChannelInboundHandler<Object> 
 
   private volatile Rpc.MessageHeader lastHeader;
 
-  /** Override this to add a name to the dispatcher, for debugging purposes. */
+  /**
+   * Override this to add a name to the dispatcher, for debugging purposes.
+   * @return The name of this dispatcher.
+   */
   protected String name() {
     return getClass().getSimpleName();
   }

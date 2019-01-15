@@ -28,7 +28,7 @@ import org.json4s.jackson.Json4sScalaModule
 import org.scalatra._
 import org.scalatra.servlet.FileUploadSupport
 
-import org.apache.livy.{ExecuteRequest, JobHandle, LivyConf, Logging}
+import org.apache.livy.{CompletionRequest, ExecuteRequest, JobHandle, LivyConf, Logging}
 import org.apache.livy.client.common.HttpMessages
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.server.{AccessManager, SessionServlet}
@@ -52,13 +52,12 @@ class InteractiveSessionServlet(
 
   override protected def createSession(req: HttpServletRequest): InteractiveSession = {
     val createRequest = bodyAs[CreateInteractiveRequest](req)
-    val proxyUser = checkImpersonation(createRequest.proxyUser, req)
     InteractiveSession.create(
       sessionManager.nextId(),
       createRequest.name,
       remoteUser(req),
-      proxyUser,
       livyConf,
+      accessManager,
       createRequest,
       sessionStore)
   }
@@ -67,11 +66,11 @@ class InteractiveSessionServlet(
       session: InteractiveSession,
       req: HttpServletRequest): Any = {
     val logs =
-      if (hasViewAccess(session.owner, req)) {
+      if (accessManager.hasViewAccess(session.owner, remoteUser(req))) {
         Option(session.logLines())
           .map { lines =>
             val size = 10
-            var from = math.max(0, lines.length - size)
+            val from = math.max(0, lines.length - size)
             val until = from + size
 
             lines.view(from, until)
@@ -130,6 +129,13 @@ class InteractiveSessionServlet(
           "Location" -> url(getStatement,
             "id" -> session.id.toString,
             "statementId" -> statement.id.toString)))
+    }
+  }
+
+  jpost[CompletionRequest]("/:id/completion") { req =>
+    withModifyAccessSession { session =>
+      val compl = session.completion(req)
+      Ok(Map("candidates" -> compl.candidates))
     }
   }
 

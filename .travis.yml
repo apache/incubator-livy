@@ -19,26 +19,23 @@ sudo: required
 dist: trusty
 language: scala
 
-env:
-  matrix:
-    - MVN_FLAG='-Pspark-1.6 -DskipTests'
-    - MVN_FLAG='-Pspark-2.0 -DskipTests'
-    - MVN_FLAG='-Pspark-2.1 -DskipTests'
-    - MVN_FLAG='-Pspark-1.6 -DskipITs'
-    - MVN_FLAG='-Pspark-2.0 -DskipITs'
-    - MVN_FLAG='-Pspark-2.1 -DskipITs'
-
 matrix:
   include:
-      # Spark 2.2 will only be verified using JDK8
-    - env: MVN_FLAG='-Pspark-2.2 -DskipTests'
-      jdk: oraclejdk8
-    - env: MVN_FLAG='-Pspark-2.2 -DskipITs'
-      jdk: oraclejdk8
-
+  - name: "Spark 2.2 Unit Tests"
+    env: MVN_FLAG='-Pthriftserver -DskipITs'
+  - name: "Spark 2.2 ITs"
+    env: MVN_FLAG='-Pthriftserver -DskipTests'
+  - name: "Spark 2.3 Unit Tests"
+    env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipITs'
+  - name: "Spark 2.3 ITs"
+    env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipTests'
+  - name: "Spark 2.4 Unit Tests"
+    env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipITs'
+  - name: "Spark 2.4 ITs"
+    env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipTests'
 
 jdk:
-  - openjdk7
+  - oraclejdk8
 
 addons:
   apt:
@@ -51,23 +48,22 @@ cache:
   pip: true
   directories:
     - $HOME/.m2
-    - $(npm config get prefix)
 
 before_install:
   - sudo apt-get -y install python3-pip python-dev
   - sudo apt-get -y install libkrb5-dev
   - sudo apt-get -y remove python-setuptools
-  - pip2 install --user --upgrade pip "setuptools < 36"
-  - pip3 install --user --upgrade pip "setuptools < 36"
-  - pip2 install --user codecov cloudpickle
-  - pip3 install --user cloudpickle
+  - sudo pip2 install --upgrade "pip < 10.0.0" "setuptools < 36"
+  - sudo python3 -m pip install --upgrade "pip < 10.0.0" "setuptools < 36"
+  - sudo pip2 install codecov cloudpickle
+  - sudo python3 -m pip install cloudpickle
 
 install:
   - mvn $MVN_FLAG install -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
 
 before_script:
-  - pip2 install --user "requests >= 2.10.0" pytest flaky flake8 requests-kerberos
-  - pip3 install --user "requests >= 2.10.0" pytest flaky requests-kerberos
+  - sudo pip2 install "requests >= 2.10.0" pytest flaky flake8 requests-kerberos
+  - sudo pip3 install "requests >= 2.10.0" pytest flaky requests-kerberos
 
 script:
   - mvn $MVN_FLAG verify -e
@@ -76,5 +72,4 @@ after_success:
   - bash <(curl -s https://codecov.io/bash)
 
 after_failure:
-  - npm list -g azure-cli --depth=0 || npm install -g azure-cli
-  - ./dev/travis-upload-logs.sh
+  - for log in `find * -name "*.log" -o -name "stderr" -o -name "stdout" -o -name "rat.txt"`; do echo "=========$log========="; cat $log; done

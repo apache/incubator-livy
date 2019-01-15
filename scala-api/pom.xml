@@ -23,12 +23,12 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>multi-scala-project-root</artifactId>
-    <version>0.5.0-incubating-SNAPSHOT</version>
+    <version>0.6.0-incubating-SNAPSHOT</version>
     <relativePath>../scala/pom.xml</relativePath>
   </parent>
 
   <artifactId>livy-scala-api-parent</artifactId>
-  <version>0.5.0-incubating-SNAPSHOT</version>
+  <version>0.6.0-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <dependencies>
@@ -42,6 +42,17 @@
       <groupId>org.apache.livy</groupId>
       <artifactId>livy-rsc</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
+        </exclusion>
+      </exclusions>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

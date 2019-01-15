@@ -53,6 +53,8 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
 
   protected def interpret(code: String): Results.Result
 
+  protected def completeCandidates(code: String, cursor: Int) : Array[String] = Array()
+
   protected def valueOfTerm(name: String): Option[Any]
 
   protected def bind(name: String, tpe: String, value: Object, modifier: List[String]): Unit
@@ -108,6 +110,10 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
       executeLines(code.trim.split("\n").toList, Interpreter.ExecuteSuccess(JObject(
         (TEXT_PLAIN, JString(""))
       )))
+  }
+
+  override protected[repl] def complete(code: String, cursor: Int): Array[String] = {
+      completeCandidates(code, cursor)
   }
 
   private def executeMagic(magic: String, rest: String): Interpreter.ExecuteResponse = {
@@ -256,8 +262,34 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
           case Interpreter.ExecuteError(_, _, _) =>
             result
 
-          case _ =>
-            executeLines(tail, result)
+          case Interpreter.ExecuteAborted(_) =>
+            result
+
+          case Interpreter.ExecuteSuccess(e) =>
+            val mergedRet = resultFromLastLine match {
+              case Interpreter.ExecuteSuccess(s) =>
+                // Because of SparkMagic related specific logic, so we will only merge text/plain
+                // result. For any magic related output, still follow the old way.
+                if (s.values.contains(TEXT_PLAIN) && e.values.contains(TEXT_PLAIN)) {
+                  val lastRet = s.values.getOrElse(TEXT_PLAIN, "").asInstanceOf[String]
+                  val currRet = e.values.getOrElse(TEXT_PLAIN, "").asInstanceOf[String]
+                  if (lastRet.nonEmpty && currRet.nonEmpty) {
+                    Interpreter.ExecuteSuccess(TEXT_PLAIN -> s"$lastRet$currRet")
+                  } else if (lastRet.nonEmpty) {
+                    Interpreter.ExecuteSuccess(TEXT_PLAIN -> lastRet)
+                  } else if (currRet.nonEmpty) {
+                    Interpreter.ExecuteSuccess(TEXT_PLAIN -> currRet)
+                  } else {
+                    result
+                  }
+                } else {
+                  result
+                }
+
+              case _ => result
+            }
+
+            executeLines(tail, mergedRet)
         }
     }
   }
@@ -312,7 +344,7 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
   }
 
   private def readStdout() = {
-    val output = outputStream.toString("UTF-8").trim
+    val output = outputStream.toString("UTF-8")
     outputStream.reset()
 
     output

@@ -222,7 +222,7 @@ public class TestRpc {
 
     int count = 0;
     while (!client.outboundMessages().isEmpty()) {
-      server.writeInbound(client.readOutbound());
+      server.writeInbound((Object) client.readOutbound());
       count++;
     }
     server.flush();
@@ -230,7 +230,7 @@ public class TestRpc {
 
     count = 0;
     while (!server.outboundMessages().isEmpty()) {
-      client.writeInbound(server.readOutbound());
+      client.writeInbound((Object) server.readOutbound());
       count++;
     }
     client.flush();
