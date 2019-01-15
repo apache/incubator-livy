@@ -142,16 +142,15 @@ abstract class Session(val id: Int, val name: Option[String], val owner: String,
 
   protected implicit val executionContext = ExecutionContext.global
 
-  private def isValidName(name: String): Boolean = {
-    name.forall(_.isDigit)
+  private def isSessionId(str: String): Boolean = {
+    str.nonEmpty && str.forall(_.isDigit)
   }
 
-  name.filterNot(isValidName)
-    .foreach { _ =>
-      val errMsg = s"Session name cannot be a number: $name"
-      error(errMsg)
-      throw new IllegalArgumentException(errMsg)
-    }
+  name.filter(isSessionId).foreach { idStr =>
+    val errMsg = s"Session name cannot be a number: $idStr"
+    error(errMsg)
+    throw new IllegalArgumentException(errMsg)
+  }
 
   protected var _appId: Option[String] = None
 
