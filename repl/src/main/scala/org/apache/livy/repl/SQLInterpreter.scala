@@ -64,7 +64,8 @@ import org.apache.livy.rsc.driver.SparkEntries
 class SQLInterpreter(
     sparkConf: SparkConf,
     rscConf: RSCConf,
-    sparkEntries: SparkEntries) extends Interpreter with Logging {
+    sparkEntries: SparkEntries,
+    pool: String = "default") extends Interpreter with Logging {
 
   private implicit def formats = DefaultFormats
 
@@ -81,6 +82,7 @@ class SQLInterpreter(
 
   override protected[repl] def execute(code: String): Interpreter.ExecuteResponse = {
     try {
+      spark.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
       val result = spark.sql(code)
       val schema = parse(result.schema.json)
 
@@ -94,6 +96,7 @@ class SQLInterpreter(
             case e => e
           }
         }
+      spark.sparkContext.setLocalProperty("spark.scheduler.pool", null)
 
       val jRows = Extraction.decompose(rows)
 

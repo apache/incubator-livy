@@ -44,7 +44,6 @@ public class RSCConf extends ClientConf<RSCConf> {
     CLIENT_SHUTDOWN_TIMEOUT("client.shutdown-timeout", "10s"),
     DRIVER_CLASS("driver-class", null),
     SESSION_KIND("session.kind", null),
-    SESSION_INTERPRETER_THREADS("session.interpreter.threadPool.size", 1),
 
     LIVY_JARS("jars", null),
     SPARKR_PACKAGE("sparkr.package", null),
@@ -81,6 +80,8 @@ public class RSCConf extends ClientConf<RSCConf> {
     RETAINED_STATEMENTS("retained-statements", 100),
     RETAINED_SHARE_VARIABLES("retained.share-variables", 100),
 
+    SQL_DEFAULT_SCHEDULER_POOL("sql.default.scheduler.pool", "fair"),
+    SQL_INTERPRETER_THREADS("sql.interpreter.threadPool.size", 1),
     // Number of result rows to get for SQL Interpreters.
     SQL_NUM_ROWS("sql.num-rows", 1000);
 

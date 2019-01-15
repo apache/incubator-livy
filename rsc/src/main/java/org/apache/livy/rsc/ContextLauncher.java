@@ -69,6 +69,7 @@ class ContextLauncher {
   private static final String SPARK_JARS_KEY = "spark.jars";
   private static final String SPARK_ARCHIVES_KEY = "spark.yarn.dist.archives";
   private static final String SPARK_HOME_ENV = "SPARK_HOME";
+  private static final String FAIR_SCHEDULER_FILENAME = "livy-fairscheduler.xml";
 
   static DriverProcessInfo create(RSCClientFactory factory, RSCConf conf)
       throws IOException {
@@ -180,6 +181,9 @@ class ContextLauncher {
     // connections for the same registered app.
     conf.set("spark.yarn.maxAppAttempts", "1");
 
+    conf.set("spark.scheduler.mode", "FAIR");
+    conf.set("spark.scheduler.allocation.file", FAIR_SCHEDULER_FILENAME);
+
     // Let the launcher go away when launcher in yarn cluster mode. This avoids keeping lots
     // of "small" Java processes lingering on the Livy server node.
     conf.set("spark.yarn.submit.waitAppCompletion", "false");
@@ -219,6 +223,8 @@ class ContextLauncher {
     } else {
       final SparkLauncher launcher = new SparkLauncher();
       launcher.setSparkHome(System.getenv(SPARK_HOME_ENV));
+      launcher.addFile(
+        System.getenv().get("LIVY_CONF_DIR") + File.separator + FAIR_SCHEDULER_FILENAME);
       launcher.setAppResource(SparkLauncher.NO_RESOURCE);
       launcher.setPropertiesFile(confFile.getAbsolutePath());
       launcher.setMainClass(RSCDriverBootstrapper.class.getName());

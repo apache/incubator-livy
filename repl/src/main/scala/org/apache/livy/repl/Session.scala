@@ -58,7 +58,10 @@ class Session(
   import Session._
 
   private val interpreterExecutor = ExecutionContext.fromExecutorService(
-    Executors.newFixedThreadPool(livyConf.getInt(RSCConf.Entry.SESSION_INTERPRETER_THREADS)))
+    Executors.newSingleThreadExecutor())
+
+  private lazy val sqlExecutor = ExecutionContext.fromExecutorService(
+    Executors.newFixedThreadPool(livyConf.getInt(RSCConf.Entry.SQL_INTERPRETER_THREADS)))
 
   private val cancelExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
@@ -105,7 +108,9 @@ class Session(
             throw new IllegalStateException("SparkInterpreter should not be lazily created.")
           case PySpark => PythonInterpreter(sparkConf, entries)
           case SparkR => SparkRInterpreter(sparkConf, entries)
-          case SQL => new SQLInterpreter(sparkConf, livyConf, entries)
+          case SQL => new SQLInterpreter(sparkConf, livyConf, entries,
+            livyConf.get(RSCConf.Entry.SQL_DEFAULT_SCHEDULER_POOL))
+          case SerialSQL => new SQLInterpreter(sparkConf, livyConf, entries)
         }
         interp.start()
         interpGroup(kind) = interp
@@ -160,6 +165,12 @@ class Session(
     val statement = new Statement(statementId, code, StatementState.Waiting, null)
     _statements.synchronized { _statements(statementId) = statement }
 
+    val threadPool = if (tpe == SQL) {
+      sqlExecutor
+    } else {
+      interpreterExecutor
+    }
+
     Future {
       this.synchronized { setJobGroup(tpe, statementId) }
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
@@ -171,7 +182,7 @@ class Session(
       statement.compareAndTransit(StatementState.Running, StatementState.Available)
       statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
       statement.updateProgress(1.0)
-    }(interpreterExecutor)
+    }(threadPool)
 
     statementId
   }
@@ -333,7 +344,7 @@ class Session(
   private def setJobGroup(codeType: Kind, statementId: Int): String = {
     val jobGroup = statementIdToJobGroup(statementId)
     val (cmd, tpe) = codeType match {
-      case Spark | SQL =>
+      case Spark | SQL | SerialSQL =>
         // A dummy value to avoid automatic value binding in scala REPL.
         (s"""val _livyJobGroup$jobGroup = sc.setJobGroup("$jobGroup",""" +
           s""""Job group for statement $jobGroup")""",
