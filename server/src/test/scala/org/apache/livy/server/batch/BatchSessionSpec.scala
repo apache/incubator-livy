@@ -70,7 +70,7 @@ class BatchSessionSpec
 
       val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
       val accessManager = new AccessManager(conf)
-      val batch = BatchSession.create(0, req, conf, accessManager, null, sessionStore)
+      val batch = BatchSession.create(0, req, conf, accessManager, null, None, sessionStore)
 
       Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
       (batch.state match {
@@ -87,7 +87,7 @@ class BatchSessionSpec
       val mockApp = mock[SparkApp]
       val accessManager = new AccessManager(conf)
       val batch = BatchSession.create(
-        0, req, conf, accessManager, null, sessionStore, Some(mockApp))
+        0, req, conf, accessManager, null, None, sessionStore, Some(mockApp))
 
       val expectedAppId = "APPID"
       batch.appIdKnown(expectedAppId)

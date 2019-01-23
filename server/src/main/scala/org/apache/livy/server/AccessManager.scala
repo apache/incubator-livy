@@ -20,6 +20,7 @@ package org.apache.livy.server
 import java.security.AccessControlException
 
 import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.sessions.Session
 
 private[livy] class AccessManager(conf: LivyConf) extends Logging {
   private val aclsOn = conf.getBoolean(LivyConf.ACCESS_CONTROL_ENABLED)
@@ -98,46 +99,43 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
   def isAccessControlOn: Boolean = aclsOn
 
   /**
-   * Checks that the requesting user can impersonate the target user.
-   * If the user does not have permission to impersonate, then throws an `AccessControlException`.
-   *
-   * @return The user that should be impersonated. That can be the target user if defined, the
-   *         request's user - which may not be defined - otherwise, or `None` if impersonation is
-   *         disabled.
+   * Checks that the request user can impersonate the target user.
+   * If impersonation is enabled and the user does not have permission to impersonate
+   * then throws an `AccessControlException`. If impersonation is disabled returns false
    */
   def checkImpersonation(
-      target: Option[String],
       requestUser: String,
-      livyConf: LivyConf): Option[String] = {
-    if (livyConf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
-      if (!target.forall(hasSuperAccess(_, requestUser))) {
+      impersonatedUser: String): Boolean = {
+    if (conf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
+      if (hasSuperAccess(requestUser, impersonatedUser)) {
+        true
+      } else {
         throw new AccessControlException(
-          s"User '$requestUser' not allowed to impersonate '$target'.")
+          s"User '$requestUser' not allowed to impersonate '$impersonatedUser'.")
       }
-      target.orElse(Option(requestUser))
     } else {
-      None
+      false
     }
   }
 
   /**
-   * Check that the requesting user has admin access to resources owned by the given target user.
+   * Check that the request user has is able to impersonate the given user.
    */
-  def hasSuperAccess(target: String, requestUser: String): Boolean = {
-    requestUser == target || checkSuperUser(requestUser)
+  def hasSuperAccess(requestUser: String, impersonatedUser: String): Boolean = {
+    requestUser == impersonatedUser || checkSuperUser(requestUser)
   }
 
   /**
-   * Check that the request's user has modify access to resources owned by the given target user.
+   * Check that the request user has modify access to the given session.
    */
-  def hasModifyAccess(target: String, requestUser: String): Boolean = {
-    requestUser == target || checkModifyPermissions(requestUser)
+  def hasModifyAccess(session: Session, effectiveUser: String): Boolean = {
+    session.owner == effectiveUser || checkModifyPermissions(effectiveUser)
   }
 
   /**
-   * Check that the request's user has view access to resources owned by the given target user.
+   * Check that the request user has view access to the given session
    */
-  def hasViewAccess(target: String, requestUser: String): Boolean = {
-    requestUser == target || checkViewPermissions(requestUser)
+  def hasViewAccess(session: Session, effectiveUser: String): Boolean = {
+    session.owner == effectiveUser || checkViewPermissions(effectiveUser)
   }
 }

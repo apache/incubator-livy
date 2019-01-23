@@ -229,6 +229,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       val newSession = InteractiveSession.create(
         server.livySessionManager.nextId(),
         username,
+        None,
         server.livyConf,
         server.accessManager,
         createInteractiveRequest,

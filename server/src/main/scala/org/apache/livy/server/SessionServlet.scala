@@ -156,9 +156,29 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   /**
-   * Returns the remote user for the given request. Separate method so that tests can override it.
-   */
-  protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser()
+    * Returns the remote user for the given request. Separate method so that tests can override it.
+    */
+  protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser
+
+  protected def impersonatedUser(request: HttpServletRequest): Option[String] = {
+    val impersonatedUser = Option(request.getParameter("doAs"))
+    impersonatedUser.filter(accessManager.checkImpersonation(remoteUser(request), _))
+  }
+
+  /**
+    * Returns the proxy user as determined by the json request body or owner if available.
+    * This is necessary to preserve backwards compatibility prior to "doAs" impersonation.
+    */
+  protected def legacyProxyUser(owner: String, bodyProxyUser: Option[String]): Option[String] = {
+    bodyProxyUser.filter(accessManager.checkImpersonation(owner, _)).orElse(Option(owner))
+  }
+
+  /**
+    * Gets the request user or impersonated user to determine the effective user
+    */
+  protected def effectiveUser(request: HttpServletRequest): String = {
+    impersonatedUser(request).getOrElse(remoteUser(request))
+  }
 
   /**
    * Performs an operation on the session, without checking for ownership. Operations executed
@@ -183,11 +203,11 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
 
   private def doWithSession(fn: (S => Any),
       allowAll: Boolean,
-      checkFn: Option[(String, String) => Boolean]): Any = {
+      checkFn: Option[(Session, String) => Boolean]): Any = {
     val sessionId = params("id").toInt
     sessionManager.get(sessionId) match {
       case Some(session) =>
-        if (allowAll || checkFn.map(_(session.owner, remoteUser(request))).getOrElse(false)) {
+        if (allowAll || checkFn.map(_(session, effectiveUser(request))).getOrElse(false)) {
           fn(session)
         } else {
           Forbidden()
