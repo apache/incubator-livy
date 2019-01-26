@@ -149,10 +149,8 @@ abstract class Session(
     str.nonEmpty && str.forall(_.isDigit)
   }
 
-  name.filter(isSessionId).foreach { idStr =>
-    val errMsg = s"Session name cannot be a number: $idStr"
-    error(errMsg)
-    throw new IllegalArgumentException(errMsg)
+  name.foreach { idStr =>
+    if (isSessionId(idStr)) throw new IllegalArgumentException(s"Invalid session name: $idStr")
   }
 
   protected var _appId: Option[String] = None
