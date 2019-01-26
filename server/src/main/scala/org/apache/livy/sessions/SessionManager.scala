@@ -96,10 +96,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     synchronized {
       session.name.foreach { sessionName =>
         if (sessionsByName.contains(sessionName)) {
-          val msg = s"Session ${session.name} already exists!"
-          error(msg)
-          delete(session)
-          throw new IllegalArgumentException(msg)
+          throw new IllegalArgumentException(s"Duplicate session name: ${session.name}")
         } else {
           sessionsByName.put(sessionName, session)
         }

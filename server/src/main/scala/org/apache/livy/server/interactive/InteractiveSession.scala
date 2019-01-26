@@ -382,12 +382,12 @@ class InteractiveSession(
   private val sessionSaveLock = new Object()
 
   _appId = appIdHint
-  sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
-  heartbeat()
 
   private var app: Option[SparkApp] = None
 
   override def start(): Unit = {
+    sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
+    heartbeat()
     app = mockApp.orElse {
       val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
         .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
