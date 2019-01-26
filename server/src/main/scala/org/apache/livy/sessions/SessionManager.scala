@@ -101,7 +101,6 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
           delete(session)
           throw new IllegalArgumentException(msg)
         } else {
-          // info(s"sessionNames = ${sessionsByName.keys.mkString}")
           sessionsByName.put(sessionName, session)
         }
       }

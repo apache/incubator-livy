@@ -174,8 +174,7 @@ class BatchSession(
   }
 
   override def appIdKnown(appId: String): Unit = {
-    _appId = Option(
-      appId)
+    _appId = Option(appId)
     sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
   }
 
