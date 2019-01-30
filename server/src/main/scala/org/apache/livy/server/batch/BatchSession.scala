@@ -82,13 +82,14 @@ object BatchSession extends Logging {
       request.numExecutors.foreach(builder.numExecutors)
       request.queue.foreach(builder.queue)
       request.name.foreach(builder.name)
+      request.env.foreach{case (k, v) => builder.env(k, v)}
 
       sessionStore.save(BatchSession.RECOVERY_SESSION_TYPE, s.recoveryMetadata)
 
       builder.redirectOutput(Redirect.PIPE)
       builder.redirectErrorStream(true)
 
-      val file = resolveURIs(Seq(request.file), livyConf)(0)
+      val file = resolveURIs(Seq(request.file), livyConf).head
       val sparkSubmit = builder.start(Some(file), request.args)
 
       Utils.startDaemonThread(s"batch-session-process-$id") {

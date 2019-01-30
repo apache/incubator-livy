@@ -17,12 +17,10 @@
 
 package org.apache.livy.rsc;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -31,6 +29,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -237,7 +236,21 @@ class ContextLauncher {
       };
       return new ChildProcess(conf, promise, child, confFile);
     } else {
-      final SparkLauncher launcher = new SparkLauncher();
+      String envConfigPrefix = RSCConf.Entry.SPARK_ENV + ".";
+      Map<String, String> env = new HashMap<>();
+      for(Map.Entry<String, String> entry : conf) {
+        if(entry.getKey().startsWith(envConfigPrefix)) {
+          env.put(entry.getKey().replace(envConfigPrefix, ""), entry.getValue());
+        }
+      }
+      final SparkLauncher launcher = new SparkLauncher(env);
+
+      // Spark 1.x does not support specifying deploy mode in conf and needs special handling.
+      String deployMode = conf.get(SPARK_DEPLOY_MODE);
+      if (deployMode != null) {
+        launcher.setDeployMode(deployMode);
+      }
+
       launcher.setSparkHome(System.getenv(SPARK_HOME_ENV));
       launcher.setAppResource(SparkLauncher.NO_RESOURCE);
       launcher.setPropertiesFile(confFile.getAbsolutePath());

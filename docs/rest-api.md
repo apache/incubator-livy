@@ -147,6 +147,11 @@ Creates a new interactive Scala, Python, or R shell in the cluster.
     <td>Map of key=val</td>
   </tr>
   <tr>
+    <td>env</td>
+    <td>Environment variables to set before creating Spark client</td>
+    <td>Map of key=val</td>
+  </tr>
+  <tr>
     <td>heartbeatTimeoutInSecond</td>
     <td>Timeout in second to which session be orphaned</td>
     <td>int</td>
@@ -471,6 +476,11 @@ Returns all the active batch sessions.
   <tr>
     <td>conf</td>
     <td>Spark configuration properties</td>
+    <td>Map of key=val</td>
+  </tr>
+  <tr>
+    <td>env</td>
+    <td>Environment variables to set before running `spark-submit`</td>
     <td>Map of key=val</td>
   </tr>
 </table>

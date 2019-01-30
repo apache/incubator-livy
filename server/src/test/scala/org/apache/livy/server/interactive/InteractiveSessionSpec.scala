@@ -70,6 +70,9 @@ class InteractiveSessionSpec extends FunSpec
       SparkLauncher.DRIVER_EXTRA_CLASSPATH -> sys.props("java.class.path"),
       RSCConf.Entry.LIVY_JARS.key() -> ""
     )
+    req.env = Map(
+      "TEST_ENV" -> "abc"
+    )
     InteractiveSession.create(0, null, livyConf, accessManager, req, sessionStore, mockApp)
   }
 
@@ -212,6 +215,21 @@ class InteractiveSessionSpec extends FunSpec
       ))
 
       result should equal (expectedResult)
+      eventually(timeout(10 seconds), interval(30 millis)) {
+        session.state shouldBe (SessionState.Idle)
+      }
+    }
+
+    withSession("should be able to access custom environment variable") { session =>
+      val statement = "import os; print(os.environ['TEST_ENV'])"
+      val pyResult = executeStatement(statement, Some("pyspark"))
+
+      pyResult should equal (Extraction.decompose(Map(
+        "status" -> "ok",
+        "execution_count" -> 4,
+        "data" -> Map("text/plain" -> "abc")))
+      )
+
       eventually(timeout(10 seconds), interval(30 millis)) {
         session.state shouldBe (SessionState.Idle)
       }

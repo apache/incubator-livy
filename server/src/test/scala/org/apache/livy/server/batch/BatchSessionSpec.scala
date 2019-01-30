@@ -113,5 +113,40 @@ class BatchSessionSpec
       verify(sessionStore, atLeastOnce()).save(
         Matchers.eq(BatchSession.RECOVERY_SESSION_TYPE), anyObject())
     }
+
+    val envTestScript: Path = {
+      val script = Files.createTempFile("livy-env-test", ".py")
+      script.toFile.deleteOnExit()
+      val writer = new FileWriter(script.toFile)
+      try {
+        writer.write(
+          """
+            |import os
+            |print(os.environ['TEST_ENV'])
+          """.stripMargin)
+      } finally {
+        writer.close()
+      }
+      script
+    }
+
+    it("should pass through env") {
+      val req = new CreateBatchRequest()
+      req.file = envTestScript.toString
+      req.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
+      req.env = Map("TEST_ENV" -> "abc")
+
+      val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
+      val accessManager = new AccessManager(conf)
+      val batch = BatchSession.create(0, req, conf, accessManager, null, sessionStore)
+
+      Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
+      (batch.state match {
+        case SessionState.Success(_) => true
+        case _ => false
+      }) should be (true)
+
+      batch.logLines() should contain("abc")
+    }
   }
 }
