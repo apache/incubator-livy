@@ -101,13 +101,13 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
   /**
    * Checks that the request user can impersonate the target user.
    * If impersonation is enabled and the user does not have permission to impersonate
-   * then throws an `AccessControlException`. If impersonation is disabled returns false
+   * then throws an `AccessControlException`. If impersonation is disabled returns false.
    */
   def checkImpersonation(
       requestUser: String,
       impersonatedUser: String): Boolean = {
     if (conf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
-      if (hasSuperAccess(requestUser, impersonatedUser)) {
+      if (hasSuperAccess(impersonatedUser, requestUser)) {
         true
       } else {
         throw new AccessControlException(
@@ -119,10 +119,10 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
   }
 
   /**
-   * Check that the request user has is able to impersonate the given user.
+   * Check that the requesting user has admin access to resources owned by the given target user.
    */
-  def hasSuperAccess(requestUser: String, impersonatedUser: String): Boolean = {
-    requestUser == impersonatedUser || checkSuperUser(requestUser)
+  def hasSuperAccess(target: String, requestUser: String): Boolean = {
+    requestUser == target || checkSuperUser(requestUser)
   }
 
   /**
@@ -133,7 +133,7 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
   }
 
   /**
-   * Check that the request user has view access to the given session
+   * Check that the request user has view access to the given session.
    */
   def hasViewAccess(session: Session, effectiveUser: String): Boolean = {
     session.owner == effectiveUser || checkViewPermissions(effectiveUser)

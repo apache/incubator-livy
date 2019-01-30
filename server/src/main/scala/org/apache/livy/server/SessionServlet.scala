@@ -156,26 +156,37 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   /**
-    * Returns the remote user for the given request. Separate method so that tests can override it.
-    */
-  protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser
+   * Returns the remote user for the given request. Separate method so that tests can override it.
+   */
+  protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser()
 
+  /**
+   * Returns the impersonated user as given by "doAs" as a request parameter.
+   */
   protected def impersonatedUser(request: HttpServletRequest): Option[String] = {
     val impersonatedUser = Option(request.getParameter("doAs"))
     impersonatedUser.filter(accessManager.checkImpersonation(remoteUser(request), _))
   }
 
   /**
-    * Returns the proxy user as determined by the json request body or owner if available.
-    * This is necessary to preserve backwards compatibility prior to "doAs" impersonation.
-    */
+   * Returns the proxyUser for the given request.
+   */
+  protected def proxyUser(request: HttpServletRequest,
+      createRequestProxyUser: Option[String]): Option[String] = {
+    impersonatedUser(request).orElse(legacyProxyUser(remoteUser(request), createRequestProxyUser))
+  }
+
+  /**
+   * Returns the proxy user as determined by the json request body or owner if available.
+   * This is necessary to preserve backwards compatibility prior to "doAs" impersonation.
+   */
   protected def legacyProxyUser(owner: String, bodyProxyUser: Option[String]): Option[String] = {
     bodyProxyUser.filter(accessManager.checkImpersonation(owner, _)).orElse(Option(owner))
   }
 
   /**
-    * Gets the request user or impersonated user to determine the effective user
-    */
+   * Gets the request user or impersonated user to determine the effective user.
+   */
   protected def effectiveUser(request: HttpServletRequest): String = {
     impersonatedUser(request).getOrElse(remoteUser(request))
   }

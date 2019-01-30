@@ -77,6 +77,7 @@ abstract class BaseSessionServletSpec[S <: Session, R <: RecoveryMetadata]
   addServlet(servlet, "/*")
 
   protected def toJson(msg: AnyRef): Array[Byte] = mapper.writeValueAsBytes(msg)
+
 }
 
 trait RemoteUserOverride {
@@ -85,4 +86,5 @@ trait RemoteUserOverride {
   override protected def remoteUser(req: HttpServletRequest): String = {
     req.getHeader(BaseSessionServletSpec.REMOTE_USER_HEADER)
   }
+
 }
