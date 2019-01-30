@@ -62,7 +62,8 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
       accessManager)
   }
 
-  def testShowSessionProperties(id: Int, name: Option[String]): Unit = {
+  def testShowSessionProperties(name: Option[String]): Unit = {
+    val id = 0
     val state = SessionState.Running
     val appId = "appid"
     val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
@@ -149,10 +150,10 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
       jpost[Map[String, Any]]("/", createRequest, expectedStatus = SC_BAD_REQUEST) { _ => }
     }
 
-    Seq((0, None), (0, Some("TEST-batch-session")))
-      .foreach { case (id, name) =>
-        it(s"should show session properties (id = $id, name = $name)") {
-          testShowSessionProperties(id, name)
+    Seq(None, Some("TEST-batch-session"))
+      .foreach { name =>
+        it(s"should show session properties (name = $name)") {
+          testShowSessionProperties(name)
         }
       }
 
