@@ -57,7 +57,7 @@ class BlackholeStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
           |  "proxyUser": "batch_opts",
           |  "version": 1
           |}
-        """.stripMargin.getBytes("UTF_8")
+        """.stripMargin.getBytes("UTF-8")
       val batchRecoveryMetadata = stateStore.deserialize[BatchRecoveryMetadata](jsonbytes)
       batchRecoveryMetadata.id shouldBe 408107
       batchRecoveryMetadata.appId shouldBe Some("application_1541532370353_1465148")
