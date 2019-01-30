@@ -147,8 +147,9 @@ abstract class Session(
 
   // validate session name. The name should not be a number
   name.foreach { sessionName =>
-    if (sessionName.forall(_.isDigit))
+    if (sessionName.forall(_.isDigit)) {
       throw new IllegalArgumentException(s"Invalid session name: $sessionName")
+    }
   }
 
   protected var _appId: Option[String] = None
