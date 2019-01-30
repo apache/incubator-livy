@@ -36,16 +36,21 @@ import org.apache.livy.sessions.Session.RecoveryMetadata
 class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuite {
   implicit def executor: ExecutionContext = ExecutionContext.global
 
+  private def createSessionManager(): (LivyConf, SessionManager[MockSession, RecoveryMetadata]) = {
+    val livyConf = new LivyConf()
+    livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
+    val manager = new SessionManager[MockSession, RecoveryMetadata](
+      livyConf,
+      { _ => assert(false).asInstanceOf[MockSession] },
+      mock[SessionStore],
+      "test",
+      Some(Seq.empty))
+    (livyConf, manager)
+  }
+
   describe("SessionManager") {
     it("should garbage collect old sessions") {
-      val livyConf = new LivyConf()
-      livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
-      val manager = new SessionManager[MockSession, RecoveryMetadata](
-        livyConf,
-        { _ => assert(false).asInstanceOf[MockSession] },
-        mock[SessionStore],
-        "test",
-        Some(Seq.empty))
+      val (livyConf, manager) = createSessionManager()
       val session = manager.register(new MockSession(manager.nextId(), null, livyConf))
       manager.get(session.id).isDefined should be(true)
       eventually(timeout(5 seconds), interval(100 millis)) {
@@ -55,30 +60,16 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
     }
 
     it("should create sessions with names") {
-      val livyConf = new LivyConf()
+      val (livyConf, manager) = createSessionManager()
       val name = "Mock-session"
-      livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
-      val manager = new SessionManager[MockSession, RecoveryMetadata](
-        livyConf,
-        { _ => assert(false).asInstanceOf[MockSession] },
-        mock[SessionStore],
-        "test",
-        Some(Seq.empty))
       val session = manager.register(new MockSession(manager.nextId(), null, livyConf, Some(name)))
       manager.get(session.id).isDefined should be(true)
       manager.get(name).isDefined should be(true)
     }
 
-    it("should not create sessions with the same name") {
-      val livyConf = new LivyConf()
+    it("should not create sessions with duplicate names") {
+      val (livyConf, manager) = createSessionManager()
       val name = "Mock-session"
-      livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
-      val manager = new SessionManager[MockSession, RecoveryMetadata](
-        livyConf,
-        { _ => assert(false).asInstanceOf[MockSession] },
-        mock[SessionStore],
-        "test",
-        Some(Seq.empty))
       val session1 = new MockSession(manager.nextId(), null, livyConf, Some(name))
       val session2 = new MockSession(manager.nextId(), null, livyConf, Some(name))
       manager.register(session1)

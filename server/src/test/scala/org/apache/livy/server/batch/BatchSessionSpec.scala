@@ -102,32 +102,27 @@ class BatchSessionSpec
       batch.appInfo shouldEqual expectedAppInfo
     }
 
-    it("should recover named session") {
+    def testRecoverSession(name: Option[String]): Unit = {
       val conf = new LivyConf()
       val req = new CreateBatchRequest()
+      val name = Some("Test Batch Session")
       val mockApp = mock[SparkApp]
-      val m = BatchRecoveryMetadata(99, Some("Test Batch Session"), None, "appTag", null, None)
+      val m = BatchRecoveryMetadata(99, name, None, "appTag", null, None)
       val batch = BatchSession.recover(m, conf, sessionStore, Some(mockApp))
 
       batch.state shouldBe (SessionState.Recovering)
+      batch.name shouldBe (name)
 
       batch.appIdKnown("appId")
       verify(sessionStore, atLeastOnce()).save(
         Matchers.eq(BatchSession.RECOVERY_SESSION_TYPE), anyObject())
     }
 
-    it("should recover session with no name ") {
-      val conf = new LivyConf()
-      val req = new CreateBatchRequest()
-      val mockApp = mock[SparkApp]
-      val m = BatchRecoveryMetadata(999, None, None, "appTag", null, None)
-      val batch = BatchSession.recover(m, conf, sessionStore, Some(mockApp))
-
-      batch.state shouldBe (SessionState.Recovering)
-
-      batch.appIdKnown("appId")
-      verify(sessionStore, atLeastOnce()).save(
-        Matchers.eq(BatchSession.RECOVERY_SESSION_TYPE), anyObject())
-    }
+    Seq[Option[String]](None, Some("Test Batch Session"), null)
+      .foreach { case name =>
+        it(s"should recover session (name = $name)") {
+          testRecoverSession(name)
+        }
+      }
   }
 }
