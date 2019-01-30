@@ -82,8 +82,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
       .asInstanceOf[BatchSessionView]
 
     view.id shouldEqual id
-    view.name.isDefined shouldBe true
-    view.name shouldEqual Some(name)
+    Option(view.name) shouldEqual name
     view.state shouldEqual state.toString
     view.appId shouldEqual Some(appId)
     view.appInfo shouldEqual appInfo

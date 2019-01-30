@@ -186,7 +186,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       .asInstanceOf[SessionInfo]
 
     view.id shouldEqual id
-    view.name shouldEqual name
+    Option(view.name) shouldEqual name
     view.appId shouldEqual appId
     view.owner shouldEqual owner
     view.proxyUser shouldEqual proxyUser
