@@ -46,7 +46,7 @@ class BlackholeStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
     }
 
     it("should deserialize sessions without name") {
-      val json =
+      val jsonbytes =
         """
           |{
           |  "id": 408107,
@@ -57,8 +57,8 @@ class BlackholeStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
           |  "proxyUser": "batch_opts",
           |  "version": 1
           |}
-        """.stripMargin
-      val batchRecoveryMetadata = stateStore.deserialize[BatchRecoveryMetadata](json.getBytes())
+        """.stripMargin.getBytes("UTF_8")
+      val batchRecoveryMetadata = stateStore.deserialize[BatchRecoveryMetadata](jsonbytes)
       batchRecoveryMetadata.id shouldBe 408107
       batchRecoveryMetadata.appId shouldBe Some("application_1541532370353_1465148")
       batchRecoveryMetadata.name shouldBe None
