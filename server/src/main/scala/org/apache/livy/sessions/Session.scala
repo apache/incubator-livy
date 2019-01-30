@@ -145,12 +145,10 @@ abstract class Session(
 
   protected implicit val executionContext = ExecutionContext.global
 
-  private def isSessionId(str: String): Boolean = {
-    str.nonEmpty && str.forall(_.isDigit)
-  }
-
-  name.foreach { idStr =>
-    if (isSessionId(idStr)) throw new IllegalArgumentException(s"Invalid session name: $idStr")
+  // validate session name. The name should not be a number
+  name.foreach { sessionName =>
+    if (sessionName.forall(_.isDigit))
+      throw new IllegalArgumentException(s"Invalid session name: $sessionName")
   }
 
   protected var _appId: Option[String] = None
