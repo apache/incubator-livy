@@ -76,10 +76,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       an[IllegalArgumentException] should be thrownBy manager.register(session2)
       manager.get(session1.id).isDefined should be(true)
       manager.get(session2.id).isDefined should be(false)
-      eventually(timeout(5 seconds), interval(100 millis)) {
-        Await.result(manager.collectGarbage(), Duration.Inf)
-        manager.get(session1.id) should be(None)
-      }
+      manager.shutdown()
     }
 
     it("batch session should not be gc-ed until application is finished") {
