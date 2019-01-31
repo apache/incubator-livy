@@ -21,16 +21,16 @@ import java.io.File
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.file.{Files, Paths}
+
 import javax.servlet.http.HttpServletResponse._
+import org.apache.hadoop.security.UserGroupInformation
 
 import scala.concurrent.duration._
 import scala.io.Source
 import scala.language.postfixOps
-
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.mock.MockitoSugar.mock
-
-import org.apache.livy.{Job, JobHandle}
+import org.apache.livy.{Job, JobHandle, LivyConf}
 import org.apache.livy.client.common.{BufferUtils, Serializer}
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.server.{AccessManager, RemoteUserOverride}
@@ -39,8 +39,7 @@ import org.apache.livy.sessions.{InteractiveSessionManager, SessionState}
 import org.apache.livy.test.jobs.{Echo, GetCurrentUser}
 
 class JobApiSpec extends BaseInteractiveServletSpec {
-
-  private val PROXY = "__proxy__"
+  protected val PROXY = "__proxy__"
 
   private var sessionId: Int = -1
 
@@ -124,6 +123,7 @@ class JobApiSpec extends BaseInteractiveServletSpec {
     }
 
     it("should support user impersonation") {
+      assume(createConf().getBoolean(LivyConf.IMPERSONATION_ENABLED))
       val headers = makeUserHeaders(PROXY)
       jpost[SessionInfo]("/", createRequest(inProcess = false), headers = headers) { data =>
         try {
@@ -139,6 +139,7 @@ class JobApiSpec extends BaseInteractiveServletSpec {
     }
 
     it("should honor impersonation requests") {
+      assume(createConf().getBoolean(LivyConf.IMPERSONATION_ENABLED))
       val request = createRequest(inProcess = false)
       request.proxyUser = Some(PROXY)
       jpost[SessionInfo]("/", request, headers = adminHeaders) { data =>
@@ -166,7 +167,7 @@ class JobApiSpec extends BaseInteractiveServletSpec {
 
   }
 
-  private def waitForIdle(id: Int): Unit = {
+  protected def waitForIdle(id: Int): Unit = {
     eventually(timeout(1 minute), interval(100 millis)) {
       jget[SessionInfo](s"/$id") { status =>
         status.state should be (SessionState.Idle.toString())
@@ -174,11 +175,11 @@ class JobApiSpec extends BaseInteractiveServletSpec {
     }
   }
 
-  private def deleteSession(id: Int): Unit = {
+  protected def deleteSession(id: Int): Unit = {
     jdelete[Map[String, Any]](s"/$id", headers = adminHeaders) { _ => }
   }
 
-  private def testResourceUpload(cmd: String, sessionId: Int): Unit = {
+  protected def testResourceUpload(cmd: String, sessionId: Int): Unit = {
     val f = File.createTempFile("uploadTestFile", cmd)
     val conf = createConf()
 
@@ -197,12 +198,12 @@ class JobApiSpec extends BaseInteractiveServletSpec {
     }
   }
 
-  private def testJobSubmission(sid: Int, sync: Boolean): Unit = {
+  protected def testJobSubmission(sid: Int, sync: Boolean): Unit = {
     val result = runJob(sid, new Echo(42), sync = sync)
     result should be (42)
   }
 
-  private def runJob[T](
+  protected def runJob[T](
       sid: Int,
       job: Job[T],
       sync: Boolean = false,
@@ -226,4 +227,49 @@ class JobApiSpec extends BaseInteractiveServletSpec {
     result.getOrElse(throw new IllegalStateException())
   }
 
+}
+
+class JobApiSpecNoImpersonation extends JobApiSpec {
+  override protected def createConf(): LivyConf = synchronized {
+    super.createConf()
+      .set(LivyConf.IMPERSONATION_ENABLED, false)
+  }
+
+  it("should not support user impersonation") {
+    assume(!createConf().getBoolean(LivyConf.IMPERSONATION_ENABLED))
+    val headers = makeUserHeaders(PROXY)
+    jpost[SessionInfo]("/", createRequest(inProcess = false), headers = headers) { data =>
+      try {
+        waitForIdle(data.id)
+        data.owner should be (PROXY)
+        data.proxyUser should be (null)
+        val user = runJob(data.id, new GetCurrentUser(), headers = headers)
+        user should be (UserGroupInformation.getCurrentUser.getUserName)
+      } finally {
+        deleteSession(data.id)
+      }
+    }
+  }
+
+  it("should not honor impersonation requests") {
+    assume(!createConf().getBoolean(LivyConf.IMPERSONATION_ENABLED))
+    val request = createRequest(inProcess = false)
+    request.proxyUser = Some(PROXY)
+    jpost[SessionInfo]("/", request, headers = adminHeaders) { data =>
+      try {
+        waitForIdle(data.id)
+        data.owner should be (ADMIN)
+        data.proxyUser should be (null)
+        val user = runJob(data.id, new GetCurrentUser(), headers = adminHeaders)
+        user should be (UserGroupInformation.getCurrentUser.getUserName)
+
+        // Test that files are uploaded to a new session directory.
+        assert(tempDir.listFiles().length === 0)
+        testResourceUpload("file", data.id)
+      } finally {
+        deleteSession(data.id)
+        assert(tempDir.listFiles().length === 0)
+      }
+    }
+  }
 }
