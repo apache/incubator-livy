@@ -172,7 +172,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
    */
   protected def proxyUser(request: HttpServletRequest,
       createRequestProxyUser: Option[String]): Option[String] = {
-    impersonatedUser(request).orElse(createRequestProxyUser).orElse(Option(remoteUser(request)))
+    impersonatedUser(request).orElse(createRequestProxyUser)
   }
 
   /**

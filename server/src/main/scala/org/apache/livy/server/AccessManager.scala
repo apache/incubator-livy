@@ -119,6 +119,18 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
   }
 
   /**
+   * Returns the impersonated user or None after checking if impersonation is allowed
+   */
+  def enforceProxyUser(owner: String,
+      proxyUser: Option[String]): Option[String] = {
+    if(conf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
+      proxyUser.filter(checkImpersonation(owner, _)).orElse(Option(owner))
+    } else {
+      None
+    }
+  }
+
+  /**
    * Check that the requesting user has admin access to resources owned by the given target user.
    */
   def hasSuperAccess(target: String, requestUser: String): Boolean = {
