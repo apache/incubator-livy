@@ -180,8 +180,8 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
    */
   protected def effectiveUser(request: HttpServletRequest): String = {
     val requestUser = remoteUser(request)
-    impersonatedUser(request).orElse(Option(requestUser))
-      .filter(accessManager.checkImpersonation(requestUser, _)).orNull
+    impersonatedUser(request).filter(accessManager.checkImpersonation(requestUser, _))
+      .getOrElse(requestUser)
   }
 
   /**
