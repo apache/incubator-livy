@@ -152,7 +152,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     }
   }
 
-  Seq(Some("TEST-interactive-session"), None, null)
+  Seq(Some("TEST-interactive-session"), None)
     .foreach { case name =>
       it(s"should show session properties (name =$name") {
         testShowSessionProperties(name: Option[String])
