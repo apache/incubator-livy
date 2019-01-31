@@ -123,7 +123,7 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    */
   def enforceProxyUser(owner: String,
       proxyUser: Option[String]): Option[String] = {
-    if(conf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
+    if (conf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
       proxyUser.filter(checkImpersonation(owner, _)).orElse(Option(owner))
     } else {
       None
