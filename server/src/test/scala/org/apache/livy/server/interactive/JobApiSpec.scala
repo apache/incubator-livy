@@ -21,15 +21,16 @@ import java.io.File
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.file.{Files, Paths}
-
 import javax.servlet.http.HttpServletResponse._
-import org.apache.hadoop.security.UserGroupInformation
 
 import scala.concurrent.duration._
 import scala.io.Source
 import scala.language.postfixOps
+
+import org.apache.hadoop.security.UserGroupInformation
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.mock.MockitoSugar.mock
+
 import org.apache.livy.{Job, JobHandle, LivyConf}
 import org.apache.livy.client.common.{BufferUtils, Serializer}
 import org.apache.livy.client.common.HttpMessages._
@@ -39,6 +40,7 @@ import org.apache.livy.sessions.{InteractiveSessionManager, SessionState}
 import org.apache.livy.test.jobs.{Echo, GetCurrentUser}
 
 class JobApiSpec extends BaseInteractiveServletSpec {
+
   protected val PROXY = "__proxy__"
 
   private var sessionId: Int = -1
