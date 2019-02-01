@@ -233,12 +233,23 @@ class JobApiSpec extends BaseInteractiveServletSpec {
 
 class JobApiSpecNoImpersonation extends JobApiSpec {
   override protected def createConf(): LivyConf = synchronized {
-    super.createConf()
-      .set(LivyConf.IMPERSONATION_ENABLED, false)
+    super.createConf().set(LivyConf.IMPERSONATION_ENABLED, false)
   }
 
   it("should not support user impersonation") {
     assume(!createConf().getBoolean(LivyConf.IMPERSONATION_ENABLED))
+    jpost[SessionInfo]("/", createRequest(inProcess = false)) { data =>
+      try {
+        waitForIdle(data.id)
+        data.owner should be (null)
+        data.proxyUser should be (null)
+        val user = runJob(data.id, new GetCurrentUser())
+        user should be (UserGroupInformation.getCurrentUser.getUserName)
+      } finally {
+        deleteSession(data.id)
+      }
+    }
+
     val headers = makeUserHeaders(PROXY)
     jpost[SessionInfo]("/", createRequest(inProcess = false), headers = headers) { data =>
       try {

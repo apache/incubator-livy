@@ -180,7 +180,8 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
    * Gets the request user or impersonated user to determine the effective user.
    */
   protected def effectiveUser(request: HttpServletRequest): String = {
-    accessManager.checkImpersonation(impersonatedUser(request), remoteUser(request)).orNull
+    val requestUser = remoteUser(request)
+    accessManager.checkImpersonation(impersonatedUser(request), requestUser).getOrElse(requestUser)
   }
 
   /**

@@ -109,6 +109,13 @@ class SessionServletSpec extends BaseSessionServletSpec[Session, RecoveryMetadat
     }
 
     it("should attach owner information to sessions") {
+      jpost[MockSessionView]("/", Map()) { res =>
+        assert(res.owner === null)
+        assert(res.proxyUser === None)
+        assert(res.logs === IndexedSeq("log"))
+        delete(res.id, adminHeaders, SC_OK)
+      }
+
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         assert(res.owner === "alice")
         assert(res.proxyUser === Some("alice"))
@@ -125,6 +132,24 @@ class SessionServletSpec extends BaseSessionServletSpec[Session, RecoveryMetadat
     }
 
     it("should allow other users to see non-sensitive information") {
+      jpost[MockSessionView]("/", Map()) { res =>
+        jget[MockSessionView](s"/${res.id}", headers = bobHeaders) { res =>
+          assert(res.owner === null)
+          assert(res.proxyUser === None)
+          assert(res.logs === IndexedSeq("log"))
+        }
+        delete(res.id, adminHeaders, SC_OK)
+      }
+
+      jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
+        jget[MockSessionView](s"/${res.id}") { res =>
+          assert(res.owner === "alice")
+          assert(res.proxyUser === Some("alice"))
+          assert(res.logs === IndexedSeq("log"))
+        }
+        delete(res.id, aliceHeaders, SC_OK)
+      }
+
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         jget[MockSessionView](s"/${res.id}", headers = bobHeaders) { res =>
           assert(res.owner === "alice")
@@ -194,6 +219,13 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
 
   describe("SessionServlet") {
     it("should attach owner information to sessions") {
+      jpost[MockSessionView]("/", Map()) { res =>
+        assert(res.owner === null)
+        assert(res.proxyUser === None)
+        assert(res.logs === IndexedSeq("log"))
+        delete(res.id, adminHeaders, SC_OK)
+      }
+
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         assert(res.owner === "alice")
         assert(res.proxyUser === Some("alice"))
