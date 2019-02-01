@@ -263,22 +263,22 @@ class LivyServer extends Logging {
       case null =>
         // Nothing to do.
 
-      case e =>
-        val authClassConf = s"livy.server.auth.$e.class"
+      case customType =>
+        val authClassConf = s"livy.server.auth.$customType.class"
         val authClass = livyConf.get(authClassConf)
-        require(authClass != null, s"$e auth requires $authClassConf to be provided")
+        require(authClass != null, s"$customType auth requires $authClassConf to be provided")
 
         val holder = new FilterHolder()
         holder.setClassName(authClass)
 
-        val prefix = s"livy.server.auth.$e.param."
+        val prefix = s"livy.server.auth.$customType.param."
         livyConf.asScala.filter { kv =>
           kv.getKey.length > prefix.length && kv.getKey.startsWith(prefix)
         }.foreach { kv =>
           holder.setInitParameter(kv.getKey.substring(prefix.length), kv.getValue)
         }
         server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
-        info(s"$e auth enabled")
+        info(s"$customType auth enabled")
     }
 
     if (livyConf.getBoolean(CSRF_PROTECTION)) {
