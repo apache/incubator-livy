@@ -59,16 +59,16 @@ object SessionServletSpec {
     new SessionServlet(sessionManager, conf, accessManager) with RemoteUserOverride {
       override protected def createSession(req: HttpServletRequest): Session = {
         val params = bodyAs[Map[String, String]](req)
-        val bodyImpersonatedUser = params.get(PROXY_USER)
-          .filter(accessManager.checkImpersonation(remoteUser(req), _))
-        val proxyUser = impersonatedUser(req).orElse(bodyImpersonatedUser)
-        new MockSession(sessionManager.nextId(), remoteUser(req), proxyUser, conf)
+        val owner = remoteUser(req)
+        val impersonatedUser = accessManager.checkImpersonation(
+          proxyUser(req, params.get(PROXY_USER)), owner)
+        new MockSession(sessionManager.nextId(), owner, impersonatedUser, conf)
       }
 
       override protected def clientSessionView(
           session: Session,
           req: HttpServletRequest): Any = {
-        val logs = if (accessManager.hasViewAccess(session, effectiveUser(req))) {
+        val logs = if (accessManager.hasViewAccess(session.owner, effectiveUser(req))) {
           session.logLines()
         } else {
           Nil
@@ -111,7 +111,7 @@ class SessionServletSpec extends BaseSessionServletSpec[Session, RecoveryMetadat
     it("should attach owner information to sessions") {
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         assert(res.owner === "alice")
-        assert(res.proxyUser === None)
+        assert(res.proxyUser === Some("alice"))
         assert(res.logs === IndexedSeq("log"))
         delete(res.id, aliceHeaders, SC_OK)
       }
@@ -128,7 +128,7 @@ class SessionServletSpec extends BaseSessionServletSpec[Session, RecoveryMetadat
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         jget[MockSessionView](s"/${res.id}", headers = bobHeaders) { res =>
           assert(res.owner === "alice")
-          assert(res.proxyUser === None)
+          assert(res.proxyUser === Some("alice"))
           assert(res.logs === IndexedSeq("log"))
         }
         delete(res.id, aliceHeaders, SC_OK)
@@ -196,7 +196,7 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
     it("should attach owner information to sessions") {
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         assert(res.owner === "alice")
-        assert(res.proxyUser === None)
+        assert(res.proxyUser === Some("alice"))
         assert(res.logs === IndexedSeq("log"))
         delete(res.id, aliceHeaders, SC_OK)
       }
@@ -206,7 +206,7 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         jget[MockSessionView](s"/${res.id}", headers = bobHeaders) { res =>
           assert(res.owner === "alice")
-          assert(res.proxyUser === None)
+          assert(res.proxyUser === Some("alice"))
           // Other user cannot see the logs
           assert(res.logs === Nil)
         }

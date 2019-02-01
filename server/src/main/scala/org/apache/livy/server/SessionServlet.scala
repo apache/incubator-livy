@@ -170,7 +170,8 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   /**
    * Returns the proxyUser for the given request.
    */
-  protected def proxyUser(request: HttpServletRequest,
+  protected def proxyUser(
+      request: HttpServletRequest,
       createRequestProxyUser: Option[String]): Option[String] = {
     impersonatedUser(request).orElse(createRequestProxyUser)
   }
@@ -179,9 +180,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
    * Gets the request user or impersonated user to determine the effective user.
    */
   protected def effectiveUser(request: HttpServletRequest): String = {
-    val requestUser = remoteUser(request)
-    impersonatedUser(request).filter(accessManager.checkImpersonation(requestUser, _))
-      .getOrElse(requestUser)
+    accessManager.checkImpersonation(impersonatedUser(request), remoteUser(request)).orNull
   }
 
   /**
@@ -207,11 +206,11 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
 
   private def doWithSession(fn: (S => Any),
       allowAll: Boolean,
-      checkFn: Option[(Session, String) => Boolean]): Any = {
+      checkFn: Option[(String, String) => Boolean]): Any = {
     val sessionId = params("id").toInt
     sessionManager.get(sessionId) match {
       case Some(session) =>
-        if (allowAll || checkFn.map(_(session, effectiveUser(request))).getOrElse(false)) {
+        if (allowAll || checkFn.map(_(session.owner, effectiveUser(request))).getOrElse(false)) {
           fn(session)
         } else {
           Forbidden()

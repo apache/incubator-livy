@@ -56,7 +56,7 @@ class BatchSessionServlet(
       session: BatchSession,
       req: HttpServletRequest): Any = {
     val logs =
-      if (accessManager.hasViewAccess(session, effectiveUser(req))) {
+      if (accessManager.hasViewAccess(session.owner, effectiveUser(req))) {
         val lines = session.logLines()
 
         val size = 10
