@@ -46,22 +46,23 @@ LOG = logging.getLogger('fake_shell')
 global_dict = {}
 job_context = None
 local_tmp_dir_path = None
+ip_completer = None
+p_completer = None
 
 TOP_FRAME_REGEX = re.compile(r'\s*File "<stdin>".*in <module>')
 
 
 def initialize_completer():
+    global ip_completer,p_completer
     try:
         __IPYTHON__
         from IPython.core.completer import IPCompleter
         ip = get_ipython()
         ip_completer = IPCompleter(ip, global_namespace=global_dict)
-        global_dict['ip_completer'] = ip_completer
     except NameError:
         try:
             from rlcompleter import Completer
             p_completer = Completer(namespace=global_dict)
-            global_dict['p_completer'] = p_completer
         except:
             pass
 
@@ -214,12 +215,9 @@ class PySparkJobProcessorImpl(object):
 
     def complete(self, code, cursor_pos=None):
         results = []
-        ip_completer = global_dict.get('ip_completer')
-        p_completer = global_dict.get("p_completer")
         if ip_completer is not None:
             results = ip_completer.complete(code, cursor_pos=cursor_pos)[1]
         elif p_completer is not None:
-            p_completer = global_dict.get("p_completer")
             state = 0
             result = None
             while state == 0 or result is not None:
