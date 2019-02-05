@@ -54,6 +54,7 @@ class InteractiveSessionServlet(
     val createRequest = bodyAs[CreateInteractiveRequest](req)
     InteractiveSession.create(
       sessionManager.nextId(),
+      createRequest.name,
       remoteUser(req),
       livyConf,
       accessManager,
@@ -79,8 +80,9 @@ class InteractiveSessionServlet(
         Nil
       }
 
-    new SessionInfo(session.id, session.appId.orNull, session.owner, session.proxyUser.orNull,
-      session.state.toString, session.kind.toString, session.appInfo.asJavaMap, logs.asJava)
+    new SessionInfo(session.id, session.name.orNull, session.appId.orNull, session.owner,
+      session.proxyUser.orNull, session.state.toString, session.kind.toString,
+      session.appInfo.asJavaMap, logs.asJava)
   }
 
   post("/:id/stop") {

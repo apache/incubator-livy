@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Random, Try}
 
@@ -49,6 +49,7 @@ import org.apache.livy.utils._
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class InteractiveRecoveryMetadata(
     id: Int,
+    name: Option[String],
     appId: Option[String],
     appTag: String,
     kind: Kind,
@@ -66,6 +67,7 @@ object InteractiveSession extends Logging {
 
   def create(
       id: Int,
+      name: Option[String],
       owner: String,
       livyConf: LivyConf,
       accessManager: AccessManager,
@@ -111,6 +113,7 @@ object InteractiveSession extends Logging {
 
     new InteractiveSession(
       id,
+      name,
       None,
       appTag,
       client,
@@ -137,6 +140,7 @@ object InteractiveSession extends Logging {
 
     new InteractiveSession(
       metadata.id,
+      metadata.name,
       metadata.appId,
       metadata.appTag,
       client,
@@ -347,6 +351,7 @@ object InteractiveSession extends Logging {
 
 class InteractiveSession(
     id: Int,
+    name: Option[String],
     appIdHint: Option[String],
     appTag: String,
     val client: Option[RSCClient],
@@ -358,7 +363,7 @@ class InteractiveSession(
     override val proxyUser: Option[String],
     sessionStore: SessionStore,
     mockApp: Option[SparkApp]) // For unit test.
-  extends Session(id, owner, livyConf)
+  extends Session(id, name, owner, livyConf)
   with SessionHeartbeat
   with SparkAppListener {
 
@@ -377,69 +382,74 @@ class InteractiveSession(
   private val sessionSaveLock = new Object()
 
   _appId = appIdHint
-  sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
-  heartbeat()
 
-  private val app = mockApp.orElse {
-    val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
+  private var app: Option[SparkApp] = None
+
+  override def start(): Unit = {
+    sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
+    heartbeat()
+    app = mockApp.orElse {
+      val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
         .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
-    driverProcess.map { _ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)) }
-  }
-
-  if (client.isEmpty) {
-    transition(Dead())
-    val msg = s"Cannot recover interactive session $id because its RSCDriver URI is unknown."
-    info(msg)
-    sessionLog = IndexedSeq(msg)
-  } else {
-    val uriFuture = Future { client.get.getServerUri.get() }
-
-    uriFuture onSuccess { case url =>
-      rscDriverUri = Option(url)
-      sessionSaveLock.synchronized {
-        sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
-      }
+      driverProcess.map { _ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)) }
     }
-    uriFuture onFailure { case e => warn("Fail to get rsc uri", e) }
 
-    // Send a dummy job that will return once the client is ready to be used, and set the
-    // state to "idle" at that point.
-    client.get.submit(new PingJob()).addListener(new JobHandle.Listener[Void]() {
+    if (client.isEmpty) {
+      transition(Dead())
+      val msg = s"Cannot recover interactive session $id because its RSCDriver URI is unknown."
+      info(msg)
+      sessionLog = IndexedSeq(msg)
+    } else {
+      val uriFuture = Future { client.get.getServerUri.get() }
+
+      uriFuture.onSuccess { case url =>
+        rscDriverUri = Option(url)
+        sessionSaveLock.synchronized {
+          sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
+        }
+      }
+      uriFuture.onFailure { case e => warn("Fail to get rsc uri", e) }
+
+      // Send a dummy job that will return once the client is ready to be used, and set the
+      // state to "idle" at that point.
+      client.get.submit(new PingJob()).addListener(new JobHandle.Listener[Void]() {
       override def onJobQueued(job: JobHandle[Void]): Unit = { }
       override def onJobStarted(job: JobHandle[Void]): Unit = { }
 
-      override def onJobCancelled(job: JobHandle[Void]): Unit = errorOut()
+        override def onJobCancelled(job: JobHandle[Void]): Unit = errorOut()
 
-      override def onJobFailed(job: JobHandle[Void], cause: Throwable): Unit = errorOut()
+        override def onJobFailed(job: JobHandle[Void], cause: Throwable): Unit = errorOut()
 
-      override def onJobSucceeded(job: JobHandle[Void], result: Void): Unit = {
-        transition(SessionState.Running)
-        info(s"Interactive session $id created [appid: ${appId.orNull}, owner: $owner, proxyUser:" +
-          s" $proxyUser, state: ${state.toString}, kind: ${kind.toString}, " +
-          s"info: ${appInfo.asJavaMap}]")
-      }
+        override def onJobSucceeded(job: JobHandle[Void], result: Void): Unit = {
+          transition(SessionState.Running)
+          info(s"Interactive session $id created [appid: ${appId.orNull}, " +
+            s"owner: $owner, proxyUser:" +
+            s" $proxyUser, state: ${state.toString}, kind: ${kind.toString}, " +
+            s"info: ${appInfo.asJavaMap}]")
+        }
 
-      private def errorOut(): Unit = {
-        // Other code might call stop() to close the RPC channel. When RPC channel is closing,
-        // this callback might be triggered. Check and don't call stop() to avoid nested called
-        // if the session is already shutting down.
-        if (serverSideState != SessionState.ShuttingDown) {
-          transition(SessionState.Error())
-          stop()
-          app.foreach { a =>
-            info(s"Failed to ping RSC driver for session $id. Killing application.")
-            a.kill()
+        private def errorOut(): Unit = {
+          // Other code might call stop() to close the RPC channel. When RPC channel is closing,
+          // this callback might be triggered. Check and don't call stop() to avoid nested called
+          // if the session is already shutting down.
+          if (serverSideState != SessionState.ShuttingDown) {
+            transition(SessionState.Error())
+            stop()
+            app.foreach { a =>
+              info(s"Failed to ping RSC driver for session $id. Killing application.")
+              a.kill()
+            }
           }
         }
-      }
-    })
+      })
+    }
   }
 
   override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(sessionLog)
 
   override def recoveryMetadata: RecoveryMetadata =
-    InteractiveRecoveryMetadata(
-      id, appId, appTag, kind, heartbeatTimeout.toSeconds.toInt, owner, proxyUser, rscDriverUri)
+    InteractiveRecoveryMetadata(id, name, appId, appTag, kind,
+      heartbeatTimeout.toSeconds.toInt, owner, proxyUser, rscDriverUri)
 
   override def state: SessionState = {
     if (serverSideState == SessionState.Running) {

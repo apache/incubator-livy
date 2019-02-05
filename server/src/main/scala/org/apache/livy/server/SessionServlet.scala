@@ -184,8 +184,15 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   private def doWithSession(fn: (S => Any),
       allowAll: Boolean,
       checkFn: Option[(String, String) => Boolean]): Any = {
-    val sessionId = params("id").toInt
-    sessionManager.get(sessionId) match {
+    val idOrNameParam: String = params("id")
+    val session = if (idOrNameParam.forall(_.isDigit)) {
+      val sessionId = idOrNameParam.toInt
+      sessionManager.get(sessionId)
+    } else {
+      val sessionName = idOrNameParam
+      sessionManager.get(sessionName)
+    }
+    session match {
       case Some(session) =>
         if (allowAll || checkFn.map(_(session.owner, remoteUser(request))).getOrElse(false)) {
           fn(session)
@@ -193,7 +200,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
           Forbidden()
         }
       case None =>
-        NotFound(ResponseMessage(s"Session '$sessionId' not found."))
+        NotFound(ResponseMessage(s"Session '$idOrNameParam' not found."))
     }
   }
 
