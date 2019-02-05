@@ -21,7 +21,6 @@ import java.io.InputStream
 import java.net.{URI, URISyntaxException}
 import java.security.PrivilegedExceptionAction
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -135,12 +134,23 @@ object Session {
   }
 }
 
-abstract class Session(val id: Int, val owner: String, val livyConf: LivyConf)
+abstract class Session(
+    val id: Int,
+    val name: Option[String],
+    val owner: String,
+    val livyConf: LivyConf)
   extends Logging {
 
   import Session._
 
   protected implicit val executionContext = ExecutionContext.global
+
+  // validate session name. The name should not be a number
+  name.foreach { sessionName =>
+    if (sessionName.forall(_.isDigit)) {
+      throw new IllegalArgumentException(s"Invalid session name: $sessionName")
+    }
+  }
 
   protected var _appId: Option[String] = None
 
@@ -170,6 +180,8 @@ abstract class Session(val id: Int, val owner: String, val livyConf: LivyConf)
   def recoveryMetadata: RecoveryMetadata
 
   def state: SessionState
+
+  def start(): Unit
 
   def stop(): Future[Unit] = Future {
     try {

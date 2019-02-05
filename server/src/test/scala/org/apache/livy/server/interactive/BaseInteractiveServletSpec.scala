@@ -61,6 +61,7 @@ abstract class BaseInteractiveServletSpec
     val classpath = sys.props("java.class.path")
     val request = new CreateInteractiveRequest()
     request.kind = kind
+    request.name = None
     request.conf = extraConf ++ Map(
       RSCConf.Entry.LIVY_JARS.key() -> "",
       RSCConf.Entry.CLIENT_IN_PROCESS.key() -> inProcess.toString,

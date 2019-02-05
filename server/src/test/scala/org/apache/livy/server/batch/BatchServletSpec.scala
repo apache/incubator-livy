@@ -62,6 +62,34 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
       accessManager)
   }
 
+  def testShowSessionProperties(name: Option[String]): Unit = {
+    val id = 0
+    val state = SessionState.Running
+    val appId = "appid"
+    val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
+    val log = IndexedSeq[String]("log1", "log2")
+
+    val session = mock[BatchSession]
+    when(session.id).thenReturn(id)
+    when(session.name).thenReturn(name)
+    when(session.state).thenReturn(state)
+    when(session.appId).thenReturn(Some(appId))
+    when(session.appInfo).thenReturn(appInfo)
+    when(session.logLines()).thenReturn(log)
+
+    val req = mock[HttpServletRequest]
+
+    val view = servlet.asInstanceOf[BatchSessionServlet].clientSessionView(session, req)
+      .asInstanceOf[BatchSessionView]
+
+    view.id shouldEqual id
+    view.name shouldEqual name
+    view.state shouldEqual state.toString
+    view.appId shouldEqual Some(appId)
+    view.appInfo shouldEqual appInfo
+    view.log shouldEqual log
+  }
+
   describe("Batch Servlet") {
     it("should create and tear down a batch") {
       jget[Map[String, Any]]("/") { data =>
@@ -116,36 +144,18 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
 
     it("should respect config black list") {
       val createRequest = new CreateBatchRequest()
+      createRequest.name = Some("TEST-BatchServletSpec-Session-0")
       createRequest.file = script.toString
       createRequest.conf = BLACKLISTED_CONFIG
       jpost[Map[String, Any]]("/", createRequest, expectedStatus = SC_BAD_REQUEST) { _ => }
     }
 
-    it("should show session properties") {
-      val id = 0
-      val state = SessionState.Running
-      val appId = "appid"
-      val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
-      val log = IndexedSeq[String]("log1", "log2")
-
-      val session = mock[BatchSession]
-      when(session.id).thenReturn(id)
-      when(session.state).thenReturn(state)
-      when(session.appId).thenReturn(Some(appId))
-      when(session.appInfo).thenReturn(appInfo)
-      when(session.logLines()).thenReturn(log)
-
-      val req = mock[HttpServletRequest]
-
-      val view = servlet.asInstanceOf[BatchSessionServlet].clientSessionView(session, req)
-        .asInstanceOf[BatchSessionView]
-
-      view.id shouldEqual id
-      view.state shouldEqual state.toString
-      view.appId shouldEqual Some(appId)
-      view.appInfo shouldEqual appInfo
-      view.log shouldEqual log
-    }
+    Seq(None, Some("TEST-batch-session"))
+      .foreach { name =>
+        it(s"should show session properties (name = $name)") {
+          testShowSessionProperties(name)
+        }
+      }
 
     it("should fail session creation when max session creation is hit") {
       val createRequest = new CreateBatchRequest()

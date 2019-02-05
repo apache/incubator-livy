@@ -273,6 +273,7 @@ private class HttpClientTestBootstrap extends LifeCycle {
         val session = mock(classOf[InteractiveSession])
         val id = sessionManager.nextId()
         when(session.id).thenReturn(id)
+        when(session.name).thenReturn(None)
         when(session.appId).thenReturn(None)
         when(session.appInfo).thenReturn(AppInfo())
         when(session.state).thenReturn(SessionState.Idle)

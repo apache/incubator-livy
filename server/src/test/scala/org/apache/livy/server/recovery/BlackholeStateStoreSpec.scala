@@ -21,6 +21,7 @@ import org.scalatest.FunSpec
 import org.scalatest.Matchers._
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
+import org.apache.livy.server.batch.BatchRecoveryMetadata
 
 class BlackholeStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
   describe("BlackholeStateStore") {
@@ -42,6 +43,25 @@ class BlackholeStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
 
     it("remove should not throw") {
       stateStore.remove("")
+    }
+
+    it("should deserialize sessions without name") {
+      val jsonbytes =
+        """
+          |{
+          |  "id": 408107,
+          |  "appId": "application_1541532370353_1465148",
+          |  "state": "running",
+          |  "appTag": "livy-batch-408107-2jAOFzDy",
+          |  "owner": "batch_admin",
+          |  "proxyUser": "batch_opts",
+          |  "version": 1
+          |}
+        """.stripMargin.getBytes("UTF-8")
+      val batchRecoveryMetadata = stateStore.deserialize[BatchRecoveryMetadata](jsonbytes)
+      batchRecoveryMetadata.id shouldBe 408107
+      batchRecoveryMetadata.appId shouldBe Some("application_1541532370353_1465148")
+      batchRecoveryMetadata.name shouldBe None
     }
   }
 }

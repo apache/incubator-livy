@@ -32,13 +32,15 @@ object SessionServletSpec {
   val PROXY_USER = "proxyUser"
 
   class MockSession(id: Int, owner: String, val proxyUser: Option[String], livyConf: LivyConf)
-    extends Session(id, owner, livyConf) {
+    extends Session(id, None, owner, livyConf) {
 
     case class MockRecoveryMetadata(id: Int) extends RecoveryMetadata()
 
     override def recoveryMetadata: RecoveryMetadata = MockRecoveryMetadata(0)
 
     override def state: SessionState = SessionState.Idle
+
+    override def start(): Unit = ()
 
     override protected def stopSession(): Unit = ()
 
