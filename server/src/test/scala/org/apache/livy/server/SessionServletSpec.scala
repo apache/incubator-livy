@@ -156,6 +156,12 @@ class SessionServletSpec extends BaseSessionServletSpec[Session, RecoveryMetadat
           assert(res.proxyUser === Some("alice"))
           assert(res.logs === IndexedSeq("log"))
         }
+
+        jget[MockSessionView](s"/${res.id}?doAs=bob", headers = adminHeaders) { res =>
+          assert(res.owner === "alice")
+          assert(res.proxyUser === Some("alice"))
+          assert(res.logs === IndexedSeq("log"))
+        }
         delete(res.id, aliceHeaders, SC_OK)
       }
 
@@ -237,6 +243,13 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
     it("should only allow view accessible users to see non-sensitive information") {
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         jget[MockSessionView](s"/${res.id}", headers = bobHeaders) { res =>
+          assert(res.owner === "alice")
+          assert(res.proxyUser === Some("alice"))
+          // Other user cannot see the logs
+          assert(res.logs === Nil)
+        }
+
+        jget[MockSessionView](s"/${res.id}?doAs=bob", headers = adminHeaders) { res =>
           assert(res.owner === "alice")
           assert(res.proxyUser === Some("alice"))
           // Other user cannot see the logs
