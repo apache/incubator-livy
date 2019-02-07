@@ -26,8 +26,8 @@ import scala.util.Random
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 import org.apache.livy.{LivyConf, Logging, Utils}
+import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.server.SessionServlet
 import org.apache.livy.sessions.{Session, SessionState}
 import org.apache.livy.sessions.Session._
 import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
@@ -35,6 +35,7 @@ import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessB
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class BatchRecoveryMetadata(
     id: Int,
+    name: Option[String],
     appId: Option[String],
     appTag: String,
     owner: String,
@@ -53,13 +54,16 @@ object BatchSession extends Logging {
 
   def create(
       id: Int,
+      name: Option[String],
       request: CreateBatchRequest,
       livyConf: LivyConf,
+      accessManager: AccessManager,
       owner: String,
       proxyUser: Option[String],
       sessionStore: SessionStore,
       mockApp: Option[SparkApp] = None): BatchSession = {
     val appTag = s"livy-batch-$id-${Random.alphanumeric.take(8).mkString}"
+    val impersonatedUser = accessManager.checkImpersonation(proxyUser, owner)
 
     def createSparkApp(s: BatchSession): SparkApp = {
       val conf = SparkApp.prepareSparkConf(
@@ -72,7 +76,7 @@ object BatchSession extends Logging {
       val builder = new SparkProcessBuilder(livyConf)
       builder.conf(conf)
 
-      proxyUser.foreach(builder.proxyUser)
+      impersonatedUser.foreach(builder.proxyUser)
       request.className.foreach(builder.className)
       request.driverMemory.foreach(builder.driverMemory)
       request.driverCores.foreach(builder.driverCores)
@@ -81,9 +85,6 @@ object BatchSession extends Logging {
       request.numExecutors.foreach(builder.numExecutors)
       request.queue.foreach(builder.queue)
       request.name.foreach(builder.name)
-
-      // Spark 1.x does not support specifying deploy mode in conf and needs special handling.
-      livyConf.sparkDeployMode().foreach(builder.deployMode)
 
       sessionStore.save(BatchSession.RECOVERY_SESSION_TYPE, s.recoveryMetadata)
 
@@ -112,11 +113,12 @@ object BatchSession extends Logging {
 
     new BatchSession(
       id,
+      name,
       appTag,
       SessionState.Starting,
       livyConf,
       owner,
-      proxyUser,
+      impersonatedUser,
       sessionStore,
       mockApp.map { m => (_: BatchSession) => m }.getOrElse(createSparkApp))
   }
@@ -128,6 +130,7 @@ object BatchSession extends Logging {
       mockApp: Option[SparkApp] = None): BatchSession = {
     new BatchSession(
       m.id,
+      m.name,
       m.appTag,
       SessionState.Recovering,
       livyConf,
@@ -142,6 +145,7 @@ object BatchSession extends Logging {
 
 class BatchSession(
     id: Int,
+    name: Option[String],
     appTag: String,
     initialState: SessionState,
     livyConf: LivyConf,
@@ -149,20 +153,25 @@ class BatchSession(
     override val proxyUser: Option[String],
     sessionStore: SessionStore,
     sparkApp: BatchSession => SparkApp)
-  extends Session(id, owner, livyConf) with SparkAppListener {
+  extends Session(id, name, owner, livyConf) with SparkAppListener {
   import BatchSession._
 
   protected implicit def executor: ExecutionContextExecutor = ExecutionContext.global
 
   private[this] var _state: SessionState = initialState
-  private val app = sparkApp(this)
+
+  private var app: Option[SparkApp] = None
 
   override def state: SessionState = _state
 
-  override def logLines(): IndexedSeq[String] = app.log()
+  override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(IndexedSeq.empty[String])
+
+  override def start(): Unit = {
+    app = Option(sparkApp(this))
+  }
 
   override def stopSession(): Unit = {
-    app.kill()
+    app.foreach(_.kill())
   }
 
   override def appIdKnown(appId: String): Unit = {
@@ -189,5 +198,5 @@ class BatchSession(
   override def infoChanged(appInfo: AppInfo): Unit = { this.appInfo = appInfo }
 
   override def recoveryMetadata: RecoveryMetadata =
-    BatchRecoveryMetadata(id, appId, appTag, owner, proxyUser)
+    BatchRecoveryMetadata(id, name, appId, appTag, owner, proxyUser)
 }

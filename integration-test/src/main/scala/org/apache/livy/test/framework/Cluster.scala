@@ -42,6 +42,7 @@ trait Cluster {
   def runLivy(): Unit
   def stopLivy(): Unit
   def livyEndpoint: String
+  def jdbcEndpoint: Option[String]
   def hdfsScratchDir(): Path
 
   def doAsClusterUser[T](task: => T): T

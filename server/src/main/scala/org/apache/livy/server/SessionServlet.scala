@@ -17,6 +17,7 @@
 
 package org.apache.livy.server
 
+import java.security.AccessControlException
 import javax.servlet.http.HttpServletRequest
 
 import org.scalatra._
@@ -111,10 +112,10 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
       sessionManager.delete(session.id) match {
         case Some(future) =>
           Await.ready(future, Duration.Inf)
-          Ok(Map("msg" -> "deleted"))
+          Ok(ResponseMessage("deleted"))
 
         case None =>
-          NotFound(s"Session ${session.id} already stopped.")
+          NotFound(ResponseMessage(s"Session ${session.id} already stopped."))
       }
     }
   }
@@ -126,16 +127,18 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   post("/") {
-    if (tooManySessions) {
-      BadRequest("Rejected, too many sessions are being created!")
-    } else {
-      val session = sessionManager.register(createSession(request))
-      // Because it may take some time to establish the session, update the last activity
-      // time before returning the session info to the client.
-      session.recordActivity()
-      Created(clientSessionView(session, request),
-        headers = Map("Location" ->
-          (getRequestPathInfo(request) + url(getSession, "id" -> session.id.toString))))
+    synchronized {
+      if (tooManySessions) {
+        BadRequest(ResponseMessage("Rejected, too many sessions are being created!"))
+      } else {
+        val session = sessionManager.register(createSession(request))
+        // Because it may take some time to establish the session, update the last activity
+        // time before returning the session info to the client.
+        session.recordActivity()
+        Created(clientSessionView(session, request),
+          headers = Map("Location" ->
+            (getRequestPathInfo(request) + url(getSession, "id" -> session.id.toString))))
+      }
     }
   }
 
@@ -148,7 +151,8 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   error {
-    case e: IllegalArgumentException => BadRequest(e.getMessage)
+    case e: IllegalArgumentException => BadRequest(ResponseMessage(e.getMessage))
+    case e: AccessControlException => Forbidden(ResponseMessage(e.getMessage))
   }
 
   /**
@@ -157,49 +161,27 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser()
 
   /**
-   * Checks that the request's user can impersonate the target user.
-   *
-   * If the user does not have permission to impersonate, then halt execution.
-   *
-   * @return The user that should be impersonated. That can be the target user if defined, the
-   *         request's user - which may not be defined - otherwise, or `None` if impersonation is
-   *         disabled.
+   * Returns the impersonated user as given by "doAs" as a request parameter.
    */
-  protected def checkImpersonation(
-      target: Option[String],
-      req: HttpServletRequest): Option[String] = {
-    if (livyConf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
-      if (!target.map(hasSuperAccess(_, req)).getOrElse(true)) {
-        halt(Forbidden(s"User '${remoteUser(req)}' not allowed to impersonate '$target'."))
-      }
-      target.orElse(Option(remoteUser(req)))
-    } else {
-      None
-    }
+  protected def impersonatedUser(request: HttpServletRequest): Option[String] = {
+    Option(request.getParameter("doAs"))
   }
 
   /**
-   * Check that the request's user has view access to resources owned by the given target user.
+   * Returns the proxyUser for the given request.
    */
-  protected def hasViewAccess(target: String, req: HttpServletRequest): Boolean = {
-    val user = remoteUser(req)
-    user == target || accessManager.checkViewPermissions(user)
+  protected def proxyUser(
+      request: HttpServletRequest,
+      createRequestProxyUser: Option[String]): Option[String] = {
+    impersonatedUser(request).orElse(createRequestProxyUser)
   }
 
   /**
-   * Check that the request's user has modify access to resources owned by the given target user.
+   * Gets the request user or impersonated user to determine the effective user.
    */
-  protected def hasModifyAccess(target: String, req: HttpServletRequest): Boolean = {
-    val user = remoteUser(req)
-    user == target || accessManager.checkModifyPermissions(user)
-  }
-
-  /**
-   * Check that the request's user has admin access to resources owned by the given target user.
-   */
-  protected def hasSuperAccess(target: String, req: HttpServletRequest): Boolean = {
-    val user = remoteUser(req)
-    user == target || accessManager.checkSuperUser(user)
+  protected def effectiveUser(request: HttpServletRequest): String = {
+    val requestUser = remoteUser(request)
+    accessManager.checkImpersonation(impersonatedUser(request), requestUser).getOrElse(requestUser)
   }
 
   /**
@@ -214,28 +196,35 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
    * session.
    */
   protected def withViewAccessSession(fn: (S => Any)): Any =
-    doWithSession(fn, false, Some(hasViewAccess))
+    doWithSession(fn, false, Some(accessManager.hasViewAccess))
 
   /**
    * Performs an operation on the session, verifying whether the caller has view access of the
    * session.
    */
   protected def withModifyAccessSession(fn: (S => Any)): Any =
-    doWithSession(fn, false, Some(hasModifyAccess))
+    doWithSession(fn, false, Some(accessManager.hasModifyAccess))
 
   private def doWithSession(fn: (S => Any),
       allowAll: Boolean,
-      checkFn: Option[(String, HttpServletRequest) => Boolean]): Any = {
-    val sessionId = params("id").toInt
-    sessionManager.get(sessionId) match {
+      checkFn: Option[(String, String) => Boolean]): Any = {
+    val idOrNameParam: String = params("id")
+    val session = if (idOrNameParam.forall(_.isDigit)) {
+      val sessionId = idOrNameParam.toInt
+      sessionManager.get(sessionId)
+    } else {
+      val sessionName = idOrNameParam
+      sessionManager.get(sessionName)
+    }
+    session match {
       case Some(session) =>
-        if (allowAll || checkFn.map(_(session.owner, request)).getOrElse(false)) {
+        if (allowAll || checkFn.map(_(session.owner, effectiveUser(request))).getOrElse(false)) {
           fn(session)
         } else {
           Forbidden()
         }
       case None =>
-        NotFound(s"Session '$sessionId' not found.")
+        NotFound(ResponseMessage(s"Session '$idOrNameParam' not found."))
     }
   }
 

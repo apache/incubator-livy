@@ -217,7 +217,6 @@ def test_upload_pyfile():
 
 
 if __name__ == '__main__':
-    test_dir_path = os.getcwd() + "/src"
-    value = pytest.main(test_dir_path)
+    value = pytest.main([os.path.dirname(__file__)])
     if value != 0:
         raise Exception("One or more test cases have failed.")

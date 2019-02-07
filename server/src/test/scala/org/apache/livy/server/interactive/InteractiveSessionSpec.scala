@@ -36,6 +36,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.apache.livy.{ExecuteRequest, JobHandle, LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.rsc.{PingJob, RSCClient, RSCConf}
 import org.apache.livy.rsc.driver.StatementState
+import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{PySpark, SessionState, Spark}
 import org.apache.livy.utils.{AppInfo, SparkApp}
@@ -45,12 +46,13 @@ class InteractiveSessionSpec extends FunSpec
 
   private val livyConf = new LivyConf()
   livyConf.set(LivyConf.REPL_JARS, "dummy.jar")
-    .set(LivyConf.LIVY_SPARK_VERSION, "1.6.0")
-    .set(LivyConf.LIVY_SPARK_SCALA_VERSION, "2.10.5")
+    .set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
+    .set(LivyConf.LIVY_SPARK_SCALA_VERSION, sys.env("LIVY_SCALA_VERSION"))
 
   implicit val formats = DefaultFormats
 
   private var session: InteractiveSession = null
+  private val accessManager = new AccessManager(livyConf)
 
   private def createSession(
       sessionStore: SessionStore = mock[SessionStore],
@@ -68,7 +70,8 @@ class InteractiveSessionSpec extends FunSpec
       SparkLauncher.DRIVER_EXTRA_CLASSPATH -> sys.props("java.class.path"),
       RSCConf.Entry.LIVY_JARS.key() -> ""
     )
-    InteractiveSession.create(0, null, None, livyConf, req, sessionStore, mockApp)
+    InteractiveSession.create(0, None, null, None, livyConf, accessManager, req,
+      sessionStore, mockApp)
   }
 
   private def executeStatement(code: String, codeType: Option[String] = None): JValue = {
@@ -111,7 +114,7 @@ class InteractiveSessionSpec extends FunSpec
       )
       val livyConf = new LivyConf(false)
         .set(LivyConf.REPL_JARS, testedJars.mkString(","))
-        .set(LivyConf.LIVY_SPARK_VERSION, "1.6.2")
+        .set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
         .set(LivyConf.LIVY_SPARK_SCALA_VERSION, "2.10")
       val properties = InteractiveSession.prepareBuilderProp(Map.empty, Spark, livyConf)
       assert(properties(LivyConf.SPARK_JARS).split(",").toSet === Set("test_2.10-0.1.jar",
@@ -137,7 +140,7 @@ class InteractiveSessionSpec extends FunSpec
       val livyConf = new LivyConf(false)
         .set(LivyConf.REPL_JARS, "dummy.jar")
         .set(LivyConf.RSC_JARS, rscJars.mkString(","))
-        .set(LivyConf.LIVY_SPARK_VERSION, "1.6.2")
+        .set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
         .set(LivyConf.LIVY_SPARK_SCALA_VERSION, "2.10")
       val properties = InteractiveSession.prepareBuilderProp(Map.empty, Spark, livyConf)
       // if livy.rsc.jars is configured in LivyConf, it should be passed to RSCConf.
@@ -158,6 +161,7 @@ class InteractiveSessionSpec extends FunSpec
       val mockApp = mock[SparkApp]
       val sessionStore = mock[SessionStore]
       session = createSession(sessionStore, Some(mockApp))
+      session.start()
 
       val expectedAppId = "APPID"
       session.appIdKnown(expectedAppId)
@@ -240,15 +244,32 @@ class InteractiveSessionSpec extends FunSpec
   }
 
   describe("recovery") {
-    it("should recover session") {
+    it("should recover named sessions") {
       val conf = new LivyConf()
       val sessionStore = mock[SessionStore]
       val mockClient = mock[RSCClient]
       when(mockClient.submit(any(classOf[PingJob]))).thenReturn(mock[JobHandle[Void]])
-      val m =
-        InteractiveRecoveryMetadata(
-          78, None, "appTag", Spark, 0, null, None, Some(URI.create("")))
+      val m = InteractiveRecoveryMetadata(
+          78, Some("Test session"), None, "appTag", Spark, 0, null, None, Some(URI.create("")))
       val s = InteractiveSession.recover(m, conf, sessionStore, None, Some(mockClient))
+      s.start()
+
+      s.state shouldBe (SessionState.Recovering)
+
+      s.appIdKnown("appId")
+      verify(sessionStore, atLeastOnce()).save(
+        MockitoMatchers.eq(InteractiveSession.RECOVERY_SESSION_TYPE), anyObject())
+    }
+
+    it("should recover sessions with no name") {
+      val conf = new LivyConf()
+      val sessionStore = mock[SessionStore]
+      val mockClient = mock[RSCClient]
+      when(mockClient.submit(any(classOf[PingJob]))).thenReturn(mock[JobHandle[Void]])
+      val m = InteractiveRecoveryMetadata(
+          78, None, None, "appTag", Spark, 0, null, None, Some(URI.create("")))
+      val s = InteractiveSession.recover(m, conf, sessionStore, None, Some(mockClient))
+      s.start()
 
       s.state shouldBe (SessionState.Recovering)
 
@@ -261,9 +282,9 @@ class InteractiveSessionSpec extends FunSpec
       val conf = new LivyConf()
       val sessionStore = mock[SessionStore]
       val m = InteractiveRecoveryMetadata(
-        78, Some("appId"), "appTag", Spark, 0, null, None, None)
+        78, None, Some("appId"), "appTag", Spark, 0, null, None, None)
       val s = InteractiveSession.recover(m, conf, sessionStore, None)
-
+      s.start()
       s.state shouldBe a[SessionState.Dead]
       s.logLines().mkString should include("RSCDriver URI is unknown")
     }

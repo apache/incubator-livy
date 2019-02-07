@@ -72,6 +72,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   protected implicit def executor: ExecutionContext = ExecutionContext.global
 
   protected[this] final val sessions = mutable.LinkedHashMap[Int, S]()
+  private[this] final val sessionsByName = mutable.HashMap[String, S]()
+
 
   private[this] final val sessionTimeoutCheck = livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK)
   private[this] final val sessionTimeout =
@@ -87,12 +89,22 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   def register(session: S): S = {
     info(s"Registering new session ${session.id}")
     synchronized {
+      session.name.foreach { sessionName =>
+        if (sessionsByName.contains(sessionName)) {
+          throw new IllegalArgumentException(s"Duplicate session name: ${session.name}")
+        } else {
+          sessionsByName.put(sessionName, session)
+        }
+      }
       sessions.put(session.id, session)
+      session.start()
     }
     session
   }
 
   def get(id: Int): Option[S] = sessions.get(id)
+
+  def get(sessionName: String): Option[S] = sessionsByName.get(sessionName)
 
   def size(): Int = sessions.size
 
@@ -108,6 +120,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
         sessionStore.remove(sessionType, session.id)
         synchronized {
           sessions.remove(session.id)
+          session.name.foreach(sessionsByName.remove)
         }
       } catch {
         case NonFatal(e) =>
@@ -144,7 +157,10 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
       }
     }
 
-    Future.sequence(all().filter(expired).map(delete))
+    Future.sequence(all().filter(expired).map { s =>
+      info(s"Deleting $s because it was inactive for more than ${sessionTimeout / 1e6} ms.")
+      delete(s)
+    })
   }
 
   private def recover(): Seq[S] = {

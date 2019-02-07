@@ -79,10 +79,15 @@ start_livy_server() {
   LIBDIR="$LIVY_HOME/jars"
   if [ ! -d "$LIBDIR" ]; then
     LIBDIR="$LIVY_HOME/server/target/jars"
+    THRIFT_LIBDIR="$LIVY_HOME/thriftserver/server/target/jars"
   fi
   if [ ! -d "$LIBDIR" ]; then
     echo "Could not find Livy jars directory." 1>&2
     exit 1
+  else
+    if [ -d "$THRIFT_LIBDIR" ]; then
+      LIBDIR="$THRIFT_LIBDIR/*:$LIBDIR"
+    fi
   fi
 
   LIVY_CLASSPATH="$LIBDIR/*:$LIVY_CONF_DIR"

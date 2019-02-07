@@ -40,6 +40,8 @@ abstract class JsonServlet extends ScalatraServlet with ApiFormats with FutureSu
 
   override protected implicit def executor: ExecutionContext = ExecutionContext.global
 
+  case class ResponseMessage(msg: String)
+
   private lazy val _defaultMapper = new ObjectMapper()
     .registerModule(com.fasterxml.jackson.module.scala.DefaultScalaModule)
 
@@ -84,6 +86,8 @@ abstract class JsonServlet extends ScalatraServlet with ApiFormats with FutureSu
 
   override protected def renderResponseBody(actionResult: Any): Unit = {
     val result = actionResult match {
+      case ActionResult(status, ResponseMessage(msg), headers) if format == "json" =>
+        ActionResult(status, toJson(Map("msg" -> msg)), headers)
       case ActionResult(status, body, headers) if format == "json" =>
         ActionResult(status, toJson(body), headers)
       case str: String if format == "json" =>

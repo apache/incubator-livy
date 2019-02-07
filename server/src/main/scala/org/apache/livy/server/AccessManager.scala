@@ -17,6 +17,8 @@
 
 package org.apache.livy.server
 
+import java.security.AccessControlException
+
 import org.apache.livy.{LivyConf, Logging}
 
 private[livy] class AccessManager(conf: LivyConf) extends Logging {
@@ -94,4 +96,47 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    * Check whether access control is enabled or not.
    */
   def isAccessControlOn: Boolean = aclsOn
+
+  /**
+   * Checks that the requesting user can impersonate the target user.
+   * If the user does not have permission to impersonate, then throws an `AccessControlException`.
+   *
+   * @return The user that should be impersonated. That can be the target user if defined, the
+   *         request's user - which may not be defined - otherwise, or `None` if impersonation is
+   *         disabled.
+   */
+  def checkImpersonation(
+      target: Option[String],
+      requestUser: String): Option[String] = {
+    if (conf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
+      if (!target.forall(hasSuperAccess(_, requestUser))) {
+        throw new AccessControlException(
+          s"User '$requestUser' not allowed to impersonate '$target'.")
+      }
+      target.orElse(Option(requestUser))
+    } else {
+      None
+    }
+  }
+
+  /**
+   * Check that the requesting user has admin access to resources owned by the given target user.
+   */
+  def hasSuperAccess(target: String, requestUser: String): Boolean = {
+    requestUser == target || checkSuperUser(requestUser)
+  }
+
+  /**
+   * Check that the request's user has modify access to resources owned by the given target user.
+   */
+  def hasModifyAccess(target: String, requestUser: String): Boolean = {
+    requestUser == target || checkModifyPermissions(requestUser)
+  }
+
+  /**
+   * Check that the request's user has view access to resources owned by the given target user.
+   */
+  def hasViewAccess(target: String, requestUser: String): Boolean = {
+    requestUser == target || checkViewPermissions(requestUser)
+  }
 }

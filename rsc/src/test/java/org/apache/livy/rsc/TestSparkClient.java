@@ -23,6 +23,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.jar.JarOutputStream;
@@ -57,6 +58,10 @@ public class TestSparkClient {
   private static final long TIMEOUT = 100;
 
   private Properties createConf(boolean local) {
+    return createConf(local, true);
+  }
+
+  private Properties createConf(boolean local, boolean hiveSupport) {
     Properties conf = new Properties();
     if (local) {
       conf.put(CLIENT_IN_PROCESS.key(), "true");
@@ -72,8 +77,8 @@ public class TestSparkClient {
 
     conf.put(CLIENT_SHUTDOWN_TIMEOUT.key(), "30s");
     conf.put(LIVY_JARS.key(), "");
-    conf.put("spark.repl.enableHiveContext", "true");
-    conf.put("spark.sql.catalogImplementation", "hive");
+    conf.put("spark.repl.enableHiveContext", hiveSupport);
+    conf.put("spark.sql.catalogImplementation", hiveSupport ? "hive" : "in-memory");
     conf.put(RETAINED_SHARE_VARIABLES.key(), "2");
     return conf;
   }
@@ -271,7 +276,7 @@ public class TestSparkClient {
 
   @Test
   public void testSparkSQLJob() throws Exception {
-    runTest(true, new TestFunction() {
+    runTest(true, false, new TestFunction() {
       @Override
       void call(LivyClient client) throws Exception {
         JobHandle<List<String>> handle = client.submit(new SQLGetTweets(false));
@@ -468,10 +473,7 @@ public class TestSparkClient {
         long sleep = 100;
         BypassJobStatus status = null;
         while (System.nanoTime() < deadline) {
-          BypassJobStatus currStatus = lclient.getBypassJobStatus(jobId).get(TIMEOUT,
-            TimeUnit.SECONDS);
-          assertNotEquals(JobHandle.State.CANCELLED, currStatus.state);
-          assertNotEquals(JobHandle.State.FAILED, currStatus.state);
+          BypassJobStatus currStatus = assertNotCancelledOrFailed(lclient, jobId);
           if (currStatus.state.equals(JobHandle.State.SUCCEEDED)) {
             status = currStatus;
             break;
@@ -486,19 +488,71 @@ public class TestSparkClient {
         String resultVal = (String) s.deserialize(ByteBuffer.wrap(status.result));
         assertEquals("hello", resultVal);
 
-        // After the result is retrieved, the driver should stop tracking the job and release
-        // resources associated with it.
-        try {
-          lclient.getBypassJobStatus(jobId).get(TIMEOUT, TimeUnit.SECONDS);
-          fail("Should have failed to retrieve status of released job.");
-        } catch (ExecutionException ee) {
-          assertTrue(ee.getCause() instanceof RpcException);
-          assertTrue(ee.getCause().getMessage().contains(
-            "java.util.NoSuchElementException: " + jobId));
-        }
+        assertJobIdUntracked(lclient, jobId);
       }
     });
   }
+
+  private void assertJobIdUntracked(RSCClient lclient, String jobId)
+      throws InterruptedException, TimeoutException {
+
+    // After the result is retrieved, the driver should stop tracking the job and release
+    // resources associated with it.
+    try {
+      lclient.getBypassJobStatus(jobId).get(TIMEOUT, TimeUnit.SECONDS);
+      fail("Should have failed to retrieve status of released job.");
+    } catch (ExecutionException ee) {
+      assertTrue(ee.getCause() instanceof RpcException);
+      assertTrue(ee.getCause().getMessage().contains(
+              "java.util.NoSuchElementException: " + jobId));
+    }
+  }
+
+  @Test
+  public void testBypassWithImmediateCancellation() throws Exception {
+    runBypassCancellationTest(0, Duration.ofMinutes(1).toMillis());
+  }
+
+  @Test
+  public void testBypassWithCancellation() throws Exception {
+    runBypassCancellationTest(500, Duration.ofMinutes(1).toMillis());
+  }
+
+  public void runBypassCancellationTest(long waitBeforeCancel, long jobDuration) throws Exception {
+    runTest(true, new TestFunction() {
+      @Override
+      public void call(LivyClient client) throws Exception {
+        Serializer s = new Serializer();
+        RSCClient lclient = (RSCClient) client;
+        ByteBuffer job = s.serialize(new Sleeper(jobDuration));
+        String jobId = lclient.bypass(job, "spark", false);
+
+        assertNotCancelledOrFailed(lclient, jobId);
+
+        if (waitBeforeCancel > 0) {
+          Thread.sleep(waitBeforeCancel);
+          assertNotCancelledOrFailed(lclient, jobId);
+        }
+
+        lclient.cancel(jobId);
+        BypassJobStatus currStatus = lclient.getBypassJobStatus(jobId).get(TIMEOUT,
+            TimeUnit.SECONDS);
+        assertEquals(JobHandle.State.CANCELLED, currStatus.state);
+        assertJobIdUntracked(lclient, jobId);
+      }
+    });
+  }
+
+  private BypassJobStatus assertNotCancelledOrFailed(RSCClient lclient, String jobId)
+      throws InterruptedException, ExecutionException, TimeoutException {
+
+    BypassJobStatus currStatus = lclient.getBypassJobStatus(jobId).get(TIMEOUT,
+        TimeUnit.SECONDS);
+    assertNotEquals(JobHandle.State.CANCELLED, currStatus.state);
+    assertNotEquals(JobHandle.State.FAILED, currStatus.state);
+    return currStatus;
+  }
+
 
   private <T> JobHandle.Listener<T> newListener() {
     @SuppressWarnings("unchecked")
@@ -518,7 +572,11 @@ public class TestSparkClient {
   }
 
   private void runTest(boolean local, TestFunction test) throws Exception {
-    Properties conf = createConf(local);
+    runTest(local, true, test);
+  }
+
+  private void runTest(boolean local, boolean hiveSupport, TestFunction test) throws Exception {
+    Properties conf = createConf(local, hiveSupport);
     LivyClient client = null;
     try {
       test.config(conf);

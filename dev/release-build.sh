@@ -96,7 +96,7 @@ rm -rf release-staging
 mkdir release-staging
 cd release-staging
 
-git clone https://git-wip-us.apache.org/repos/asf/incubator-livy.git
+git clone https://gitbox.apache.org/repos/asf/incubator-livy.git
 cd incubator-livy
 git checkout $GIT_REF
 git_hash=`git rev-parse --short HEAD`

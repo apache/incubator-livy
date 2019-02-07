@@ -44,15 +44,8 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       s.run("throw new IllegalStateException()")
         .verifyError(evalue = ".*java\\.lang\\.IllegalStateException.*")
 
-      // Check if we're running with Spark1 or Spark2, in Spark1 we will use SQLContext, whereas
-      // for Spark2 we will use SparkSession.
-      val entry = if (s.run("spark").result().isLeft) {
-        "spark"
-      } else {
-        "sqlContext"
-      }
       // Verify query submission
-      s.run(s"""val df = $entry.createDataFrame(Seq(("jerry", 20), ("michael", 21)))""")
+      s.run(s"""val df = spark.createDataFrame(Seq(("jerry", 20), ("michael", 21)))""")
         .verifyResult(".*" + Pattern.quote("df: org.apache.spark.sql.DataFrame") + ".*")
       s.run("df.registerTempTable(\"people\")").result()
       s.run("SELECT * FROM people", Some(SQL)).verifyResult(".*\"jerry\",20.*\"michael\",21.*")
@@ -97,6 +90,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       s.run("%table x").verifyResult(".*headers.*type.*name.*data.*")
       s.run("abcde").verifyError(ename = "NameError", evalue = "name 'abcde' is not defined")
       s.run("raise KeyError, 'foo'").verifyError(ename = "KeyError", evalue = "'foo'")
+      s.run("print(1)\r\nprint(1)").verifyResult("1\n1")
     }
   }
 
@@ -115,6 +109,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
         """|root
           | |-- name: string (nullable = true)
           | |-- age: double (nullable = true)""".stripMargin))
+      s.run("print(1)\r\nprint(1)").verifyResult(".*1\n.*1")
     }
   }
 
@@ -211,7 +206,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       waitForIdle: Boolean = true,
       heartbeatTimeoutInSecond: Int = 0)
     (f: (LivyRestClient#InteractiveSession) => R): R = {
-    withSession(livyClient.startSession(kind, sparkConf, heartbeatTimeoutInSecond)) { s =>
+    withSession(livyClient.startSession(None, kind, sparkConf, heartbeatTimeoutInSecond)) { s =>
       if (waitForIdle) {
         s.verifySessionIdle()
       }

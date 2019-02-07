@@ -18,6 +18,7 @@
 package org.apache.livy.server
 
 import java.io.{BufferedInputStream, InputStream}
+import java.net.InetAddress
 import java.util.concurrent._
 import java.util.EnumSet
 import javax.servlet._
@@ -55,6 +56,9 @@ class LivyServer extends Logging {
   private var kinitFailCount: Int = 0
   private var executor: ScheduledExecutorService = _
   private var accessManager: AccessManager = _
+  private var _thriftServerFactory: Option[ThriftServerFactory] = None
+
+  private var ugi: UserGroupInformation = _
 
   def start(): Unit = {
     livyConf = new LivyConf().loadFromFile("livy.conf")
@@ -91,6 +95,10 @@ class LivyServer extends Logging {
     livyConf.set(LIVY_SPARK_SCALA_VERSION.key,
       sparkScalaVersion(formattedSparkVersion, scalaVersionFromSparkSubmit, livyConf))
 
+    if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+      _thriftServerFactory = Some(ThriftServerFactory.getInstance)
+    }
+
     if (UserGroupInformation.isSecurityEnabled) {
       // If Hadoop security is enabled, run kinit periodically. runKinit() should be called
       // before any Hadoop operation, otherwise Kerberos exception will be thrown.
@@ -115,6 +123,16 @@ class LivyServer extends Logging {
         error("Failed to run kinit, stopping the server.")
         sys.exit(1)
       }
+      // This is and should be the only place where a login() on the UGI is performed.
+      // If an other login in the codebase is strictly needed, a needLogin check should be added to
+      // avoid anyway that 2 logins are performed.
+      // This is needed because the thriftserver requires the UGI to be created from a keytab in
+      // order to work properly and previously Livy was using a UGI generated from the cached TGT
+      // (created by the kinit command).
+      if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+        UserGroupInformation.loginUserFromKeytab(launch_principal, launch_keytab)
+      }
+      ugi = UserGroupInformation.getCurrentUser
       startKinitThread(launch_keytab, launch_principal)
     }
 
@@ -199,10 +217,13 @@ class LivyServer extends Logging {
             mount(context, batchServlet, "/batches/*")
 
             if (livyConf.getBoolean(UI_ENABLED)) {
-              val uiServlet = new UIServlet(basePath)
+              val uiServlet = new UIServlet(basePath, livyConf)
               mount(context, uiServlet, "/ui/*")
               mount(context, staticResourceServlet, "/static/*")
               mount(context, uiRedirectServlet(basePath + "/ui/"), "/*")
+              _thriftServerFactory.foreach { factory =>
+                mount(context, factory.getServlet(basePath), factory.getServletMappings: _*)
+              }
             } else {
               mount(context, uiRedirectServlet(basePath + "/metrics"), "/*")
             }
@@ -259,10 +280,15 @@ class LivyServer extends Logging {
 
     server.start()
 
+    _thriftServerFactory.foreach {
+      _.start(livyConf, interactiveSessionManager, sessionStore, accessManager)
+    }
+
     Runtime.getRuntime().addShutdownHook(new Thread("Livy Server Shutdown") {
       override def run(): Unit = {
         info("Shutting down Livy server.")
         server.stop()
+        _thriftServerFactory.foreach(_.stop())
       }
     })
 
@@ -292,6 +318,12 @@ class LivyServer extends Logging {
       new Runnable() {
         override def run(): Unit = {
           if (runKinit(keytab, principal)) {
+            // The current UGI should never change. If that happens, it is an error condition and
+            // relogin the original UGI would not update the current UGI. So the server will fail
+            // due to no valid credentials. The assert here allows to fast detect this error
+            // condition and fail immediately with a meaningful error.
+            assert(ugi.equals(UserGroupInformation.getCurrentUser), "Current UGI has changed.")
+            ugi.reloginFromTicketCache()
             // schedule another kinit run with a fixed delay.
             executor.schedule(this, refreshInterval, TimeUnit.MILLISECONDS)
           } else {
@@ -321,6 +353,21 @@ class LivyServer extends Logging {
 
   def serverUrl(): String = {
     _serverUrl.getOrElse(throw new IllegalStateException("Server not yet started."))
+  }
+
+  /** For ITs only */
+  def getJdbcUrl: Option[String] = {
+    _thriftServerFactory.map { _ =>
+      val additionalUrlParams = if (livyConf.get(THRIFT_TRANSPORT_MODE) == "http") {
+        "?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice"
+      } else {
+        ""
+      }
+      val host = Option(livyConf.get(THRIFT_BIND_HOST)).getOrElse(
+        InetAddress.getLocalHost.getHostAddress)
+      val port = livyConf.getInt(THRIFT_SERVER_PORT)
+      s"jdbc:hive2://$host:$port$additionalUrlParams"
+    }
   }
 
   private[livy] def testRecovery(livyConf: LivyConf): Unit = {

@@ -18,6 +18,7 @@
 package org.apache.livy.test.framework
 
 import java.io._
+import java.sql.DriverManager
 import javax.servlet.http.HttpServletResponse
 
 import scala.concurrent.duration._
@@ -101,6 +102,10 @@ object MiniYarnMain extends MiniClusterBase {
       config.localDirCount, config.logDirCount)
     yarnCluster.init(baseConfig)
 
+    // This allows applications run by YARN during the integration tests to find PIP modules
+    // installed in the user's home directory (instead of just the global ones).
+    baseConfig.set(YarnConfiguration.NM_USER_HOME_DIR, sys.env("HOME"))
+
     // Install a shutdown hook for stop the service and kill all running applications.
     Runtime.getRuntime().addShutdownHook(new Thread() {
       override def run(): Unit = yarnCluster.stop()
@@ -122,10 +127,8 @@ object MiniYarnMain extends MiniClusterBase {
 }
 
 object MiniLivyMain extends MiniClusterBase {
-  var livyUrl: Option[String] = None
-
-  def start(config: MiniClusterConfig, configPath: String): Unit = {
-    var livyConf = Map(
+  protected def baseLivyConf(configPath: String): Map[String, String] = {
+    val baseConf = Map(
       LivyConf.LIVY_SPARK_MASTER.key -> "yarn",
       LivyConf.LIVY_SPARK_DEPLOY_MODE.key -> "cluster",
       LivyConf.HEARTBEAT_WATCHDOG_INTERVAL.key -> "1s",
@@ -133,6 +136,16 @@ object MiniLivyMain extends MiniClusterBase {
       LivyConf.RECOVERY_MODE.key -> "recovery",
       LivyConf.RECOVERY_STATE_STORE.key -> "filesystem",
       LivyConf.RECOVERY_STATE_STORE_URL.key -> s"file://$configPath/state-store")
+    val thriftEnabled = sys.env.get("LIVY_TEST_THRIFT_ENABLED")
+    if (thriftEnabled.nonEmpty && thriftEnabled.forall(_.toBoolean)) {
+      baseConf + (LivyConf.THRIFT_SERVER_ENABLED.key -> "true")
+    } else {
+      baseConf
+    }
+  }
+
+  def start(config: MiniClusterConfig, configPath: String): Unit = {
+    var livyConf = baseLivyConf(configPath)
 
     if (Cluster.isRunningOnTravis) {
       livyConf ++= Map("livy.server.yarn.app-lookup-timeout" -> "2m")
@@ -147,7 +160,10 @@ object MiniLivyMain extends MiniClusterBase {
     // server. Do it atomically since it's used by MiniCluster to detect when the Livy server
     // is up and ready.
     eventually(timeout(30 seconds), interval(1 second)) {
-      val serverUrlConf = Map("livy.server.server-url" -> server.serverUrl())
+      var serverUrlConf = Map("livy.server.server-url" -> server.serverUrl())
+      server.getJdbcUrl.foreach { url =>
+        serverUrlConf += ("livy.server.thrift.jdbc-url" -> url)
+      }
       saveProperties(serverUrlConf, new File(configPath + "/serverUrl.conf"))
     }
   }
@@ -176,6 +192,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
   private var yarn: Option[ProcessInfo] = None
   private var livy: Option[ProcessInfo] = None
   private var livyUrl: String = _
+  private var livyThriftJdbcUrl: Option[String] = None
   private var _hdfsScrathDir: Path = _
 
   override def configDir(): File = _configDir
@@ -238,6 +255,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
 
     val props = loadProperties(confFile)
     livyUrl = props("livy.server.server-url")
+    livyThriftJdbcUrl = props.get("livy.server.thrift.jdbc-url")
 
     // Wait until Livy server responds.
     val httpClient = new AsyncHttpClient()
@@ -253,10 +271,13 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     assert(livy.isDefined)
     livy.foreach(stop)
     livyUrl = null
+    livyThriftJdbcUrl = None
     livy = None
   }
 
   def livyEndpoint: String = livyUrl
+
+  def jdbcEndpoint: Option[String] = livyThriftJdbcUrl
 
   private def mkdir(name: String, parent: File = tempDir): File = {
     val dir = new File(parent, name)
@@ -277,14 +298,12 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     // Before starting anything, clean up previous running sessions.
     sys.process.Process(s"pkill -f $simpleName") !
 
-    val java = sys.props("java.home") + "/bin/java"
     val cmd =
       Seq(
         sys.props("java.home") + "/bin/java",
         "-Dtest.appender=console",
         "-Djava.io.tmpdir=" + procTmp.getAbsolutePath(),
-        "-cp", childClasspath + File.pathSeparator + configDir.getAbsolutePath(),
-        "-XX:MaxPermSize=256m") ++
+        "-cp", childClasspath + File.pathSeparator + configDir.getAbsolutePath()) ++
       extraJavaArgs ++
       Seq(
         klass.getName().stripSuffix("$"),
