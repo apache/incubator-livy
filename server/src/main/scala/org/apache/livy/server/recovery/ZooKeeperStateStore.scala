@@ -18,10 +18,7 @@ package org.apache.livy.server.recovery
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
-import scala.util.Try
-import scala.util.matching.Regex
 
-import org.apache.curator.RetryPolicy
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.framework.api.UnhandledErrorListener
 import org.apache.curator.framework.recipes.atomic.{DistributedAtomicLong => DistributedLong}
