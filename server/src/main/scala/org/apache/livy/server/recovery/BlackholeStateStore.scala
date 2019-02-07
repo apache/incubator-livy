@@ -39,5 +39,5 @@ class BlackholeStateStore(livyConf: LivyConf) extends StateStore(livyConf) {
 
   def remove(key: String): Unit = {}
 
-  override def increment(key: String): Long = atomicLong.incrementAndGet()
+  override def nextValue(key: String): Long = atomicLong.incrementAndGet()
 }

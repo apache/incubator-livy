@@ -117,13 +117,13 @@ class ZooKeeperStateStore(
     }
   }
 
-  override def increment(key: String): Long = {
+  override def nextValue(key: String): Long = {
     val distributedSessionId = new DistributedLong(curatorClient, key, retryPolicy)
     distributedSessionId.increment() match {
       case atomicValue if atomicValue.succeeded() =>
         atomicValue.postValue()
       case _ =>
-        throw new java.io.IOException(s"Failed to atomically increment the value for $key")
+        throw new java.io.IOException(s"Failed to atomically nextValueget the next value for $key.")
     }
   }
 

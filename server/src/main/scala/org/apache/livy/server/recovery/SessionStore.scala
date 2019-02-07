@@ -68,7 +68,7 @@ class SessionStore(
    * @throws Exception If session store is corrupted or unreachable, it throws an error.
    */
   def getNextSessionId(sessionType: String): Int = {
-    store.increment(sessionManagerPath(sessionType)).toInt
+    store.nextValue(nextSessionIdPath(sessionType)).toInt
   }
 
   /**
@@ -78,8 +78,8 @@ class SessionStore(
     store.remove(sessionPath(sessionType, id))
   }
 
-  private def sessionManagerPath(sessionType: String): String =
-    s"$STORE_VERSION/$sessionType/state"
+  private def nextSessionIdPath(sessionType: String): String =
+    s"$STORE_VERSION/$sessionType/nextSessionId"
 
   private def sessionPath(sessionType: String): String =
     s"$STORE_VERSION/$sessionType"

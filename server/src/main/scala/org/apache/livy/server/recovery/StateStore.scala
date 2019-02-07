@@ -77,7 +77,7 @@ abstract class StateStore(livyConf: LivyConf) extends JsonMapper {
     *
     * @return incremented value
     */
-  def increment(key: String): Long
+  def nextValue(key: String): Long
 }
 
 /**

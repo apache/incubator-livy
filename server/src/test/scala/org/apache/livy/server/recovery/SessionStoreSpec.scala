@@ -33,7 +33,7 @@ class SessionStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
 
     val sessionType = "test"
     val sessionPath = s"v1/$sessionType"
-    val sessionManagerPath = s"v1/$sessionType/state"
+    val sessionManagerPath = s"v1/$sessionType/nextSessionId"
 
     val conf = new LivyConf()
     it("should set session state and session counter when saving a session.") {
@@ -88,10 +88,10 @@ class SessionStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       val stateStore = mock[StateStore]
       val sessionStore = new SessionStore(conf, stateStore)
 
-      when(stateStore.increment(sessionManagerPath)).thenReturn(0L)
+      when(stateStore.nextValue(sessionManagerPath)).thenReturn(0L)
       sessionStore.getNextSessionId(sessionType) shouldBe 0
 
-      when(stateStore.increment(sessionManagerPath)).thenReturn(100)
+      when(stateStore.nextValue(sessionManagerPath)).thenReturn(100)
       sessionStore.getNextSessionId(sessionType) shouldBe 100
     }
 
