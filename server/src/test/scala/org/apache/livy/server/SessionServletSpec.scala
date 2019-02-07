@@ -133,7 +133,7 @@ class SessionServletSpec extends BaseSessionServletSpec[Session, RecoveryMetadat
       }
     }
 
-    it("should allow other users to see non-sensitive information") {
+    it("should allow other users to see all information due to ACLs not enabled") {
       jpost[MockSessionView]("/", Map()) { res =>
         jget[MockSessionView](s"/${res.id}", headers = bobHeaders) { res =>
           assert(res.owner === null)
