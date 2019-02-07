@@ -56,6 +56,7 @@ class InteractiveSessionServlet(
       sessionManager.nextId(),
       createRequest.name,
       remoteUser(req),
+      proxyUser(req, createRequest.proxyUser),
       livyConf,
       accessManager,
       createRequest,
@@ -66,7 +67,7 @@ class InteractiveSessionServlet(
       session: InteractiveSession,
       req: HttpServletRequest): Any = {
     val logs =
-      if (accessManager.hasViewAccess(session.owner, remoteUser(req))) {
+      if (accessManager.hasViewAccess(session.owner, effectiveUser(req))) {
         Option(session.logLines())
           .map { lines =>
             val size = 10

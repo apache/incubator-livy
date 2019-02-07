@@ -161,6 +161,30 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser()
 
   /**
+   * Returns the impersonated user as given by "doAs" as a request parameter.
+   */
+  protected def impersonatedUser(request: HttpServletRequest): Option[String] = {
+    Option(request.getParameter("doAs"))
+  }
+
+  /**
+   * Returns the proxyUser for the given request.
+   */
+  protected def proxyUser(
+      request: HttpServletRequest,
+      createRequestProxyUser: Option[String]): Option[String] = {
+    impersonatedUser(request).orElse(createRequestProxyUser)
+  }
+
+  /**
+   * Gets the request user or impersonated user to determine the effective user.
+   */
+  protected def effectiveUser(request: HttpServletRequest): String = {
+    val requestUser = remoteUser(request)
+    accessManager.checkImpersonation(impersonatedUser(request), requestUser).getOrElse(requestUser)
+  }
+
+  /**
    * Performs an operation on the session, without checking for ownership. Operations executed
    * via this method must not modify the session in any way, or return potentially sensitive
    * information.
@@ -194,7 +218,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     }
     session match {
       case Some(session) =>
-        if (allowAll || checkFn.map(_(session.owner, remoteUser(request))).getOrElse(false)) {
+        if (allowAll || checkFn.map(_(session.owner, effectiveUser(request))).getOrElse(false)) {
           fn(session)
         } else {
           Forbidden()

@@ -230,6 +230,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
         server.livySessionManager.nextId(),
         None,
         username,
+        None,
         server.livyConf,
         server.accessManager,
         createInteractiveRequest,

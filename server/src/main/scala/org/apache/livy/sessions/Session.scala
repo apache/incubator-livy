@@ -216,7 +216,8 @@ abstract class Session(
 
   protected def stopSession(): Unit
 
-  protected val proxyUser: Option[String]
+  // Visible for testing.
+  val proxyUser: Option[String]
 
   protected def doAsOwner[T](fn: => T): T = {
     val user = proxyUser.getOrElse(owner)

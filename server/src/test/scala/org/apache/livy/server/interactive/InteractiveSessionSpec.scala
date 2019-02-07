@@ -70,7 +70,8 @@ class InteractiveSessionSpec extends FunSpec
       SparkLauncher.DRIVER_EXTRA_CLASSPATH -> sys.props("java.class.path"),
       RSCConf.Entry.LIVY_JARS.key() -> ""
     )
-    InteractiveSession.create(0, None, null, livyConf, accessManager, req, sessionStore, mockApp)
+    InteractiveSession.create(0, None, null, None, livyConf, accessManager, req,
+      sessionStore, mockApp)
   }
 
   private def executeStatement(code: String, codeType: Option[String] = None): JValue = {
