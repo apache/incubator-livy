@@ -17,12 +17,17 @@
 
 package org.apache.livy.sessions
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Try}
 
+import org.mockito.Matchers.anyString
 import org.mockito.Mockito.{doReturn, never, verify, when}
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.mock.MockitoSugar.mock
@@ -39,10 +44,19 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
   private def createSessionManager(): (LivyConf, SessionManager[MockSession, RecoveryMetadata]) = {
     val livyConf = new LivyConf()
     livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
+    val sessionStore = mock[SessionStore]
+    when(sessionStore.getNextSessionId(anyString())).thenAnswer( new Answer[Int] {
+
+      private val nextSessionId = new AtomicInteger(0)
+      override def answer(invocationOnMock: InvocationOnMock): Int = {
+        nextSessionId.getAndDecrement()
+      }
+    })
+
     val manager = new SessionManager[MockSession, RecoveryMetadata](
       livyConf,
       { _ => assert(false).asInstanceOf[MockSession] },
-      mock[SessionStore],
+      sessionStore,
       "test",
       Some(Seq.empty))
     (livyConf, manager)
@@ -72,6 +86,8 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       val name = "Mock-session"
       val session1 = new MockSession(manager.nextId(), null, livyConf, Some(name))
       val session2 = new MockSession(manager.nextId(), null, livyConf, Some(name))
+      session1.id shouldNot be(session2.id)
+
       manager.register(session1)
       an[IllegalArgumentException] should be thrownBy manager.register(session2)
       manager.get(session1.id).isDefined should be(true)
