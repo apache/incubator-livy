@@ -67,6 +67,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       when(session.state).thenReturn(SessionState.Idle)
       when(session.stop()).thenReturn(Future.successful(()))
       when(session.proxyUser).thenReturn(None)
+      when(session.heartbeatExpired).thenReturn(false)
       when(session.statements).thenAnswer(
         new Answer[IndexedSeq[Statement]]() {
           override def answer(args: InvocationOnMock): IndexedSeq[Statement] = statements
@@ -179,6 +180,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     when(session.kind).thenReturn(kind)
     when(session.appInfo).thenReturn(appInfo)
     when(session.logLines()).thenReturn(log)
+    when(session.heartbeatExpired).thenReturn(false)
 
     val req = mock[HttpServletRequest]
 
