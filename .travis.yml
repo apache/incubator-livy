@@ -36,7 +36,7 @@ matrix:
     env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipTests'
 
 jdk:
-  - openjdk8
+  - oraclejdk8
 
 addons:
   apt:
