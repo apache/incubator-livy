@@ -20,6 +20,9 @@ dist: trusty
 language: scala
   - 2.11.12
 
+env:
+  -MAVEN_OPTS=-Dorg.slf4j.simpleLogger.defaultLogLevel=warn
+
 matrix:
   include:
   - name: "Spark 2.2 Unit Tests"
@@ -60,14 +63,14 @@ before_install:
   - sudo python3 -m pip -q install cloudpickle
 
 install:
-  - mvn $MVN_FLAG install -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -Dorg.slf4j.simpleLogger.defaultLogLevel=warn -B -V
+  - mvn $MVN_FLAG install -Dskip -DskipTests -DskipITs -Dmaven.javadoc.skip=true -B -V
 
 before_script:
   - sudo pip2 -q install "requests >= 2.10.0" pytest flaky flake8 requests-kerberos
   - sudo pip3 -q install "requests >= 2.10.0" pytest flaky requests-kerberos
 
 script:
-  - mvn $MVN_FLAG -Dorg.slf4j.simpleLogger.defaultLogLevel=warn verify -e
+  - mvn $MVN_FLAG verify -e
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
