@@ -22,7 +22,7 @@ language: scala
 
 env:
   global:
-  - MAVEN_OPTS = "-Dorg.slf4j.simpleLogger.defaultLogLevel=warn"
+  - MAVEN_OPTS='-Dorg.slf4j.simpleLogger.defaultLogLevel=warn'
 
 matrix:
   include:
