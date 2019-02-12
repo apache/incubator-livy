@@ -38,10 +38,10 @@ matrix:
 jdk:
   - oraclejdk8
 
-# cache:
-#   pip: true
-#  directories:
-#    - $HOME/.m2
+cache:
+  pip: true
+  directories:
+    - $HOME/.m2
 
 install:
   - sudo apt-get -qq install r-base
