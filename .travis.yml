@@ -56,7 +56,7 @@ install:
   - sudo pip3 -q install "requests >= 2.10.0" pytest flaky requests-kerberos
 
 script:
-  - mvn $MVN_FLAG verify -Dmaven.javadoc.skip=true -B -V -e
+  - mvn $MVN_FLAG -Dmaven.javadoc.skip=true -B -V -e verify
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
