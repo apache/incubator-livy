@@ -99,6 +99,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       when(session.name).thenReturn(None)
       when(session.stop()).thenReturn(Future {})
       when(session.lastActivity).thenReturn(System.nanoTime())
+      when(session.heartbeatExpired).thenReturn(false)
 
       val conf = new LivyConf().set(LivyConf.SESSION_TIMEOUT_CHECK, false)
         .set(LivyConf.SESSION_STATE_RETAIN_TIME, "1s")
