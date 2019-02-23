@@ -36,16 +36,21 @@ import org.apache.livy.sessions.Session.RecoveryMetadata
 class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuite {
   implicit def executor: ExecutionContext = ExecutionContext.global
 
+  private def createSessionManager(): (LivyConf, SessionManager[MockSession, RecoveryMetadata]) = {
+    val livyConf = new LivyConf()
+    livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
+    val manager = new SessionManager[MockSession, RecoveryMetadata](
+      livyConf,
+      { _ => assert(false).asInstanceOf[MockSession] },
+      mock[SessionStore],
+      "test",
+      Some(Seq.empty))
+    (livyConf, manager)
+  }
+
   describe("SessionManager") {
     it("should garbage collect old sessions") {
-      val livyConf = new LivyConf()
-      livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
-      val manager = new SessionManager[MockSession, RecoveryMetadata](
-        livyConf,
-        { _ => assert(false).asInstanceOf[MockSession] },
-        mock[SessionStore],
-        "test",
-        Some(Seq.empty))
+      val (livyConf, manager) = createSessionManager()
       val session = manager.register(new MockSession(manager.nextId(), null, livyConf))
       manager.get(session.id).isDefined should be(true)
       eventually(timeout(5 seconds), interval(100 millis)) {
@@ -54,10 +59,31 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       }
     }
 
+    it("should create sessions with names") {
+      val (livyConf, manager) = createSessionManager()
+      val name = "Mock-session"
+      val session = manager.register(new MockSession(manager.nextId(), null, livyConf, Some(name)))
+      manager.get(session.id).isDefined should be(true)
+      manager.get(name).isDefined should be(true)
+    }
+
+    it("should not create sessions with duplicate names") {
+      val (livyConf, manager) = createSessionManager()
+      val name = "Mock-session"
+      val session1 = new MockSession(manager.nextId(), null, livyConf, Some(name))
+      val session2 = new MockSession(manager.nextId(), null, livyConf, Some(name))
+      manager.register(session1)
+      an[IllegalArgumentException] should be thrownBy manager.register(session2)
+      manager.get(session1.id).isDefined should be(true)
+      manager.get(session2.id).isDefined should be(false)
+      manager.shutdown()
+    }
+
     it("batch session should not be gc-ed until application is finished") {
       val sessionId = 24
       val session = mock[BatchSession]
       when(session.id).thenReturn(sessionId)
+      when(session.name).thenReturn(None)
       when(session.stop()).thenReturn(Future {})
       when(session.lastActivity).thenReturn(System.nanoTime())
 
@@ -70,8 +96,10 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       val sessionId = 24
       val session = mock[InteractiveSession]
       when(session.id).thenReturn(sessionId)
+      when(session.name).thenReturn(None)
       when(session.stop()).thenReturn(Future {})
       when(session.lastActivity).thenReturn(System.nanoTime())
+      when(session.heartbeatExpired).thenReturn(false)
 
       val conf = new LivyConf().set(LivyConf.SESSION_TIMEOUT_CHECK, false)
         .set(LivyConf.SESSION_STATE_RETAIN_TIME, "1s")
@@ -112,12 +140,13 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
     implicit def executor: ExecutionContext = ExecutionContext.global
 
     def makeMetadata(id: Int, appTag: String): BatchRecoveryMetadata = {
-      BatchRecoveryMetadata(id, None, appTag, null, None)
+      BatchRecoveryMetadata(id, Some(s"test-session-$id"), None, appTag, null, None)
     }
 
     def mockSession(id: Int): BatchSession = {
       val session = mock[BatchSession]
       when(session.id).thenReturn(id)
+      when(session.name).thenReturn(None)
       when(session.stop()).thenReturn(Future {})
       when(session.lastActivity).thenReturn(System.nanoTime())
 

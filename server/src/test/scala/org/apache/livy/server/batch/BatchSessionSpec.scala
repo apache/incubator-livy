@@ -70,7 +70,8 @@ class BatchSessionSpec
 
       val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
       val accessManager = new AccessManager(conf)
-      val batch = BatchSession.create(0, req, conf, accessManager, null, sessionStore)
+      val batch = BatchSession.create(0, None, req, conf, accessManager, null, None, sessionStore)
+      batch.start()
 
       Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
       (batch.state match {
@@ -87,7 +88,8 @@ class BatchSessionSpec
       val mockApp = mock[SparkApp]
       val accessManager = new AccessManager(conf)
       val batch = BatchSession.create(
-        0, req, conf, accessManager, null, sessionStore, Some(mockApp))
+        0, None, req, conf, accessManager, null, None, sessionStore, Some(mockApp))
+      batch.start()
 
       val expectedAppId = "APPID"
       batch.appIdKnown(expectedAppId)
@@ -100,18 +102,27 @@ class BatchSessionSpec
       batch.appInfo shouldEqual expectedAppInfo
     }
 
-    it("should recover session") {
+    def testRecoverSession(name: Option[String]): Unit = {
       val conf = new LivyConf()
       val req = new CreateBatchRequest()
+      val name = Some("Test Batch Session")
       val mockApp = mock[SparkApp]
-      val m = BatchRecoveryMetadata(99, None, "appTag", null, None)
+      val m = BatchRecoveryMetadata(99, name, None, "appTag", null, None)
       val batch = BatchSession.recover(m, conf, sessionStore, Some(mockApp))
 
       batch.state shouldBe (SessionState.Recovering)
+      batch.name shouldBe (name)
 
       batch.appIdKnown("appId")
       verify(sessionStore, atLeastOnce()).save(
         Matchers.eq(BatchSession.RECOVERY_SESSION_TYPE), anyObject())
     }
+
+    Seq[Option[String]](None, Some("Test Batch Session"), null)
+      .foreach { case name =>
+        it(s"should recover session (name = $name)") {
+          testRecoverSession(name)
+        }
+      }
   }
 }

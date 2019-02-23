@@ -18,10 +18,12 @@
 package org.apache.livy.server
 
 import java.io.{BufferedInputStream, InputStream}
+import java.net.InetAddress
 import java.util.concurrent._
 import java.util.EnumSet
 import javax.servlet._
 
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -55,6 +57,7 @@ class LivyServer extends Logging {
   private var kinitFailCount: Int = 0
   private var executor: ScheduledExecutorService = _
   private var accessManager: AccessManager = _
+  private var _thriftServerFactory: Option[ThriftServerFactory] = None
 
   private var ugi: UserGroupInformation = _
 
@@ -93,10 +96,8 @@ class LivyServer extends Logging {
     livyConf.set(LIVY_SPARK_SCALA_VERSION.key,
       sparkScalaVersion(formattedSparkVersion, scalaVersionFromSparkSubmit, livyConf))
 
-    val thriftServerFactory = if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
-      Some(ThriftServerFactory.getInstance)
-    } else {
-      None
+    if (livyConf.getBoolean(LivyConf.THRIFT_SERVER_ENABLED)) {
+      _thriftServerFactory = Some(ThriftServerFactory.getInstance)
     }
 
     if (UserGroupInformation.isSecurityEnabled) {
@@ -221,7 +222,7 @@ class LivyServer extends Logging {
               mount(context, uiServlet, "/ui/*")
               mount(context, staticResourceServlet, "/static/*")
               mount(context, uiRedirectServlet(basePath + "/ui/"), "/*")
-              thriftServerFactory.foreach { factory =>
+              _thriftServerFactory.foreach { factory =>
                 mount(context, factory.getServlet(basePath), factory.getServletMappings: _*)
               }
             } else {
@@ -259,11 +260,25 @@ class LivyServer extends Logging {
         server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
         info(s"SPNEGO auth enabled (principal = $principal)")
 
-     case null =>
+      case null =>
         // Nothing to do.
 
-      case other =>
-        throw new IllegalArgumentException(s"Invalid auth type: $other")
+      case customType =>
+        val authClassConf = s"livy.server.auth.$customType.class"
+        val authClass = livyConf.get(authClassConf)
+        require(authClass != null, s"$customType auth requires $authClassConf to be provided")
+
+        val holder = new FilterHolder()
+        holder.setClassName(authClass)
+
+        val prefix = s"livy.server.auth.$customType.param."
+        livyConf.asScala.filter { kv =>
+          kv.getKey.length > prefix.length && kv.getKey.startsWith(prefix)
+        }.foreach { kv =>
+          holder.setInitParameter(kv.getKey.substring(prefix.length), kv.getValue)
+        }
+        server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
+        info(s"$customType auth enabled")
     }
 
     if (livyConf.getBoolean(CSRF_PROTECTION)) {
@@ -280,16 +295,17 @@ class LivyServer extends Logging {
 
     server.start()
 
+    _thriftServerFactory.foreach {
+      _.start(livyConf, interactiveSessionManager, sessionStore, accessManager)
+    }
+
     Runtime.getRuntime().addShutdownHook(new Thread("Livy Server Shutdown") {
       override def run(): Unit = {
         info("Shutting down Livy server.")
         server.stop()
+        _thriftServerFactory.foreach(_.stop())
       }
     })
-
-    thriftServerFactory.foreach {
-      _.start(livyConf, interactiveSessionManager, sessionStore, accessManager)
-    }
 
     _serverUrl = Some(s"${server.protocol}://${server.host}:${server.port}")
     sys.props("livy.server.server-url") = _serverUrl.get
@@ -352,6 +368,21 @@ class LivyServer extends Logging {
 
   def serverUrl(): String = {
     _serverUrl.getOrElse(throw new IllegalStateException("Server not yet started."))
+  }
+
+  /** For ITs only */
+  def getJdbcUrl: Option[String] = {
+    _thriftServerFactory.map { _ =>
+      val additionalUrlParams = if (livyConf.get(THRIFT_TRANSPORT_MODE) == "http") {
+        "?hive.server2.transport.mode=http;hive.server2.thrift.http.path=cliservice"
+      } else {
+        ""
+      }
+      val host = Option(livyConf.get(THRIFT_BIND_HOST)).getOrElse(
+        InetAddress.getLocalHost.getHostAddress)
+      val port = livyConf.getInt(THRIFT_SERVER_PORT)
+      s"jdbc:hive2://$host:$port$additionalUrlParams"
+    }
   }
 
   private[livy] def testRecovery(livyConf: LivyConf): Unit = {

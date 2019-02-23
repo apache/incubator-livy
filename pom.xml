@@ -44,7 +44,7 @@
 
   <scm>
     <connection>scm:git:git@github.com:apache/incubator-livy.git</connection>
-    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-livy.git</developerConnection>
+    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/incubator-livy.git</developerConnection>
     <url>scm:git:git@github.com:apache/incubator-livy.git</url>
     <tag>HEAD</tag>
   </scm>
@@ -1023,7 +1023,8 @@
       <id>thriftserver</id>
       <modules>
         <module>thriftserver/server</module>
-        <module>thriftserver/client</module> 
+        <module>thriftserver/session</module>
+        <module>thriftserver/client</module>
       </modules>
     </profile>
 
@@ -1054,7 +1055,6 @@
         <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
         <java.version>1.8</java.version>
         <py4j.version>0.10.7</py4j.version>
-        <json4s.version>3.2.11</json4s.version>
       </properties>
     </profile>
 

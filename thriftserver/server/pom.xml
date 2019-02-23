@@ -18,13 +18,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>livy-main</artifactId>
     <groupId>org.apache.livy</groupId>
     <version>0.6.0-incubating-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
 
+  <groupId>org.apache.livy</groupId>
   <artifactId>livy-thriftserver</artifactId>
 
   <dependencies>
@@ -48,36 +50,18 @@
           <groupId>org.apache.hive</groupId>
           <artifactId>*</artifactId>
         </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-exec</artifactId>
-      <version>${hive.version}</version>
-      <exclusions>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-slf4j-impl</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-1.2-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hbase</groupId>
+          <groupId>org.eclipse.jetty</groupId>
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.livy</groupId>
+      <artifactId>livy-thriftserver-session</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.livy</groupId>
       <artifactId>livy-rsc</artifactId>
@@ -118,12 +102,16 @@
       <artifactId>libthrift</artifactId>
       <version>${libthrift.version}</version>
     </dependency>
-
-    <!-- needed for compiling successfully when using JobContext -->
     <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-hive_${scala.binary.version}</artifactId>
-      <scope>provided</scope>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-common</artifactId>
+      <version>2.25.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-runner</artifactId>
+      <version>${jetty.version}</version>
     </dependency>
 
     <!-- needed for testing -->
@@ -134,8 +122,8 @@
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>*</artifactId>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
         </exclusion>
         <exclusion>
           <groupId>io.netty</groupId>
@@ -191,6 +179,7 @@
             <goals>
               <goal>wget</goal>
             </goals>
+            <phase>test-compile</phase>
             <configuration>
               <readTimeOut>60000</readTimeOut>
               <retries>5</retries>

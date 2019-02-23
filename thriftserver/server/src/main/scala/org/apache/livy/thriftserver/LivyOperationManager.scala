@@ -23,12 +23,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable
 
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars
-import org.apache.hadoop.hive.metastore.api.{FieldSchema, Schema}
 import org.apache.hive.service.cli._
-import org.apache.hive.service.cli.operation.{GetCatalogsOperation, GetTableTypesOperation, GetTypeInfoOperation, Operation}
 
-import org.apache.livy.Logging
+import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.thriftserver.operation._
+import org.apache.livy.thriftserver.serde.ThriftResultSet
+import org.apache.livy.thriftserver.session.DataType
 
 class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManager)
   extends Logging {
@@ -37,12 +37,15 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
   private val sessionToOperationHandles =
     new mutable.HashMap[SessionHandle, mutable.Set[OperationHandle]]()
 
+  private val operationTimeout =
+    livyThriftSessionManager.livyConf.getTimeAsMs(LivyConf.THRIFT_IDLE_OPERATION_TIMEOUT)
+
   private def addOperation(operation: Operation, sessionHandle: SessionHandle): Unit = {
-    handleToOperation.put(operation.getHandle, operation)
+    handleToOperation.put(operation.opHandle, operation)
     sessionToOperationHandles.synchronized {
       val set = sessionToOperationHandles.getOrElseUpdate(sessionHandle,
         new mutable.HashSet[OperationHandle])
-      set += operation.getHandle
+      set += operation.opHandle
     }
   }
 
@@ -52,7 +55,7 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
     if (operation == null) {
       throw new HiveSQLException(s"Operation does not exist: $operationHandle")
     }
-    val sessionHandle = operation.getSessionHandle
+    val sessionHandle = operation.sessionHandle
     sessionToOperationHandles.synchronized {
       sessionToOperationHandles(sessionHandle) -= operationHandle
       if (sessionToOperationHandles(sessionHandle).isEmpty) {
@@ -74,7 +77,7 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
     opHandles.flatMap { handle =>
       // Some operations may have finished and been removed since we got them.
       Option(handleToOperation.get(handle))
-    }.filter(_.isTimedOut(currentTime))
+    }.filter(_.isTimedOut(currentTime, operationTimeout))
   }
 
   @throws[HiveSQLException]
@@ -95,7 +98,6 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
     val op = new LivyExecuteStatementOperation(
       sessionHandle,
       statement,
-      confOverlay,
       runAsync,
       livyThriftSessionManager)
     addOperation(op, sessionHandle)
@@ -107,16 +109,13 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
   def getOperationLogRowSet(
       opHandle: OperationHandle,
       orientation: FetchOrientation,
-      maxRows: Long): RowSet = {
-    val tableSchema = new TableSchema(LivyOperationManager.LOG_SCHEMA)
-    val session = livyThriftSessionManager.getSessionInfo(getOperation(opHandle).getSessionHandle)
-    val logs = RowSetFactory.create(tableSchema, session.protocolVersion, false)
+      maxRows: Long): ThriftResultSet = {
+    val session = livyThriftSessionManager.getSessionInfo(getOperation(opHandle).sessionHandle)
+    val logs = ThriftResultSet(LivyOperationManager.LOG_SCHEMA, session.protocolVersion)
 
-    if (!livyThriftSessionManager.getHiveConf.getBoolVar(
-        ConfVars.HIVE_SERVER2_LOGGING_OPERATION_ENABLED)) {
-      warn("Try to get operation log when " +
-        ConfVars.HIVE_SERVER2_LOGGING_OPERATION_ENABLED.varname +
-        " is false, no log will be returned. ")
+    if (!livyThriftSessionManager.livyConf.getBoolean(LivyConf.THRIFT_LOG_OPERATION_ENABLED)) {
+      warn(s"Try to get operation log when ${LivyConf.THRIFT_LOG_OPERATION_ENABLED.key} is " +
+        "false, no log will be returned.")
     } else {
       // Get the operation log. This is implemented only for LivyExecuteStatementOperation
       val operation = getOperation(opHandle)
@@ -149,7 +148,7 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
     var opHandle: OperationHandle = null
     try {
       val operation = operationCreator
-      opHandle = operation.getHandle
+      opHandle = operation.opHandle
       operation.run()
       opHandle
     } catch {
@@ -194,9 +193,9 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
   @throws[HiveSQLException]
   def cancelOperation(opHandle: OperationHandle, errMsg: String): Unit = {
     val operation = getOperation(opHandle)
-    val opState = operation.getStatus.getState
+    val opState = operation.getStatus.state
     if (opState.isTerminal) {
-      // Cancel should be a no-op
+      // Cancel should be a no-op either case
       debug(s"$opHandle: Operation is already aborted in state - $opState")
     } else {
       debug(s"$opHandle: Attempting to cancel from state - $opState")
@@ -223,7 +222,7 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
       opHandle: OperationHandle,
       orientation: FetchOrientation,
       maxRows: Long,
-      fetchType: FetchType): RowSet = {
+      fetchType: FetchType): ThriftResultSet = {
     if (fetchType == FetchType.QUERY_OUTPUT) {
       getOperation(opHandle).getNextRowSet(orientation, maxRows)
     } else {
@@ -233,12 +232,5 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
 }
 
 object LivyOperationManager {
- val LOG_SCHEMA: Schema = {
-    val schema = new Schema
-    val fieldSchema = new FieldSchema
-    fieldSchema.setName("operation_log")
-    fieldSchema.setType("string")
-    schema.addToFieldSchemas(fieldSchema)
-    schema
-  }
+  val LOG_SCHEMA: Array[DataType] = Array(DataType.STRING)
 }

@@ -38,6 +38,11 @@ class ThriftServerFactoryImpl extends ThriftServerFactory {
     LivyThriftServer.start(livyConf, livySessionManager, sessionStore, accessManager)
   }
 
+  override def stop(): Unit = {
+    assert(LivyThriftServer.getInstance.isDefined)
+    LivyThriftServer.getInstance.foreach(_.stop())
+  }
+
   override def getServlet(basePath: String): Servlet = new ThriftJsonServlet(basePath)
 
   override def getServletMappings: Seq[String] = Seq("/thriftserver/*")

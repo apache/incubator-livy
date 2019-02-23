@@ -19,17 +19,14 @@ package org.apache.livy.thriftserver
 
 import java.security.PrivilegedExceptionAction
 
-import scala.collection.JavaConverters._
-
-import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.security.UserGroupInformation
-import org.apache.hive.service.server.HiveServer2
 
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.interactive.InteractiveSession
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
+import org.apache.livy.thriftserver.cli.{ThriftBinaryCLIService, ThriftHttpCLIService}
 
 /**
  * The main entry point for the Livy thrift server leveraging HiveServer2. Starts up a
@@ -40,21 +37,6 @@ object LivyThriftServer extends Logging {
   // Visible for testing
   private[thriftserver] var thriftServerThread: Thread = _
   private var thriftServer: LivyThriftServer = _
-
-  private def hiveConf(livyConf: LivyConf): HiveConf = {
-    val conf = new HiveConf()
-    // Remove all configs coming from hive-site.xml which may be in the classpath for the Spark
-    // applications to run.
-    conf.getAllProperties.asScala.filter(_._1.startsWith("hive.")).foreach { case (key, _) =>
-      conf.unset(key)
-    }
-    livyConf.asScala.foreach {
-      case nameAndValue if nameAndValue.getKey.startsWith("livy.hive") =>
-        conf.set(nameAndValue.getKey.stripPrefix("livy."), nameAndValue.getValue)
-      case _ => // Ignore
-    }
-    conf
-  }
 
   def start(
       livyConf: LivyConf,
@@ -97,7 +79,7 @@ object LivyThriftServer extends Logging {
   }
 
   private def doStart(livyConf: LivyConf): Unit = {
-    thriftServer.init(hiveConf(livyConf))
+    thriftServer.init(livyConf)
     thriftServer.start()
   }
 
@@ -114,6 +96,11 @@ object LivyThriftServer extends Logging {
     thriftServer.stop()
     thriftServer = null
   }
+
+  def isHTTPTransportMode(livyConf: LivyConf): Boolean = {
+    val transportMode = livyConf.get(LivyConf.THRIFT_TRANSPORT_MODE)
+    transportMode != null && transportMode.equalsIgnoreCase("http")
+  }
 }
 
 
@@ -121,17 +108,38 @@ class LivyThriftServer(
     private[thriftserver] val livyConf: LivyConf,
     private[thriftserver] val livySessionManager: InteractiveSessionManager,
     private[thriftserver] val sessionStore: SessionStore,
-    private[thriftserver] val accessManager: AccessManager) extends HiveServer2 {
-  override def init(hiveConf: HiveConf): Unit = {
-    this.cliService = new LivyCLIService(this)
-    super.init(hiveConf)
+    private[thriftserver] val accessManager: AccessManager)
+  extends ThriftService(classOf[LivyThriftServer].getName) with Logging {
+
+  val cliService = new LivyCLIService(this)
+
+  override def init(livyConf: LivyConf): Unit = {
+    addService(cliService)
+    val server = this
+    val oomHook = new Runnable() {
+      override def run(): Unit = {
+        server.stop()
+      }
+    }
+    val thriftCLIService = if (LivyThriftServer.isHTTPTransportMode(livyConf)) {
+      new ThriftHttpCLIService(cliService, oomHook)
+    } else {
+      new ThriftBinaryCLIService(cliService, oomHook)
+    }
+    addService(thriftCLIService)
+    super.init(livyConf)
   }
 
-  private[thriftserver] def getSessionManager(): LivyThriftSessionManager = {
-    this.cliService.asInstanceOf[LivyCLIService].getSessionManager
+  private[thriftserver] def getSessionManager = {
+    cliService.getSessionManager
   }
 
   def isAllowedToUse(user: String, session: InteractiveSession): Boolean = {
     session.owner == user || accessManager.checkModifyPermissions(user)
+  }
+
+  override def stop(): Unit = {
+    info("Shutting down LivyThriftServer")
+    super.stop()
   }
 }
