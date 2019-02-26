@@ -141,6 +141,10 @@ public class RSCConf extends ClientConf<RSCConf> {
           }
         }
       }
+    } else {
+      LOG.warn("Your hostname, {}, resolves to an external address; using {}.",
+          address.getCanonicalHostName(), address.getHostAddress());
+      return address.getHostAddress();
     }
 
     LOG.warn("Your hostname, {}, resolves to a loopback address, but we couldn't find "
