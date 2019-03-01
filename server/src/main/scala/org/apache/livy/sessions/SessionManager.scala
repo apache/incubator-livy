@@ -150,6 +150,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
         case s: FinishedSessionState =>
           val currentTime = System.nanoTime()
           currentTime - s.time > sessionStateRetainedInSec
+        case SessionState.Busy =>
+            false
         case _ =>
           if (!sessionTimeoutCheck) {
             false
