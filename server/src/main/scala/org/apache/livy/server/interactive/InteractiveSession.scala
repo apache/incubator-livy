@@ -303,6 +303,19 @@ object InteractiveSession extends Logging {
             " classpath or user request.")
       }
     }
+    def mergeRSCConf():Unit={
+      import scala.collection.JavaConverters._
+      val it=livyConf.iterator().asScala
+      while(it.hasNext){
+        val m:java.util.Map.Entry[String,String]=it.next()
+        val key:String=m.getKey
+        val value:String=m.getValue
+        if(key.startsWith("livy.rsc.")){
+          builderProperties.put(key,value)
+        }
+      }
+    }
+
 
     val pySparkFiles = if (!LivyConf.TEST_MODE) {
       findPySparkArchives()
@@ -315,6 +328,7 @@ object InteractiveSession extends Logging {
     }
 
     mergeConfList(pySparkFiles, LivyConf.SPARK_PY_FILES)
+    mergeRSCConf()
 
     val sparkRArchive = if (!LivyConf.TEST_MODE) findSparkRArchive() else None
     sparkRArchive.foreach { archive =>
