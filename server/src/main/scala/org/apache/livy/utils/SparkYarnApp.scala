@@ -126,6 +126,23 @@ class SparkYarnApp private[utils] (
   private[utils] var state: SparkApp.State = SparkApp.State.STARTING
   private var yarnDiagnostics: IndexedSeq[String] = IndexedSeq.empty[String]
 
+  def getProgress: Float = {
+    val appId =
+      appIdOption.map(ConverterUtils.toApplicationId).getOrElse {
+        val pollInterval = getYarnPollInterval(livyConf)
+        val deadline = getYarnTagToAppIdTimeout(livyConf).fromNow
+        getAppIdFromTag(appTag, pollInterval, deadline)
+      }
+    try{
+      val appReport = yarnClient.getApplicationReport(appId)
+      appReport.getProgress()
+    }
+    catch {
+      case e: Exception => 1
+    }
+
+  }
+
   override def log(): IndexedSeq[String] =
     ("stdout: " +: process.map(_.inputLines).getOrElse(ArrayBuffer.empty[String])) ++
     ("\nstderr: " +: process.map(_.errorLines).getOrElse(ArrayBuffer.empty[String])) ++

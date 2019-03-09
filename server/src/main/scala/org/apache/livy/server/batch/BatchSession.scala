@@ -30,7 +30,7 @@ import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{Session, SessionState}
 import org.apache.livy.sessions.Session._
-import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
+import org.apache.livy.utils._
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class BatchRecoveryMetadata(
@@ -163,6 +163,10 @@ class BatchSession(
   private var app: Option[SparkApp] = None
 
   override def state: SessionState = _state
+
+  def getProgress(): Float = {
+    app.asInstanceOf[SparkYarnApp].getProgress
+  }
 
   override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(IndexedSeq.empty[String])
 

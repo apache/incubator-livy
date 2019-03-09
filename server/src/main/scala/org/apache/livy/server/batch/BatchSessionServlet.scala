@@ -31,7 +31,8 @@ case class BatchSessionView(
   state: String,
   appId: Option[String],
   appInfo: AppInfo,
-  log: Seq[String])
+  log: Seq[String],
+  process: Float)
 
 class BatchSessionServlet(
     sessionManager: BatchSessionManager,
@@ -72,7 +73,7 @@ class BatchSessionServlet(
         Nil
       }
     BatchSessionView(session.id, session.name, session.state.toString, session.appId,
-      session.appInfo, logs)
+      session.appInfo, logs, session.getProgress())
   }
 
 }
