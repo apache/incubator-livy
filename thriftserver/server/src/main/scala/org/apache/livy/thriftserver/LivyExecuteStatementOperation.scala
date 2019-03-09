@@ -22,11 +22,9 @@ import java.util.concurrent.{ConcurrentLinkedQueue, RejectedExecutionException}
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
-
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hive.service.cli._
-
-import org.apache.livy.Logging
+import org.apache.livy.{JobHandle, Logging}
 import org.apache.livy.thriftserver.SessionStates._
 import org.apache.livy.thriftserver.operation.Operation
 import org.apache.livy.thriftserver.rpc.RpcClient
@@ -59,6 +57,8 @@ class LivyExecuteStatementOperation(
   private var rowOffset = 0L
 
   private def statementId: String = opHandle.getHandleIdentifier.toString
+
+  private var jobHandle: JobHandle[_]=_
 
   private def rpcClientValid: Boolean =
     sessionManager.livySessionState(sessionHandle) == CREATION_SUCCESS && rpcClient.isValid
@@ -138,7 +138,7 @@ class LivyExecuteStatementOperation(
     setState(OperationState.RUNNING)
 
     try {
-      rpcClient.executeSql(sessionHandle, statementId, statement).get()
+      jobHandle=rpcClient.executeSql(sessionHandle, statementId, statement)
     } catch {
       case e: Throwable =>
         val currentState = getStatus.state
@@ -156,6 +156,7 @@ class LivyExecuteStatementOperation(
 
   override def cancel(state: OperationState): Unit = {
     info(s"Cancel $statementId with state $state")
+    jobHandle.cancel(true)
     cleanup(state)
   }
 
