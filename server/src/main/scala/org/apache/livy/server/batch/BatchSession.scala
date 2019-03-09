@@ -165,7 +165,10 @@ class BatchSession(
   override def state: SessionState = _state
 
   def getProgress(): Float = {
-    app.get.asInstanceOf[SparkYarnApp].getProgress
+    app.get match {
+      case yarnApp: SparkYarnApp => yarnApp.getProgress
+      case _ => 0
+    }
   }
 
   override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(IndexedSeq.empty[String])
