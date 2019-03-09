@@ -214,6 +214,8 @@ public class ColumnBuffer {
       // org.apache.hadoop.hive.serde2.thrift.ColumnBuffer expects a List<String>, so convert
       // when reading the value. The Hive/Thrift stack also dislikes nulls, and returning a
       // list with a different number of elements than expected.
+      strings=(strings.length != currentSize) ? Arrays.copyOfRange(strings, 0, currentSize)
+              : strings;
       return Arrays.stream(strings)
         .limit(currentSize)
         .map(s -> (s != null) ? s : EMPTY_STRING)
