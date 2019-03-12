@@ -35,7 +35,7 @@ object Shared extends Kind("shared")
 
 object SQL extends Kind("sql")
 
-object SerialSQL extends Kind("serial_sql")
+object ConcurrentSQL extends Kind("concurrentSQL")
 
 object Kind {
 
@@ -45,7 +45,7 @@ object Kind {
     case "sparkr" | "r" => SparkR
     case "shared" => Shared
     case "sql" => SQL
-    case "serial_sql" => SerialSQL
+    case "concurrentSQL" => ConcurrentSQL
     case other => throw new IllegalArgumentException(s"Invalid kind: $other")
   }
 }

@@ -60,8 +60,8 @@ class Session(
   private val interpreterExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
 
-  private lazy val sqlExecutor = ExecutionContext.fromExecutorService(
-    Executors.newFixedThreadPool(livyConf.getInt(RSCConf.Entry.SQL_INTERPRETER_THREADS)))
+  private lazy val concurrentSQLExecutor = ExecutionContext.fromExecutorService(
+    Executors.newFixedThreadPool(livyConf.getInt(RSCConf.Entry.CONCURRENT_SQL_MAX)))
 
   private val cancelExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
@@ -108,9 +108,9 @@ class Session(
             throw new IllegalStateException("SparkInterpreter should not be lazily created.")
           case PySpark => PythonInterpreter(sparkConf, entries)
           case SparkR => SparkRInterpreter(sparkConf, entries)
-          case SQL => new SQLInterpreter(sparkConf, livyConf, entries,
-            livyConf.get(RSCConf.Entry.SQL_DEFAULT_SCHEDULER_POOL))
-          case SerialSQL => new SQLInterpreter(sparkConf, livyConf, entries)
+          case ConcurrentSQL => new SQLInterpreter(sparkConf, livyConf, entries,
+            livyConf.get(RSCConf.Entry.CONCURRENT_SQL_SCHEDULER_POOL))
+          case SQL => new SQLInterpreter(sparkConf, livyConf, entries)
         }
         interp.start()
         interpGroup(kind) = interp
@@ -165,8 +165,8 @@ class Session(
     val statement = new Statement(statementId, code, StatementState.Waiting, null)
     _statements.synchronized { _statements(statementId) = statement }
 
-    val threadPool = if (tpe == SQL) {
-      sqlExecutor
+    val threadPool = if (tpe == ConcurrentSQL) {
+      concurrentSQLExecutor
     } else {
       interpreterExecutor
     }
@@ -344,7 +344,7 @@ class Session(
   private def setJobGroup(codeType: Kind, statementId: Int): String = {
     val jobGroup = statementIdToJobGroup(statementId)
     val (cmd, tpe) = codeType match {
-      case Spark | SQL | SerialSQL =>
+      case Spark | SQL | ConcurrentSQL =>
         // A dummy value to avoid automatic value binding in scala REPL.
         (s"""val _livyJobGroup$jobGroup = sc.setJobGroup("$jobGroup",""" +
           s""""Job group for statement $jobGroup")""",
