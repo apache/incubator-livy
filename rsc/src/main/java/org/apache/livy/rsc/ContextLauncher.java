@@ -202,7 +202,19 @@ class ContextLauncher {
     conf.set("spark.yarn.maxAppAttempts", "1");
 
     conf.set("spark.scheduler.mode", "FAIR");
-    conf.set("spark.scheduler.allocation.file", FAIR_SCHEDULER_FILENAME);
+    String master = conf.get(SparkLauncher.SPARK_MASTER);
+    String deployMode = conf.get(SparkLauncher.DEPLOY_MODE);
+    Boolean isCluster =  (master != null && master.endsWith("-cluster")) ||
+        (deployMode != null && deployMode.equals("cluster"));
+    String fairSchedulerXMLPath = System.getenv("LIVY_HOME")
+        + File.separator + "conf" + File.separator + FAIR_SCHEDULER_FILENAME;
+    if (System.getenv("LIVY_HOME") != null) {
+      if (isCluster) {
+        conf.set("spark.scheduler.allocation.file", FAIR_SCHEDULER_FILENAME);
+      } else {
+        conf.set("spark.scheduler.allocation.file", fairSchedulerXMLPath);
+      }
+    }
 
     // Let the launcher go away when launcher in yarn cluster mode. This avoids keeping lots
     // of "small" Java processes lingering on the Livy server node.
@@ -243,8 +255,9 @@ class ContextLauncher {
     } else {
       final SparkLauncher launcher = new SparkLauncher();
       launcher.setSparkHome(System.getenv(SPARK_HOME_ENV));
-      launcher.addFile(
-        System.getenv().get("LIVY_CONF_DIR") + File.separator + FAIR_SCHEDULER_FILENAME);
+      if (isCluster) {
+        launcher.addFile(fairSchedulerXMLPath);
+      }
       launcher.setAppResource(SparkLauncher.NO_RESOURCE);
       launcher.setPropertiesFile(confFile.getAbsolutePath());
       launcher.setMainClass(RSCDriverBootstrapper.class.getName());
