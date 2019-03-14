@@ -42,9 +42,9 @@ import org.apache.spark.sql.types.StructField;
  */
 public class ColumnBuffer {
 
-  public static final int DEFAULT_SIZE = 100;
-  public static final String EMPTY_STRING = "";
-  public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
+  static final int DEFAULT_SIZE = 100;
+  static final String EMPTY_STRING = "";
+  static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
   private final DataType type;
 
@@ -233,7 +233,7 @@ public class ColumnBuffer {
   }
 
   /**
-   * Transforms and internal buffer into a list that meet's Hive expectations. Used for
+   * Transforms and internal buffer into a list that meets Hive expectations. Used for
    * string and binary fields.
    *
    * org.apache.hadoop.hive.serde2.thrift.ColumnBuffer expects a List<String> or List<ByteBuffer>,
