@@ -106,6 +106,7 @@ class ThriftSessionState {
     if (statements.remove(statementId) == null) {
       throw statementNotFound(statementId);
     }
+    ctx.sc().cancelJobGroup(statementId);
   }
 
   void dispose() {
