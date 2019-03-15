@@ -1032,13 +1032,13 @@
     <profile>
       <id>spark-2.3</id>
       <properties>
-        <spark.scala-2.11.version>2.3.2</spark.scala-2.11.version>
+        <spark.scala-2.11.version>2.3.3</spark.scala-2.11.version>
         <spark.version>${spark.scala-2.11.version}</spark.version>
         <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
         <spark.bin.download.url>
-          http://mirrors.advancedhosters.com/apache/spark/spark-2.3.2/spark-2.3.2-bin-hadoop2.7.tgz
+          http://mirrors.advancedhosters.com/apache/spark/spark-2.3.3/spark-2.3.3-bin-hadoop2.7.tgz
         </spark.bin.download.url>
-        <spark.bin.name>spark-2.3.2-bin-hadoop2.7</spark.bin.name>
+        <spark.bin.name>spark-2.3.3-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
@@ -1055,17 +1055,6 @@
         <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
         <java.version>1.8</java.version>
         <py4j.version>0.10.7</py4j.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>spark-2.4-it</id>
-      <activation>
-        <property>
-          <name>spark-2.4-it</name>
-        </property>
-      </activation>
-      <properties>
         <spark.bin.download.url>
           http://mirrors.advancedhosters.com/apache/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz
         </spark.bin.download.url>
