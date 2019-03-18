@@ -23,12 +23,12 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>multi-scala-project-root</artifactId>
-    <version>0.6.0-incubating</version>
+    <version>0.6.1-incubating-SNAPSHOT</version>
     <relativePath>../scala/pom.xml</relativePath>
   </parent>
 
   <artifactId>livy-scala-api-parent</artifactId>
-  <version>0.6.0-incubating</version>
+  <version>0.6.1-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <dependencies>

@@ -21,13 +21,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-repl_2.11</artifactId>
-  <version>0.6.0-incubating</version>
+  <version>0.6.1-incubating-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-repl-parent</artifactId>
-    <version>0.6.0-incubating</version>
+    <version>0.6.1-incubating-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
