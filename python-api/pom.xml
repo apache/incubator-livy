@@ -66,6 +66,9 @@
                 <argument>setup.py</argument>
                 <argument>test</argument>
               </arguments>
+              <environmentVariables>
+                <TMPDIR>${project.build.directory}/tmp</TMPDIR>
+              </environmentVariables>
             </configuration>
           </execution>
           <execution>
