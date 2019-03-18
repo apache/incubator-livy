@@ -173,15 +173,59 @@ public class ColumnBufferTest {
 
   @Test
   public void testStringColumn() {
+    int nonNullCount = ColumnBuffer.DEFAULT_SIZE * 5;
+    int nullCount = ColumnBuffer.DEFAULT_SIZE * 2;
+
     ColumnBuffer col = new ColumnBuffer(DataType.STRING);
-    for (int i = 0; i < ColumnBuffer.DEFAULT_SIZE * 5; i++) {
+    for (int i = 0; i < nonNullCount; i++) {
       col.add(String.valueOf(i));
+    }
+
+    for (int i = 0; i < nullCount; i++) {
+      col.add(null);
     }
 
     @SuppressWarnings("unchecked")
     List<String> values = (List<String>) col.getValues();
-    for (int i = 0; i < ColumnBuffer.DEFAULT_SIZE * 5; i++) {
+    BitSet nulls = col.getNulls();
+    assertEquals(nonNullCount + nullCount, values.size());
+    for (int i = 0; i < nonNullCount; i++) {
       assertEquals(String.valueOf(i), values.get(i));
+      assertFalse(nulls.get(i));
+    }
+    for (int i = nonNullCount; i < nonNullCount + nullCount; i++) {
+      assertEquals(ColumnBuffer.EMPTY_STRING, values.get(i));
+      assertTrue(nulls.get(i));
+    }
+  }
+
+  @Test
+  public void testBinaryColumn() {
+    int nonNullCount = ColumnBuffer.DEFAULT_SIZE * 5;
+    int nullCount = ColumnBuffer.DEFAULT_SIZE * 2;
+
+    ColumnBuffer col = new ColumnBuffer(DataType.BINARY);
+    for (int i = 0; i < nonNullCount; i++) {
+      byte[] buf = new byte[Integer.SIZE];
+      ByteBuffer.wrap(buf).putInt(i);
+      col.add(buf);
+    }
+
+    for (int i = 0; i < nullCount; i++) {
+      col.add(null);
+    }
+
+    @SuppressWarnings("unchecked")
+    List<ByteBuffer> values = (List<ByteBuffer>) col.getValues();
+    BitSet nulls = col.getNulls();
+    assertEquals(nonNullCount + nullCount, values.size());
+    for (int i = 0; i < nonNullCount; i++) {
+      assertEquals(i, values.get(i).getInt());
+      assertFalse(nulls.get(i));
+    }
+    for (int i = nonNullCount; i < nonNullCount + nullCount; i++) {
+      assertEquals(ColumnBuffer.EMPTY_BUFFER, values.get(i));
+      assertTrue(nulls.get(i));
     }
   }
 

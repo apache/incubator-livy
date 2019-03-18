@@ -18,9 +18,11 @@ package org.apache.livy.thriftserver.session;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,9 +42,9 @@ import org.apache.spark.sql.types.StructField;
  */
 public class ColumnBuffer {
 
-  public static final int DEFAULT_SIZE = 100;
-  private static final String EMPTY_STRING = "";
-  private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
+  static final int DEFAULT_SIZE = 100;
+  static final String EMPTY_STRING = "";
+  static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
   private final DataType type;
 
@@ -203,21 +205,10 @@ public class ColumnBuffer {
       return (doubles.length != currentSize) ? Arrays.copyOfRange(doubles, 0, currentSize)
         : doubles;
     case BINARY:
-      // org.apache.hadoop.hive.serde2.thrift.ColumnBuffer expects a List<ByteBuffer>, so convert
-      // when reading the value. The Hive/Thrift stack also dislikes nulls, and returning a
-      // list with a different number of elements than expected.
-      return Arrays.stream(buffers)
-        .limit(currentSize)
-        .map(b -> (b != null) ? ByteBuffer.wrap(b) : EMPTY_BUFFER)
-        .collect(Collectors.toList());
+      return toList(Arrays.stream(buffers).map(b -> (b != null) ? ByteBuffer.wrap(b) : null),
+          EMPTY_BUFFER);
     case STRING:
-      // org.apache.hadoop.hive.serde2.thrift.ColumnBuffer expects a List<String>, so convert
-      // when reading the value. The Hive/Thrift stack also dislikes nulls, and returning a
-      // list with a different number of elements than expected.
-      return Arrays.stream(strings)
-        .limit(currentSize)
-        .map(s -> (s != null) ? s : EMPTY_STRING)
-        .collect(Collectors.toList());
+      return toList(Arrays.stream(strings), EMPTY_STRING);
     }
 
     return null;
@@ -239,6 +230,25 @@ public class ColumnBuffer {
 
     int bitIdx = (index % Byte.SIZE);
     return (nulls[byteIdx] & (1 << bitIdx)) != 0;
+  }
+
+  /**
+   * Transforms and internal buffer into a list that meets Hive expectations. Used for
+   * string and binary fields.
+   *
+   * org.apache.hadoop.hive.serde2.thrift.ColumnBuffer expects a List<String> or List<ByteBuffer>,
+   * depending on the column type. The Hive/Thrift stack also dislikes nulls, and returning a list
+   * with a different number of elements than expected.
+   */
+  private <T> List<T> toList(Stream<T> data, T defaultValue) {
+    final List<T> ret = new ArrayList<>(currentSize);
+    data.limit(currentSize).forEach(e -> {
+      ret.add(e != null ? e : defaultValue);
+    });
+    while (ret.size() < currentSize) {
+      ret.add(defaultValue);
+    }
+    return ret;
   }
 
   private void setNull(int index) {
