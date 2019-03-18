@@ -23,13 +23,13 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.6.0-incubating-SNAPSHOT</version>
+    <version>0.6.0-incubating</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-examples</artifactId>
-  <version>0.6.0-incubating-SNAPSHOT</version>
+  <version>0.6.0-incubating</version>
   <packaging>jar</packaging>
 
   <properties>
