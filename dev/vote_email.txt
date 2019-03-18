@@ -1,0 +1,24 @@
+This vote is for releasing Livy <VERSION> based on <RC>.
+
+The vote will be open at least 72 hours until <DATE> UTC and
+will pass with a minimum of 3 +1 binding votes and a majority
+of positive votes.
+
+[+1] This release is ready to send to the Incubator PMC for approval
+
+[-1] This release is not ready because...
+
+This vote is held according to Apache Incubator release policy:
+https://incubator.apache.org/policy/incubation.html#releases
+
+The RC is based on tag <TAG>:
+https://github.com/apache/incubator-livy/commit/<HASH>
+
+The release files can be found here:
+https://dist.apache.org/repos/dist/dev/incubator/livy/<STAGING_DIR>/
+
+The staged maven artifacts can be found here:
+https://repository.apache.org/content/repositories/<STAGING_REPO>
+
+The list of resolved JIRAs in this release can be found here:
+https://issues.apache.org/jira/projects/LIVY/versions/<JIRA_VER>

@@ -19,17 +19,16 @@
 
 function exit_with_usage {
   cat << EOF
-usage: release-build.sh <package|publish-release>
-Creates build deliverables from a Livy commit.
+usage: release-build.sh
 
-Top level targets are
-  package: Create binary packages and copy them to home.apache
-  publish-release: Publish a release to Apache release repo
+Creates build deliverables from a Livy commit:
+  - The source archive, staged in the svn dev repo.
+  - The binary archive, staged in the svn dev repo.
+  - Maven artifacts, staged in the ASF's Nexus repo.
 
-All other inputs are environment variables
+The following environment variables are used as input:
 
 GIT_REF - Release tag or commit to build from
-LIVY_VERSION - Release identifier used when Publishing
 RELEASE_RC - Release RC identifier used when Publishing
 
 ASF_USERNAME - Username of ASF committer account
@@ -41,10 +40,6 @@ EOF
 }
 
 set -e
-
-if [ $# -eq 0 ]; then
-  exit_with_usage
-fi
 
 if [[ $@ == *"help"* ]]; then
   exit_with_usage
@@ -85,6 +80,7 @@ fi
 RELEASE_STAGING_LOCATION="https://dist.apache.org/repos/dist/dev/incubator/livy"
 
 LIVY_REPO=${LIVY_REPO:-https://gitbox.apache.org/repos/asf/incubator-livy.git}
+DO_STAGING=${DO_STAGING:-1}
 GPG="gpg --no-tty --batch"
 NEXUS_ROOT=https://repository.apache.org/service/local/staging
 NEXUS_PROFILE=91529f2f65d84e # Profile for Livy staging uploads
@@ -103,10 +99,8 @@ git checkout $GIT_REF
 git_hash=`git rev-parse --short HEAD`
 echo "Checked out Livy git hash $git_hash"
 
-if [ -z "$LIVY_VERSION" ]; then
-  LIVY_VERSION=$($MVN help:evaluate -Dexpression=project.version \
-    | grep -v INFO | grep -v WARNING | grep -v Download)
-fi
+LIVY_VERSION=$($MVN help:evaluate -Dexpression=project.version \
+  | grep -v INFO | grep -v WARNING | grep -v Download)
 
 git clean -d -f -x
 rm .gitignore
@@ -117,78 +111,40 @@ ARCHIVE_NAME_PREFIX="apache-livy-$LIVY_VERSION"
 SRC_ARCHIVE="$ARCHIVE_NAME_PREFIX-src.zip"
 BIN_ARCHIVE="$ARCHIVE_NAME_PREFIX-bin.zip"
 
-if [[ "$1" == "package" ]]; then
-  # Source and binary tarballs
-  echo "Packaging release tarballs"
+create_source_archive() {(
+  echo "======================================="
+  echo "Creating and signing the source archive"
   cp -r incubator-livy $ARCHIVE_NAME_PREFIX
   zip -r $SRC_ARCHIVE $ARCHIVE_NAME_PREFIX
   echo "" | $GPG --passphrase-fd 0 --armour --output $SRC_ARCHIVE.asc --detach-sig $SRC_ARCHIVE
   echo "" | $GPG --passphrase-fd 0 --print-md SHA512 $SRC_ARCHIVE > $SRC_ARCHIVE.sha512
   rm -rf $ARCHIVE_NAME_PREFIX
+)}
 
-  # Updated for binary build
-  make_binary_release() {
-    cp -r incubator-livy $ARCHIVE_NAME_PREFIX-bin
-    cd $ARCHIVE_NAME_PREFIX-bin
-
-    $MVN clean package -DskipTests -Dgenerate-third-party
-
-    echo "Copying and signing regular binary distribution"
-    cp assembly/target/$BIN_ARCHIVE .
-    echo "" | $GPG --passphrase-fd 0 --armour --output $BIN_ARCHIVE.asc --detach-sig $BIN_ARCHIVE
-    echo "" | $GPG --passphrase-fd 0 --print-md SHA512 $BIN_ARCHIVE > $BIN_ARCHIVE.sha512
-
-    cp $BIN_ARCHIVE* ../
-    cd ..
-  }
-
-  make_binary_release
-
-  svn co --depth=empty $RELEASE_STAGING_LOCATION svn-livy
-  mkdir -p svn-livy/$LIVY_VERSION-$RELEASE_RC
-
-  echo "Copying release tarballs to local svn directory"
-  cp ./$SRC_ARCHIVE* svn-livy/$LIVY_VERSION-$RELEASE_RC/
-  cp ./$BIN_ARCHIVE* svn-livy/$LIVY_VERSION-$RELEASE_RC/
-
-  cd svn-livy
-  svn add $LIVY_VERSION-$RELEASE_RC
-  svn ci -m "Apache Livy $LIVY_VERSION-$RELEASE_RC"
-
-  exit 0
-fi
-
-if [[ "$1" == "publish-release" ]]; then
-  tmp_dir=$(mktemp -d livy-repo-XXXXX)
-  # the following recreates `readlink -f "$tmp_dir"` since readlink -f is unsupported on MacOS
-  cd $tmp_dir
-  tmp_repo=$(pwd)
+create_binary_archive() {(
+  echo "================================================"
+  echo "Creating and signing regular binary distribution"
+  cp -r incubator-livy $ARCHIVE_NAME_PREFIX-bin
+  cd $ARCHIVE_NAME_PREFIX-bin
+  $MVN -Pthriftserver -Dmaven.repo.local=$tmp_repo clean install -DskipTests -DskipITs
+  # generate-third-party requires a previous install to work, so the above command is required.
+  $MVN -Pthriftserver -Pgenerate-third-party -Dmaven.repo.local=$tmp_repo clean package -DskipTests
+  cp assembly/target/$BIN_ARCHIVE ..
   cd ..
+  echo "" | $GPG --passphrase-fd 0 --armour --output $BIN_ARCHIVE.asc --detach-sig $BIN_ARCHIVE
+  echo "" | $GPG --passphrase-fd 0 --print-md SHA512 $BIN_ARCHIVE > $BIN_ARCHIVE.sha512
+  rm -rf $ARCHIVE_NAME_PREFIX-bin
+)}
 
-  cd incubator-livy
-  # Publish Livy to Maven release repo
-  echo "Publishing Livy checkout at '$GIT_REF' ($git_hash)"
-  echo "Publish version is $LIVY_VERSION"
-  # Coerce the requested version
-  $MVN versions:set -DnewVersion=$LIVY_VERSION
-
-  # Using Nexus API documented here:
-  # https://support.sonatype.com/entries/39720203-Uploading-to-a-Staging-Repository-via-REST-API
-  echo "Creating Nexus staging repository"
-  repo_request="<promoteRequest><data><description>Apache Livy $LIVY_VERSION (commit $git_hash)</description></data></promoteRequest>"
-  out=$(curl -X POST -d "$repo_request" -u $ASF_USERNAME:$ASF_PASSWORD \
-    -H "Content-Type:application/xml" -v \
-    $NEXUS_ROOT/profiles/$NEXUS_PROFILE/start)
-  staged_repo_id=$(echo $out | sed -e "s/.*\(orgapachelivy-[0-9]\{4\}\).*/\1/")
-  echo "Created Nexus staging repository: $staged_repo_id"
-
-  $MVN -Dmaven.repo.local=$tmp_repo -DskipTests -DskipITs clean install
-
-  pushd $tmp_repo/org/apache/livy
+create_maven_staging() {(
+  echo "================================="
+  echo "Creating local maven staging repo"
+  cd $tmp_repo/org/apache/livy
 
   # Remove any extra files generated during install
   find . -type f |grep -v \.jar |grep -v \.pom | xargs rm
 
+  # Nexus artifacts must have .asc, .md5 and .sha1 - and it really doesn't like anything else.
   echo "Creating hash and signature files"
   for file in $(find . -type f)
   do
@@ -203,30 +159,97 @@ if [[ "$1" == "publish-release" ]]; then
     fi
     sha1sum $file | cut -f1 -d' ' > $file.sha1
   done
+)}
+
+stage_archives() {(
+  echo "======================================================="
+  echo "Uploading release archives to $RELEASE_STAGING_LOCATION"
+  svn co --depth=empty $RELEASE_STAGING_LOCATION svn-livy
+  mkdir -p svn-livy/$LIVY_VERSION-$RELEASE_RC
+
+  echo "Copying release tarballs to local svn directory"
+  cp $SRC_ARCHIVE* svn-livy/$LIVY_VERSION-$RELEASE_RC/
+  cp $BIN_ARCHIVE* svn-livy/$LIVY_VERSION-$RELEASE_RC/
+
+  cd svn-livy
+  svn add $LIVY_VERSION-$RELEASE_RC
+  svn ci -m "Apache Livy $LIVY_VERSION-$RELEASE_RC"
+)}
+
+stage_artifacts() {(
+  echo "=================================="
+  echo "Uploading Maven artifacts to Nexus"
+  cd $tmp_repo
+
+  repo_request="<promoteRequest><data><description>Apache Livy $LIVY_VERSION (commit $git_hash)</description></data></promoteRequest>"
+  out=$(curl -X POST -d "$repo_request" -u $ASF_USERNAME:$ASF_PASSWORD \
+    -H "Content-Type:application/xml" -v \
+    $NEXUS_ROOT/profiles/$NEXUS_PROFILE/start)
+  staged_repo_id=$(echo $out | sed -e "s/.*\(orgapachelivy-[0-9]\{4\}\).*/\1/")
 
   nexus_upload=$NEXUS_ROOT/deployByRepositoryId/$staged_repo_id
   echo "Uploading files to $nexus_upload"
-  for file in $(find . -type f)
+  for file in $(find org/apache/livy -type f)
   do
     # strip leading ./
     file_short=$(echo $file | sed -e "s/\.\///")
-    dest_url="$nexus_upload/org/apache/livy/$file_short"
-    echo "  Uploading $file_short"
+    dest_url="$nexus_upload/$file_short"
+    echo "Uploading $file_short"
     curl -u $ASF_USERNAME:$ASF_PASSWORD --upload-file $file_short $dest_url
   done
 
   echo "Closing nexus staging repository"
   repo_request="<promoteRequest><data><stagedRepositoryId>$staged_repo_id</stagedRepositoryId><description>Apache Livy$LIVY_VERSION (commit $git_hash)</description></data></promoteRequest>"
-  out=$(curl -X POST -d "$repo_request" -u $ASF_USERNAME:$ASF_PASSWORD \
+  curl -X POST -d "$repo_request" -u $ASF_USERNAME:$ASF_PASSWORD \
     -H "Content-Type:application/xml" -v \
-    $NEXUS_ROOT/profiles/$NEXUS_PROFILE/finish)
+    $NEXUS_ROOT/profiles/$NEXUS_PROFILE/finish
   echo "Closed Nexus staging repository: $staged_repo_id"
-  popd
-  rm -rf $tmp_repo
-  cd ..
-  exit 0
+)}
+
+# Symlink as much as possible from ~/.m2/repository to avoid re-downloading from online
+# repos. Basically symlink everything but org/apache/livy.
+populate_tmp_repo() {(
+  local_repo="$HOME/.m2/repository"
+  if [ -d $local_repo ]; then
+    mkdir -p $tmp_repo/org/apache
+    for path in org org/apache org/apache/livy; do
+      parent=$(dirname $path)
+      name=$(basename $path)
+
+      for e in $local_repo/$parent/*; do
+        if [[ ! -d $e ]]; then
+          continue
+        fi
+        e=$(basename $e)
+        if [[ $e != $name ]]; then
+          src=$(cd $local_repo/$parent/$e && pwd)
+          ln -s $src $tmp_repo/$parent/$e
+        fi
+      done
+    done
+
+    if [ -d $local_repo/.cache ]; then
+      ln -s $local_repo/.cache $tmp_repo/.cache
+    fi
+  fi
+)}
+
+tmp_dir=$(mktemp -d livy-repo-XXXXX)
+tmp_repo=$(cd $tmp_dir && pwd)
+
+populate_tmp_repo
+create_source_archive
+create_binary_archive
+create_maven_staging
+
+if [[ $LIVY_VERSION =~ .*-SNAPSHOT ]]; then
+  echo "Refusing to stage a SNAPSHOT version."
+  exit 1
 fi
 
-cd ..
-rm -rf release-staging
-echo "ERROR: expects to be called with 'package', 'publish-release'"
+if [[ $DO_STAGING = 1 ]]; then
+  # stage_archives
+  stage_artifacts
+fi
+
+rm -rf $tmp_repo
