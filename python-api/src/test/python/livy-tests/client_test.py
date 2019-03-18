@@ -18,7 +18,9 @@ import os
 import pytest
 import responses
 import socket
+import tempfile
 import threading
+import zipfile
 from configparser import NoOptionError
 from livy.client import HttpClient
 
@@ -130,6 +132,13 @@ def test_connect_to_existing_session():
             'spark.app.name') == 'Test App'
 
 
+def create_test_archive(ext):
+    (fd, path) = tempfile.mkstemp(suffix=ext)
+    os.close(fd)
+    zipfile.ZipFile(path, mode='w').close()
+    return path
+
+
 @responses.activate
 def test_submit_job_verify_running_state():
     submit_job_future = mock_submit_job_and_poll_result(simple_spark_job,
@@ -209,8 +218,7 @@ def test_add_pyfile():
 
 @responses.activate
 def test_upload_pyfile():
-    file_path = os.path.dirname(os.path.abspath(__file__)) + \
-        "/resources/zip_file.zip"
+    file_path = create_test_archive('.zip')
     pyfile_future = mock_file_apis('upload-pyfile', client_test.upload_pyfile,
         file_path)
     pyfile_future.result(15)
@@ -219,8 +227,7 @@ def test_upload_pyfile():
 
 @responses.activate
 def test_add_jar():
-    file_uri = "file://" + os.path.dirname(os.path.abspath(__file__)) + \
-        "/resources/jar_file.jar"
+    file_uri = 'file:' + create_test_archive('.jar')
     add_file_future = mock_file_apis('add-jar', client_test.add_jar, file_uri)
     add_file_future.result(15)
     assert add_file_future.done()
