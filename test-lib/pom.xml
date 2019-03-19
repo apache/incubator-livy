@@ -20,12 +20,12 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.6.0-incubating</version>
+    <version>0.6.1-incubating-SNAPSHOT</version>
   </parent>
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-test-lib</artifactId>
-  <version>0.6.0-incubating</version>
+  <version>0.6.1-incubating-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <properties>
