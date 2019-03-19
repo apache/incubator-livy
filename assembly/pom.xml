@@ -29,7 +29,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <assembly.name>livy-${project.version}-bin</assembly.name>
+    <assembly.name>apache-livy-${project.version}-bin</assembly.name>
     <assembly.format>zip</assembly.format>
     <skipDeploy>true</skipDeploy>
   </properties>
