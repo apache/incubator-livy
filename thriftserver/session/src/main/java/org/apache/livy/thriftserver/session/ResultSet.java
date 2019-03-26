@@ -39,21 +39,17 @@ public class ResultSet {
 
   private final String schema;
   private final ColumnBuffer[] columns;
-  private final boolean[] columnIsString;
 
   public ResultSet() {
     this.schema = null;
     this.columns = null;
-    this.columnIsString = null;
   }
 
   public ResultSet(DataType[] types, String schema) {
     this.schema = schema;
     this.columns = new ColumnBuffer[types.length];
-    this.columnIsString = new boolean[types.length];
     for (int i = 0; i < columns.length; i++) {
       columns[i] = new ColumnBuffer(types[i]);
-      columnIsString[i] = types[i].equals(DataType.STRING);
     }
   }
 
@@ -64,7 +60,7 @@ public class ResultSet {
 
     for (int i = 0; i < fields.length; i++) {
       Object value;
-      if (columnIsString[i]) {
+      if (columns[i].getType() == DataType.STRING) {
         value = toHiveString(fields[i], false);
       } else {
         value = fields[i];
