@@ -44,15 +44,6 @@ object SessionState {
     case _ => throw new IllegalArgumentException(s"Illegal session state: $s")
   }
 
-  def isFinished(state: SessionState): Boolean = {
-    state match {
-      case s: FinishedSessionState =>
-        true
-      case _ =>
-        false
-    }
-  }
-
   object NotStarted extends SessionState("not_started", true)
 
   object Starting extends SessionState("starting", true)

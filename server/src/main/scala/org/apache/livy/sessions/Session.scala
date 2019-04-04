@@ -21,13 +21,12 @@ import java.io.InputStream
 import java.net.{URI, URISyntaxException}
 import java.security.PrivilegedExceptionAction
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.security.UserGroupInformation
-
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.utils.AppInfo
 
@@ -156,6 +155,8 @@ abstract class Session(
 
   private var _lastActivity = System.nanoTime()
 
+  private val _stopped = new AtomicBoolean()
+
   // Directory where the session's staging files are created. The directory is only accessible
   // to the session's effective user.
   private var stagingDir: Path = null
@@ -185,7 +186,7 @@ abstract class Session(
 
   def stop(): Future[Unit] = Future {
     try {
-      if (!SessionState.isFinished(state)) {
+      if (_stopped.compareAndSet(false, true)) {
         info(s"Stopping $this...")
         stopSession()
         info(s"Stopped $this.")
