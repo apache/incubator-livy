@@ -185,32 +185,32 @@ abstract class Session(
   def start(): Unit
 
   def stop(): Future[Unit] = Future {
-    try {
-      if (_stopped.compareAndSet(false, true)) {
+    if (_stopped.compareAndSet(false, true)) {
+      try {
         info(s"Stopping $this...")
         stopSession()
         info(s"Stopped $this.")
+      } catch {
+        case e: Exception =>
+          warn(s"Error stopping session $id.", e)
       }
-    } catch {
-      case e: Exception =>
-        warn(s"Error stopping session $id.", e)
-    }
 
-    try {
-      if (stagingDir != null) {
-        debug(s"Deleting session $id staging directory $stagingDir")
-        doAsOwner {
-          val fs = FileSystem.newInstance(livyConf.hadoopConf)
-          try {
-            fs.delete(stagingDir, true)
-          } finally {
-            fs.close()
+      try {
+        if (stagingDir != null) {
+          debug(s"Deleting session $id staging directory $stagingDir")
+          doAsOwner {
+            val fs = FileSystem.newInstance(livyConf.hadoopConf)
+            try {
+              fs.delete(stagingDir, true)
+            } finally {
+              fs.close()
+            }
           }
         }
+      } catch {
+        case e: Exception =>
+          warn(s"Error cleaning up session $id staging dir.", e)
       }
-    } catch {
-      case e: Exception =>
-        warn(s"Error cleaning up session $id staging dir.", e)
     }
   }
 
