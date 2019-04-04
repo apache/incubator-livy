@@ -185,9 +185,11 @@ abstract class Session(
 
   def stop(): Future[Unit] = Future {
     try {
-      info(s"Stopping $this...")
-      stopSession()
-      info(s"Stopped $this.")
+      if (!SessionState.isFinished(state)) {
+        info(s"Stopping $this...")
+        stopSession()
+        info(s"Stopped $this.")
+      }
     } catch {
       case e: Exception =>
         warn(s"Error stopping session $id.", e)
