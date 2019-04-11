@@ -346,6 +346,15 @@ object InteractiveSession extends Logging {
       mergeHiveSiteAndHiveDeps(sparkMajorVersion)
     }
 
+    // Pick all the RSC-specific configs that have not been explicitly set otherwise, and
+    // put them in the resulting properties, so that the remote driver can use them.
+    livyConf.iterator().asScala.foreach { e =>
+      val (key, value) = (e.getKey(), e.getValue())
+      if (key.startsWith(RSCConf.RSC_CONF_PREFIX) && !builderProperties.contains(key)) {
+        builderProperties(key) = value
+      }
+    }
+
     builderProperties
   }
 }

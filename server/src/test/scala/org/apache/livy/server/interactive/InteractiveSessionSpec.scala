@@ -130,7 +130,6 @@ class InteractiveSessionSpec extends FunSpec
         "dummy.jar"))
     }
 
-
     it("should set rsc jars through livy conf") {
       val rscJars = Set(
         "dummy.jar",
@@ -175,6 +174,19 @@ class InteractiveSessionSpec extends FunSpec
         MockitoMatchers.eq(InteractiveSession.RECOVERY_SESSION_TYPE), anyObject())
 
       session.state should (be(SessionState.Starting) or be(SessionState.Idle))
+    }
+
+    it("should propagate RSC configuration properties") {
+      val livyConf = new LivyConf(false)
+        .set(LivyConf.REPL_JARS, "dummy.jar")
+        .set(RSCConf.Entry.SASL_QOP.key(), "foo")
+        .set(RSCConf.Entry.RPC_CHANNEL_LOG_LEVEL.key(), "TRACE")
+        .set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
+        .set(LivyConf.LIVY_SPARK_SCALA_VERSION, "2.10")
+
+      val properties = InteractiveSession.prepareBuilderProp(Map.empty, Spark, livyConf)
+      assert(properties(RSCConf.Entry.SASL_QOP.key()) === "foo")
+      assert(properties(RSCConf.Entry.RPC_CHANNEL_LOG_LEVEL.key()) === "TRACE")
     }
 
     withSession("should execute `1 + 2` == 3") { session =>
