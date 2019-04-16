@@ -17,6 +17,7 @@
 
 package org.apache.livy.repl
 
+import java.util
 import java.util.{LinkedHashMap => JLinkedHashMap}
 import java.util.Map.Entry
 import java.util.concurrent.Executors
@@ -28,6 +29,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
+import org.apache.hadoop.hive.ql.session.OperationLog
+import org.apache.log4j.Logger
 import org.apache.spark.{SparkConf, SparkContext}
 import org.json4s.jackson.JsonMethods.{compact, render}
 import org.json4s.DefaultFormats
@@ -36,6 +39,7 @@ import org.json4s.JsonDSL._
 import org.apache.livy.Logging
 import org.apache.livy.rsc.RSCConf
 import org.apache.livy.rsc.driver.{SparkEntries, Statement, StatementState}
+import org.apache.livy.rsc.operation.{LogDivertAppender, LogManager}
 import org.apache.livy.sessions._
 
 object Session {
@@ -67,12 +71,18 @@ class Session(
 
   private var _state: SessionState = SessionState.NotStarted
 
+  private val logManager = new LogManager(livyConf)
+
   // Number of statements kept in driver's memory
   private val numRetainedStatements = livyConf.getInt(RSCConf.Entry.RETAINED_STATEMENTS)
 
   private val _statements = new JLinkedHashMap[Int, Statement] {
     protected override def removeEldestEntry(eldest: Entry[Int, Statement]): Boolean = {
-      size() > numRetainedStatements
+      val isRemove = size() > numRetainedStatements
+      if(isRemove){
+        statmentRemoveCallBack(eldest.getKey)
+      }
+      isRemove
     }
   }.asScala
 
@@ -132,7 +142,9 @@ class Session(
       interpGroup.synchronized {
         interpGroup.put(Spark, sparkInterp)
       }
-
+      val ap = new LogDivertAppender(logManager,
+        OperationLog.getLoggingLevel(livyConf.get(RSCConf.Entry.LOGGING_OPERATION_LEVEL)))
+      Logger.getRootLogger.addAppender(ap)
       changeState(SessionState.Idle)
       entries
     }(interpreterExecutor)
@@ -145,6 +157,10 @@ class Session(
 
   def statements: collection.Map[Int, Statement] = _statements.synchronized {
     _statements.toMap
+  }
+
+  def readLog(statementId: Int, maxRows : Long ): Option[util.List[String]] = {
+    Option(logManager.readLog(statementId.toString, maxRows))
   }
 
   def execute(code: String, codeType: String = null): Int = {
@@ -227,6 +243,7 @@ class Session(
     interpreterExecutor.shutdown()
     cancelExecutor.shutdown()
     interpGroup.values.foreach(_.close())
+    logManager.shutdown()
   }
 
   /**
@@ -268,9 +285,9 @@ class Session(
         changeState(SessionState.Idle)
       }
     }
-
     val resultInJson = interp.map { i =>
       try {
+        logManager.registerOperationLog( executionCount.toString )
         i.execute(code) match {
           case Interpreter.ExecuteSuccess(data) =>
             transitToIdle()
@@ -317,6 +334,8 @@ class Session(
             (ENAME -> f"Internal Error: ${e.getClass.getName}") ~
             (EVALUE -> e.getMessage) ~
             (TRACEBACK -> Seq.empty[String])
+      } finally {
+        logManager.removeCurrentOperationLog()
       }
     }.getOrElse {
       transitToIdle()
@@ -355,5 +374,9 @@ class Session(
 
   private def statementIdToJobGroup(statementId: Int): String = {
     statementId.toString
+  }
+
+  def statmentRemoveCallBack(statementId: Int): Unit = {
+    logManager.removeLog(statementId.toString)
   }
 }

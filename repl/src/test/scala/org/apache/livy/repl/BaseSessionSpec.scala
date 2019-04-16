@@ -39,7 +39,8 @@ abstract class BaseSessionSpec(kind: Kind)
 
   implicit val formats = DefaultFormats
 
-  private val rscConf = new RSCConf(new Properties()).set(RSCConf.Entry.SESSION_KIND, kind.toString)
+  private val defaultRscConf = new RSCConf(new Properties())
+    .set(RSCConf.Entry.SESSION_KIND, kind.toString)
 
   private val sparkConf = new SparkConf()
 
@@ -53,6 +54,11 @@ abstract class BaseSessionSpec(kind: Kind)
   }
 
   protected def withSession(testCode: Session => Any): Unit = {
+    withConfSession(testCode)()
+  }
+
+  protected def withConfSession(testCode: Session => Any)
+                               (rscConf: RSCConf = defaultRscConf): Unit = {
     val stateChangedCalled = new AtomicInteger()
     val session =
       new Session(rscConf, sparkConf, None, { _ => stateChangedCalled.incrementAndGet() })
@@ -70,7 +76,7 @@ abstract class BaseSessionSpec(kind: Kind)
   }
 
   it should "start in the starting or idle state" in {
-    val session = new Session(rscConf, sparkConf)
+    val session = new Session(defaultRscConf, sparkConf)
     val future = session.start()
     try {
       Await.ready(future, 60 seconds)

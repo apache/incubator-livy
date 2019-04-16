@@ -46,6 +46,9 @@ object LivyRestClient {
   @JsonIgnoreProperties(ignoreUnknown = true)
   private case class StatementResult(id: Int, state: String, output: Map[String, Any])
 
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private case class StatementResultLog(id: Int, state: String, output: String)
+
   private case class CompletionResult(candidates: Seq[String])
 
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -175,6 +178,21 @@ class LivyRestClient(val httpClient: AsyncHttpClient, val livyEndpoint: String) 
             }
           case Right(error) =>
             assert(false, s"Got error from statement $stmtId $code: ${error.evalue}")
+        }
+      }
+
+      final def log(): String ={
+        val r = httpClient.prepareGet(s"$url/statements/$stmtId/log?size=100")
+          .execute()
+          .get()
+        assertStatusCode(r, HttpServletResponse.SC_OK)
+        val newStmt = mapper.readValue(r.getResponseBodyAsStream, classOf[StatementResultLog])
+        newStmt.output
+      }
+
+      def verifyLog(expectedRegex: String): Unit = {
+        eventually(timeout(1 minute), interval(1 second)) {
+          matchStrings(log(), expectedRegex)
         }
       }
 

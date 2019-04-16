@@ -102,3 +102,11 @@
 
 # Number of statements kept in driver's memory
 # livy.rsc.retained-statements = 100
+
+# When true, rsc will save operation logs and make them available for clients
+# livy.rsc.logging.operation.enabled=false
+# Top level directory where operation logs are stored if logging functionality is enabled
+# livy.rsc.logging.operation.log.location=
+# The logging level for the statment. Possible values: EXECUTION, PERFORMANCE, VERBOSE, NONE
+# livy.rsc.logging.operation.level=VERBOSE
+

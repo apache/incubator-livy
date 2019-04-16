@@ -43,6 +43,7 @@ public class RSCConf extends ClientConf<RSCConf> {
     CLIENT_IN_PROCESS("client.do-not-use.run-driver-in-process", false),
     CLIENT_SHUTDOWN_TIMEOUT("client.shutdown-timeout", "10s"),
     DRIVER_CLASS("driver-class", null),
+    SESSION_ID("session.id", null),
     SESSION_KIND("session.kind", null),
 
     LIVY_JARS("jars", null),
@@ -79,6 +80,11 @@ public class RSCConf extends ClientConf<RSCConf> {
 
     RETAINED_STATEMENTS("retained-statements", 100),
     RETAINED_SHARE_VARIABLES("retained.share-variables", 100),
+
+    //operation log
+    LOGGING_OPERATION_ENABLED("logging.operation.enabled" , false),
+    LOGGING_OPERATION_LEVEL("logging.operation.level" , "verbose"),
+    LOGGING_OPERATION_LOG_LOCATION("logging.operation.log.location" , null),
 
     // Number of result rows to get for SQL Interpreters.
     SQL_NUM_ROWS("sql.num-rows", 1000);
@@ -188,6 +194,7 @@ public class RSCConf extends ClientConf<RSCConf> {
     JOB_CANCEL_TRIGGER_INTERVAL("job_cancel.trigger_interval", "0.4"),
     JOB_CANCEL_TIMEOUT("job_cancel.timeout", "0.4"),
     RETAINED_STATEMENTS("retained_statements", "0.4");
+
 
     private final String key;
     private final String version;

@@ -202,6 +202,24 @@ public abstract class BaseProtocol extends RpcDispatcher {
     }
   }
 
+  public static class GetJobLog {
+    public boolean allResults;
+    public final String id;
+    public Long  size;
+
+    public GetJobLog(String id,  Long size) {
+      this.allResults = false;
+      this.id= id ;
+      this.size = size;
+    }
+
+    public GetJobLog(String id) {
+      this.allResults = true;
+      this.id=id ;
+      size = null;
+    }
+  }
+
   public static class ReplCompleteRequest {
     public final String code;
     public final String codeType;

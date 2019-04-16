@@ -104,6 +104,7 @@ object InteractiveSession extends Logging {
       info(s"Creating Interactive session $id: [owner: $owner, request: $request]")
       val builder = new LivyClientBuilder()
         .setAll(builderProperties.asJava)
+        .setConf(RSCConf.Entry.SESSION_ID.key(), id.toString)
         .setConf("livy.client.session-id", id.toString)
         .setConf(RSCConf.Entry.DRIVER_CLASS.key(), "org.apache.livy.repl.ReplDriver")
         .setConf(RSCConf.Entry.PROXY_USER.key(), impersonatedUser.orNull)
@@ -496,6 +497,16 @@ class InteractiveSession(
   def getStatement(stmtId: Int): Option[Statement] = {
     ensureActive()
     val r = client.get.getReplJobResults(stmtId, 1).get()
+    if (r.statements.length < 1) {
+      None
+    } else {
+      Option(r.statements(0))
+    }
+  }
+
+  def getStatementLog(stmtId: String, size : Long): Option[Statement] = {
+    ensureActive()
+    val r = client.get.getJobLog(stmtId, size).get()
     if (r.statements.length < 1) {
       None
     } else {

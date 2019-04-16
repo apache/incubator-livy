@@ -17,6 +17,7 @@
 
 package org.apache.livy.test
 
+import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
 
@@ -31,8 +32,13 @@ import org.apache.livy.sessions._
 import org.apache.livy.test.framework.{BaseIntegrationTestSuite, LivyRestClient}
 
 class InteractiveIT extends BaseIntegrationTestSuite {
+  val logConf = Map(
+    s"${RSCConf.LIVY_SPARK_PREFIX}${RSCConf.Entry.LOGGING_OPERATION_ENABLED.key()}" -> "true" ,
+    s"${RSCConf.LIVY_SPARK_PREFIX}${RSCConf.Entry.LOGGING_OPERATION_LOG_LOCATION.key()}" -> new File(sys.props("java.io.tmpdir")).getAbsolutePath
+  )
+
   test("basic interactive session") {
-    withNewSession(Spark) { s =>
+    withNewSession(Spark, logConf) { s =>
       s.run("val sparkVersion = sc.version").result().left.foreach(info(_))
       s.run("val scalaVersion = util.Properties.versionString").result().left.foreach(info(_))
       s.run("1+1").verifyResult("res0: Int = 2\n")
@@ -49,7 +55,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
         .verifyResult(".*" + Pattern.quote("df: org.apache.spark.sql.DataFrame") + ".*")
       s.run("df.registerTempTable(\"people\")").result()
       s.run("SELECT * FROM people", Some(SQL)).verifyResult(".*\"jerry\",20.*\"michael\",21.*")
-
+      s.run("SELECT * FROM people", Some(SQL)).verifyLog(".*CodeGenerator.*|.*SparkSqlParser.*")
       // Verify Livy internal configurations are not exposed.
       // TODO separate all these checks to different sub tests after merging new IT code.
       s.run("""sc.getConf.getAll.exists(_._1.startsWith("spark.__livy__."))""")

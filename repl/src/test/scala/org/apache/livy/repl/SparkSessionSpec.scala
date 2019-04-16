@@ -17,6 +17,9 @@
 
 package org.apache.livy.repl
 
+import java.io.File
+import java.util.Properties
+
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -26,9 +29,21 @@ import org.json4s.jackson.JsonMethods.parse
 import org.scalatest.concurrent.Eventually._
 
 import org.apache.livy.rsc.driver.StatementState
+import org.apache.livy.rsc.RSCConf
 import org.apache.livy.sessions._
 
 class SparkSessionSpec extends BaseSessionSpec(Spark) {
+
+  private def rscConfWithLog = {
+    val tmpLogFile = new File(s"target${File.separator}operation-log-tmp-test")
+    tmpLogFile.deleteOnExit()
+    tmpLogFile.mkdirs()
+    val rscConf = new RSCConf(new Properties())
+    rscConf.set(RSCConf.Entry.SESSION_KIND, Spark.toString)
+    rscConf.set(RSCConf.Entry.LOGGING_OPERATION_ENABLED, true)
+    rscConf.set(RSCConf.Entry.LOGGING_OPERATION_LOG_LOCATION, tmpLogFile.getAbsolutePath)
+    rscConf.set(RSCConf.Entry.SESSION_ID, "session_id")
+  }
 
   it should "execute `1 + 2` == 3" in withSession { session =>
     val statement = execute(session)("1 + 2")
@@ -267,4 +282,17 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
       session.progressOfStatement(stmtId) should be(1.0)
     }
   }
+
+  it should "contains log" in withConfSession{ session =>
+    val executeCode =
+      """
+        |sc.parallelize(1 to 2, 2).map(i => (i, 1)).collect()
+      """.stripMargin
+
+    val stmtId = session.execute(executeCode)
+    eventually(timeout(30 seconds), interval(100 millis)) {
+      val log = session.readLog(stmtId, 2000L)
+      log.mkString should include ("DAGScheduler")
+    }
+  }(rscConfWithLog)
 }

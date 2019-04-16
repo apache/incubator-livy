@@ -147,6 +147,17 @@ class InteractiveSessionServlet(
       Ok(Map("msg" -> "canceled"))
     }
   }
+
+  get("/:id/statements/:statementId/log") {
+    withViewAccessSession { session =>
+      val statementId = params("statementId")
+      val size = params.get("size").map(_.toInt).getOrElse(50)
+      Map(
+        "statements" -> session.getStatementLog(statementId, size)
+      )
+    }
+  }
+
   // This endpoint is used by the client-http module to "connect" to an existing session and
   // update its last activity time. It performs authorization checks to make sure the caller
   // has access to the session, so even though it returns the same data, it behaves differently
