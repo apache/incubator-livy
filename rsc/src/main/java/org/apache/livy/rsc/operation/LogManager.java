@@ -132,7 +132,8 @@ public class LogManager {
                             return;
                         }
                         try {
-                            operationLog = new OperationLog(statementId, operationLogFile, hiveConf);
+                            operationLog = new OperationLog(statementId,
+                                    operationLogFile, hiveConf);
                             logs.put(statementId, operationLog);
                         } catch (FileNotFoundException e) {
                             LOG.warn(String.format(
