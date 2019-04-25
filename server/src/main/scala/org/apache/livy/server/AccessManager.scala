@@ -111,7 +111,7 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
     if (conf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
       if (!target.forall(hasSuperAccess(_, requestUser))) {
         throw new AccessControlException(
-          s"User '$requestUser' not allowed to impersonate '$target'.")
+          s"User '$requestUser' not allowed to impersonate '${target.get}'.")
       }
       target.orElse(Option(requestUser))
     } else {

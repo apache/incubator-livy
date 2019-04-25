@@ -70,7 +70,8 @@ object SessionServletSpec {
       override protected def clientSessionView(
           session: Session,
           req: HttpServletRequest): Any = {
-        val logs = if (accessManager.hasViewAccess(session.owner, effectiveUser(req))) {
+        val logs = if (accessManager.hasViewAccess(session.proxyUser.getOrElse(session.owner),
+            effectiveUser(req))) {
           session.logLines()
         } else {
           Nil
@@ -258,7 +259,7 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
           assert(res.logs === Nil)
         }
 
-        // Users with access permission could see the logs
+        // Users with access permission or owner could see the logs
         jget[MockSessionView](s"/${res.id}", headers = aliceHeaders) { res =>
           assert(res.logs === IndexedSeq("log"))
         }
@@ -283,7 +284,10 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
           assert(res.logs === Nil)
         }
 
-        // Users with access permission could see the logs
+        // Users with access permission or owner could see the logs
+        jget[MockSessionView](s"/${res.id}", headers = aliceHeaders) { res =>
+          assert(res.logs === IndexedSeq("log"))
+        }
         jget[MockSessionView](s"/${res.id}", headers = viewUserHeaders) { res =>
           assert(res.logs === IndexedSeq("log"))
         }
@@ -298,7 +302,7 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
       }
     }
 
-    it("should only allow modify accessible users from modifying sessions") {
+    it("should only allow modify-accessible users or owners to modify sessions") {
       jpost[MockSessionView]("/", Map(), headers = aliceHeaders) { res =>
         delete(res.id, bobHeaders, SC_FORBIDDEN)
         delete(res.id, viewUserHeaders, SC_FORBIDDEN)
@@ -308,7 +312,7 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
       jpost[MockSessionView]("/?doAs=alice", Map(), headers = adminHeaders) { res =>
         delete(res.id, bobHeaders, SC_FORBIDDEN)
         delete(res.id, viewUserHeaders, SC_FORBIDDEN)
-        delete(res.id, modifyUserHeaders, SC_OK)
+        delete(res.id, aliceHeaders, SC_OK)
       }
     }
 
