@@ -24,9 +24,11 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.{ExecutionContext, Future}
+
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.security.UserGroupInformation
+
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.utils.AppInfo
 
@@ -211,6 +213,8 @@ abstract class Session(
         case e: Exception =>
           warn(s"Error cleaning up session $id staging dir.", e)
       }
+    } else {
+      debug(s"Redundant call on stop(), ${toString()} has been already stopped.")
     }
   }
 
