@@ -187,11 +187,12 @@ abstract class Session(
   def start(): Unit
 
   def stop(): Future[Unit] = Future {
-    if (_stopped.compareAndSet(false, true)) {
+    if (!_stopped.get()) {
       try {
         info(s"Stopping $this...")
         stopSession()
         info(s"Stopped $this.")
+        _stopped.compareAndSet(false, true)
       } catch {
         case e: Exception =>
           warn(s"Error stopping session $id.", e)
