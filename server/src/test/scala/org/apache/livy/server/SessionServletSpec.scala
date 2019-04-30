@@ -70,7 +70,7 @@ object SessionServletSpec {
       override protected def clientSessionView(
           session: Session,
           req: HttpServletRequest): Any = {
-        val logs = if (accessManager.hasViewAccess(session.owner, effectiveUser(req))) {
+        val logs = if (accessManager.hasViewAccess(session.owner, session.proxyUser, effectiveUser(req))) {
           session.logLines()
         } else {
           Nil
