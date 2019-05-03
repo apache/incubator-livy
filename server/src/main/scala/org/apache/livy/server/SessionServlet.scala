@@ -219,7 +219,8 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     session match {
       case Some(session) =>
         if (allowAll ||
-            checkFn.map(_(session.owner, session.proxyUser, effectiveUser(request))).getOrElse(false)) {
+            checkFn.map(_(session.owner, session.proxyUser, effectiveUser(request)))
+                   .getOrElse(false)) {
           fn(session)
         } else {
           Forbidden()
