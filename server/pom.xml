@@ -114,10 +114,6 @@
           <groupId>javax.servlet</groupId>
           <artifactId>servlet-api</artifactId>
         </exclusion>
-        <exclusion>
-          <groupId>com.sun.jersey</groupId>
-          <artifactId>jersey-core</artifactId>
-        </exclusion>
       </exclusions>
       <scope>${hadoop.scope}</scope>
     </dependency>
