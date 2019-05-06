@@ -130,9 +130,9 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    * Check that the request's user has modify access to resources whose owner is the given target
    * user or whose proxy user is the given proxy user.
    */
-  def hasModifyAccess(target: String, proxyUser: Option[String], requestUser: String): Boolean = {
+  def hasModifyAccess(target: String, requestUser: String, proxyUser: String = ""): Boolean = {
     requestUser == target  ||
-    proxyUser != null && proxyUser.getOrElse(null) == requestUser ||
+    proxyUser == requestUser ||
     checkModifyPermissions(requestUser)
   }
 
@@ -140,9 +140,9 @@ private[livy] class AccessManager(conf: LivyConf) extends Logging {
    * Check that the request's user has view access to resources whose owner is the given target
    * user or whose proxy user is the given proxy user.
    */
-  def hasViewAccess(target: String, proxyUser: Option[String], requestUser: String): Boolean = {
+  def hasViewAccess(target: String, requestUser: String, proxyUser: String = ""): Boolean = {
     requestUser == target ||
-    proxyUser != null && proxyUser.getOrElse(null) == requestUser ||
+    proxyUser == requestUser ||
     checkViewPermissions(requestUser)
   }
 }

@@ -71,8 +71,8 @@ object SessionServletSpec {
           session: Session,
           req: HttpServletRequest): Any = {
         val hasViewAccess = accessManager.hasViewAccess(session.owner,
-                                                        session.proxyUser,
-                                                        effectiveUser(req))
+                                                        effectiveUser(req),
+                                                        session.proxyUser.getOrElse(""))
         val logs = if (hasViewAccess) {
           session.logLines()
         } else {
