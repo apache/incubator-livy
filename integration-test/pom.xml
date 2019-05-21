@@ -39,6 +39,7 @@
     <cluster.spec>default</cluster.spec>
     <skipDeploy>true</skipDeploy>
     <livy.test.thrift.enabled>false</livy.test.thrift.enabled>
+    <guava.version>15.0</guava.version>
   </properties>
 
   <dependencies>
