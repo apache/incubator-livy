@@ -1056,7 +1056,7 @@
         <java.version>1.8</java.version>
         <py4j.version>0.10.7</py4j.version>
         <spark.bin.download.url>
-          http://mirrors.advancedhosters.com/apache/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz
+          http://mirrors.advancedhosters.com/apache/spark/spark-2.4.3/spark-2.4.3-bin-hadoop2.7.tgz
         </spark.bin.download.url>
         <spark.bin.name>spark-2.4.0-bin-hadoop2.7</spark.bin.name>
       </properties>
