@@ -27,12 +27,16 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructType;
 
 import org.apache.livy.JobContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * State related to one Thrift session. One instance of this class is stored in the session's
  * shared object map for each Thrift session that connects to the backing Livy session.
  */
 class ThriftSessionState {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ThriftSessionState.class);
 
   private static String SESSION_STATE_KEY_PREFIX = "livy.sessionState.";
   private static Object CREATE_LOCK = new Object();
@@ -104,9 +108,10 @@ class ThriftSessionState {
   void cleanupStatement(String statementId) {
     checkNotNull(statementId, "No statement ID.");
     if (statements.remove(statementId) == null) {
-      throw statementNotFound(statementId);
+      LOG.warn("Statement {} not found in session {}",statementId, sessionId);
+    } else {
+      ctx.sc().cancelJobGroup(statementId);
     }
-    ctx.sc().cancelJobGroup(statementId);
   }
 
   void dispose() {
