@@ -26,9 +26,10 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructType;
 
-import org.apache.livy.JobContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.livy.JobContext;
 
 /**
  * State related to one Thrift session. One instance of this class is stored in the session's

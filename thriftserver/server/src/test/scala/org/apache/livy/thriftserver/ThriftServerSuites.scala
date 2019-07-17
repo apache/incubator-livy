@@ -134,6 +134,29 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       statement.close()
     }
   }
+
+  test("invalid sql") {
+    assume(hiveSupportEnabled(formattedSparkVersion._1, livyConf))
+    withJdbcConnection(jdbcUri("default")) { c =>
+      var exceptionThrew = false
+
+      val statement = c.createStatement()
+      try {
+        try {
+          statement.executeQuery("use invalid_database")
+        } finally {
+          statement.close()
+        }
+      } catch {
+        case t: Throwable => {
+          exceptionThrew = true
+          assert(t.getMessage.contains("Database 'invalid_database' not found"))
+        }
+      }
+
+      assert(exceptionThrew)
+    }
+  }
 }
 
 class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {

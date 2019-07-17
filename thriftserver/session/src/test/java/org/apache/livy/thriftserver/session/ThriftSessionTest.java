@@ -83,12 +83,12 @@ public class ThriftSessionTest {
     // Start a second session. Try to cleanup a statement that belongs to another session.
     String s2 = nextSession();
     waitFor(new RegisterSessionJob(s2));
-    expectError(new CleanupStatementJob(s2, st1), "not found in session");
+    waitFor(new CleanupStatementJob(s2, st1));
     waitFor(new UnregisterSessionJob(s2));
 
     // Clean up the statement's state.
     waitFor(new CleanupStatementJob(s1, st1));
-    expectError(new CleanupStatementJob(s1, st1), "not found in session");
+    waitFor(new CleanupStatementJob(s1, st1));
 
     // Insert data into the previously created table, and fetch results from it.
     String st2 = nextStatement();
