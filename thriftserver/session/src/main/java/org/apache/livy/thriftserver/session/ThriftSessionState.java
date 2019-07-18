@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructType;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

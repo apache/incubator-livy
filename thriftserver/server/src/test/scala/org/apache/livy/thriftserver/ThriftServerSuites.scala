@@ -17,7 +17,7 @@
 
 package org.apache.livy.thriftserver
 
-import java.sql.{Date, Statement}
+import java.sql.{Date, SQLException, Statement}
 
 import org.apache.livy.LivyConf
 
@@ -135,26 +135,33 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
     }
   }
 
-  test("invalid sql") {
+  test("LIVY-571: returns a meaningful exception when database doesn't exist") {
     assume(hiveSupportEnabled(formattedSparkVersion._1, livyConf))
     withJdbcConnection(jdbcUri("default")) { c =>
-      var exceptionThrew = false
-
-      val statement = c.createStatement()
-      try {
+      val caught = intercept[SQLException] {
+        val statement = c.createStatement()
         try {
           statement.executeQuery("use invalid_database")
         } finally {
           statement.close()
         }
-      } catch {
-        case t: Throwable => {
-          exceptionThrew = true
-          assert(t.getMessage.contains("Database 'invalid_database' not found"))
+      }
+      assert(caught.getMessage.contains("Database 'invalid_database' not found"))
+    }
+  }
+
+  test("LIVY-571: returns a meaningful exception when global_temp table doesn't exist") {
+    assume(hiveSupportEnabled(formattedSparkVersion._1, livyConf))
+    withJdbcConnection(jdbcUri("default")) { c =>
+      val caught = intercept[SQLException] {
+        val statement = c.createStatement()
+        try {
+          statement.executeQuery("select * from global_temp.invalid_table")
+        } finally {
+          statement.close()
         }
       }
-
-      assert(exceptionThrew)
+      assert(caught.getMessage.contains("Table or view not found: `global_temp`.`invalid_table`"))
     }
   }
 }
