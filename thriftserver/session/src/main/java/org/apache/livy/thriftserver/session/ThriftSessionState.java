@@ -25,8 +25,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.livy.JobContext;
 
@@ -35,8 +33,6 @@ import org.apache.livy.JobContext;
  * shared object map for each Thrift session that connects to the backing Livy session.
  */
 class ThriftSessionState {
-
-  private static final Logger LOG = LoggerFactory.getLogger(ThriftSessionState.class);
 
   private static String SESSION_STATE_KEY_PREFIX = "livy.sessionState.";
   private static Object CREATE_LOCK = new Object();
@@ -105,12 +101,13 @@ class ThriftSessionState {
     return st;
   }
 
-  void cleanupStatement(String statementId) {
+  boolean cleanupStatement(String statementId) {
     checkNotNull(statementId, "No statement ID.");
     if (statements.remove(statementId) == null) {
-      LOG.warn("Statement {} not found in session {}",statementId, sessionId);
+      return false;
     } else {
       ctx.sc().cancelJobGroup(statementId);
+      return true;
     }
   }
 
