@@ -167,7 +167,12 @@ object LivyConf {
     Entry("livy.server.thrift.delegation.token.max-lifetime", "7d")
   val THRIFT_DELEGATION_TOKEN_RENEW_INTERVAL =
     Entry("livy.server.thrift.delegation.token.renew-interval", "1d")
-
+  // LDAP authentication
+  val THRIFT_LDAP_AUTHENTICATION_URL = Entry("livy.server.thrift.ldap.authentication.url", null)
+  val THRIFT_LDAP_AUTHENTICATION_BASEDN =
+    Entry("livy.server.thrift.ldap.authentication.basedn", null)
+  val THRIFT_LDAP_AUTHENTICATION_DOMAIN =
+    Entry("livy.server.thrift.ldap.authentication.domain", null)
   /**
    * Recovery mode of Livy. Possible values:
    * off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.

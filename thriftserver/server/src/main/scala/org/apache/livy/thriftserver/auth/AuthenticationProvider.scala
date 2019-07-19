@@ -18,6 +18,11 @@
 package org.apache.livy.thriftserver.auth
 
 import java.lang.reflect.InvocationTargetException
+import java.security.MessageDigest
+import java.util.Hashtable
+
+import javax.naming.{Context, NamingException}
+import javax.naming.directory.InitialDirContext
 import javax.security.sasl.AuthenticationException
 
 import org.apache.hive.service.auth.PasswdAuthenticationProvider
@@ -25,12 +30,13 @@ import org.apache.hive.service.auth.PasswdAuthenticationProvider
 import org.apache.livy.LivyConf
 
 object AuthenticationProvider {
-  // TODO: support LDAP and PAM
-  val AUTH_METHODS = Seq("NONE", "CUSTOM")
+  // TODO: support PAM
+  val AUTH_METHODS = Seq("LDAP", "NONE", "CUSTOM")
 
   @throws[AuthenticationException]
   def getAuthenticationProvider(method: String, conf: LivyConf): PasswdAuthenticationProvider = {
     method match {
+      case "LDAP" => new LdapAuthenticationProvider(conf)
       case "NONE" => new NoneAuthenticationProvider
       case "CUSTOM" => new CustomAuthenticationProvider(conf)
       case _ => throw new AuthenticationException("Unsupported authentication method")
@@ -70,5 +76,37 @@ class CustomAuthenticationProvider(conf: LivyConf) extends PasswdAuthenticationP
 
   override def Authenticate(user: String, password: String): Unit = {
     provider.Authenticate(user, password)
+  }
+}
+
+/**
+  * An implementation of [[PasswdAuthenticationProvider]] for LDAP to authenticate a user.
+  */
+class LdapAuthenticationProvider(conf: LivyConf) extends PasswdAuthenticationProvider {
+  override def Authenticate(user: String, password: String): Unit = {
+    val ldapURL = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_URL)
+    val ldapBaseDN = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_BASEDN)
+    val ldapDomain = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_DOMAIN)
+    if (ldapURL == null || ldapBaseDN == null || user == null || password == null) {
+      throw new AuthenticationException(s"Error validating LDAP ldapURL or ldapBaseDN or " +
+        s"user or password, it is null")
+    }
+    var bindDn = "uid=" + user + "," + ldapBaseDN;
+    if(ldapDomain != null) {
+      bindDn = "uid=" + user + "@" + ldapDomain+ "," + ldapBaseDN;
+    }
+    val env = new Hashtable[String, Any]()
+    env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+    env.put(Context.SECURITY_AUTHENTICATION, "simple")
+    env.put(Context.PROVIDER_URL, ldapURL)
+    env.put(Context.SECURITY_PRINCIPAL, bindDn)
+    env.put(Context.SECURITY_CREDENTIALS, password)
+    try {
+      val ctx = new InitialDirContext(env)
+      ctx.close()
+    } catch {
+      case e: NamingException =>
+        throw new AuthenticationException(s"Error validating LDAP user: $bindDn, password: $password", e)
+    }
   }
 }
