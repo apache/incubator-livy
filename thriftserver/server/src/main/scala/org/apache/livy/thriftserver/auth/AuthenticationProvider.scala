@@ -20,7 +20,6 @@ package org.apache.livy.thriftserver.auth
 import java.lang.reflect.InvocationTargetException
 import java.security.MessageDigest
 import java.util.Hashtable
-
 import javax.naming.{Context, NamingException}
 import javax.naming.directory.InitialDirContext
 import javax.security.sasl.AuthenticationException
@@ -92,8 +91,8 @@ class LdapAuthenticationProvider(conf: LivyConf) extends PasswdAuthenticationPro
         s"user or password, it is null")
     }
     var bindDn = "uid=" + user + "," + ldapBaseDN;
-    if(ldapDomain != null) {
-      bindDn = "uid=" + user + "@" + ldapDomain+ "," + ldapBaseDN;
+    if (ldapDomain != null) {
+      bindDn = "uid=" + user + "@" + ldapDomain + "," + ldapBaseDN;
     }
     val env = new Hashtable[String, Any]()
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
@@ -106,7 +105,8 @@ class LdapAuthenticationProvider(conf: LivyConf) extends PasswdAuthenticationPro
       ctx.close()
     } catch {
       case e: NamingException =>
-        throw new AuthenticationException(s"Error validating LDAP user: $bindDn, password: $password", e)
+        throw new AuthenticationException(s"Error validating " +
+          s"LDAP user: $bindDn, password: $password", e)
     }
   }
 }
