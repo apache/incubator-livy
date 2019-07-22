@@ -76,7 +76,7 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
   def cleanupStatement(
       sessionHandle: SessionHandle,
       statementId: String,
-      cancelJob: Boolean = false): JobHandle[_] = {
+      cancelJob: Boolean = false): JobHandle[java.lang.Boolean] = {
     info(s"Cleaning up remote session for statementId = $statementId")
     require(null != statementId, s"Invalid statementId specified. statementId = $statementId")
     livySession.recordActivity()

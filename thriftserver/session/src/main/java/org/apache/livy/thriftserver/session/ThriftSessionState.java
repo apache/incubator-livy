@@ -101,12 +101,14 @@ class ThriftSessionState {
     return st;
   }
 
-  void cleanupStatement(String statementId) {
+  boolean cleanupStatement(String statementId) {
     checkNotNull(statementId, "No statement ID.");
     if (statements.remove(statementId) == null) {
-      throw statementNotFound(statementId);
+      return false;
+    } else {
+      ctx.sc().cancelJobGroup(statementId);
+      return true;
     }
-    ctx.sc().cancelJobGroup(statementId);
   }
 
   void dispose() {
