@@ -797,9 +797,6 @@
             <requireMavenVersion>
               <version>[3.0.0,)</version>
             </requireMavenVersion>
-            <requireOS>
-              <family>unix</family>
-            </requireOS>
           </rules>
         </configuration>
         <executions>

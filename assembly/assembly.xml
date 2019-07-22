@@ -29,6 +29,7 @@
       <includes>
         <include>*</include>
       </includes>
+      <fileMode>0755</fileMode>
     </fileSet>
     <fileSet>
       <directory>${project.parent.basedir}</directory>
