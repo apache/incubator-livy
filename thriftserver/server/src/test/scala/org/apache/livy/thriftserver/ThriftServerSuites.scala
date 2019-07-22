@@ -151,7 +151,6 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
   }
 
   test("LIVY-571: returns a meaningful exception when global_temp table doesn't exist") {
-    assume(hiveSupportEnabled(formattedSparkVersion._1, livyConf))
     withJdbcConnection(jdbcUri("default")) { c =>
       val caught = intercept[SQLException] {
         val statement = c.createStatement()

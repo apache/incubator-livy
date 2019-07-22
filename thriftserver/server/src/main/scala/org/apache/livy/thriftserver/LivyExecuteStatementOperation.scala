@@ -177,7 +177,7 @@ class LivyExecuteStatementOperation(
       val cleaned = rpcClient.cleanupStatement(sessionHandle, statementId).get()
       if (!cleaned) {
         warn(s"Fail to cleanup query $statementId (session = ${sessionHandle.getSessionId}), " +
-          s"can be ignored if query is failed")
+          s"this message can be ignored if the query failed.")
       }
     }
     setState(state)
