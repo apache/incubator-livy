@@ -151,7 +151,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
   }
 
   test("LIVY-571: returns a meaningful exception when global_temp table doesn't exist") {
-    withJdbcConnection(jdbcUri("default")) { c =>
+    withJdbcConnection { c =>
       val caught = intercept[SQLException] {
         val statement = c.createStatement()
         try {
