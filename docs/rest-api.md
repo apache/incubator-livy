@@ -242,6 +242,18 @@ Gets the log lines from this session.
   </tr>
 </table>
 
+### POST /sessions/{sessionId}/connect
+
+Connects to an existing session and updates its last activity time. This stops Livy from expiring a session due to inactivity.
+
+#### Request Parameters
+
+No Request Parameters
+
+#### Response Body
+
+The response body is the same as for `GET /sessions/{sessionId}`.
+
 ### GET /sessions/{sessionId}/statements
 
 Returns all the statements in a session.
