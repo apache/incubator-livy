@@ -47,7 +47,9 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
   }
 
   it should "handle java.sql.Date tpye" in withInterpreter { interpreter =>
-    val personList = Seq(Person("Jerry", Date.valueOf("2019-07-24")), Person("Michael", Date.valueOf("2019-07-23")))
+    val personList = Seq(Person("Jerry", Date.valueOf("2019-07-24")),
+      Person("Michael", Date.valueOf("2019-07-23")))
+
     val rdd = sparkEntries.sc().parallelize(personList)
     val df = sparkEntries.sqlctx().createDataFrame(rdd)
     df.registerTempTable("person")

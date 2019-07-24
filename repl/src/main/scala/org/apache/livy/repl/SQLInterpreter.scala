@@ -26,13 +26,13 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.json4s._
+import org.json4s.JsonAST.{JNull, JString}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 
 import org.apache.livy.Logging
 import org.apache.livy.rsc.RSCConf
 import org.apache.livy.rsc.driver.SparkEntries
-import org.json4s.JsonAST.{JNull, JString}
 
 /**
  * A SQL interpreter which only accepts SQL query, execute the query and return the result. The
