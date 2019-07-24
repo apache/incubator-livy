@@ -17,6 +17,8 @@
 
 package org.apache.livy.repl
 
+import java.sql.Date
+
 import scala.util.Try
 
 import org.apache.spark.SparkConf
@@ -28,6 +30,7 @@ import org.apache.livy.rsc.RSCConf
 import org.apache.livy.rsc.driver.SparkEntries
 
 case class People(name: String, age: Int)
+case class Person(name: String, birthday: Date)
 
 class SQLInterpreterSpec extends BaseInterpreterSpec {
 
@@ -41,6 +44,39 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
       sparkEntries = new SparkEntries(conf)
     }
     new SQLInterpreter(conf, new RSCConf(), sparkEntries)
+  }
+
+  it should "handle java.sql.Date tpye" in withInterpreter { interpreter =>
+    val personList = Seq(Person("Jerry", Date.valueOf("2019-07-24")), Person("Michael", Date.valueOf("2019-07-23")))
+    val rdd = sparkEntries.sc().parallelize(personList)
+    val df = sparkEntries.sqlctx().createDataFrame(rdd)
+    df.registerTempTable("person")
+
+    // Test normal behavior
+    val resp1 = interpreter.execute(
+      """
+        |SELECT * FROM person
+      """.stripMargin)
+
+    val expectedResult = Interpreter.ExecuteSuccess(
+      APPLICATION_JSON -> (("schema" ->
+        (("type" -> "struct") ~
+          ("fields" -> List(
+            ("name" -> "name") ~ ("type" -> "string") ~ ("nullable" -> true) ~
+              ("metadata" -> List()),
+            ("name" -> "birthday") ~ ("type" -> "date") ~ ("nullable" -> true) ~
+              ("metadata" -> List())
+          )))) ~
+        ("data" -> List(
+          List[JValue]("Jerry", "2019-07-24"),
+          List[JValue]("Michael", "2019-07-23")
+        )))
+    )
+
+    val result = Try { resp1 should equal(expectedResult)}
+    if (result.isFailure) {
+      fail(s"$resp1 doesn't equal to expected result")
+    }
   }
 
   it should "execute sql queries" in withInterpreter { interpreter =>
