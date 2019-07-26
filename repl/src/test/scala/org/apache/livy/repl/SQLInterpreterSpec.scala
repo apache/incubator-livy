@@ -23,7 +23,7 @@ import scala.util.Try
 
 import org.apache.spark.SparkConf
 import org.json4s.{DefaultFormats, JValue}
-import org.json4s.JsonAST.JArray
+import org.json4s.JsonAST.{JArray, JNull}
 import org.json4s.JsonDSL._
 
 import org.apache.livy.rsc.RSCConf
@@ -52,13 +52,10 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
 
     val rdd = sparkEntries.sc().parallelize(personList)
     val df = sparkEntries.sqlctx().createDataFrame(rdd)
-    df.registerTempTable("person")
+    df.createOrReplaceTempView("person")
 
     // Test normal behavior
-    val resp1 = interpreter.execute(
-      """
-        |SELECT * FROM person
-      """.stripMargin)
+    val resp1 = interpreter.execute("SELECT * FROM person")
 
     val expectedResult = Interpreter.ExecuteSuccess(
       APPLICATION_JSON -> (("schema" ->
@@ -71,6 +68,38 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
           )))) ~
         ("data" -> List(
           List[JValue]("Jerry", "2019-07-24"),
+          List[JValue]("Michael", "2019-07-23")
+        )))
+    )
+
+    val result = Try { resp1 should equal(expectedResult)}
+    if (result.isFailure) {
+      fail(s"$resp1 doesn't equal to expected result")
+    }
+  }
+
+  it should "test java.sql.Date null" in withInterpreter { interpreter =>
+    val personList = Seq(Person("Jerry", null),
+      Person("Michael", Date.valueOf("2019-07-23")))
+
+    val rdd = sparkEntries.sc().parallelize(personList)
+    val df = sparkEntries.sqlctx().createDataFrame(rdd)
+    df.createOrReplaceTempView("person")
+
+    // Test normal behavior
+    val resp1 = interpreter.execute("SELECT * FROM person")
+
+    val expectedResult = Interpreter.ExecuteSuccess(
+      APPLICATION_JSON -> (("schema" ->
+        (("type" -> "struct") ~
+          ("fields" -> List(
+            ("name" -> "name") ~ ("type" -> "string") ~ ("nullable" -> true) ~
+              ("metadata" -> List()),
+            ("name" -> "birthday") ~ ("type" -> "date") ~ ("nullable" -> true) ~
+              ("metadata" -> List())
+          )))) ~
+        ("data" -> List(
+          List[JValue]("Jerry", JNull),
           List[JValue]("Michael", "2019-07-23")
         )))
     )
