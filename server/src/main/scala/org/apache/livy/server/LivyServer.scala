@@ -38,6 +38,7 @@ import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
 import org.apache.livy._
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.interactive.InteractiveSessionServlet
+import org.apache.livy.server.jwt.JWTFilter
 import org.apache.livy.server.recovery.{SessionStore, StateStore}
 import org.apache.livy.server.ui.UIServlet
 import org.apache.livy.sessions.{BatchSessionManager, InteractiveSessionManager}
@@ -283,14 +284,17 @@ class LivyServer extends Logging {
 
     if (livyConf.getBoolean(CSRF_PROTECTION)) {
       info("CSRF protection is enabled.")
-      val csrfHolder = new FilterHolder(new CsrfFilter())
-      server.context.addFilter(csrfHolder, "/*", EnumSet.allOf(classOf[DispatcherType]))
+      addFilter(new CsrfFilter())
     }
 
     if (accessManager.isAccessControlOn) {
       info("Access control is enabled")
-      val accessHolder = new FilterHolder(new AccessFilter(accessManager))
-      server.context.addFilter(accessHolder, "/*", EnumSet.allOf(classOf[DispatcherType]))
+      addFilter(new AccessFilter(accessManager))
+    }
+
+    if (livyConf.getBoolean(JWT_FILTER_ENABLED)) {
+      info("JWT Authentication is enabled")
+      addFilter(JWTFilter(livyConf))
     }
 
     server.start()
@@ -391,6 +395,11 @@ class LivyServer extends Logging {
       require(livyConf.get(LivyConf.RECOVERY_MODE) == SESSION_RECOVERY_MODE_OFF,
         "Session recovery requires YARN.")
     }
+  }
+
+  private def addFilter(filter: Filter): Unit = {
+    val filterHolder = new FilterHolder(filter)
+    server.context.addFilter(filterHolder, "/*", EnumSet.allOf(classOf[DispatcherType]))
   }
 }
 
