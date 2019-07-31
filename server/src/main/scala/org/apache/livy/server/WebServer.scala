@@ -81,7 +81,7 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
 
   val context = new ServletContextHandler()
 
-  context.setContextPath("/")
+  context.setContextPath(livyConf.get(LivyConf.SERVER_BASE_PATH))
   context.addServlet(classOf[DefaultServlet], "/")
 
   val handlers = new HandlerCollection
@@ -114,7 +114,7 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
     }
     port = connector.getLocalPort
 
-    info("Starting server on %s://%s:%d" format (protocol, host, port))
+    info("Starting server on %s://%s:%d/%s" format (protocol, host, port, livyConf.get(LivyConf.SERVER_BASE_PATH)))
   }
 
   def join(): Unit = {
