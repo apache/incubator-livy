@@ -77,6 +77,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
 
 
   private[this] final val sessionTimeoutCheck = livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK)
+  private[this] final val sessionTimeoutCheckSkipBusy =
+    livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK_SKIP_BUSY)
   private[this] final val sessionTimeout =
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_TIMEOUT))
   private[this] final val sessionStateRetainedInSec =
@@ -152,6 +154,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
           currentTime - s.time > sessionStateRetainedInSec
         case _ =>
           if (!sessionTimeoutCheck) {
+            false
+          } else if (session.state == SessionState.Busy && sessionTimeoutCheckSkipBusy) {
             false
           } else if (session.isInstanceOf[BatchSession]) {
             false
