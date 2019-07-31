@@ -96,7 +96,10 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     synchronized {
       session.name.foreach { sessionName =>
         if (sessionsByName.contains(sessionName)) {
-          throw new IllegalArgumentException(s"Duplicate session name: ${session.name}")
+          val errMsg = s"Duplicate session name: ${session.name} for session ${session.id}"
+          error(errMsg)
+          session.stop()
+          throw new IllegalArgumentException(errMsg)
         } else {
           sessionsByName.put(sessionName, session)
         }
@@ -104,6 +107,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
       sessions.put(session.id, session)
       session.start()
     }
+    info(s"Registered new session ${session.id}")
     session
   }
 
@@ -120,6 +124,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   def delete(session: S): Future[Unit] = {
+    info(s"Deleting session ${session.id}")
     session.stop().map { case _ =>
       try {
         sessionStore.remove(sessionType, session.id)
@@ -131,6 +136,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
         case NonFatal(e) =>
           error("Exception was thrown during stop session:", e)
           throw e
+      } finally {
+        info(s"Deleted session ${session.id}")
       }
     }
   }
