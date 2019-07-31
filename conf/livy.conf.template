@@ -36,7 +36,7 @@
 
 # What base path ui should work on. By default UI is mounted on "/".
 # E.g.: livy.ui.basePath = /my_livy - result in mounting UI on /my_livy/
-# livy.ui.basePath = ""
+# livy.ui.basePath = /
 
 # What spark master Livy sessions should use.
 # livy.spark.master = local

@@ -67,7 +67,9 @@ class LivyServer extends Logging {
 
     val host = livyConf.get(SERVER_HOST)
     val port = livyConf.getInt(SERVER_PORT)
-    val basePath = livyConf.get(SERVER_BASE_PATH)
+    val basePath = livyConf.get(SERVER_BASE_PATH).stripSuffix("/")
+    require(basePath.isEmpty || (basePath.length > 1 && basePath.startsWith("/")),
+      s"Configuration property ${SERVER_BASE_PATH.key} must start with /, e.g. /my-livy")
     val multipartConfig = MultipartConfig(
         maxFileSize = Some(livyConf.getLong(LivyConf.FILE_UPLOAD_MAX_SIZE))
       ).toMultipartConfigElement
