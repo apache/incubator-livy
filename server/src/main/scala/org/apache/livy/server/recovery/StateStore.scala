@@ -16,10 +16,9 @@
  */
 package org.apache.livy.server.recovery
 
+import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.server.discovery.JsonMapper
 import org.apache.livy.sessions.SessionManager._
-import org.apache.livy.{LivyConf, Logging}
-
 import scala.reflect.ClassTag
 
 /**

@@ -19,10 +19,10 @@ package org.apache.livy.server
 
 import java.io.{BufferedInputStream, InputStream}
 import java.net.InetAddress
-import java.util.concurrent._
 import java.util.EnumSet
-
+import java.util.concurrent._
 import javax.servlet._
+
 import org.apache.curator.framework.CuratorFramework
 
 import scala.collection.JavaConverters._
@@ -393,7 +393,8 @@ class LivyServer extends Logging {
     if (Option(livyConf.get(LIVY_ZOOKEEPER_URL)).isDefined) {
       val discoveryManager = DiscoveryManager(livyConf, mockCuratorClient)
       val host = InetAddress.getLocalHost.getHostName
-      discoveryManager.setAddress(address.getOrElse(s"$host:${livyConf.getInt(LivyConf.SERVER_PORT)}"))
+      discoveryManager.setAddress(
+        address.getOrElse(s"$host:${livyConf.getInt(LivyConf.SERVER_PORT)}"))
     }
   }
 

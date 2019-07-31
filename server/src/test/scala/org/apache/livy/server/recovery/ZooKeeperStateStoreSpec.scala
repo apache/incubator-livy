@@ -17,17 +17,17 @@
 
 package org.apache.livy.server.recovery
 
-import scala.collection.JavaConverters._
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api._
 import org.apache.curator.framework.listen.Listenable
+import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.server.discovery.ZooKeeperManager
 import org.apache.zookeeper.data.Stat
 import org.mockito.Mockito._
 import org.scalatest.FunSpec
 import org.scalatest.Matchers._
 import org.scalatest.mock.MockitoSugar.mock
-import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
+import scala.collection.JavaConverters._
 
 class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
   describe("ZooKeeperStateStore") {

@@ -19,8 +19,7 @@ package org.apache.livy.server.discovery
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.apache.livy.sessions.SessionKindModule
-
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 
 protected[server] trait JsonMapper {
   protected val mapper = new ObjectMapper()
