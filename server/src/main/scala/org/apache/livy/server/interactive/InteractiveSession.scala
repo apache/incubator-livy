@@ -31,7 +31,6 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Random, Try}
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.google.common.annotations.VisibleForTesting
 import org.apache.hadoop.fs.Path
 import org.apache.spark.launcher.SparkLauncher
 
@@ -155,7 +154,6 @@ object InteractiveSession extends Logging {
       mockApp)
   }
 
-  @VisibleForTesting
   private[interactive] def prepareBuilderProp(
     conf: Map[String, String],
     kind: Kind,
@@ -344,6 +342,15 @@ object InteractiveSession extends Logging {
 
     if (enableHiveContext) {
       mergeHiveSiteAndHiveDeps(sparkMajorVersion)
+    }
+
+    // Pick all the RSC-specific configs that have not been explicitly set otherwise, and
+    // put them in the resulting properties, so that the remote driver can use them.
+    livyConf.iterator().asScala.foreach { e =>
+      val (key, value) = (e.getKey(), e.getValue())
+      if (key.startsWith(RSCConf.RSC_CONF_PREFIX) && !builderProperties.contains(key)) {
+        builderProperties(key) = value
+      }
     }
 
     builderProperties

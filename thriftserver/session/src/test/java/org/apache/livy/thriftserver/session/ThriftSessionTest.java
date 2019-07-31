@@ -83,17 +83,17 @@ public class ThriftSessionTest {
     // Start a second session. Try to cleanup a statement that belongs to another session.
     String s2 = nextSession();
     waitFor(new RegisterSessionJob(s2));
-    expectError(new CleanupStatementJob(s2, st1), "not found in session");
+    assertFalse(waitFor(new CleanupStatementJob(s2, st1)));
     waitFor(new UnregisterSessionJob(s2));
 
     // Clean up the statement's state.
-    waitFor(new CleanupStatementJob(s1, st1));
-    expectError(new CleanupStatementJob(s1, st1), "not found in session");
+    assertTrue(waitFor(new CleanupStatementJob(s1, st1)));
+    assertFalse(waitFor(new CleanupStatementJob(s1, st1)));
 
     // Insert data into the previously created table, and fetch results from it.
     String st2 = nextStatement();
     waitFor(newSqlJob(s1, st2, "INSERT INTO test VALUES (1, \"one\"), (2, \"two\")"));
-    waitFor(new CleanupStatementJob(s1, st2));
+    assertTrue(waitFor(new CleanupStatementJob(s1, st2)));
 
     String st3 = nextStatement();
     waitFor(newSqlJob(s1, st3, "SELECT * FROM test"));
@@ -111,7 +111,7 @@ public class ThriftSessionTest {
     assertEquals(Integer.valueOf(2), cols[0].get(1));
     assertEquals("two", cols[1].get(1));
 
-    waitFor(new CleanupStatementJob(s1, st3));
+    assertTrue(waitFor(new CleanupStatementJob(s1, st3)));
 
     // Run a statement that returns a null, to make sure the receiving side sees it correctly.
     String st4 = nextStatement();
@@ -123,7 +123,7 @@ public class ThriftSessionTest {
     assertEquals(1, cols[0].size());
     assertTrue(cols[0].getNulls().get(0));
 
-    waitFor(new CleanupStatementJob(s1, st4));
+    assertTrue(waitFor(new CleanupStatementJob(s1, st4)));
 
     // Tear down the session.
     waitFor(new UnregisterSessionJob(s1));

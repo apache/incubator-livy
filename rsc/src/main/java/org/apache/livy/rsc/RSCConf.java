@@ -35,7 +35,7 @@ public class RSCConf extends ClientConf<RSCConf> {
   public static final String SPARK_CONF_PREFIX = "spark.";
   public static final String LIVY_SPARK_PREFIX = SPARK_CONF_PREFIX + "__livy__.";
 
-  private static final String RSC_CONF_PREFIX = "livy.rsc.";
+  public static final String RSC_CONF_PREFIX = "livy.rsc.";
 
   public static enum Entry implements ConfEntry {
     CLIENT_ID("client.auth.id", null),

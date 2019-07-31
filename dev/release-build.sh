@@ -84,6 +84,7 @@ fi
 # Destination directory on remote server
 RELEASE_STAGING_LOCATION="https://dist.apache.org/repos/dist/dev/incubator/livy"
 
+LIVY_REPO=${LIVY_REPO:-https://gitbox.apache.org/repos/asf/incubator-livy.git}
 GPG="gpg --no-tty --batch"
 NEXUS_ROOT=https://repository.apache.org/service/local/staging
 NEXUS_PROFILE=91529f2f65d84e # Profile for Livy staging uploads
@@ -96,7 +97,7 @@ rm -rf release-staging
 mkdir release-staging
 cd release-staging
 
-git clone https://gitbox.apache.org/repos/asf/incubator-livy.git
+git clone $LIVY_REPO incubator-livy
 cd incubator-livy
 git checkout $GIT_REF
 git_hash=`git rev-parse --short HEAD`
@@ -112,52 +113,43 @@ rm .gitignore
 rm -rf .git
 cd ..
 
+ARCHIVE_NAME_PREFIX="apache-livy-$LIVY_VERSION"
+SRC_ARCHIVE="$ARCHIVE_NAME_PREFIX-src.zip"
+BIN_ARCHIVE="$ARCHIVE_NAME_PREFIX-bin.zip"
+
 if [[ "$1" == "package" ]]; then
   # Source and binary tarballs
   echo "Packaging release tarballs"
-  cp -r incubator-livy livy-$LIVY_VERSION-src
-  zip -r livy-$LIVY_VERSION-src.zip livy-$LIVY_VERSION-src
-  echo "" | $GPG --passphrase-fd 0 --armour --output livy-$LIVY_VERSION-src.zip.asc \
-    --detach-sig livy-$LIVY_VERSION-src.zip
-  echo "" | $GPG --passphrase-fd 0 --print-md MD5 livy-$LIVY_VERSION-src.zip > \
-    livy-$LIVY_VERSION-src.zip.md5
-  echo "" | $GPG --passphrase-fd 0 --print-md \
-    SHA512 livy-$LIVY_VERSION-src.zip > livy-$LIVY_VERSION-src.zip.sha512
-  rm -rf livy-$LIVY_VERSION-src
+  cp -r incubator-livy $ARCHIVE_NAME_PREFIX
+  zip -r $SRC_ARCHIVE $ARCHIVE_NAME_PREFIX
+  echo "" | $GPG --passphrase-fd 0 --armour --output $SRC_ARCHIVE.asc --detach-sig $SRC_ARCHIVE
+  echo "" | $GPG --passphrase-fd 0 --print-md SHA512 $SRC_ARCHIVE > $SRC_ARCHIVE.sha512
+  rm -rf $ARCHIVE_NAME_PREFIX
 
   # Updated for binary build
   make_binary_release() {
-    cp -r incubator-livy livy-$LIVY_VERSION-bin
+    cp -r incubator-livy $ARCHIVE_NAME_PREFIX-bin
+    cd $ARCHIVE_NAME_PREFIX-bin
 
-    cd livy-$LIVY_VERSION-bin
-
-    $MVN clean install -DskipTests -DskipITs
     $MVN clean package -DskipTests -Dgenerate-third-party
 
     echo "Copying and signing regular binary distribution"
-    cp assembly/target/livy-$LIVY_VERSION-bin.zip .
-    echo "" | $GPG --passphrase-fd 0 --armour \
-      --output livy-$LIVY_VERSION-bin.zip.asc \
-      --detach-sig livy-$LIVY_VERSION-bin.zip
-    echo "" | $GPG --passphrase-fd 0 --print-md \
-      MD5 livy-$LIVY_VERSION-bin.zip > \
-      livy-$LIVY_VERSION-bin.zip.md5
-    echo "" | $GPG --passphrase-fd 0 --print-md \
-      SHA512 livy-$LIVY_VERSION-bin.zip > \
-      livy-$LIVY_VERSION-bin.zip.sha512
+    cp assembly/target/$BIN_ARCHIVE .
+    echo "" | $GPG --passphrase-fd 0 --armour --output $BIN_ARCHIVE.asc --detach-sig $BIN_ARCHIVE
+    echo "" | $GPG --passphrase-fd 0 --print-md SHA512 $BIN_ARCHIVE > $BIN_ARCHIVE.sha512
 
-    cp livy-$LIVY_VERSION-bin.zip* ../
+    cp $BIN_ARCHIVE* ../
     cd ..
   }
 
   make_binary_release
 
-  svn co $RELEASE_STAGING_LOCATION svn-livy
+  svn co --depth=empty $RELEASE_STAGING_LOCATION svn-livy
   mkdir -p svn-livy/$LIVY_VERSION-$RELEASE_RC
 
   echo "Copying release tarballs to local svn directory"
-  cp ./livy-$LIVY_VERSION-src.zip* svn-livy/$LIVY_VERSION-$RELEASE_RC/
-  cp ./livy-$LIVY_VERSION-bin.zip* svn-livy/$LIVY_VERSION-$RELEASE_RC/
+  cp ./$SRC_ARCHIVE* svn-livy/$LIVY_VERSION-$RELEASE_RC/
+  cp ./$BIN_ARCHIVE* svn-livy/$LIVY_VERSION-$RELEASE_RC/
 
   cd svn-livy
   svn add $LIVY_VERSION-$RELEASE_RC

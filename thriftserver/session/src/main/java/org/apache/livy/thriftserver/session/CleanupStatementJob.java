@@ -23,7 +23,7 @@ import org.apache.livy.JobContext;
 /**
  * Job used to clean up state held for a statement.
  */
-public class CleanupStatementJob implements Job<Void> {
+public class CleanupStatementJob implements Job<Boolean> {
 
   private final String sessionId;
   private final String statementId;
@@ -38,10 +38,9 @@ public class CleanupStatementJob implements Job<Void> {
   }
 
   @Override
-  public Void call(JobContext ctx) {
+  public Boolean call(JobContext ctx) {
     ThriftSessionState session = ThriftSessionState.get(ctx, sessionId);
-    session.cleanupStatement(statementId);
-    return null;
+    return session.cleanupStatement(statementId);
   }
 
 }
