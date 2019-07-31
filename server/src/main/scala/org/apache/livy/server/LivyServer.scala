@@ -21,12 +21,13 @@ import java.io.{BufferedInputStream, InputStream}
 import java.net.InetAddress
 import java.util.concurrent._
 import java.util.EnumSet
+
 import javax.servlet._
+import org.apache.curator.framework.CuratorFramework
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
 import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hadoop.security.authentication.server._
 import org.eclipse.jetty.servlet.FilterHolder
@@ -34,9 +35,9 @@ import org.scalatra.{NotFound, ScalatraServlet}
 import org.scalatra.metrics.MetricsBootstrap
 import org.scalatra.metrics.MetricsSupportExtensions._
 import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
-
 import org.apache.livy._
 import org.apache.livy.server.batch.BatchSessionServlet
+import org.apache.livy.server.discovery.DiscoveryManager
 import org.apache.livy.server.interactive.InteractiveSessionServlet
 import org.apache.livy.server.recovery.{SessionStore, StateStore}
 import org.apache.livy.server.ui.UIServlet
@@ -71,6 +72,8 @@ class LivyServer extends Logging {
     val multipartConfig = MultipartConfig(
         maxFileSize = Some(livyConf.getLong(LivyConf.FILE_UPLOAD_MAX_SIZE))
       ).toMultipartConfigElement
+
+    setServerAddress(livyConf)
 
     // Make sure the `spark-submit` program exists, otherwise much of livy won't work.
     testSparkHome(livyConf)
@@ -382,6 +385,15 @@ class LivyServer extends Logging {
         InetAddress.getLocalHost.getHostAddress)
       val port = livyConf.getInt(THRIFT_SERVER_PORT)
       s"jdbc:hive2://$host:$port$additionalUrlParams"
+    }
+  }
+
+  private[livy] def setServerAddress(livyConf: LivyConf, address: Option[String] = None,
+                                     mockCuratorClient: Option[CuratorFramework] = None): Unit = {
+    if (Option(livyConf.get(LIVY_ZOOKEEPER_URL)).isDefined) {
+      val discoveryManager = DiscoveryManager(livyConf, mockCuratorClient)
+      val host = InetAddress.getLocalHost.getHostName
+      discoveryManager.setAddress(address.getOrElse(s"$host:${livyConf.getInt(LivyConf.SERVER_PORT)}"))
     }
   }
 

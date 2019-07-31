@@ -22,9 +22,7 @@ import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.{Map => JMap}
 
 import scala.collection.JavaConverters._
-
 import org.apache.hadoop.conf.Configuration
-
 import org.apache.livy.client.common.ClientConf
 import org.apache.livy.client.common.ClientConf.ConfEntry
 import org.apache.livy.client.common.ClientConf.DeprecatedConf
@@ -187,9 +185,15 @@ object LivyConf {
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
-   * For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+   * For zookeeper, use LIVY_ZOOKEEPER_URLS
    */
   val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
+
+  /**
+    * ZooKeeper address witch will be used for Livy Server discovery
+    * and Zookeeper state store. e.g. host1:port1,host2:port2
+    */
+  val LIVY_ZOOKEEPER_URL = Entry("livy.server.zookeeper.url", null)
 
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)

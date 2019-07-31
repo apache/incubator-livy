@@ -16,25 +16,11 @@
  */
 package org.apache.livy.server.recovery
 
-import scala.reflect.{classTag, ClassTag}
-
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-
-import org.apache.livy.{LivyConf, Logging}
-import org.apache.livy.sessions.SessionKindModule
+import org.apache.livy.server.discovery.JsonMapper
 import org.apache.livy.sessions.SessionManager._
+import org.apache.livy.{LivyConf, Logging}
 
-protected trait JsonMapper {
-  protected val mapper = new ObjectMapper()
-    .registerModule(DefaultScalaModule)
-    .registerModule(new SessionKindModule())
-
-  def serializeToBytes(value: Object): Array[Byte] = mapper.writeValueAsBytes(value)
-
-  def deserialize[T: ClassTag](json: Array[Byte]): T =
-    mapper.readValue(json, classTag[T].runtimeClass.asInstanceOf[Class[T]])
-}
+import scala.reflect.ClassTag
 
 /**
  * Interface of a key-value pair storage for state storage.
