@@ -100,8 +100,9 @@
 # off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
 # recovery: Livy persists session info to the state store. When Livy restarts, it recovers
 #           previous sessions from the state store.
-# Must set livy.server.recovery.state-store and livy.server.recovery.state-store.url to
-# configure the state store.
+# Must set livy.server.recovery.state-store to needed state store (filesystem or zookeeper)
+# Set livy.server.recovery.state-store.url for filesystem state store
+# or livy.server.zookeeper.url for zookeeper state store.
 # livy.server.recovery.mode = off
 
 # Where Livy should store state to for recovery. Possible values:

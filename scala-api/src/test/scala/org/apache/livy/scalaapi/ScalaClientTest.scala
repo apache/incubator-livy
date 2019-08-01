@@ -117,6 +117,13 @@ class ScalaClientTest extends FunSuite
     ScalaClientTestUtils.assertTestPassed(sFuture, "test file")
   }
 
+  test("test get uri") {
+    configureClient(true)
+    val getUriFuture = client.getServerUri
+    val uri = Await.result(getUriFuture, ScalaClientTestUtils.Timeout second)
+    assert(Option(uri).isDefined)
+  }
+
   test("test add jar") {
     configureClient(true)
     val jar = File.createTempFile("test", ".resource")

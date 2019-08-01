@@ -23,7 +23,15 @@ import org.apache.curator.framework.CuratorFramework
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.server.discovery.ZooKeeperManager
 
-
+/**
+  * Implementation for Livy State Store which uses Zookeeper as backend storage.
+  * Set {@code livy.server.recovery.mode} to ``recovery``
+  * and {@code livy.server.recovery.state-store} to ``zookeeper`` to enable ZooKeeper state store.
+  * Also need to set {@code livy.server.zookeeper.url} to be able to get information from ZooKeeper.
+  *
+  * @param livyConf
+  * @param mockCuratorClient
+  */
 class ZooKeeperStateStore(livyConf: LivyConf,
                           mockCuratorClient: Option[CuratorFramework] = None) // For testing
   extends StateStore(livyConf) with Logging {

@@ -173,7 +173,9 @@ object LivyConf {
    * off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
    * recovery: Livy persists session info to the state store. When Livy restarts, it recovers
    *   previous sessions from the state store.
-   * Must set livy.server.recovery.state-store and livy.server.recovery.state-store.url to
+   * Must set livy.server.recovery.state-store to needed state store (filesystem or zookeeper)
+   * Set livy.server.recovery.state-store.url for filesystem state store
+   * or livy.server.zookeeper.url for zookeeper state store.
    * configure the state store.
    */
   val RECOVERY_MODE = Entry("livy.server.recovery.mode", "off")
@@ -187,7 +189,7 @@ object LivyConf {
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
-   * For zookeeper, use LIVY_ZOOKEEPER_URLS
+   * For zookeeper, use livy.server.zookeeper.url.
    */
   val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
 

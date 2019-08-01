@@ -16,6 +16,8 @@
  */
 package org.apache.livy.server.discovery
 
+import java.net.URI
+
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api.{ExistsBuilder, GetDataBuilder, SetDataBuilder, UnhandledErrorListener}
 import org.apache.curator.framework.listen.Listenable
@@ -28,22 +30,22 @@ import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.LivyConf.LIVY_ZOOKEEPER_URL
 import org.apache.livy.server.LivyServer
 
-class DiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
+class LivyDiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
   with JsonMapper {
   describe("DiscoveryManagerSpec") {
-    case class TestFixture(discoveryManager: DiscoveryManager, curatorClient: CuratorFramework)
+    case class TestFixture(discoveryManager: LivyDiscoveryManager, curatorClient: CuratorFramework)
     val conf = new LivyConf()
     conf.set(LivyConf.LIVY_ZOOKEEPER_URL, "host")
-    val key = DiscoveryManager.LIVY_SERVER_URL_KEY
+    val key = LivyDiscoveryManager.LIVY_SERVER_URI_KEY
     val prefixedKey = s"/livy/$key"
-    val testAddress = s"0.0.0.0:${conf.getInt(LivyConf.SERVER_PORT)}"
+    val testAddress = new URI(s"http://0.0.0.0:${conf.getInt(LivyConf.SERVER_PORT)}")
     val testData: Array[Byte] = serializeToBytes(testAddress)
 
     def withMock[R](testBody: TestFixture => R): R = {
       val curatorClient = mock[CuratorFramework]
       when(curatorClient.getUnhandledErrorListenable())
         .thenReturn(mock[Listenable[UnhandledErrorListener]])
-      val discoveryManager = DiscoveryManager(conf, Some(curatorClient))
+      val discoveryManager = LivyDiscoveryManager(conf, Some(curatorClient))
       testBody(TestFixture(discoveryManager, curatorClient))
     }
 
@@ -62,21 +64,21 @@ class DiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
         val setDataBuilder = mock[SetDataBuilder]
         when(f.curatorClient.setData()).thenReturn(setDataBuilder)
 
-        f.discoveryManager.setAddress(testAddress)
+        f.discoveryManager.setServerUri(testAddress)
 
         verify(f.curatorClient).start()
         verify(setDataBuilder).forPath(prefixedKey, testData)
       }
     }
 
-    it("getAddress should use curatorClient") {
+    it("getServerUri should use curatorClient") {
       withMock { f =>
         mockExistsBuilder(f.curatorClient, exists = true)
         val getDataBuilder = mock[GetDataBuilder]
         when(f.curatorClient.getData()).thenReturn(getDataBuilder)
         when(getDataBuilder.forPath(prefixedKey)).thenReturn(testData)
 
-        f.discoveryManager.getAddress()
+        f.discoveryManager.getServerUri()
 
         verify(f.curatorClient).start()
         verify(getDataBuilder).forPath(prefixedKey)
@@ -94,7 +96,7 @@ class DiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
         val setDataBuilder = mock[SetDataBuilder]
         when(f.curatorClient.setData()).thenReturn(setDataBuilder)
 
-        s.setServerAddress(livyConf, Some(testAddress), Some(f.curatorClient))
+        s.setServerUri(livyConf, Some(testAddress), Some(f.curatorClient))
         verify(setDataBuilder).forPath(prefixedKey, testData)
       }
     }
@@ -104,7 +106,7 @@ class DiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
         val livyConf = new LivyConf()
         val s = new LivyServer()
 
-        s.setServerAddress(livyConf, Some(testAddress), Some(f.curatorClient))
+        s.setServerUri(livyConf, Some(testAddress), Some(f.curatorClient))
         verify(f.curatorClient, never).setData()
       }
     }

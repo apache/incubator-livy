@@ -17,6 +17,8 @@
 
 package org.apache.livy.client.http;
 
+import io.netty.util.concurrent.ImmediateEventExecutor;
+import io.netty.util.concurrent.Promise;
 import java.io.File;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -47,12 +49,14 @@ class HttpClient implements LivyClient {
   private final int sessionId;
   private final ScheduledExecutorService executor;
   private final Serializer serializer;
+  private final Promise<URI> serverUriPromise;
 
   private boolean stopped;
 
   HttpClient(URI uri, HttpConf httpConf) {
     this.config = httpConf;
     this.stopped = false;
+    this.serverUriPromise = ImmediateEventExecutor.INSTANCE.newPromise();
 
     // If the given URI looks like it refers to an existing session, then try to connect to
     // an existing session. Note this means that any Spark configuration in httpConf will be
@@ -77,6 +81,7 @@ class HttpClient implements LivyClient {
         ClientMessage create = new CreateClientRequest(sessionConf);
         this.conn = new LivyConnection(uri, httpConf);
         this.sessionId = conn.post(create, SessionInfo.class, "/").id;
+        serverUriPromise.setSuccess(uri);
       }
     } catch (Exception e) {
       throw propagate(e);
@@ -143,6 +148,11 @@ class HttpClient implements LivyClient {
   @Override
   public Future<?> addFile(URI uri) {
     return addResource("add-file", uri);
+  }
+
+  @Override
+  public Future<URI> getServerUri() {
+    return serverUriPromise;
   }
 
   private Future<?> uploadResource(final File file, final String command, final String paramName) {

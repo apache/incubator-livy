@@ -98,6 +98,10 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
       testJob(false)
     }
 
+    withClient("should get Livy Server URI") {
+      assume(Option(client.getServerUri.get()).isDefined)
+    }
+
     withClient("should propagate errors from jobs") {
       val errorMessage = "This job throws an error."
       val (jobId, handle) = runJob(false, { id => Seq(

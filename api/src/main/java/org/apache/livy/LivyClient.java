@@ -107,4 +107,11 @@ public interface LivyClient {
    */
   Future<?> addFile(URI uri);
 
+  /**
+   * Get Livy Server URI.
+   * URI will be propagated from LivyClientBuilder during creating LivyClient.
+   *
+   * @return A future with Livy Server URI
+   */
+  Future<URI> getServerUri();
 }
