@@ -16,11 +16,13 @@
  */
 package org.apache.livy.server.recovery
 
-import org.apache.curator.framework.CuratorFramework
-import org.apache.livy.server.discovery.ZooKeeperManager
-import org.apache.livy.{LivyConf, Logging}
-
 import scala.reflect.ClassTag
+
+import org.apache.curator.framework.CuratorFramework
+
+import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.server.discovery.ZooKeeperManager
+
 
 class ZooKeeperStateStore(livyConf: LivyConf,
                           mockCuratorClient: Option[CuratorFramework] = None) // For testing

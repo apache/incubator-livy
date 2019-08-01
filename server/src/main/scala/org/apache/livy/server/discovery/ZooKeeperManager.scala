@@ -16,14 +16,16 @@
  */
 package org.apache.livy.server.discovery
 
+import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
+
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.framework.api.UnhandledErrorListener
 import org.apache.curator.retry.RetryNTimes
+import org.apache.zookeeper.KeeperException.NoNodeException
+
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.LivyConf.Entry
-import org.apache.zookeeper.KeeperException.NoNodeException
-import scala.collection.JavaConverters._
-import scala.reflect.ClassTag
 
 class ZooKeeperManager(
     livyConf: LivyConf,

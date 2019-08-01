@@ -16,10 +16,11 @@
  */
 package org.apache.livy.server.recovery
 
+import scala.reflect.ClassTag
+
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.server.discovery.JsonMapper
 import org.apache.livy.sessions.SessionManager._
-import scala.reflect.ClassTag
 
 /**
  * Interface of a key-value pair storage for state storage.

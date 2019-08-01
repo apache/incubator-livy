@@ -23,11 +23,11 @@ import java.util.EnumSet
 import java.util.concurrent._
 import javax.servlet._
 
-import org.apache.curator.framework.CuratorFramework
-
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+import org.apache.curator.framework.CuratorFramework
 import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hadoop.security.authentication.server._
 import org.eclipse.jetty.servlet.FilterHolder
@@ -35,6 +35,7 @@ import org.scalatra.{NotFound, ScalatraServlet}
 import org.scalatra.metrics.MetricsBootstrap
 import org.scalatra.metrics.MetricsSupportExtensions._
 import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
+
 import org.apache.livy._
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.discovery.DiscoveryManager

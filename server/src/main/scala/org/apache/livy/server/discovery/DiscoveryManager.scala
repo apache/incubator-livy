@@ -17,6 +17,7 @@
 package org.apache.livy.server.discovery
 
 import org.apache.curator.framework.CuratorFramework
+
 import org.apache.livy.LivyConf
 
 class DiscoveryManager(livyConf: LivyConf,
