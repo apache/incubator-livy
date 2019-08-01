@@ -17,8 +17,6 @@
 
 package org.apache.livy.client.http;
 
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
 import java.io.File;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -31,6 +29,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import io.netty.util.concurrent.ImmediateEventExecutor;
+import io.netty.util.concurrent.Promise;
 
 import org.apache.livy.Job;
 import org.apache.livy.JobHandle;
