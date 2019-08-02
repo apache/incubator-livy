@@ -199,7 +199,7 @@ object LivyConf {
     */
   val LIVY_ZOOKEEPER_URL = Entry("livy.zookeeper.url", null)
 
-  // Name of base Livy zknode.
+  // Name of base Livy znode.
   val LIVY_ZOOKEEPER_NAMESPACE = Entry("livy.zookeeper.namespace", "livy")
 
   // Number of trials to establish the connection to ZooKeeper quorum.
@@ -210,7 +210,7 @@ object LivyConf {
   val LIVY_ZOOKEEPER_CONNECTION_RETRY_INTERVAL =
     Entry("livy.server.zookeeper.connection.retry.interval.ms", 500)
 
-  // Name of Livy Server zknode. Uses LIVY_ZOOKEEPER_NAMESPACE as parent.
+  // Name of Livy Server znode. Uses LIVY_ZOOKEEPER_NAMESPACE as parent.
   // By default will be /livy/server.uri
   val LIVY_SERVER_ZOOKEEPER_NAMESPACE = Entry("livy.server.zookeeper.namespace", "server.uri")
 

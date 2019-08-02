@@ -120,9 +120,9 @@
 # Livy Server discovery
 # ZooKeeper quorum URLs, e.g. host1:port1,host2:port2
 # livy.zookeeper.url =
-# Name of base Livy zknode. Default livy
+# Name of base Livy znode. Default livy
 # livy.zookeeper.namespace = livy
-# Name of Livy Server zknode. Uses livy.zookeeper.namespace as parent.
+# Name of Livy Server znode. Uses livy.zookeeper.namespace as parent.
 # By default will be /livy/server.uri
 # livy.server.zookeeper.namespace = server.uri
 # Number of trials to establish the connection to ZooKeeper quorum
