@@ -17,7 +17,10 @@
 
 package org.apache.livy.thriftserver
 
+import java.io.File
 import java.sql.{Date, SQLException, Statement}
+
+import org.apache.curator.test.TestingServer
 
 import org.apache.livy.LivyConf
 
@@ -173,6 +176,33 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
     val supportMap = hiveSupportEnabled(formattedSparkVersion._1, livyConf)
     withJdbcStatement { statement =>
       dataTypesTest(statement, supportMap)
+    }
+  }
+}
+
+class DynamicServiceDiscoveryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
+  override def mode: ServerMode.Value = ServerMode.binary
+  override def port: Int = 20000
+  override def dynamicServiceDiscovery: Boolean = true
+  override def zookeeperQuorum: String = "localhost:2282"
+
+  override def beforeAll(): Unit = {
+    val zookeeperServer = new TestingServer(2282, new File("/tmp"))
+    zookeeperServer.start()
+
+    super.beforeAll()
+  }
+
+  test("fetch different data types") {
+    val supportMap = hiveSupportEnabled(formattedSparkVersion._1, livyConf)
+    withJdbcConnection(s"jdbc:hive2://${zookeeperQuorum}/;" +
+      s"serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=livy") { c =>
+      val statement = c.createStatement()
+      try {
+        dataTypesTest(statement, supportMap)
+      } finally {
+        statement.close()
+      }
     }
   }
 }
