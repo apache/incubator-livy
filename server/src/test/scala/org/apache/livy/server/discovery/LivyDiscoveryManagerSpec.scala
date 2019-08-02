@@ -96,7 +96,7 @@ class LivyDiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
         val setDataBuilder = mock[SetDataBuilder]
         when(f.curatorClient.setData()).thenReturn(setDataBuilder)
 
-        s.setServerUri(livyConf, Some(testAddress), Some(f.curatorClient))
+        s.setServerUri(livyConf, Some(f.curatorClient))
         verify(setDataBuilder).forPath(prefixedKey, testData)
       }
     }
@@ -106,7 +106,7 @@ class LivyDiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
         val livyConf = new LivyConf()
         val s = new LivyServer()
 
-        s.setServerUri(livyConf, Some(testAddress), Some(f.curatorClient))
+        s.setServerUri(livyConf, Some(f.curatorClient))
         verify(f.curatorClient, never).setData()
       }
     }

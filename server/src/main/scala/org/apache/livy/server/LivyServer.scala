@@ -389,14 +389,22 @@ class LivyServer extends Logging {
     }
   }
 
-  private[livy] def setServerUri(livyConf: LivyConf, address: Option[URI] = None,
+  private[livy] def setServerUri(livyConf: LivyConf,
                                  mockCuratorClient: Option[CuratorFramework] = None): Unit = {
     if (Option(livyConf.get(LIVY_ZOOKEEPER_URL)).isDefined) {
       val discoveryManager = LivyDiscoveryManager(livyConf, mockCuratorClient)
-      val host = InetAddress.getLocalHost.getHostName
-      val localUri = new URI(s"http://$host:${livyConf.getInt(LivyConf.SERVER_PORT)}")
-      val severUri = address.getOrElse(localUri)
-      discoveryManager.setServerUri(severUri)
+      val host = resolvedSeverHost(livyConf)
+      val uri = new URI(s"http://$host:${livyConf.getInt(LivyConf.SERVER_PORT)}")
+      discoveryManager.setServerUri(uri)
+    }
+  }
+
+  private[livy] def resolvedSeverHost(livyConf: LivyConf) = {
+    val host = livyConf.get(LivyConf.SERVER_HOST)
+    if (host.equals(livyConf.get(LivyConf.SERVER_HOST.dflt.toString))) {
+      InetAddress.getLocalHost.getHostName
+    } else {
+      host
     }
   }
 
