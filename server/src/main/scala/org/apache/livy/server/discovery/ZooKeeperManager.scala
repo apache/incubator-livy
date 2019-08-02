@@ -25,14 +25,11 @@ import org.apache.curator.retry.RetryNTimes
 import org.apache.zookeeper.KeeperException.NoNodeException
 
 import org.apache.livy.{LivyConf, Logging}
-import org.apache.livy.LivyConf.Entry
 
 class ZooKeeperManager(
     livyConf: LivyConf,
     mockCuratorClient: Option[CuratorFramework] = None) // For testing
    extends JsonMapper with Logging {
-
-  import ZooKeeperManager._
 
   // Constructor defined for StateStore factory to new this class using reflection.
   def this(livyConf: LivyConf) {
@@ -41,16 +38,10 @@ class ZooKeeperManager(
 
   private val zkAddress = livyConf.get(LivyConf.LIVY_ZOOKEEPER_URL)
   require(Option(zkAddress).isDefined, s"Please config ${LivyConf.LIVY_ZOOKEEPER_URL.key}.")
-  private val zkKeyPrefix = livyConf.get(ZK_KEY_PREFIX_CONF)
-  private val retryValue = livyConf.get(ZK_RETRY_CONF)
-  // a regex to match patterns like "m, n" where m and n both are integer values
-  private val retryPattern = """\s*(\d+)\s*,\s*(\d+)\s*""".r
-  private[server] val retryPolicy = retryValue match {
-    case retryPattern(n, sleepMs) => new RetryNTimes(n.toInt, sleepMs.toInt)
-    case _ => throw new IllegalArgumentException(
-      s"$ZK_KEY_PREFIX_CONF contains bad value: $retryValue. " +
-        "Correct format is <max retry count>,<sleep ms between retry>. e.g. 5,100")
-  }
+  private val zkKeyPrefix = livyConf.get(LivyConf.LIVY_ZOOKEEPER_NAMESPACE)
+  private val maxRetries = livyConf.getInt(LivyConf.LIVY_ZOOKEEPER_CONNECTION_MAX_RETRIES)
+  private val sleepTime = livyConf.getInt(LivyConf.LIVY_ZOOKEEPER_CONNECTION_RETRY_INTERVAL)
+  private val retryPolicy = new RetryNTimes(maxRetries, sleepTime)
 
   private val curatorClient = mockCuratorClient.getOrElse {
     CuratorFrameworkFactory.newClient(zkAddress, retryPolicy)
@@ -116,8 +107,6 @@ class ZooKeeperManager(
 }
 
 object ZooKeeperManager {
-  val ZK_KEY_PREFIX_CONF = Entry("livy.server.zookeeper.key-prefix", "livy")
-  val ZK_RETRY_CONF = Entry("livy.server.zookeeper.retry-policy", "5,100")
 
   def apply(livyConf: LivyConf,
              mockCuratorClient: Option[CuratorFramework] = None): ZooKeeperManager = {

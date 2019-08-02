@@ -36,7 +36,7 @@ class LivyDiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
     case class TestFixture(discoveryManager: LivyDiscoveryManager, curatorClient: CuratorFramework)
     val conf = new LivyConf()
     conf.set(LivyConf.LIVY_ZOOKEEPER_URL, "host")
-    val key = LivyDiscoveryManager.LIVY_SERVER_URI_KEY
+    val key = conf.get(LivyConf.LIVY_SERVER_ZOOKEEPER_NAMESPACE)
     val prefixedKey = s"/livy/$key"
     val testAddress = new URI(s"http://0.0.0.0:${conf.getInt(LivyConf.SERVER_PORT)}")
     val testData: Array[Byte] = serializeToBytes(testAddress)

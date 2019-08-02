@@ -28,7 +28,6 @@ import org.scalatest.Matchers._
 import org.scalatest.mock.MockitoSugar.mock
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
-import org.apache.livy.server.discovery.ZooKeeperManager
 
 class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
   describe("ZooKeeperStateStore") {
@@ -51,17 +50,6 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       when(curatorClient.checkExists()).thenReturn(existsBuilder)
       if (exists) {
         when(existsBuilder.forPath(prefixedKey)).thenReturn(mock[Stat])
-      }
-    }
-
-    it("should throw on bad config") {
-      withMock { f =>
-        val conf = new LivyConf()
-        intercept[IllegalArgumentException] { new ZooKeeperStateStore(conf, Some(f.curatorClient)) }
-
-        conf.set(LivyConf.LIVY_ZOOKEEPER_URL, "host")
-        conf.set(ZooKeeperManager.ZK_RETRY_CONF, "bad")
-        intercept[IllegalArgumentException] { new ZooKeeperStateStore(conf, Some(f.curatorClient)) }
       }
     }
 
@@ -92,16 +80,6 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
 
         verify(f.curatorClient).start()
         verify(p).forPath(prefixedKey, Array[Byte](49))
-      }
-    }
-
-    it("get should retrieve retry policy configs") {
-      conf.set(ZooKeeperManager.ZK_RETRY_CONF, "11,77")
-        withMock { f =>
-        mockExistsBuilder(f.curatorClient, true)
-
-        f.stateStore.zooKeeperManager.retryPolicy should not be null
-        f.stateStore.zooKeeperManager.retryPolicy.getN shouldBe 11
       }
     }
 

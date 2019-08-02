@@ -37,7 +37,7 @@ class LivyDiscoveryManager(livyConf: LivyConf,
                            mockCuratorClient: Option[CuratorFramework] = None)
   extends ZooKeeperManager(livyConf, mockCuratorClient) {
 
-  import LivyDiscoveryManager._
+  private val LIVY_SERVER_URI_KEY = livyConf.get(LivyConf.LIVY_SERVER_ZOOKEEPER_NAMESPACE)
 
   /**
     * Save Livy Server URI to ZooKeeper.
@@ -57,7 +57,6 @@ class LivyDiscoveryManager(livyConf: LivyConf,
 }
 
 object LivyDiscoveryManager {
-  val LIVY_SERVER_URI_KEY = "server.uri"
 
   def apply(livyConf: LivyConf,
             mockCuratorClient: Option[CuratorFramework] = None): LivyDiscoveryManager = {
