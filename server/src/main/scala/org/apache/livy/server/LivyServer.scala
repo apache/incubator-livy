@@ -399,7 +399,7 @@ class LivyServer extends Logging {
     }
   }
 
-  private[livy] def resolvedSeverHost(livyConf: LivyConf) = {
+  private def resolvedSeverHost(livyConf: LivyConf) = {
     val host = livyConf.get(LivyConf.SERVER_HOST)
     if (host.equals(livyConf.get(LivyConf.SERVER_HOST.dflt.toString))) {
       InetAddress.getLocalHost.getHostName
