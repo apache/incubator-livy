@@ -82,8 +82,6 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
   val context = new ServletContextHandler()
 
   private val contextPath = "/" + livyConf.get(LivyConf.SERVER_BASE_PATH).stripPrefix("/")
-  require(contextPath.startsWith("/"),
-    s"Configuration property ${LivyConf.SERVER_BASE_PATH.key} must start with /, e.g. /my-livy")
   context.setContextPath(contextPath)
   context.addServlet(classOf[DefaultServlet], "/")
 
