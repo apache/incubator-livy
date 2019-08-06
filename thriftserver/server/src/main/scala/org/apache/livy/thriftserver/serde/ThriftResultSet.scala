@@ -32,6 +32,7 @@ abstract class ThriftResultSet {
   def addRow(row: Array[Any]): Unit
   def setRowOffset(rowOffset: Long): Unit
   def numRows: Int
+  def extractSubset(fetchRows: Long): ThriftResultSet
 }
 
 object ThriftResultSet {
@@ -121,4 +122,16 @@ class ColumnOrientedResultSet(
   override def setRowOffset(rowOffset: Long): Unit = this.rowOffset = rowOffset
 
   override def numRows: Int = columns.headOption.map(_.size).getOrElse(0)
+
+  override def extractSubset(fetchRows: Long): ThriftResultSet = {
+    val nRows = Math.min(numRows - rowOffset, fetchRows)
+    // Todo: ColumnBuffer uses array to store data, so data size cannot be larger than Int.Max.
+    //  Consider optimize this in the future
+    require(rowOffset + nRows <= Int.MaxValue, "fetch row is too large")
+    val result = new ColumnOrientedResultSet(
+      columns.map(_.extractSubset(rowOffset.asInstanceOf[Int],
+        (rowOffset + nRows).asInstanceOf[Int])))
+    rowOffset += nRows
+    return result
+  }
 }

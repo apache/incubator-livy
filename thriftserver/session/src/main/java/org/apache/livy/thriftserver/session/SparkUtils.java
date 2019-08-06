@@ -17,6 +17,8 @@
 
 package org.apache.livy.thriftserver.session;
 
+import java.sql.Types;
+
 import org.apache.spark.sql.types.*;
 
 /**
@@ -55,6 +57,98 @@ final class SparkUtils {
       idx++;
     }
     return types;
+  }
+
+  public static int toJavaSQLType(org.apache.spark.sql.types.DataType type) {
+    if (type instanceof NullType) {
+      return Types.NULL;
+    } else if (type instanceof BooleanType) {
+      return Types.BOOLEAN;
+    } else if (type instanceof ByteType) {
+      return Types.TINYINT;
+    } else if (type instanceof ShortType) {
+      return Types.SMALLINT;
+    } else if (type instanceof IntegerType) {
+      return Types.INTEGER;
+    } else if (type instanceof LongType) {
+      return Types.BIGINT;
+    } else if (type instanceof FloatType) {
+      return Types.FLOAT;
+    } else if (type instanceof DoubleType) {
+      return Types.DOUBLE;
+    } else if (type instanceof StringType) {
+      return Types.VARCHAR;
+    } else if (type instanceof DecimalType) {
+      return Types.DECIMAL;
+    } else if (type instanceof DateType) {
+      return Types.DATE;
+    } else if (type instanceof TimestampType) {
+      return Types.TIMESTAMP;
+    } else if (type instanceof BinaryType) {
+      return Types.BINARY;
+    } else if (type instanceof ArrayType) {
+      return Types.ARRAY;
+    } else if (type instanceof MapType) {
+      return Types.JAVA_OBJECT;
+    } else if (type instanceof StructType) {
+      return Types.STRUCT;
+    } else {
+      return Types.OTHER;
+    }
+  }
+
+  public static Integer getColumnSize(org.apache.spark.sql.types.DataType type) {
+    if (type instanceof ByteType) {
+      return 3;
+    } else if (type instanceof ShortType) {
+      return 5;
+    } else if (type instanceof IntegerType) {
+      return 10;
+    } else if (type instanceof LongType) {
+      return 19;
+    } else if (type instanceof FloatType) {
+      return 7;
+    } else if (type instanceof DoubleType) {
+      return 15;
+    } else if (type instanceof DecimalType) {
+      return ((DecimalType)type).precision();
+    } else if (type instanceof StringType || type instanceof BinaryType || type instanceof MapType
+        || type instanceof ArrayType || type instanceof StructType) {
+      return Integer.MAX_VALUE;
+    } else if (type instanceof DateType) {
+      return 10;
+    } else if (type instanceof TimestampType) {
+      return 29;
+    } else {
+      return null;
+    }
+  }
+
+  public static Integer getDecimalDigits(org.apache.spark.sql.types.DataType type) {
+    if (type instanceof BooleanType || type instanceof ByteType || type instanceof ShortType
+        || type instanceof IntegerType || type instanceof LongType) {
+      return 0;
+    } else if (type instanceof FloatType) {
+      return 7;
+    } else if (type instanceof DoubleType) {
+      return 15;
+    } else if (type instanceof DecimalType) {
+      return ((DecimalType)type).scale();
+    } else if (type instanceof TimestampType) {
+      return 9;
+    } else {
+      return null;
+    }
+  }
+
+  public static Integer getNumPrecRadix(org.apache.spark.sql.types.DataType type) {
+    if (type instanceof ByteType || type instanceof ShortType || type instanceof IntegerType
+        || type instanceof LongType || type instanceof FloatType || type instanceof DoubleType
+        || type instanceof DecimalType) {
+      return 10;
+    } else {
+      return null;
+    }
   }
 
 }

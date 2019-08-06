@@ -17,6 +17,7 @@
 
 package org.apache.livy.thriftserver.operation
 
+import org.apache.commons.lang.StringUtils
 import org.apache.hive.service.cli.{FetchOrientation, HiveSQLException, OperationState, OperationType, SessionHandle}
 
 import org.apache.livy.thriftserver.serde.ThriftResultSet
@@ -44,6 +45,40 @@ abstract class MetadataOperation(sessionHandle: SessionHandle, opType: Operation
     if (orientation.equals(FetchOrientation.FETCH_FIRST)) {
       rowSet.setRowOffset(0)
     }
-    rowSet
+    rowSet.extractSubset(maxRows)
+  }
+
+  /**
+    * Convert wildchars and escape sequence from JDBC format to datanucleous/regex
+    */
+  protected def convertIdentifierPattern(pattern: String, datanucleusFormat: Boolean): String = {
+    if (pattern == null) {
+      convertPattern("%", datanucleusFormat = true)
+    } else {
+      convertPattern(pattern, datanucleusFormat)
+    }
+  }
+
+  /**
+    * Convert wildchars and escape sequence of schema pattern from JDBC format to datanucleous/regex
+    * The schema pattern treats empty string also as wildchar
+    */
+  protected def convertSchemaPattern(pattern: String): String = {
+    if (StringUtils.isEmpty(pattern)) {
+      convertPattern("%", datanucleusFormat = true)
+    } else {
+      convertPattern(pattern, datanucleusFormat = true)
+    }
+  }
+
+  private def convertPattern(pattern: String, datanucleusFormat: Boolean): String = {
+    val wStr = if (datanucleusFormat) "*" else ".*"
+    pattern
+      .replaceAll("([^\\\\])%", "$1" + wStr)
+      .replaceAll("\\\\%", "%")
+      .replaceAll("^%", wStr)
+      .replaceAll("([^\\\\])_", "$1.")
+      .replaceAll("\\\\_", "_")
+      .replaceAll("^_", ".")
   }
 }

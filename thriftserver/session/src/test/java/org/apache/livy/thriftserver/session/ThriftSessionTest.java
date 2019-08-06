@@ -19,10 +19,12 @@ package org.apache.livy.thriftserver.session;
 
 import java.net.URI;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.google.common.collect.Lists;
 import org.apache.spark.launcher.SparkLauncher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -124,6 +126,33 @@ public class ThriftSessionTest {
     assertTrue(cols[0].getNulls().get(0));
 
     assertTrue(waitFor(new CleanupStatementJob(s1, st4)));
+
+    List<Object[]> schemas = waitFor(new GetSchemasJob("default"));
+    assertEquals(1, schemas.size());
+    assertEquals("default", schemas.get(0)[0]);
+
+    List<Object[]> tables = waitFor(new GetTablesJob("default", "*",
+        Lists.newArrayList("MANAGED")));
+    assertEquals(1, tables.size());
+    assertEquals("default", tables.get(0)[1]);
+    assertEquals("test", tables.get(0)[2]);
+
+    List<Object[]> columns = waitFor(new GetColumnsJob("default", "test", ".*"));
+    assertEquals(2, columns.size());
+    assertEquals("default", columns.get(0)[1]);
+    assertEquals("test", columns.get(0)[2]);
+    assertEquals("id", columns.get(0)[3]);
+    assertEquals("integer", columns.get(0)[5]);
+    assertEquals("default", columns.get(1)[1]);
+    assertEquals("test", columns.get(1)[2]);
+    assertEquals("desc", columns.get(1)[3]);
+    assertEquals("string", columns.get(1)[5]);
+
+    List<Object[]> functions = waitFor(new GetFunctionsJob("default", "unix_timestamp"));
+    assertEquals(1, functions.size());
+    assertNull(functions.get(0)[1]);
+    assertEquals("unix_timestamp", functions.get(0)[2]);
+    assertEquals("org.apache.spark.sql.catalyst.expressions.UnixTimestamp", functions.get(0)[5]);
 
     // Tear down the session.
     waitFor(new UnregisterSessionJob(s1));

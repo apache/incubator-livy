@@ -17,7 +17,7 @@
 
 package org.apache.livy.thriftserver
 
-import java.sql.{Date, SQLException, Statement}
+import java.sql.{Connection, Date, SQLException, Statement}
 
 import org.apache.livy.LivyConf
 
@@ -68,6 +68,62 @@ trait CommonThriftTests {
       assert(resultSetComplex.getString(3) == "{1:\"a\",2:\"b\"}")
     }
     assert(!resultSetComplex.next())
+  }
+
+  def metaDataOperationTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val schemaResultSet = metadata.getSchemas()
+    assert(schemaResultSet.getMetaData.getColumnCount == 2)
+    assert(schemaResultSet.getMetaData.getColumnName(1) == "TABLE_SCHEM")
+    assert(schemaResultSet.getMetaData.getColumnName(2) == "TABLE_CATALOG")
+    schemaResultSet.next()
+    assert(schemaResultSet.getString(1) == "default")
+    assert(!schemaResultSet.next())
+
+    val functionResultSet = metadata.getFunctions("", "default", "unix_timestamp")
+    assert(functionResultSet.getMetaData.getColumnCount == 6)
+    assert(functionResultSet.getMetaData.getColumnName(1) == "FUNCTION_CAT")
+    assert(functionResultSet.getMetaData.getColumnName(2) == "FUNCTION_SCHEM")
+    assert(functionResultSet.getMetaData.getColumnName(3) == "FUNCTION_NAME")
+    assert(functionResultSet.getMetaData.getColumnName(4) == "REMARKS")
+    assert(functionResultSet.getMetaData.getColumnName(5) == "FUNCTION_TYPE")
+    assert(functionResultSet.getMetaData.getColumnName(6) == "SPECIFIC_NAME")
+    functionResultSet.next()
+    assert(functionResultSet.getString(3) == "unix_timestamp")
+    assert(functionResultSet.getString(6) ==
+      "org.apache.spark.sql.catalyst.expressions.UnixTimestamp")
+    assert(!functionResultSet.next())
+
+    val statement = connection.createStatement()
+    statement.execute("CREATE TABLE test (id integer, desc string) USING json")
+    val tablesResultSet = metadata.getTables("", "default", "*", Array("MANAGED"))
+    assert(tablesResultSet.getMetaData.getColumnCount == 5)
+    assert(tablesResultSet.getMetaData.getColumnName(1) == "TABLE_CAT")
+    assert(tablesResultSet.getMetaData.getColumnName(2) == "TABLE_SCHEM")
+    assert(tablesResultSet.getMetaData.getColumnName(3) == "TABLE_NAME")
+    assert(tablesResultSet.getMetaData.getColumnName(4) == "TABLE_TYPE")
+    assert(tablesResultSet.getMetaData.getColumnName(5) == "REMARKS")
+
+    tablesResultSet.next()
+    assert(tablesResultSet.getString(3) == "test")
+    assert(tablesResultSet.getString(4) == "MANAGED")
+    assert(!tablesResultSet.next())
+
+
+    val columnsResultSet = metadata.getColumns("", "default", "test", ".*")
+    assert(columnsResultSet.getMetaData.getColumnCount == 23)
+    columnsResultSet.next()
+    assert(columnsResultSet.getString(2) == "default")
+    assert(columnsResultSet.getString(3) == "test")
+    assert(columnsResultSet.getString(4) == "id")
+    assert(columnsResultSet.getString(6) == "integer")
+    columnsResultSet.next()
+    assert(columnsResultSet.getString(2) == "default")
+    assert(columnsResultSet.getString(3) == "test")
+    assert(columnsResultSet.getString(4) == "desc")
+    assert(columnsResultSet.getString(6) == "string")
+    assert(!columnsResultSet.next())
+    statement.close()
   }
 }
 
@@ -163,6 +219,12 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       assert(caught.getMessage.contains("Table or view not found: `global_temp`.`invalid_table`"))
     }
   }
+
+  test("fetch meta data") {
+    withJdbcConnection { connection =>
+      metaDataOperationTest(connection)
+    }
+  }
 }
 
 class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
@@ -173,6 +235,12 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
     val supportMap = hiveSupportEnabled(formattedSparkVersion._1, livyConf)
     withJdbcStatement { statement =>
       dataTypesTest(statement, supportMap)
+    }
+  }
+
+  test("fetch meta data") {
+    withJdbcConnection { connection =>
+      metaDataOperationTest(connection)
     }
   }
 }
