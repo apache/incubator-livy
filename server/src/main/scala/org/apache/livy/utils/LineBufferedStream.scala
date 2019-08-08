@@ -23,8 +23,6 @@ import java.util.concurrent.locks.ReentrantLock
 
 import scala.io.Source
 
-import com.google.common.collect.EvictingQueue
-
 import org.apache.livy.Logging
 
 class CircularQueue[T](var capacity: Int) extends util.LinkedList[T] {
