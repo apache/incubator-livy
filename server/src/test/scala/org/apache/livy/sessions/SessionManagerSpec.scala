@@ -36,8 +36,8 @@ import org.apache.livy.sessions.Session.RecoveryMetadata
 class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuite {
   implicit def executor: ExecutionContext = ExecutionContext.global
 
-  private def createSessionManager(): (LivyConf, SessionManager[MockSession, RecoveryMetadata]) = {
-    val livyConf = new LivyConf()
+  private def createSessionManager(livyConf: LivyConf = new LivyConf())
+    : (LivyConf, SessionManager[MockSession, RecoveryMetadata]) = {
     livyConf.set(LivyConf.SESSION_TIMEOUT, "100ms")
     val manager = new SessionManager[MockSession, RecoveryMetadata](
       livyConf,
@@ -56,6 +56,22 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       eventually(timeout(5 seconds), interval(100 millis)) {
         Await.result(manager.collectGarbage(), Duration.Inf)
         manager.get(session.id) should be(None)
+      }
+    }
+
+    it("should not garbage collect busy sessions if skip-busy configured") {
+      val lc = new LivyConf()
+      lc.set(LivyConf.SESSION_TIMEOUT_CHECK_SKIP_BUSY, true)
+      val (livyConf, manager) = createSessionManager(lc)
+      val session1 = manager.register(new MockSession(manager.nextId(), null, livyConf))
+      val session2 = manager.register(new MockSession(manager.nextId(), null, livyConf))
+      manager.get(session1.id).isDefined should be(true)
+      manager.get(session2.id).isDefined should be(true)
+      session2.serverState = SessionState.Busy
+      eventually(timeout(5 seconds), interval(100 millis)) {
+        Await.result(manager.collectGarbage(), Duration.Inf)
+        (manager.get(session1.id).isDefined, manager.get(session2.id).isDefined) should
+          be (false, true)
       }
     }
 
