@@ -20,6 +20,9 @@ package org.apache.livy.thriftserver.auth
 import java.lang.reflect.InvocationTargetException
 import javax.security.sasl.AuthenticationException
 
+import scala.collection.JavaConverters._
+
+import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hive.service.auth.PasswdAuthenticationProvider
 
 import org.apache.livy.LivyConf
@@ -63,8 +66,25 @@ class CustomAuthenticationProvider(conf: LivyConf) extends PasswdAuthenticationP
       customClass.getConstructor(classOf[LivyConf]).newInstance(conf)
     } catch {
       case _: NoSuchMethodException | _: InstantiationException | _: IllegalAccessException |
-           _: InvocationTargetException =>
-        customClass.getConstructor().newInstance()
+           _: InvocationTargetException => {
+        try {
+          val constructor = customClass.getConstructor(classOf[HiveConf])
+          val hiveConf = new HiveConf()
+          val customHiveConfPrefix = "livy.server.thrift.authentication.custom.hive."
+          conf.asScala.foreach(entry => {
+            if (entry.getKey.startsWith(customHiveConfPrefix)) {
+              hiveConf.set(entry.getKey.replaceFirst(customHiveConfPrefix, "hive."),
+                entry.getValue)
+            }
+          })
+          constructor.newInstance(hiveConf)
+        } catch {
+          case _: NoSuchMethodException | _: InstantiationException | _: IllegalAccessException |
+               _: InvocationTargetException => {
+            customClass.getConstructor().newInstance()
+          }
+        }
+      }
     }
   }
 
