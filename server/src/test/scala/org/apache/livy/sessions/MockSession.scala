@@ -28,7 +28,9 @@ class MockSession(id: Int, owner: String, conf: LivyConf, name: Option[String] =
   override def start(): Unit = ()
 
   var stopped = false
-  override protected def stopSession(): Unit = {stopped = true}
+  override protected def stopSession(): Unit = {
+    stopped = true
+  }
 
   override def logLines(): IndexedSeq[String] = IndexedSeq()
 
