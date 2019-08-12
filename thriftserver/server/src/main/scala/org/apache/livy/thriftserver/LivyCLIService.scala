@@ -216,7 +216,8 @@ class LivyCLIService(server: LivyThriftServer)
       catalogName: String,
       schemaName: String): OperationHandle = {
     debug(sessionHandle + ": getSchemas()")
-    sessionManager.operationManager.getSchemas(sessionHandle, catalogName, schemaName);
+    sessionManager.operationManager.getSchemas(
+      sessionHandle, catalogName, schemaName)
   }
 
   @throws[HiveSQLException]
@@ -227,8 +228,8 @@ class LivyCLIService(server: LivyThriftServer)
       tableName: String,
       tableTypes: util.List[String]): OperationHandle = {
     debug(sessionHandle + ": getTables()")
-    sessionManager.operationManager.getTables(sessionHandle, catalogName, schemaName, tableName,
-      tableTypes);
+    sessionManager.operationManager.getTables(
+      sessionHandle, catalogName, schemaName, tableName, tableTypes)
   }
 
   @throws[HiveSQLException]
@@ -245,8 +246,8 @@ class LivyCLIService(server: LivyThriftServer)
       tableName: String,
       columnName: String): OperationHandle = {
     debug(sessionHandle + ": getColumns()")
-    sessionManager.operationManager.getColumns(sessionHandle, catalogName, schemaName, tableName,
-      columnName);
+    sessionManager.operationManager.getColumns(
+      sessionHandle, catalogName, schemaName, tableName, columnName)
   }
 
   @throws[HiveSQLException]
@@ -256,8 +257,8 @@ class LivyCLIService(server: LivyThriftServer)
       schemaName: String,
       functionName: String): OperationHandle = {
     debug(sessionHandle + ": getFunctions()")
-    sessionManager.operationManager.getFunctions(sessionHandle, catalogName, schemaName,
-      functionName);
+    sessionManager.operationManager.getFunctions(
+      sessionHandle, catalogName, schemaName, functionName)
   }
 
   @throws[HiveSQLException]

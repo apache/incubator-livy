@@ -17,31 +17,21 @@
 
 package org.apache.livy.thriftserver.session;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.apache.livy.Job;
+import org.apache.livy.JobContext;
 
-import static scala.collection.JavaConversions.seqAsJavaList;
+public class CleanupCatalogResultJob implements Job<Boolean> {
+    private final String sessionId;
+    private final String jobId;
 
-import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
-
-public class GetSchemasJob extends SparkCatalogJob {
-    private final String schemaName;
-
-    public GetSchemasJob(String schemaName, String sessionId, String jobId) {
-        super(sessionId, jobId);
-        this.schemaName = schemaName;
+    public CleanupCatalogResultJob(String sessionId, String jobId) {
+        this.sessionId = sessionId;
+        this.jobId = jobId;
     }
 
     @Override
-    protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
-        List<String> databases = seqAsJavaList(catalog.listDatabases(schemaName));
-        List<Object[]> schemas = new ArrayList<>();
-        for(String db : databases) {
-            schemas.add(new Object[]{
-                db,
-                DEFAULT_HIVE_CATALOG,
-            });
-        }
-        return schemas;
+    public Boolean call(JobContext jc) throws Exception {
+        ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
+        return session.cleanupCatalogJob(jobId);
     }
 }

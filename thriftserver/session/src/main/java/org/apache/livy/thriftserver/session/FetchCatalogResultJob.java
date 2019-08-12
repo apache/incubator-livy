@@ -18,30 +18,34 @@
 package org.apache.livy.thriftserver.session;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
-import static scala.collection.JavaConversions.seqAsJavaList;
+import org.apache.livy.Job;
+import org.apache.livy.JobContext;
 
-import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
+public class FetchCatalogResultJob implements Job<List<Object[]>> {
+    private final String sessionId;
+    private final String jobId;
+    private final int maxRows;
 
-public class GetSchemasJob extends SparkCatalogJob {
-    private final String schemaName;
-
-    public GetSchemasJob(String schemaName, String sessionId, String jobId) {
-        super(sessionId, jobId);
-        this.schemaName = schemaName;
+    public FetchCatalogResultJob(String sessionId, String jobId, int maxRows) {
+        this.sessionId = sessionId;
+        this.jobId = jobId;
+        this.maxRows = maxRows;
     }
 
     @Override
-    protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
-        List<String> databases = seqAsJavaList(catalog.listDatabases(schemaName));
-        List<Object[]> schemas = new ArrayList<>();
-        for(String db : databases) {
-            schemas.add(new Object[]{
-                db,
-                DEFAULT_HIVE_CATALOG,
-            });
+    public List<Object[]> call(JobContext jc) throws Exception {
+        ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
+        Iterator<Object[]> iterator = session.findCatalogJob(jobId).iter;
+
+        List<Object[]> result = new ArrayList<>();
+        int n = 0;
+        while (iterator.hasNext() && n < maxRows) {
+            result.add(iterator.next());
+            n += 1;
         }
-        return schemas;
+        return result;
     }
 }

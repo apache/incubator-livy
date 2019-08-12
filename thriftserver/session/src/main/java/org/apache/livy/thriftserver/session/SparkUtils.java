@@ -59,6 +59,11 @@ final class SparkUtils {
     return types;
   }
 
+  /**
+   * This method is ported from Spark Hive Thrift server Type class
+   * @param type
+   * @return
+   */
   public static int toJavaSQLType(org.apache.spark.sql.types.DataType type) {
     if (type instanceof NullType) {
       return Types.NULL;
@@ -97,6 +102,11 @@ final class SparkUtils {
     }
   }
 
+  /**
+   * This method is ported from Spark hive Thrift server TypeDescriptor
+   * @param type
+   * @return
+   */
   public static Integer getColumnSize(org.apache.spark.sql.types.DataType type) {
     if (type instanceof ByteType) {
       return 3;
@@ -124,6 +134,11 @@ final class SparkUtils {
     }
   }
 
+  /**
+   * This method is ported from Spark hive Thrift server TypeDescriptor
+   * @param type
+   * @return
+   */
   public static Integer getDecimalDigits(org.apache.spark.sql.types.DataType type) {
     if (type instanceof BooleanType || type instanceof ByteType || type instanceof ShortType
         || type instanceof IntegerType || type instanceof LongType) {
@@ -141,6 +156,11 @@ final class SparkUtils {
     }
   }
 
+  /**
+   * This method is ported from Spark Hive Thrift server Type class
+   * @param type
+   * @return
+   */
   public static Integer getNumPrecRadix(org.apache.spark.sql.types.DataType type) {
     if (type instanceof ByteType || type instanceof ShortType || type instanceof IntegerType
         || type instanceof LongType || type instanceof FloatType || type instanceof DoubleType
@@ -150,5 +170,4 @@ final class SparkUtils {
       return null;
     }
   }
-
 }

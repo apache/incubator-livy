@@ -22,31 +22,31 @@ import java.util.List;
 
 import static scala.collection.JavaConversions.seqAsJavaList;
 
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.types.StructField;
 
-import org.apache.livy.Job;
-import org.apache.livy.JobContext;
-
-public class GetColumnsJob implements Job<List<Object[]>> {
+public class GetColumnsJob extends SparkCatalogJob {
     private final String databasePattern;
     private final String tablePattern;
     private final String columnPattern;
 
-    private static final String DEFAULT_HIVE_CATALOG = "";
-
-    public GetColumnsJob(String databasePattern, String tablePattern, String columnPattern) {
+    public GetColumnsJob(
+        String databasePattern,
+        String tablePattern,
+        String columnPattern,
+        String sessionId,
+        String jobId
+    ) {
+        super(sessionId, jobId);
         this.databasePattern = databasePattern;
         this.tablePattern = tablePattern;
         this.columnPattern = columnPattern;
     }
 
     @Override
-    public List<Object[]> call(JobContext jc) throws Exception {
-        SessionCatalog catalog = ((SparkSession)jc.sparkSession()).sessionState().catalog();
+    protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
         List<Object[]> columnList = new ArrayList<Object[]>();
         List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));
 
@@ -58,7 +58,7 @@ public class GetColumnsJob implements Job<List<Object[]>> {
                 List<StructField> fields = seqAsJavaList(table.schema());
                 int position = 0;
                 for(StructField field: fields) {
-                    if (field.name().matches(columnPattern)) {
+                    if (columnPattern == null || field.name().matches(columnPattern)) {
                         columnList.add(new Object[] {
                             DEFAULT_HIVE_CATALOG,
                             table.database(),

@@ -17,31 +17,35 @@
 
 package org.apache.livy.thriftserver.session;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static scala.collection.JavaConversions.seqAsJavaList;
-
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 
-public class GetSchemasJob extends SparkCatalogJob {
-    private final String schemaName;
+import org.apache.livy.Job;
+import org.apache.livy.JobContext;
 
-    public GetSchemasJob(String schemaName, String sessionId, String jobId) {
-        super(sessionId, jobId);
-        this.schemaName = schemaName;
+public abstract class SparkCatalogJob implements Job<Void> {
+
+    protected static final String DEFAULT_HIVE_CATALOG = "";
+
+    private final String sessionId;
+    private final String jobId;
+
+    public SparkCatalogJob(String sessionId, String jobId) {
+        this.sessionId = sessionId;
+        this.jobId = jobId;
     }
 
+    protected abstract List<Object[]> fetchCatalogObjects(SessionCatalog catalog);
+
     @Override
-    protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
-        List<String> databases = seqAsJavaList(catalog.listDatabases(schemaName));
-        List<Object[]> schemas = new ArrayList<>();
-        for(String db : databases) {
-            schemas.add(new Object[]{
-                db,
-                DEFAULT_HIVE_CATALOG,
-            });
-        }
-        return schemas;
+    public Void call(JobContext jc) throws Exception {
+        SessionCatalog catalog = ((SparkSession)jc.sparkSession()).sessionState().catalog();
+        List<Object[]> objects = fetchCatalogObjects(catalog);
+
+        ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
+        session.registerCatalogJob(jobId, objects.iterator());
+        return null;
     }
 }

@@ -17,10 +17,10 @@
 
 package org.apache.livy.thriftserver.operation
 
+import org.apache.commons.lang.exception.ExceptionUtils
 import org.apache.hive.service.cli.{HiveSQLException, OperationState, OperationType, SessionHandle}
 
 import org.apache.livy.Logging
-import org.apache.livy.thriftserver.serde.ThriftResultSet
 import org.apache.livy.thriftserver.types.{BasicDataType, Field, Schema}
 import org.apache.livy.thriftserver.LivyThriftSessionManager
 import org.apache.livy.thriftserver.session.{GetColumnsJob, GetFunctionsJob}
@@ -32,35 +32,30 @@ class GetColumnsOperation(
     tableName: String,
     columnName: String,
     sessionManager: LivyThriftSessionManager)
-  extends MetadataOperation(sessionHandle, OperationType.GET_COLUMNS) with Logging {
+  extends SparkCatalogOperation(
+    sessionHandle, OperationType.GET_COLUMNS, sessionManager) with Logging {
 
   info("Starting GetColumnsOperation")
-
-  // The initialization need to be lazy in order not to block when the instance is created
-  private lazy val rscClient = {
-    // This call is blocking, we are waiting for the session to be ready.
-    sessionManager.getLivySession(sessionHandle).client.get
-  }
-
-  protected val rowSet = ThriftResultSet.apply(GetColumnsOperation.SCHEMA, protocolVersion)
 
   @throws(classOf[HiveSQLException])
   override protected def runInternal(): Unit = {
     setState(OperationState.RUNNING)
     info("Fetching columns list")
     try {
-      val columns = rscClient.submit(new GetColumnsJob(
+      rscClient.submit(new GetColumnsJob(
         convertSchemaPattern(schemaName),
         convertIdentifierPattern(tableName, datanucleusFormat = true),
-        columnName
+        if (columnName == null) null else convertIdentifierPattern(
+          columnName, datanucleusFormat = false),
+        seesionId,
+        jobId
       )).get()
 
-      import scala.collection.JavaConverters._
-      columns.asScala.foreach(c => rowSet.addRow(c.asInstanceOf[Array[Any]]))
       setState(OperationState.FINISHED)
       info("Fetching column list has been successfully finished")
     } catch {
       case e: Throwable =>
+        error("Remote job meet an exception: " + ExceptionUtils.getFullStackTrace(e))
         setState(OperationState.ERROR)
         throw new HiveSQLException(e)
     }

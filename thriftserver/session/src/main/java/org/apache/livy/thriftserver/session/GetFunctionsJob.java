@@ -23,26 +23,23 @@ import java.util.List;
 import scala.Tuple2;
 import static scala.collection.JavaConversions.seqAsJavaList;
 
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.FunctionIdentifier;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.catalyst.expressions.ExpressionInfo;
 
-import org.apache.livy.Job;
-import org.apache.livy.JobContext;
-
-public class GetFunctionsJob implements Job<List<Object[]>> {
+public class GetFunctionsJob extends SparkCatalogJob {
     private final String databasePattern;
     private final String functionName;
 
-    public GetFunctionsJob(String databasePattern, String functionName) {
+    public GetFunctionsJob(
+      String databasePattern, String functionName, String sessionId, String jobId) {
+        super(sessionId, jobId);
         this.databasePattern = databasePattern;
         this.functionName = functionName;
     }
 
     @Override
-    public List<Object[]> call(JobContext jc) throws Exception {
-        SessionCatalog catalog = ((SparkSession)jc.sparkSession()).sessionState().catalog();
+    protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
         List<Object[]> funcList = new ArrayList<Object[]>();
 
         List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));

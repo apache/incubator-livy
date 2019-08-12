@@ -70,7 +70,7 @@ trait CommonThriftTests {
     assert(!resultSetComplex.next())
   }
 
-  def metaDataOperationTest(connection: Connection): Unit = {
+  def getSchemasTest(connection: Connection): Unit = {
     val metadata = connection.getMetaData
     val schemaResultSet = metadata.getSchemas()
     assert(schemaResultSet.getMetaData.getColumnCount == 2)
@@ -79,6 +79,10 @@ trait CommonThriftTests {
     schemaResultSet.next()
     assert(schemaResultSet.getString(1) == "default")
     assert(!schemaResultSet.next())
+  }
+
+  def getFunctionsTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
 
     val functionResultSet = metadata.getFunctions("", "default", "unix_timestamp")
     assert(functionResultSet.getMetaData.getColumnCount == 6)
@@ -93,10 +97,15 @@ trait CommonThriftTests {
     assert(functionResultSet.getString(6) ==
       "org.apache.spark.sql.catalyst.expressions.UnixTimestamp")
     assert(!functionResultSet.next())
+  }
 
+  def getTablesTest(connection: Connection): Unit = {
     val statement = connection.createStatement()
-    statement.execute("CREATE TABLE test (id integer, desc string) USING json")
-    val tablesResultSet = metadata.getTables("", "default", "*", Array("MANAGED"))
+    statement.execute("CREATE TABLE test_get_tables (id integer, desc string) USING json")
+    statement.close()
+
+    val metadata = connection.getMetaData
+    val tablesResultSet = metadata.getTables("", "default", "*", Array("TABLE"))
     assert(tablesResultSet.getMetaData.getColumnCount == 5)
     assert(tablesResultSet.getMetaData.getColumnName(1) == "TABLE_CAT")
     assert(tablesResultSet.getMetaData.getColumnName(2) == "TABLE_SCHEM")
@@ -105,25 +114,68 @@ trait CommonThriftTests {
     assert(tablesResultSet.getMetaData.getColumnName(5) == "REMARKS")
 
     tablesResultSet.next()
-    assert(tablesResultSet.getString(3) == "test")
-    assert(tablesResultSet.getString(4) == "MANAGED")
+    assert(tablesResultSet.getString(3) == "test_get_tables")
+    assert(tablesResultSet.getString(4) == "TABLE")
     assert(!tablesResultSet.next())
+  }
 
+  def getColumnsTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val statement = connection.createStatement()
+    statement.execute("CREATE TABLE test_get_columns (id integer, desc string) USING json")
+    statement.close()
 
-    val columnsResultSet = metadata.getColumns("", "default", "test", ".*")
+    val columnsResultSet = metadata.getColumns("", "default", "test_get_columns", ".*")
     assert(columnsResultSet.getMetaData.getColumnCount == 23)
     columnsResultSet.next()
+    assert(columnsResultSet.getString(1) == "")
     assert(columnsResultSet.getString(2) == "default")
-    assert(columnsResultSet.getString(3) == "test")
+    assert(columnsResultSet.getString(3) == "test_get_columns")
     assert(columnsResultSet.getString(4) == "id")
+    assert(columnsResultSet.getInt(5) == 4)
     assert(columnsResultSet.getString(6) == "integer")
+    assert(columnsResultSet.getInt(7) == 10)
+    assert(columnsResultSet.getString(8) == null)
+    assert(columnsResultSet.getInt(9) == 0)
+    assert(columnsResultSet.getInt(10) == 10)
+    assert(columnsResultSet.getInt(11) == 1)
+    assert(columnsResultSet.getString(12) == "")
+    assert(columnsResultSet.getString(13) == null)
+    assert(columnsResultSet.getString(14) == null)
+    assert(columnsResultSet.getString(15) == null)
+    assert(columnsResultSet.getString(15) == null)
+    assert(columnsResultSet.getInt(17) == 0)
+    assert(columnsResultSet.getString(18) == "YES")
+    assert(columnsResultSet.getString(19) == null)
+    assert(columnsResultSet.getString(20) == null)
+    assert(columnsResultSet.getString(21) == null)
+    assert(columnsResultSet.getString(22) == null)
+    assert(columnsResultSet.getString(23) == "NO")
     columnsResultSet.next()
+    assert(columnsResultSet.getString(1) == "")
     assert(columnsResultSet.getString(2) == "default")
-    assert(columnsResultSet.getString(3) == "test")
+    assert(columnsResultSet.getString(3) == "test_get_columns")
     assert(columnsResultSet.getString(4) == "desc")
+    assert(columnsResultSet.getInt(5) == 12)
     assert(columnsResultSet.getString(6) == "string")
+    assert(columnsResultSet.getInt(7) == Integer.MAX_VALUE)
+    assert(columnsResultSet.getString(8) == null)
+    assert(columnsResultSet.getString(9) == null)
+    assert(columnsResultSet.getString(10) == null)
+    assert(columnsResultSet.getInt(11) == 1)
+    assert(columnsResultSet.getString(12) == "")
+    assert(columnsResultSet.getString(13) == null)
+    assert(columnsResultSet.getString(14) == null)
+    assert(columnsResultSet.getString(15) == null)
+    assert(columnsResultSet.getString(16) == null)
+    assert(columnsResultSet.getInt(17) == 1)
+    assert(columnsResultSet.getString(18) == "YES")
+    assert(columnsResultSet.getString(19) == null)
+    assert(columnsResultSet.getString(20) == null)
+    assert(columnsResultSet.getString(21) == null)
+    assert(columnsResultSet.getString(22) == null)
+    assert(columnsResultSet.getString(23) == "NO")
     assert(!columnsResultSet.next())
-    statement.close()
   }
 }
 
@@ -220,9 +272,27 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
     }
   }
 
-  test("fetch meta data") {
+  test("fetch schemas") {
     withJdbcConnection { connection =>
-      metaDataOperationTest(connection)
+      getSchemasTest(connection)
+    }
+  }
+
+  test("fetch functions") {
+    withJdbcConnection { connection =>
+      getFunctionsTest(connection)
+    }
+  }
+
+  test("fetch tables") {
+    withJdbcConnection { connection =>
+      getTablesTest(connection)
+    }
+  }
+
+  test("fetch column") {
+    withJdbcConnection { connection =>
+      getColumnsTest(connection)
     }
   }
 }
@@ -238,9 +308,27 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
     }
   }
 
-  test("fetch meta data") {
+  test("fetch schemas") {
     withJdbcConnection { connection =>
-      metaDataOperationTest(connection)
+      getSchemasTest(connection)
+    }
+  }
+
+  test("fetch functions") {
+    withJdbcConnection { connection =>
+      getFunctionsTest(connection)
+    }
+  }
+
+  test("fetch tables") {
+    withJdbcConnection { connection =>
+      getTablesTest(connection)
+    }
+  }
+
+  test("fetch column") {
+    withJdbcConnection { connection =>
+      getColumnsTest(connection)
     }
   }
 }
