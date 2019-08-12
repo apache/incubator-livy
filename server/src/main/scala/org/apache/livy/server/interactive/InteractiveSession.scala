@@ -183,7 +183,7 @@ object InteractiveSession extends Logging {
     }
 
     def findSparkRArchive(): Option[String] = {
-      Option(livyConf.get(RSCConf.Entry.SPARKR_PACKAGE.key())).orElse {
+      builderProperties.get(RSCConf.Entry.SPARKR_PACKAGE.key()).orElse {
         sys.env.get("SPARK_HOME").flatMap { case sparkHome =>
           val path = Seq(sparkHome, "R", "lib", "sparkr.zip").mkString(File.separator)
           val rArchivesFile = new File(path)
@@ -247,7 +247,7 @@ object InteractiveSession extends Logging {
     }
 
     def findPySparkArchives(): Seq[String] = {
-      Option(livyConf.get(RSCConf.Entry.PYSPARK_ARCHIVES))
+      builderProperties.get(RSCConf.Entry.PYSPARK_ARCHIVES.key())
         .map(_.split(",").toSeq)
         .getOrElse {
           sys.env.get("SPARK_HOME") .map { case sparkHome =>
