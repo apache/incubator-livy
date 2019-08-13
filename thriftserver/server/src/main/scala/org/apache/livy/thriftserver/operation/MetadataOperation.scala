@@ -33,6 +33,10 @@ abstract class MetadataOperation(sessionHandle: SessionHandle, opType: Operation
 
   protected def rowSet: ThriftResultSet
 
+  private var offset = 0
+
+  private lazy val EMPTY_ROW_SET = ThriftResultSet(getResultSetSchema, protocolVersion)
+
   @throws[HiveSQLException]
   override def close(): Unit = {
     setState(OperationState.CLOSED)
@@ -48,8 +52,14 @@ abstract class MetadataOperation(sessionHandle: SessionHandle, opType: Operation
     assertState(Seq(OperationState.FINISHED))
     validateFetchOrientation(orientation)
     if (orientation.equals(FetchOrientation.FETCH_FIRST)) {
-      rowSet.setRowOffset(0)
+      offset = 0
     }
-    rowSet
+
+    if (offset >= rowSet.numRows) {
+      EMPTY_ROW_SET
+    } else {
+      offset += rowSet.numRows
+      rowSet
+    }
   }
 }

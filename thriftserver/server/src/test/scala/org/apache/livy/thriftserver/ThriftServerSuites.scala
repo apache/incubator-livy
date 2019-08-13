@@ -190,6 +190,51 @@ trait CommonThriftTests {
       "Livy session has not yet started. Please wait for it to be ready...")
     assert(!logIterator.hasNext)
   }
+
+  def getCatalogTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val catalogResultSet = metadata.getCatalogs()
+    assert(!catalogResultSet.next())
+  }
+
+  def getTableTypeTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val tableTypesResultSet = metadata.getTableTypes()
+    tableTypesResultSet.next()
+    assert(tableTypesResultSet.getString(1) == "TABLE")
+    tableTypesResultSet.next()
+    assert(tableTypesResultSet.getString(1) == "VIEW")
+    assert(!tableTypesResultSet.next())
+  }
+
+  def getTypeInforTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val typeInfoResultSet = metadata.getTypeInfo()
+    typeInfoResultSet.next()
+    assert(typeInfoResultSet.getString(1) == "void")
+    assert(typeInfoResultSet.getInt(2) == 0)
+    assert(typeInfoResultSet.getInt(3) == 0)
+    assert(typeInfoResultSet.getString(4) == null)
+    assert(typeInfoResultSet.getString(5) == null)
+    assert(typeInfoResultSet.getString(6) == null)
+    assert(typeInfoResultSet.getShort(7) == 1)
+    assert(typeInfoResultSet.getBoolean(8) == false)
+    assert(typeInfoResultSet.getShort(9) == 0)
+    assert(typeInfoResultSet.getBoolean(10) == true)
+    assert(typeInfoResultSet.getBoolean(11) == false)
+    assert(typeInfoResultSet.getBoolean(12) == false)
+    assert(typeInfoResultSet.getString(13) == null)
+    assert(typeInfoResultSet.getShort(14) == 0)
+    assert(typeInfoResultSet.getShort(15) == 0)
+    assert(typeInfoResultSet.getInt(16) == 0)
+    assert(typeInfoResultSet.getInt(17) == 0)
+    assert(typeInfoResultSet.getInt(18) == 0)
+    val LEFT_TYPE_NUM = 16
+    for (i <- 1 to LEFT_TYPE_NUM) {
+      assert(typeInfoResultSet.next())
+    }
+    assert(!typeInfoResultSet.next())
+  }
 }
 
 class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
@@ -314,6 +359,24 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       operationLogRetrievalTest(statement)
     }
   }
+
+  test("fetch catalog test") {
+    withJdbcConnection { c =>
+      getCatalogTest(c)
+    }
+  }
+
+  test("get table types test") {
+    withJdbcConnection { c =>
+      getTableTypeTest(c)
+    }
+  }
+
+  test("get types info test") {
+    withJdbcConnection { c =>
+      getTypeInforTest(c)
+    }
+  }
 }
 
 class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
@@ -354,6 +417,24 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
   test("operation log retrieval test") {
     withJdbcStatement { statement =>
       operationLogRetrievalTest(statement)
+    }
+  }
+
+  test("fetch catalog test") {
+    withJdbcConnection { c =>
+      getCatalogTest(c)
+    }
+  }
+
+  test("get table types test") {
+    withJdbcConnection { c =>
+      getTableTypeTest(c)
+    }
+  }
+
+  test("get types info test") {
+    withJdbcConnection { c =>
+      getTypeInforTest(c)
     }
   }
 }
