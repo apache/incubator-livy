@@ -26,9 +26,9 @@ import org.apache.livy.LivyConf
   * Livy Server Discovery manager.
   * Stores information about Livy Server location in ZooKeeper.
   * The address will be stored in
-  * "/{@code ZK_KEY_PREFIX_CONF}/{@code LIVY_SERVER_URI_KEY}" znode by default
-  * e.g. "/livy/server.uri".
-  * Need to set {@code livy.server.zookeeper.url} to be able to get information from ZooKeeper.
+  * "/{@code LIVY_ZOOKEEPER_NAMESPACE}/{@code LIVY_SERVER_ZOOKEEPER_NAMESPACE}" znode
+  * By default, the full path to znode is /livy/server.uri.
+  * Need to set {@code livy.zookeeper.url} to be able to get information from ZooKeeper.
   *
   * @param livyConf - Livy configurations
   * @param mockCuratorClient - used for testing

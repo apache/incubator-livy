@@ -84,7 +84,7 @@ public final class LivyClientBuilder {
   /**
    * Set Livy Server URI.
    * This is possible to set it manually or get URI from LivyDiscoveryManager
-   * ({@code livy.server.zookeeper.url} should be configured).
+   * ({@code livy.zookeeper.url} should be configured).
    *
    * @param uri Livy Server URI
    * @return this builder

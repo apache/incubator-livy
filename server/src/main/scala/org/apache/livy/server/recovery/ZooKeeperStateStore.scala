@@ -27,7 +27,7 @@ import org.apache.livy.server.discovery.ZooKeeperManager
   * Implementation for Livy State Store which uses Zookeeper as backend storage.
   * Set {@code livy.server.recovery.mode} to ``recovery``
   * and {@code livy.server.recovery.state-store} to ``zookeeper`` to enable ZooKeeper state store.
-  * Also need to set {@code livy.server.zookeeper.url} to be able to get information from ZooKeeper.
+  * Also need to set {@code livy.zookeeper.url} to be able to get information from ZooKeeper.
   *
   * @param livyConf
   * @param mockCuratorClient

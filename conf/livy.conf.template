@@ -123,7 +123,7 @@
 # Name of base Livy znode. Default livy
 # livy.zookeeper.namespace = livy
 # Name of Livy Server znode. Uses livy.zookeeper.namespace as parent.
-# By default will be /livy/server.uri
+# By default, the full path to znode is /livy/server.uri
 # livy.server.zookeeper.namespace = server.uri
 # Number of trials to establish the connection to ZooKeeper quorum
 # livy.server.zookeeper.connection.max.retries = 3

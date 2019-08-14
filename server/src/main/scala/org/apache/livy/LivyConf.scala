@@ -211,7 +211,7 @@ object LivyConf {
     Entry("livy.server.zookeeper.connection.retry.interval.ms", 500)
 
   // Name of Livy Server znode. Uses LIVY_ZOOKEEPER_NAMESPACE as parent.
-  // By default will be /livy/server.uri
+  // By default, the full path to znode is /livy/server.uri
   val LIVY_SERVER_ZOOKEEPER_NAMESPACE = Entry("livy.server.zookeeper.namespace", "server.uri")
 
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
