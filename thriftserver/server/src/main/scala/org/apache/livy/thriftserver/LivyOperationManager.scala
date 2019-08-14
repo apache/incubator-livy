@@ -188,18 +188,25 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
   }
 
   @throws[HiveSQLException]
-  def getTables(sessionHandle: SessionHandle, catalogName: String, schemaName: String,
-      tableName: String, tableTypes: util.List[String]): OperationHandle = {
-    executeOperation(sessionHandle, {
-      val op = new GetTablesOperation(sessionHandle, catalogName, schemaName, tableName, tableTypes,
-        livyThriftSessionManager)
+  def getTables(
+      sessionHandle: SessionHandle,
+      catalogName: String,
+      schemaName: String,
+      tableName: String,
+      tableTypes: util.List[String]): OperationHandle = {
+      executeOperation(sessionHandle, {
+    val op = new GetTablesOperation(sessionHandle, catalogName, schemaName, tableName, tableTypes,
+      livyThriftSessionManager)
       addOperation(op, sessionHandle)
       op
     })
   }
 
   @throws[HiveSQLException]
-  def getFunctions(sessionHandle: SessionHandle, catalogName: String, schemaName: String,
+  def getFunctions(
+      sessionHandle: SessionHandle,
+      catalogName: String,
+      schemaName: String,
       functionName: String): OperationHandle = {
     executeOperation(sessionHandle, {
       val op = new GetFunctionsOperation(sessionHandle, catalogName, schemaName, functionName,
@@ -223,8 +230,12 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
   }
 
   @throws[HiveSQLException]
-  def getColumns(sessionHandle: SessionHandle, catalogName: String, schemaName: String,
-      tableName: String, columnName: String): OperationHandle = {
+  def getColumns(
+      sessionHandle: SessionHandle,
+      catalogName: String,
+      schemaName: String,
+      tableName: String,
+      columnName: String): OperationHandle = {
     executeOperation(sessionHandle, {
       val op = new GetColumnsOperation(sessionHandle, catalogName, schemaName, tableName,
         columnName, livyThriftSessionManager)

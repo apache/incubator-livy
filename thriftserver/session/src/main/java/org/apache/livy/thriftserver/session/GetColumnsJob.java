@@ -28,67 +28,66 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.types.StructField;
 
 public class GetColumnsJob extends SparkCatalogJob {
-    private final String databasePattern;
-    private final String tablePattern;
-    private final String columnPattern;
+  private final String databasePattern;
+  private final String tablePattern;
+  private final String columnPattern;
 
-    public GetColumnsJob(
-        String databasePattern,
-        String tablePattern,
-        String columnPattern,
-        String sessionId,
-        String jobId
-    ) {
-        super(sessionId, jobId);
-        this.databasePattern = databasePattern;
-        this.tablePattern = tablePattern;
-        this.columnPattern = columnPattern;
-    }
+  public GetColumnsJob(
+    String databasePattern,
+    String tablePattern,
+    String columnPattern,
+    String sessionId,
+    String jobId) {
+      super(sessionId, jobId);
+      this.databasePattern = databasePattern;
+      this.tablePattern = tablePattern;
+      this.columnPattern = columnPattern;
+  }
 
-    @Override
-    protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
-        List<Object[]> columnList = new ArrayList<Object[]>();
-        List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));
+  @Override
+  protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
+    List<Object[]> columnList = new ArrayList<Object[]>();
+    List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));
 
-        for (String db: databases) {
-            List<TableIdentifier> tableIdentifiers =
-                seqAsJavaList(catalog.listTables(db, tablePattern));
-            for(TableIdentifier tableIdentifier: tableIdentifiers) {
-                CatalogTable table = catalog.getTempViewOrPermanentTableMetadata(tableIdentifier);
-                List<StructField> fields = seqAsJavaList(table.schema());
-                int position = 0;
-                for(StructField field: fields) {
-                    if (columnPattern == null || field.name().matches(columnPattern)) {
-                        columnList.add(new Object[] {
-                            DEFAULT_HIVE_CATALOG,
-                            table.database(),
-                            table.identifier().table(),
-                            field.name(),
-                            SparkUtils.toJavaSQLType(field.dataType()), // datatype
-                            field.dataType().typeName(),
-                            SparkUtils.getColumnSize(field.dataType()), //columnsize,
-                            null, // BUFFER_LENGTH, unused,
-                            SparkUtils.getDecimalDigits(field.dataType()),
-                            SparkUtils.getNumPrecRadix(field.dataType()),
-                            field.nullable() ? 1 : 0,
-                            field.getComment().isDefined() ? field.getComment().get() : "",
-                            null, // COLUMN_DEF
-                            null, // SQL_DATA_TYPE
-                            null, // SQL_DATETIME_SUB
-                            null, // CHAR_OCTET_LENGTH
-                            position,
-                            field.nullable() ? "YES" : "NO", // IS_NULLABLE
-                            null, // SCOPE_CATALOG
-                            null, // SCOPE_SCHEMA
-                            null, // SCOPE_TABLE
-                            null, // SOURCE_DATA_TYPE
-                            "NO" // IS_AUTO_INCREMENT
-                        });
-                        position += 1;
-                    }
-                }
-            }
+    for (String db : databases) {
+      List<TableIdentifier> tableIdentifiers =
+        seqAsJavaList(catalog.listTables(db, tablePattern));
+      for (TableIdentifier tableIdentifier : tableIdentifiers) {
+        CatalogTable table = catalog.getTempViewOrPermanentTableMetadata(tableIdentifier);
+        List<StructField> fields = seqAsJavaList(table.schema());
+        int position = 0;
+        for (StructField field : fields) {
+          if (columnPattern == null || field.name().matches(columnPattern)) {
+            columnList.add(new Object[]{
+              DEFAULT_HIVE_CATALOG,
+              table.database(),
+              table.identifier().table(),
+              field.name(),
+              SparkUtils.toJavaSQLType(field.dataType()), // datatype
+              field.dataType().typeName(),
+              SparkUtils.getColumnSize(field.dataType()), //columnsize,
+              null, // BUFFER_LENGTH, unused,
+              SparkUtils.getDecimalDigits(field.dataType()),
+              SparkUtils.getNumPrecRadix(field.dataType()),
+              field.nullable() ? 1 : 0,
+              field.getComment().isDefined() ? field.getComment().get() : "",
+              null, // COLUMN_DEF
+              null, // SQL_DATA_TYPE
+              null, // SQL_DATETIME_SUB
+              null, // CHAR_OCTET_LENGTH
+              position,
+              field.nullable() ? "YES" : "NO", // IS_NULLABLE
+              null, // SCOPE_CATALOG
+              null, // SCOPE_SCHEMA
+              null, // SCOPE_TABLE
+              null, // SOURCE_DATA_TYPE
+              "NO" // IS_AUTO_INCREMENT
+            });
+            position += 1;
+          }
         }
-        return columnList;
+      }
     }
+    return columnList;
+  }
 }

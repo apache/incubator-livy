@@ -215,7 +215,6 @@ class LivyCLIService(server: LivyThriftServer)
       sessionHandle: SessionHandle,
       catalogName: String,
       schemaName: String): OperationHandle = {
-    debug(sessionHandle + ": getSchemas()")
     sessionManager.operationManager.getSchemas(
       sessionHandle, catalogName, schemaName)
   }
@@ -227,7 +226,6 @@ class LivyCLIService(server: LivyThriftServer)
       schemaName: String,
       tableName: String,
       tableTypes: util.List[String]): OperationHandle = {
-    debug(sessionHandle + ": getTables()")
     sessionManager.operationManager.getTables(
       sessionHandle, catalogName, schemaName, tableName, tableTypes)
   }
@@ -245,7 +243,6 @@ class LivyCLIService(server: LivyThriftServer)
       schemaName: String,
       tableName: String,
       columnName: String): OperationHandle = {
-    debug(sessionHandle + ": getColumns()")
     sessionManager.operationManager.getColumns(
       sessionHandle, catalogName, schemaName, tableName, columnName)
   }
@@ -256,7 +253,6 @@ class LivyCLIService(server: LivyThriftServer)
       catalogName: String,
       schemaName: String,
       functionName: String): OperationHandle = {
-    debug(sessionHandle + ": getFunctions()")
     sessionManager.operationManager.getFunctions(
       sessionHandle, catalogName, schemaName, functionName)
   }

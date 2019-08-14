@@ -27,7 +27,6 @@ import org.apache.livy.thriftserver.session.{CleanupCatalogResultJob, FetchCatal
 /**
  * SparkCatalogOperation is the base class for operations which need to fetch catalog information
  * from spark session.
- *
  */
 abstract class SparkCatalogOperation(
     sessionHandle: SessionHandle,
@@ -46,15 +45,15 @@ abstract class SparkCatalogOperation(
       this.opHandle.getHandleIdentifier.getSecretId.toString
   }
 
-  protected lazy val seesionId = {
+  protected lazy val sessionId = {
     sessionHandle.getSessionId.toString
   }
 
   @throws[HiveSQLException]
   override def close(): Unit = {
-    val cleaned = rscClient.submit(new CleanupCatalogResultJob(seesionId, jobId)).get()
-    if (cleaned) {
-      warn(s"Fail to cleanup fetch catalog job (session = ${seesionId}), " +
+    val cleaned = rscClient.submit(new CleanupCatalogResultJob(sessionId, jobId)).get()
+    if (!cleaned) {
+      warn(s"Fail to cleanup fetch catalog job (session = ${sessionId}), " +
         "this message can be ignored if the job failed.")
     }
     setState(OperationState.CLOSED)
@@ -110,11 +109,11 @@ abstract class SparkCatalogOperation(
     assertState(Seq(OperationState.FINISHED))
     setHasResultSet(true)
     val maxRows = maxRowsL.toInt
-    val results = rscClient.submit(new FetchCatalogResultJob(seesionId, jobId, maxRows)).get()
+    val results = rscClient.submit(new FetchCatalogResultJob(sessionId, jobId, maxRows)).get()
 
     val rowSet = ThriftResultSet.apply(getResultSetSchema, protocolVersion)
     import scala.collection.JavaConverters._
-    results.asScala.foreach(r => rowSet.addRow(r.asInstanceOf[Array[Any]]))
+    results.asScala.foreach {r => rowSet.addRow(r.asInstanceOf[Array[Any]])}
     return rowSet
   }
 }

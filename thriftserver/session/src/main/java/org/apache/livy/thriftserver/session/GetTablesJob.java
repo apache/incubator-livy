@@ -28,68 +28,66 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 
 public class GetTablesJob extends SparkCatalogJob {
-    private final String databasePattern;
-    private final String tablePattern;
-    private final List<String> tableTypes = new ArrayList<String>();
+  private final String databasePattern;
+  private final String tablePattern;
+  private final List<String> tableTypes = new ArrayList<String>();
 
-    public GetTablesJob(
-        String databasePattern,
-        String tablePattern,
-        List<String> tableTypes,
-        String sessionId,
-        String jobId
-    ) {
-        super(sessionId, jobId);
-        this.databasePattern = databasePattern;
-        this.tablePattern = tablePattern;
-        if (tableTypes != null) {
-            for (String type : tableTypes) {
-                this.tableTypes.add(type.toUpperCase());
+  public GetTablesJob(
+      String databasePattern,
+      String tablePattern,
+      List<String> tableTypes,
+      String sessionId,
+      String jobId) {
+    super(sessionId, jobId);
+    this.databasePattern = databasePattern;
+    this.tablePattern = tablePattern;
+    if (tableTypes != null) {
+      for (String type : tableTypes) {
+        this.tableTypes.add(type.toUpperCase());
+      }
+    }
+  }
+
+  @Override
+  protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
+    List<Object[]> tableList = new ArrayList<Object[]>();
+    List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));
+    for (String db: databases) {
+      List<TableIdentifier> tableIdentifiers =
+        seqAsJavaList(catalog.listTables(db, tablePattern));
+      for(TableIdentifier tableIdentifier: tableIdentifiers) {
+        CatalogTable table = catalog.getTempViewOrPermanentTableMetadata(tableIdentifier);
+        String type = convertTableType(table.tableType().name());
+        if (tableTypes.isEmpty() || tableTypes.contains(type)) {
+          tableList.add(
+            new Object[] {
+              DEFAULT_HIVE_CATALOG,
+              table.database(),
+              table.identifier().table(),
+              type,
+              table.comment().isDefined() ? table.comment().get() : ""
             }
+            );
         }
+      }
     }
+    return tableList;
+  }
 
-    @Override
-    protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
-        List<Object[]> tableList = new ArrayList<Object[]>();
-        List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));
-        for (String db: databases) {
-            List<TableIdentifier> tableIdentifiers =
-                seqAsJavaList(catalog.listTables(db, tablePattern));
-            for(TableIdentifier tableIdentifier: tableIdentifiers) {
-                CatalogTable table = catalog.getTempViewOrPermanentTableMetadata(tableIdentifier);
-                String type = convertTableType(table.tableType().name());
-                if (tableTypes.isEmpty() || tableTypes.contains(type)) {
-                    tableList.add(
-                        new Object[] {
-                            DEFAULT_HIVE_CATALOG,
-                            table.database(),
-                            table.identifier().table(),
-                            type,
-                            table.comment().isDefined() ? table.comment().get() : ""
-                        }
-                    );
-                }
-            }
-        }
-        return tableList;
+  private String convertTableType(String originalType) {
+    if (originalType.equals(CatalogTableType.MANAGED().name())) {
+      return ClassicTableTypes.TABLE.name();
+    } else if (originalType.equals(CatalogTableType.EXTERNAL().name())) {
+      return ClassicTableTypes.TABLE.name();
+    } else if (originalType.equals(CatalogTableType.VIEW().name())) {
+      return ClassicTableTypes.VIEW.name();
+    } else {
+      throw new IllegalArgumentException("Invalid spark table type " + originalType);
     }
+  }
 
-
-    private String convertTableType(String originalType) {
-        if (originalType.equals(CatalogTableType.MANAGED().name())) {
-            return ClassicTableTypes.TABLE.name();
-        } else if (originalType.equals(CatalogTableType.EXTERNAL().name())) {
-            return ClassicTableTypes.TABLE.name();
-        } else if (originalType.equals(CatalogTableType.VIEW().name())) {
-            return ClassicTableTypes.VIEW.name();
-        } else {
-            throw new IllegalArgumentException("Invalid spark table type " + originalType);
-        }
-    }
-
-    private enum ClassicTableTypes {
-        TABLE,
-        VIEW,
-    }
+  private enum ClassicTableTypes {
+    TABLE,
+    VIEW,
+  }
 }

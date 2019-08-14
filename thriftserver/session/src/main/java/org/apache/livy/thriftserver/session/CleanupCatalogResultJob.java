@@ -21,17 +21,17 @@ import org.apache.livy.Job;
 import org.apache.livy.JobContext;
 
 public class CleanupCatalogResultJob implements Job<Boolean> {
-    private final String sessionId;
-    private final String jobId;
+  private final String sessionId;
+  private final String jobId;
 
-    public CleanupCatalogResultJob(String sessionId, String jobId) {
-        this.sessionId = sessionId;
-        this.jobId = jobId;
-    }
+  public CleanupCatalogResultJob(String sessionId, String jobId) {
+    this.sessionId = sessionId;
+    this.jobId = jobId;
+  }
 
-    @Override
-    public Boolean call(JobContext jc) throws Exception {
-        ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
-        return session.cleanupCatalogJob(jobId);
+  @Override
+  public Boolean call(JobContext jc) throws Exception {
+    ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
+      return session.cleanupCatalogJob(jobId);
     }
 }

@@ -20,9 +20,9 @@ package org.apache.livy.thriftserver.session;
 import java.util.Iterator;
 
 public class CatalogJobState {
-    final Iterator<Object[]> iter;
+  final Iterator<Object[]> iter;
 
-    public CatalogJobState(Iterator<Object[]> iter) {
+  public CatalogJobState(Iterator<Object[]> iter) {
         this.iter = iter;
     }
 }

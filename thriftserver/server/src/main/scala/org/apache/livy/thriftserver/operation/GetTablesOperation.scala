@@ -35,8 +35,6 @@ class GetTablesOperation(
   extends SparkCatalogOperation(
     sessionHandle, OperationType.GET_TABLES, sessionManager) with Logging {
 
-  info("Starting GetTablesOperation")
-
   @throws(classOf[HiveSQLException])
   override protected def runInternal(): Unit = {
     setState(OperationState.RUNNING)
@@ -46,7 +44,7 @@ class GetTablesOperation(
         convertSchemaPattern(schemaName),
         convertIdentifierPattern(tableName, datanucleusFormat = true),
         tableTypes,
-        seesionId,
+        sessionId,
         jobId
       )).get()
 

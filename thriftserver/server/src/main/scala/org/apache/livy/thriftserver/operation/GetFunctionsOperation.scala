@@ -34,8 +34,6 @@ class GetFunctionsOperation(
   extends SparkCatalogOperation(
     sessionHandle, OperationType.GET_FUNCTIONS, sessionManager) with Logging {
 
-  info("Starting GetFunctionsOperation")
-
   @throws(classOf[HiveSQLException])
   override protected def runInternal(): Unit = {
     setState(OperationState.RUNNING)
@@ -44,7 +42,7 @@ class GetFunctionsOperation(
       rscClient.submit(new GetFunctionsJob(
         convertSchemaPattern(schemaName),
         convertFunctionName(functionName),
-        seesionId,
+        sessionId,
         jobId
       )).get()
 

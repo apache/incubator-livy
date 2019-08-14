@@ -25,27 +25,27 @@ import org.apache.livy.Job;
 import org.apache.livy.JobContext;
 
 public class FetchCatalogResultJob implements Job<List<Object[]>> {
-    private final String sessionId;
-    private final String jobId;
-    private final int maxRows;
+  private final String sessionId;
+  private final String jobId;
+  private final int maxRows;
 
-    public FetchCatalogResultJob(String sessionId, String jobId, int maxRows) {
-        this.sessionId = sessionId;
-        this.jobId = jobId;
-        this.maxRows = maxRows;
+  public FetchCatalogResultJob(String sessionId, String jobId, int maxRows) {
+    this.sessionId = sessionId;
+    this.jobId = jobId;
+    this.maxRows = maxRows;
+  }
+
+  @Override
+  public List<Object[]> call(JobContext jc) throws Exception {
+    ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
+    Iterator<Object[]> iterator = session.findCatalogJob(jobId).iter;
+
+    List<Object[]> result = new ArrayList<>();
+    int n = 0;
+    while (iterator.hasNext() && n < maxRows) {
+      result.add(iterator.next());
+      n += 1;
     }
-
-    @Override
-    public List<Object[]> call(JobContext jc) throws Exception {
-        ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
-        Iterator<Object[]> iterator = session.findCatalogJob(jobId).iter;
-
-        List<Object[]> result = new ArrayList<>();
-        int n = 0;
-        while (iterator.hasNext() && n < maxRows) {
-            result.add(iterator.next());
-            n += 1;
-        }
-        return result;
-    }
+    return result;
+  }
 }

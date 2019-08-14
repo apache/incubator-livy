@@ -33,15 +33,13 @@ class GetSchemasOperation(
   extends SparkCatalogOperation(
     sessionHandle, OperationType.GET_SCHEMAS, sessionManager) with Logging {
 
-  info("Starting GetSchemasOperation")
-
   @throws(classOf[HiveSQLException])
   override protected def runInternal(): Unit = {
     setState(OperationState.RUNNING)
     info("Fetching schema list")
     try {
       rscClient.submit(new GetSchemasJob(
-        convertSchemaPattern(schemaName), seesionId, jobId
+        convertSchemaPattern(schemaName), sessionId, jobId
       )).get()
       setState(OperationState.FINISHED)
       info("Fetching schema list has been successfully finished")

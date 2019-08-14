@@ -25,23 +25,23 @@ import static scala.collection.JavaConversions.seqAsJavaList;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 
 public class GetSchemasJob extends SparkCatalogJob {
-    private final String schemaName;
+  private final String schemaName;
 
-    public GetSchemasJob(String schemaName, String sessionId, String jobId) {
-        super(sessionId, jobId);
-        this.schemaName = schemaName;
-    }
+  public GetSchemasJob(String schemaName, String sessionId, String jobId) {
+    super(sessionId, jobId);
+    this.schemaName = schemaName;
+  }
 
-    @Override
-    protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
-        List<String> databases = seqAsJavaList(catalog.listDatabases(schemaName));
-        List<Object[]> schemas = new ArrayList<>();
-        for(String db : databases) {
-            schemas.add(new Object[]{
-                db,
-                DEFAULT_HIVE_CATALOG,
-            });
-        }
-        return schemas;
+  @Override
+  protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
+    List<String> databases = seqAsJavaList(catalog.listDatabases(schemaName));
+    List<Object[]> schemas = new ArrayList<>();
+    for(String db : databases) {
+      schemas.add(new Object[]{
+        db,
+        DEFAULT_HIVE_CATALOG,
+      });
     }
+    return schemas;
+  }
 }

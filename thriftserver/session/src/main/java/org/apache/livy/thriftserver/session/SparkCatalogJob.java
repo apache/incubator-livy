@@ -26,26 +26,25 @@ import org.apache.livy.Job;
 import org.apache.livy.JobContext;
 
 public abstract class SparkCatalogJob implements Job<Void> {
+  protected static final String DEFAULT_HIVE_CATALOG = "";
 
-    protected static final String DEFAULT_HIVE_CATALOG = "";
+  private final String sessionId;
+  private final String jobId;
 
-    private final String sessionId;
-    private final String jobId;
+  public SparkCatalogJob(String sessionId, String jobId) {
+    this.sessionId = sessionId;
+    this.jobId = jobId;
+  }
 
-    public SparkCatalogJob(String sessionId, String jobId) {
-        this.sessionId = sessionId;
-        this.jobId = jobId;
-    }
+  protected abstract List<Object[]> fetchCatalogObjects(SessionCatalog catalog);
 
-    protected abstract List<Object[]> fetchCatalogObjects(SessionCatalog catalog);
+  @Override
+  public Void call(JobContext jc) throws Exception {
+    SessionCatalog catalog = ((SparkSession)jc.sparkSession()).sessionState().catalog();
+    List<Object[]> objects = fetchCatalogObjects(catalog);
 
-    @Override
-    public Void call(JobContext jc) throws Exception {
-        SessionCatalog catalog = ((SparkSession)jc.sparkSession()).sessionState().catalog();
-        List<Object[]> objects = fetchCatalogObjects(catalog);
-
-        ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
-        session.registerCatalogJob(jobId, objects.iterator());
-        return null;
-    }
+    ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
+    session.registerCatalogJob(jobId, objects.iterator());
+    return null;
+  }
 }

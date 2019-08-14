@@ -35,8 +35,6 @@ class GetColumnsOperation(
   extends SparkCatalogOperation(
     sessionHandle, OperationType.GET_COLUMNS, sessionManager) with Logging {
 
-  info("Starting GetColumnsOperation")
-
   @throws(classOf[HiveSQLException])
   override protected def runInternal(): Unit = {
     setState(OperationState.RUNNING)
@@ -45,9 +43,8 @@ class GetColumnsOperation(
       rscClient.submit(new GetColumnsJob(
         convertSchemaPattern(schemaName),
         convertIdentifierPattern(tableName, datanucleusFormat = true),
-        if (columnName == null) null else convertIdentifierPattern(
-          columnName, datanucleusFormat = false),
-        seesionId,
+        Option(columnName).map { convertIdentifierPattern(_, datanucleusFormat = false) }.orNull,
+        sessionId,
         jobId
       )).get()
 
