@@ -17,7 +17,11 @@
 
 package org.apache.livy.thriftserver
 
-import java.sql.{Connection, Date, SQLException, Statement}
+import java.sql.Connection
+import java.sql.Date
+import java.sql.SQLException
+import java.sql.Statement
+import java.sql.Types
 
 import org.apache.hive.jdbc.HiveStatement
 
@@ -194,6 +198,8 @@ trait CommonThriftTests {
   def getCatalogTest(connection: Connection): Unit = {
     val metadata = connection.getMetaData
     val catalogResultSet = metadata.getCatalogs()
+    // Spark doesn't support getCatalog. In current implementation, it's a no-op and not return
+    // any data
     assert(!catalogResultSet.next())
   }
 
@@ -210,28 +216,45 @@ trait CommonThriftTests {
   def getTypeInforTest(connection: Connection): Unit = {
     val metadata = connection.getMetaData
     val typeInfoResultSet = metadata.getTypeInfo()
-    typeInfoResultSet.next()
-    assert(typeInfoResultSet.getString(1) == "void")
-    assert(typeInfoResultSet.getInt(2) == 0)
-    assert(typeInfoResultSet.getInt(3) == 0)
-    assert(typeInfoResultSet.getString(4) == null)
-    assert(typeInfoResultSet.getString(5) == null)
-    assert(typeInfoResultSet.getString(6) == null)
-    assert(typeInfoResultSet.getShort(7) == 1)
-    assert(typeInfoResultSet.getBoolean(8) == false)
-    assert(typeInfoResultSet.getShort(9) == 0)
-    assert(typeInfoResultSet.getBoolean(10) == true)
-    assert(typeInfoResultSet.getBoolean(11) == false)
-    assert(typeInfoResultSet.getBoolean(12) == false)
-    assert(typeInfoResultSet.getString(13) == null)
-    assert(typeInfoResultSet.getShort(14) == 0)
-    assert(typeInfoResultSet.getShort(15) == 0)
-    assert(typeInfoResultSet.getInt(16) == 0)
-    assert(typeInfoResultSet.getInt(17) == 0)
-    assert(typeInfoResultSet.getInt(18) == 0)
-    val LEFT_TYPE_NUM = 16
-    for (i <- 1 to LEFT_TYPE_NUM) {
-      assert(typeInfoResultSet.next())
+    val expectResults = Array(
+      ("void", Types.NULL, 0, 1, false, 0, true, false, false, null, 0, 0, 0, 0, 0),
+      ("boolean", Types.BOOLEAN, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("byte", Types.TINYINT, 3, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("short", Types.SMALLINT, 5, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("integer", Types.INTEGER, 10, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("long", Types.BIGINT, 19, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("float", Types.FLOAT, 7, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("double", Types.DOUBLE, 15, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("date", Types.DATE, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("timestamp", Types.TIMESTAMP, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("string", Types.VARCHAR, 0, 1, true, 3, true, false, false, null, 0, 0, 0, 0, 0),
+      ("binary", Types.BINARY, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("decimal", Types.DECIMAL, 38, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("array", Types.ARRAY, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("map", Types.OTHER, 0, 1, false, 0, true, false, false, null, 0, 0, 0, 0, 0),
+      ("struct", Types.STRUCT, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("udt", Types.OTHER, 0, 1, false, 0, true, false, false, null, 0, 0, 0, 0, 0)
+    )
+    for (expect <- expectResults) {
+      typeInfoResultSet.next()
+      assert(typeInfoResultSet.getString(1) == expect._1)
+      assert(typeInfoResultSet.getInt(2) == expect._2)
+      assert(typeInfoResultSet.getInt(3) == expect._3)
+      assert(typeInfoResultSet.getString(4) == null)
+      assert(typeInfoResultSet.getString(5) == null)
+      assert(typeInfoResultSet.getString(6) == null)
+      assert(typeInfoResultSet.getShort(7) == expect._4)
+      assert(typeInfoResultSet.getBoolean(8) == expect._5)
+      assert(typeInfoResultSet.getShort(9) == expect._6)
+      assert(typeInfoResultSet.getBoolean(10) == expect._7)
+      assert(typeInfoResultSet.getBoolean(11) == expect._8)
+      assert(typeInfoResultSet.getBoolean(12) == expect._9)
+      assert(typeInfoResultSet.getString(13) == expect._10)
+      assert(typeInfoResultSet.getShort(14) == expect._11)
+      assert(typeInfoResultSet.getShort(15) == expect._12)
+      assert(typeInfoResultSet.getInt(16) == expect._13)
+      assert(typeInfoResultSet.getInt(17) == expect._14)
+      assert(typeInfoResultSet.getInt(18) == expect._15)
     }
     assert(!typeInfoResultSet.next())
   }
