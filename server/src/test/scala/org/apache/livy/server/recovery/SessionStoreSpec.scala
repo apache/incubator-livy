@@ -56,7 +56,7 @@ class SessionStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       )
       val stateStore = mock[StateStore]
       val sessionStore = new SessionStore(conf, stateStore)
-      when(stateStore.getChildren(sessionPath))
+      when(stateStore.getChildrenNodes(sessionPath))
         .thenReturn((validMetadata ++ corruptedMetadata).keys.toList)
 
       validMetadata.foreach { case (id, m) =>
@@ -78,7 +78,7 @@ class SessionStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
     it("should not throw if the state store is empty") {
       val stateStore = mock[StateStore]
       val sessionStore = new SessionStore(conf, stateStore)
-      when(stateStore.getChildren(sessionPath)).thenReturn(Seq.empty)
+      when(stateStore.getChildrenNodes(sessionPath)).thenReturn(Seq.empty)
 
       val s = sessionStore.getAllSessions[TestRecoveryMetadata](sessionType)
       s.filter(_.isSuccess) shouldBe empty

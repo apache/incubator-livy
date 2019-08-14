@@ -113,7 +113,7 @@ class FileSystemStateStore(
     }
   }
 
-  override def getChildren(key: String): Seq[String] = {
+  override def getChildrenNodes(key: String): Seq[String] = {
     try {
       fileContext.util.listStatus(absPath(key)).map(_.getPath.getName)
     } catch {

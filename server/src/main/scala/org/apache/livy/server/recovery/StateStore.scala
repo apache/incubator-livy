@@ -49,7 +49,7 @@ abstract class StateStore(livyConf: LivyConf) extends JsonMapper {
    * @return List of names of the direct children of the key.
    *         Empty list if the key doesn't exist or have no child.
    */
-  def getChildren(key: String): Seq[String]
+  def getChildrenNodes(key: String): Seq[String]
 
   /**
    * Remove the key from this state store. Does not throw if the key doesn't exist.

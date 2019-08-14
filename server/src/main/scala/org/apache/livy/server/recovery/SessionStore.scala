@@ -54,7 +54,7 @@ class SessionStore(
    * Return all sessions stored in the store with specified session type.
    */
   def getAllSessions[T <: RecoveryMetadata : ClassTag](sessionType: String): Seq[Try[T]] = {
-    store.getChildren(sessionPath(sessionType))
+    store.getChildrenNodes(sessionPath(sessionType))
       .flatMap { c => Try(c.toInt).toOption } // Ignore all non numerical keys
       .flatMap { id =>
         val p = sessionPath(sessionType, id)

@@ -109,7 +109,7 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       }
     }
 
-    it("getChildren should use curatorClient") {
+    it("getChildrenNodes should use curatorClient") {
       withMock { f =>
         mockExistsBuilder(f.curatorClient, true)
 
@@ -118,18 +118,18 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
         val children = List("abc", "def")
         when(getChildrenBuilder.forPath(prefixedKey)).thenReturn(children.asJava)
 
-        val c = f.stateStore.getChildren("key")
+        val c = f.stateStore.getChildrenNodes("key")
 
         verify(f.curatorClient).start()
         c shouldBe children
       }
     }
 
-    it("getChildren should return empty list if key doesn't exist") {
+    it("getChildrenNodes should return empty list if key doesn't exist") {
       withMock { f =>
         mockExistsBuilder(f.curatorClient, false)
 
-        val c = f.stateStore.getChildren("key")
+        val c = f.stateStore.getChildrenNodes("key")
 
         verify(f.curatorClient).start()
         c shouldBe empty

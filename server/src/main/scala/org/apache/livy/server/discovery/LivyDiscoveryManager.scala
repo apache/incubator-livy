@@ -33,9 +33,9 @@ import org.apache.livy.LivyConf
   * @param livyConf - Livy configurations
   * @param mockCuratorClient - used for testing
   */
-class LivyDiscoveryManager(livyConf: LivyConf,
-                           mockCuratorClient: Option[CuratorFramework] = None)
-  extends ZooKeeperManager(livyConf, mockCuratorClient) {
+class LivyDiscoveryManager(val livyConf: LivyConf,
+                           val mockCuratorClient: Option[CuratorFramework] = None)
+  extends ZooKeeperManager {
 
   private val LIVY_SERVER_URI_KEY = livyConf.get(LivyConf.LIVY_SERVER_ZOOKEEPER_NAMESPACE)
 

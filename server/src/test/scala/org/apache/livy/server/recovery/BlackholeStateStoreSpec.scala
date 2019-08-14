@@ -36,8 +36,8 @@ class BlackholeStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       v shouldBe None
     }
 
-    it("getChildren should return empty list") {
-      val c = stateStore.getChildren("")
+    it("getChildrenNodes should return empty list") {
+      val c = stateStore.getChildrenNodes("")
       c shouldBe empty
     }
 

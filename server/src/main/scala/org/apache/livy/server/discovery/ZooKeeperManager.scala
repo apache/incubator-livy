@@ -26,15 +26,10 @@ import org.apache.zookeeper.KeeperException.NoNodeException
 
 import org.apache.livy.{LivyConf, Logging}
 
-class ZooKeeperManager(
-    livyConf: LivyConf,
-    mockCuratorClient: Option[CuratorFramework] = None) // For testing
-   extends JsonMapper with Logging {
+trait ZooKeeperManager extends JsonMapper with Logging {
 
-  // Constructor defined for StateStore factory to new this class using reflection.
-  def this(livyConf: LivyConf) {
-    this(livyConf, None)
-  }
+  val livyConf: LivyConf
+  val mockCuratorClient: Option[CuratorFramework]
 
   private val zkAddress = livyConf.get(LivyConf.LIVY_ZOOKEEPER_URL)
   require(Option(zkAddress).isDefined, s"Please config ${LivyConf.LIVY_ZOOKEEPER_URL.key}.")
@@ -104,12 +99,4 @@ class ZooKeeperManager(
   }
 
   private def prefixKey(key: String) = s"/$zkKeyPrefix/$key"
-}
-
-object ZooKeeperManager {
-
-  def apply(livyConf: LivyConf,
-             mockCuratorClient: Option[CuratorFramework] = None): ZooKeeperManager = {
-    new ZooKeeperManager(livyConf, mockCuratorClient)
-  }
 }

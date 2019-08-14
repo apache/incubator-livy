@@ -32,11 +32,9 @@ import org.apache.livy.server.discovery.ZooKeeperManager
   * @param livyConf
   * @param mockCuratorClient
   */
-class ZooKeeperStateStore(livyConf: LivyConf,
-                          mockCuratorClient: Option[CuratorFramework] = None) // For testing
-  extends StateStore(livyConf) with Logging {
-
-  val zooKeeperManager = ZooKeeperManager(livyConf, mockCuratorClient)
+class ZooKeeperStateStore(val livyConf: LivyConf,
+                          val mockCuratorClient: Option[CuratorFramework] = None) // For testing
+  extends StateStore(livyConf) with ZooKeeperManager with Logging {
 
   // Constructor defined for StateStore factory to new this class using reflection.
   def this(livyConf: LivyConf) {
@@ -44,18 +42,18 @@ class ZooKeeperStateStore(livyConf: LivyConf,
   }
 
   override def set(key: String, value: Object): Unit = {
-    zooKeeperManager.setData(key, value)
+    setData(key, value)
   }
 
   override def get[T: ClassTag](key: String): Option[T] = {
-    zooKeeperManager.getData[T](key)
+    getData[T](key)
   }
 
-  override def getChildren(key: String): Seq[String] = {
-    zooKeeperManager.getChildren(key)
+  override def getChildrenNodes(key: String): Seq[String] = {
+    getChildren(key)
   }
 
   override def remove(key: String): Unit = {
-    zooKeeperManager.delete(key)
+    delete(key)
   }
 }

@@ -30,7 +30,7 @@ class BlackholeStateStore(livyConf: LivyConf) extends StateStore(livyConf) {
 
   def get[T: ClassTag](key: String): Option[T] = None
 
-  def getChildren(key: String): Seq[String] = List.empty[String]
+  def getChildrenNodes(key: String): Seq[String] = List.empty[String]
 
   def remove(key: String): Unit = {}
 }
