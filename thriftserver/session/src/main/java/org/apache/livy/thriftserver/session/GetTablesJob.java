@@ -52,10 +52,10 @@ public class GetTablesJob extends SparkCatalogJob {
   protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
     List<Object[]> tableList = new ArrayList<Object[]>();
     List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));
-    for (String db: databases) {
+    for (String db : databases) {
       List<TableIdentifier> tableIdentifiers =
         seqAsJavaList(catalog.listTables(db, tablePattern));
-      for(TableIdentifier tableIdentifier: tableIdentifiers) {
+      for (TableIdentifier tableIdentifier : tableIdentifiers) {
         CatalogTable table = catalog.getTempViewOrPermanentTableMetadata(tableIdentifier);
         String type = convertTableType(table.tableType().name());
         if (tableTypes.isEmpty() || tableTypes.contains(type)) {

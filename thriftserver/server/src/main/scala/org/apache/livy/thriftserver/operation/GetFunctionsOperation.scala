@@ -17,7 +17,6 @@
 
 package org.apache.livy.thriftserver.operation
 
-import org.apache.commons.lang.exception.ExceptionUtils
 import org.apache.hive.service.cli.{HiveSQLException, OperationState, OperationType, SessionHandle}
 
 import org.apache.livy.Logging
@@ -37,7 +36,6 @@ class GetFunctionsOperation(
   @throws(classOf[HiveSQLException])
   override protected def runInternal(): Unit = {
     setState(OperationState.RUNNING)
-    info("Fetching function list")
     try {
       rscClient.submit(new GetFunctionsJob(
         convertSchemaPattern(schemaName),
@@ -47,10 +45,9 @@ class GetFunctionsOperation(
       )).get()
 
       setState(OperationState.FINISHED)
-      info("Fetching function list has been successfully finished")
     } catch {
       case e: Throwable =>
-        error("Remote job meet an exception: " + ExceptionUtils.getFullStackTrace(e))
+        error("Remote job meet an exception: ", e)
         setState(OperationState.ERROR)
         throw new HiveSQLException(e)
     }

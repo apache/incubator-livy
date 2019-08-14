@@ -52,7 +52,7 @@ public class GetFunctionsJob extends SparkCatalogJob {
       for (Tuple2<FunctionIdentifier, String> identifierType : identifiersTypes) {
         FunctionIdentifier function = identifierType._1;
         ExpressionInfo info = catalog.lookupFunctionInfo(function);
-        funcList.add(new Object[]{
+        funcList.add(new Object[] {
           null,
           function.database().isDefined() ? function.database().get() : null,
           function.funcName(),

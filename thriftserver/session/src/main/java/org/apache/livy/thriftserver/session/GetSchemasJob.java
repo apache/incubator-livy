@@ -37,7 +37,7 @@ public class GetSchemasJob extends SparkCatalogJob {
     List<String> databases = seqAsJavaList(catalog.listDatabases(schemaName));
     List<Object[]> schemas = new ArrayList<>();
     for(String db : databases) {
-      schemas.add(new Object[]{
+      schemas.add(new Object[] {
         db,
         DEFAULT_HIVE_CATALOG,
       });

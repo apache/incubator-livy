@@ -58,7 +58,7 @@ public class GetColumnsJob extends SparkCatalogJob {
         int position = 0;
         for (StructField field : fields) {
           if (columnPattern == null || field.name().matches(columnPattern)) {
-            columnList.add(new Object[]{
+            columnList.add(new Object[] {
               DEFAULT_HIVE_CATALOG,
               table.database(),
               table.identifier().table(),
