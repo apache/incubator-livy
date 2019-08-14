@@ -34,7 +34,7 @@ import org.apache.livy.server.discovery.ZooKeeperManager
   */
 class ZooKeeperStateStore(val livyConf: LivyConf,
                           val mockCuratorClient: Option[CuratorFramework] = None) // For testing
-  extends StateStore(livyConf) with ZooKeeperManager with Logging {
+  extends StateStore(livyConf) with ZooKeeperManager {
 
   // Constructor defined for StateStore factory to new this class using reflection.
   def this(livyConf: LivyConf) {
