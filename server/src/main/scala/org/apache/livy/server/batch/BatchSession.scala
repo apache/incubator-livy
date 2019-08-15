@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.sessions.{Session, SessionState}
+import org.apache.livy.sessions.{FinishedSessionState, Session, SessionState}
 import org.apache.livy.sessions.Session._
 import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
 
@@ -101,6 +101,7 @@ object BatchSession extends Logging {
             case 0 =>
             case exitCode =>
               warn(s"spark-submit exited with code $exitCode")
+              s.stateChanged(SparkApp.State.FAILED)
           }
         } finally {
           childProcesses.decrementAndGet()
@@ -182,6 +183,14 @@ class BatchSession(
   override def stateChanged(oldState: SparkApp.State, newState: SparkApp.State): Unit = {
     synchronized {
       debug(s"$this state changed from $oldState to $newState")
+      if (!_state.isInstanceOf[FinishedSessionState]) {
+        stateChanged(newState)
+      }
+    }
+  }
+
+  private def stateChanged(newState: SparkApp.State): Unit = {
+    synchronized {
       newState match {
         case SparkApp.State.RUNNING =>
           _state = SessionState.Running
