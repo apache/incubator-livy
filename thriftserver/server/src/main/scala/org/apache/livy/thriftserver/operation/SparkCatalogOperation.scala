@@ -113,7 +113,7 @@ abstract class SparkCatalogOperation(
 
     val rowSet = ThriftResultSet.apply(getResultSetSchema, protocolVersion)
     import scala.collection.JavaConverters._
-    results.asScala.foreach {r => rowSet.addRow(r.asInstanceOf[Array[Any]])}
+    results.asScala.foreach { r => rowSet.addRow(r.asInstanceOf[Array[Any]]) }
     return rowSet
   }
 }

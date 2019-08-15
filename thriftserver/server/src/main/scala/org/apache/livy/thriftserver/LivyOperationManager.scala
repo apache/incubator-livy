@@ -194,9 +194,14 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
       schemaName: String,
       tableName: String,
       tableTypes: util.List[String]): OperationHandle = {
-      executeOperation(sessionHandle, {
-    val op = new GetTablesOperation(sessionHandle, catalogName, schemaName, tableName, tableTypes,
-      livyThriftSessionManager)
+    executeOperation(sessionHandle, {
+      val op = new GetTablesOperation(
+        sessionHandle,
+        catalogName,
+        schemaName,
+        tableName,
+        tableTypes,
+        livyThriftSessionManager)
       addOperation(op, sessionHandle)
       op
     })

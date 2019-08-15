@@ -36,7 +36,7 @@ public class GetSchemasJob extends SparkCatalogJob {
   protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
     List<String> databases = seqAsJavaList(catalog.listDatabases(schemaName));
     List<Object[]> schemas = new ArrayList<>();
-    for(String db : databases) {
+    for (String db : databases) {
       schemas.add(new Object[] {
         db,
         DEFAULT_HIVE_CATALOG,

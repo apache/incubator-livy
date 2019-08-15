@@ -66,8 +66,7 @@ public class GetTablesJob extends SparkCatalogJob {
               table.identifier().table(),
               type,
               table.comment().isDefined() ? table.comment().get() : ""
-            }
-            );
+            });
         }
       }
     }
