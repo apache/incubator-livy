@@ -35,6 +35,8 @@ object Shared extends Kind("shared")
 
 object SQL extends Kind("sql")
 
+object ConcurrentSQL extends Kind("concurrentSQL")
+
 object Kind {
 
   def apply(kind: String): Kind = kind match {
@@ -43,6 +45,7 @@ object Kind {
     case "sparkr" | "r" => SparkR
     case "shared" => Shared
     case "sql" => SQL
+    case "concurrentSQL" => ConcurrentSQL
     case other => throw new IllegalArgumentException(s"Invalid kind: $other")
   }
 }

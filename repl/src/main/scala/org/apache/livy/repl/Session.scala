@@ -60,6 +60,9 @@ class Session(
   private val interpreterExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
 
+  private lazy val concurrentSQLExecutor = ExecutionContext.fromExecutorService(
+    Executors.newFixedThreadPool(livyConf.getInt(RSCConf.Entry.CONCURRENT_SQL_MAX)))
+
   private val cancelExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
 
@@ -105,6 +108,8 @@ class Session(
             throw new IllegalStateException("SparkInterpreter should not be lazily created.")
           case PySpark => PythonInterpreter(sparkConf, entries)
           case SparkR => SparkRInterpreter(sparkConf, entries)
+          case ConcurrentSQL => new SQLInterpreter(sparkConf, livyConf, entries,
+            livyConf.get(RSCConf.Entry.CONCURRENT_SQL_SCHEDULER_POOL))
           case SQL => new SQLInterpreter(sparkConf, livyConf, entries)
         }
         interp.start()
@@ -160,8 +165,14 @@ class Session(
     val statement = new Statement(statementId, code, StatementState.Waiting, null)
     _statements.synchronized { _statements(statementId) = statement }
 
+    val threadPool = if (tpe == ConcurrentSQL) {
+      concurrentSQLExecutor
+    } else {
+      interpreterExecutor
+    }
+
     Future {
-      setJobGroup(tpe, statementId)
+      this.synchronized { setJobGroup(tpe, statementId) }
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
       if (statement.state.get() == StatementState.Running) {
@@ -171,7 +182,7 @@ class Session(
       statement.compareAndTransit(StatementState.Running, StatementState.Available)
       statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
       statement.updateProgress(1.0)
-    }(interpreterExecutor)
+    }(threadPool)
 
     statementId
   }
@@ -333,7 +344,7 @@ class Session(
   private def setJobGroup(codeType: Kind, statementId: Int): String = {
     val jobGroup = statementIdToJobGroup(statementId)
     val (cmd, tpe) = codeType match {
-      case Spark | SQL =>
+      case Spark | SQL | ConcurrentSQL =>
         // A dummy value to avoid automatic value binding in scala REPL.
         (s"""val _livyJobGroup$jobGroup = sc.setJobGroup("$jobGroup",""" +
           s""""Job group for statement $jobGroup")""",

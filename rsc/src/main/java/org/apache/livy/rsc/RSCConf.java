@@ -80,6 +80,8 @@ public class RSCConf extends ClientConf<RSCConf> {
     RETAINED_STATEMENTS("retained-statements", 100),
     RETAINED_SHARE_VARIABLES("retained.share-variables", 100),
 
+    CONCURRENT_SQL_SCHEDULER_POOL("concurrentSQL.scheduler.pool", "fair"),
+    CONCURRENT_SQL_MAX("concurrentSQL.max", 10),
     // Number of result rows to get for SQL Interpreters.
     SQL_NUM_ROWS("sql.num-rows", 1000);
 
