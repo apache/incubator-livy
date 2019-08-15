@@ -36,6 +36,8 @@ object ServerMode extends Enumeration {
 abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
   def mode: ServerMode.Value
   def port: Int
+  def dynamicServiceDiscovery: Boolean = false
+  def zookeeperQuorum: String = ""
 
   val THRIFT_SERVER_STARTUP_TIMEOUT = 30000 // ms
 
@@ -56,6 +58,8 @@ abstract class ThriftServerBaseTest extends FunSuite with BeforeAndAfterAll {
     Class.forName(classOf[HiveDriver].getCanonicalName)
     livyConf.set(LivyConf.THRIFT_TRANSPORT_MODE, mode.toString)
     livyConf.set(LivyConf.THRIFT_SERVER_PORT, port)
+    livyConf.set(LivyConf.THRIFT_SUPPORT_DYNAMIC_SERVICE_DISCOVERY, dynamicServiceDiscovery)
+    livyConf.set(LivyConf.THRIFT_ZOOKEEPER_QUORUM, zookeeperQuorum)
 
     // Set formatted Spark and Scala version into livy configuration, this will be used by
     // session creation.

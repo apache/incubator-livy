@@ -26,7 +26,9 @@ import org.apache.livy.server.AccessManager
 import org.apache.livy.server.interactive.InteractiveSession
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.InteractiveSessionManager
-import org.apache.livy.thriftserver.cli.{ThriftBinaryCLIService, ThriftHttpCLIService}
+import org.apache.livy.thriftserver.cli.ThriftBinaryCLIService
+import org.apache.livy.thriftserver.cli.ThriftCLIService
+import org.apache.livy.thriftserver.cli.ThriftHttpCLIService
 
 /**
  * The main entry point for the Livy thrift server leveraging HiveServer2. Starts up a
@@ -127,6 +129,9 @@ class LivyThriftServer(
       new ThriftBinaryCLIService(cliService, oomHook)
     }
     addService(thriftCLIService)
+    val zookeeperManager = new LivyThriftZookeeperManager(this)
+    addService(zookeeperManager)
+    addService(new LivyThriftDynamicServiceRegister(this, thriftCLIService, zookeeperManager))
     super.init(livyConf)
   }
 

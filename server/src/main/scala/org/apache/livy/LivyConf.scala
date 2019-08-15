@@ -167,6 +167,20 @@ object LivyConf {
     Entry("livy.server.thrift.delegation.token.max-lifetime", "7d")
   val THRIFT_DELEGATION_TOKEN_RENEW_INTERVAL =
     Entry("livy.server.thrift.delegation.token.renew-interval", "1d")
+  val THRIFT_SUPPORT_DYNAMIC_SERVICE_DISCOVERY =
+    Entry("livy.server.thrift.support.dynamic.service.discovery", false)
+  val THRIFT_ZOOKEEPER_NAMESPACE =
+    Entry("livy.server.thrift.zookeeper.namespace", "livy")
+  val THRIFT_ZOOKEEPER_QUORUM =
+    Entry("livy.server.thrift.zookeeper.quorum", "")
+  val THRIFT_ZOOKEEPER_CLIENT_PORT =
+    Entry("livy.server.thrift.zookeeper.client.port", "2181")
+  val THRIFT_ZOOKEEPER_SESSION_TIMEOUT =
+    Entry("livy.server.thrift.zookeeper.session.timeout", "1200000ms")
+  val THRIFT_ZOOKEEPER_CONNECTION_MAX_RETRIES =
+    Entry("livy.server.thrift.zookeeper.connection.max.retries", 3)
+  val THRIFT_ZOOKEEPER_CONNECTION_BASESLEEPTIME =
+    Entry("livy.server.thrift.zookeeper.connection.basesleeptime", "1000ms")
 
   /**
    * Recovery mode of Livy. Possible values:
