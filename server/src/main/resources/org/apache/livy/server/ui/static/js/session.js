@@ -72,6 +72,9 @@ function loadStatementsTable(statements) {
         tdWrap(progressBar(statement.progress)) +
         tdWrap(statement.output ? statement.output.status : "") +
         tdWrap(statementOutput(statement.output)) +
+        tdWrap(statement.started) +
+        tdWrap(statement.completed) +
+        tdWrap(statement.duration) +
        "</tr>"
     );
   });

@@ -17,6 +17,8 @@
 
 package org.apache.livy.repl
 
+import java.text.SimpleDateFormat
+import java.time.LocalDateTime
 import java.util.{LinkedHashMap => JLinkedHashMap}
 import java.util.Map.Entry
 import java.util.concurrent.Executors
@@ -147,6 +149,12 @@ class Session(
     _statements.toMap
   }
 
+  def nowTime(): String = {
+    import java.time.format.DateTimeFormatter
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    return LocalDateTime.now().format(formatter)
+  }
+
   def execute(code: String, codeType: String = null): Int = {
     val tpe = if (codeType != null) {
       Kind(codeType)
@@ -160,6 +168,9 @@ class Session(
     val statement = new Statement(statementId, code, StatementState.Waiting, null)
     _statements.synchronized { _statements(statementId) = statement }
 
+    val start = System.currentTimeMillis()
+    statement.setStarted(nowTime())
+
     Future {
       setJobGroup(tpe, statementId)
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
@@ -171,6 +182,9 @@ class Session(
       statement.compareAndTransit(StatementState.Running, StatementState.Available)
       statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
       statement.updateProgress(1.0)
+      statement.setDuration(((System.currentTimeMillis() - start) / 1000.0 / 60.0)
+        .formatted("%.1f") + "min")
+      statement.setCompleted(nowTime())
     }(interpreterExecutor)
 
     statementId
@@ -202,6 +216,10 @@ class Session(
 
     info(s"Cancelling statement $statementId...")
 
+    def TimestampOf(dateTime: String): Long = {
+      new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(dateTime).getTime
+    }
+
     Future {
       val deadline = livyConf.getTimeAsMs(RSCConf.Entry.JOB_CANCEL_TIMEOUT).millis.fromNow
 
@@ -218,6 +236,9 @@ class Session(
       }
 
       if (statement.state.get() == StatementState.Cancelled) {
+        statement.setCompleted(nowTime())
+        statement.setDuration(((System.currentTimeMillis() - TimestampOf(statement.started))
+          / 1000.0 / 60.0).formatted("%.1f") + "min")
         info(s"Statement $statementId cancelled.")
       }
     }(cancelExecutor)
