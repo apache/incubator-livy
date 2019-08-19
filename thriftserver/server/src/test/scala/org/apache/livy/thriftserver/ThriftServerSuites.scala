@@ -19,6 +19,8 @@ package org.apache.livy.thriftserver
 
 import java.sql.{Connection, Date, SQLException, Statement}
 
+import org.apache.hive.jdbc.HiveStatement
+
 import org.apache.livy.LivyConf
 
 
@@ -177,6 +179,17 @@ trait CommonThriftTests {
     assert(columnsResultSet.getString(23) == "NO")
     assert(!columnsResultSet.next())
   }
+
+  def operationLogRetrievalTest(statement: Statement): Unit = {
+    statement.execute("select 1")
+    val logIterator = statement.asInstanceOf[HiveStatement].getQueryLog().iterator()
+    statement.close()
+
+    // Only execute statement support operation log retrieval and it only produce one log
+    assert(logIterator.next() ==
+      "Livy session has not yet started. Please wait for it to be ready...")
+    assert(!logIterator.hasNext)
+  }
 }
 
 class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
@@ -295,6 +308,12 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       getColumnsTest(connection)
     }
   }
+
+  test("operation log retrieval test") {
+    withJdbcStatement { statement =>
+      operationLogRetrievalTest(statement)
+    }
+  }
 }
 
 class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
@@ -329,6 +348,12 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
   test("fetch column") {
     withJdbcConnection { connection =>
       getColumnsTest(connection)
+    }
+  }
+
+  test("operation log retrieval test") {
+    withJdbcStatement { statement =>
+      operationLogRetrievalTest(statement)
     }
   }
 }
