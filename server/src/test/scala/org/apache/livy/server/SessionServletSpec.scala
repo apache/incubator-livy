@@ -297,6 +297,12 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
           assert(res.logs === IndexedSeq("log"))
         }
 
+        // LIVY-592: Proxy user cannot view its session log
+        // Proxy user should be able to see its session log
+        jget[MockSessionView](s"/${res.id}", headers = aliceHeaders) { res =>
+          assert(res.logs === IndexedSeq("log"))
+        }
+
         delete(res.id, adminHeaders, SC_OK)
       }
     }
@@ -312,6 +318,12 @@ class AclsEnabledSessionServletSpec extends BaseSessionServletSpec[Session, Reco
         delete(res.id, bobHeaders, SC_FORBIDDEN)
         delete(res.id, viewUserHeaders, SC_FORBIDDEN)
         delete(res.id, modifyUserHeaders, SC_OK)
+      }
+
+      // LIVY-592: Proxy user cannot view its session log
+      // Proxy user should be able to modify its session
+      jpost[MockSessionView]("/?doAs=alice", Map(), headers = adminHeaders) { res =>
+        delete(res.id, aliceHeaders, SC_OK)
       }
     }
 
