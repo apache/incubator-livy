@@ -28,9 +28,9 @@ public class Statement {
   @JsonRawValue
   public volatile String output;
   public double progress;
-  public String duration;
-  public String started;
-  public String completed;
+  public double duration;
+  public long started;
+  public long completed;
 
   public Statement(Integer id, String code, StatementState state, String output) {
     this.id = id;
@@ -58,27 +58,5 @@ public class Statement {
     } else {
       this.progress = p;
     }
-  }
-
-  public void setDuration(String d) {
-    if (this.state.get().isOneOf(StatementState.Cancelled, StatementState.Available)) {
-      this.duration = d;
-    }
-  }
-
-  public String getStarted() {
-    return started;
-  }
-
-  public void setStarted(String started) {
-    this.started = started;
-  }
-
-  public String getCompleted() {
-    return completed;
-  }
-
-  public void setCompleted(String completed) {
-    this.completed = completed;
   }
 }

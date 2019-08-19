@@ -34,6 +34,22 @@ function formatError(output) {
   return preWrap(errStr);
 }
 
+function timeWrap(time) {
+  if (time == 0.0) {
+    return "0.0min"
+  } else {
+    return time + "min"
+  }
+}
+
+function localDateTime(timestamp) {
+  var now = new Date(timestamp),
+      y = now.getFullYear(),
+      m = now.getMonth() + 1,
+      d = now.getDate();
+  return y + "-" + (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d) + " " + now.toTimeString().substr(0, 8);
+}
+
 function statementOutput(output) {
   if (output) {
     var data = output.data;
@@ -72,9 +88,9 @@ function loadStatementsTable(statements) {
         tdWrap(progressBar(statement.progress)) +
         tdWrap(statement.output ? statement.output.status : "") +
         tdWrap(statementOutput(statement.output)) +
-        tdWrap(statement.started) +
-        tdWrap(statement.completed) +
-        tdWrap(statement.duration) +
+        tdWrap(localDateTime(statement.started)) +
+        tdWrap(localDateTime(statement.completed)) +
+        tdWrap(timeWrap(statement.duration)) +
        "</tr>"
     );
   });
