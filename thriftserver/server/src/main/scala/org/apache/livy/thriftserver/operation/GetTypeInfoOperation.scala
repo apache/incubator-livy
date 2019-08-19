@@ -44,7 +44,7 @@ class GetTypeInfoOperation(sessionHandle: SessionHandle)
         val data = Array[Any](
           t.name,
           t.sqlType,
-          t.precision.getOrElse(null),
+          t.precision.orNull,
           null, // LITERAL_PREFIX
           null, // LITERAL_SUFFIX
           null, // CREATE_PARAMS
@@ -59,7 +59,7 @@ class GetTypeInfoOperation(sessionHandle: SessionHandle)
           0.toShort, // MAXIMUM_SCALE
           null, // SQL_DATA_TYPE
           null, // SQL_DATETIME_SUB
-          t.numPrecRadix.getOrElse(null))
+          t.numPrecRadix.orNull)
         rowSet.addRow(data)
       }
       setState(OperationState.FINISHED)
