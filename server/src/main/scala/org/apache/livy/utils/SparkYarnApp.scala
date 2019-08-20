@@ -215,7 +215,8 @@ class SparkYarnApp private[utils] (
            (YarnApplicationState.SUBMITTED, FinalApplicationStatus.UNDEFINED) |
            (YarnApplicationState.ACCEPTED, FinalApplicationStatus.UNDEFINED) =>
         SparkApp.State.STARTING
-      case (YarnApplicationState.RUNNING, FinalApplicationStatus.UNDEFINED) =>
+      case (YarnApplicationState.RUNNING, FinalApplicationStatus.UNDEFINED) |
+           (YarnApplicationState.RUNNING, FinalApplicationStatus.SUCCEEDED) =>
         SparkApp.State.RUNNING
       case (YarnApplicationState.FINISHED, FinalApplicationStatus.SUCCEEDED) =>
         SparkApp.State.FINISHED
