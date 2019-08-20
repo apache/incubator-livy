@@ -22,6 +22,7 @@ import java.io.{ByteArrayInputStream, DataInputStream, IOException}
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.security.token.Token
 import org.apache.hadoop.security.token.delegation.{AbstractDelegationTokenIdentifier, AbstractDelegationTokenSecretManager}
+import org.apache.hadoop.security.UserGroupInformation
 
 import org.apache.livy.LivyConf
 
@@ -59,6 +60,27 @@ class LivyDelegationTokenSecretManager(val livyConf: LivyConf)
     id.readFields(in)
     id
   }
+
+  @throws[IOException]
+  def cancelDelegationToken(tokenStrForm: String): Unit = {
+    val t = new Token[LivyDelegationTokenIdentifier]
+    t.decodeFromUrlString(tokenStrForm)
+    val user = UserGroupInformation.getCurrentUser.getUserName
+    cancelToken(t, user)
+  }
+
+  @throws[IOException]
+  def getDelegationToken(ownerStr: String, renewer: String): String = {
+    if (ownerStr == null) throw new RuntimeException("Delegation token owner is null")
+    val owner = new Text(ownerStr)
+    var realUser: Text = null
+    val currentUgi = UserGroupInformation.getCurrentUser
+    if (currentUgi.getUserName != null) realUser = new Text(currentUgi.getUserName)
+    val ident = new LivyDelegationTokenIdentifier(owner, new Text(renewer), realUser)
+    val t = new Token[LivyDelegationTokenIdentifier](ident, this)
+    t.encodeToUrlString()
+  }
+
 }
 
 /**
