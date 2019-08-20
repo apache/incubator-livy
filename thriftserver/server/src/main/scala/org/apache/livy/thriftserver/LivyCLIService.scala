@@ -380,7 +380,8 @@ class LivyCLIService(server: LivyThriftServer)
       sessionHandle: SessionHandle,
       authFactory: AuthFactory,
       tokenStr: String): Unit = {
-    throw new HiveSQLException("Operation not yet supported.")
+    debug(sessionHandle + ": renewDelegationToken()")
+    authFactory.renewDelegationToken(tokenStr)
   }
 
   @throws[HiveSQLException]

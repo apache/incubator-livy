@@ -182,6 +182,22 @@ class AuthFactory(val conf: LivyConf) extends Logging {
     }
   }
 
+  @throws[HiveSQLException]
+  def renewDelegationToken(delegationToken: String): Unit = {
+    if (secretManager.isEmpty) {
+      throw new HiveSQLException(
+        "Delegation token only supported over kerberos authentication", "08S01")
+    }
+    try {
+      secretManager.get.renewDelegationToken(delegationToken)
+    } catch {
+      case e: IOException =>
+        val msg = s"Error renewing delegation token $delegationToken"
+        error(msg, e)
+        throw new HiveSQLException(msg, "08S01", e)
+    }
+  }
+
 }
 
 class SQLPlainProcessorFactory(val service: Iface) extends TProcessorFactory(null) {

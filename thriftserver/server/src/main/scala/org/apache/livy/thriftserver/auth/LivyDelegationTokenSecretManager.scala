@@ -51,6 +51,14 @@ class LivyDelegationTokenSecretManager(val livyConf: LivyConf)
   }
 
   @throws[IOException]
+  def renewDelegationToken(tokenStrForm: String): Unit = {
+    val t = new Token[LivyDelegationTokenIdentifier]
+    t.decodeFromUrlString(tokenStrForm)
+    val user = UserGroupInformation.getCurrentUser().getShortUserName()
+    renewToken(t, user)
+  }
+
+  @throws[IOException]
   protected def getTokenIdentifier(
       token: Token[LivyDelegationTokenIdentifier]): LivyDelegationTokenIdentifier = {
     // turn bytes back into identifier for cache lookup
