@@ -18,17 +18,23 @@
 package org.apache.livy.utils
 
 import java.io.InputStream
+import java.util
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.io.Source
 
-import com.google.common.collect.EvictingQueue
-
 import org.apache.livy.Logging
+
+class CircularQueue[T](var capacity: Int) extends util.LinkedList[T] {
+  override def add(t: T): Boolean = {
+    if (size >= capacity) removeFirst
+    super.add(t)
+  }
+}
 
 class LineBufferedStream(inputStream: InputStream, logSize: Int) extends Logging {
 
-  private[this] val _lines: EvictingQueue[String] = EvictingQueue.create[String](logSize)
+  private[this] val _lines: CircularQueue[String] = new CircularQueue[String](logSize)
 
   private[this] val _lock = new ReentrantLock()
   private[this] val _condition = _lock.newCondition()

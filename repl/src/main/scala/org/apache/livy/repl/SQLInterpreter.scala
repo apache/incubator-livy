@@ -18,6 +18,7 @@
 package org.apache.livy.repl
 
 import java.lang.reflect.InvocationTargetException
+import java.sql.Date
 
 import scala.util.control.NonFatal
 
@@ -25,6 +26,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.json4s._
+import org.json4s.JsonAST.{JNull, JString}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 
@@ -66,7 +68,14 @@ class SQLInterpreter(
     rscConf: RSCConf,
     sparkEntries: SparkEntries) extends Interpreter with Logging {
 
-  private implicit def formats = DefaultFormats
+  case object DateSerializer extends CustomSerializer[Date](_ => ( {
+    case JString(s) => Date.valueOf(s)
+    case JNull => null
+  }, {
+    case d: Date => JString(d.toString)
+  }))
+
+  private implicit def formats: Formats = DefaultFormats + DateSerializer
 
   private var spark: SparkSession = null
 

@@ -16,33 +16,21 @@
  */
 package org.apache.livy.thriftserver.session;
 
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.List;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import scala.Tuple2;
-import scala.collection.Map;
-import scala.collection.Seq;
-
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.types.StructField;
 
 /**
  * Container for the contents of a single column in a result set.
  */
 public class ColumnBuffer {
 
-  public static final int DEFAULT_SIZE = 100;
-  private static final String EMPTY_STRING = "";
-  private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
+  static final int DEFAULT_SIZE = 100;
+  static final String EMPTY_STRING = "";
+  static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
   private final DataType type;
 
@@ -178,7 +166,7 @@ public class ColumnBuffer {
       buffers[currentSize] = (byte[]) value;
       break;
     case STRING:
-      strings[currentSize] = toHiveString(value, false);
+      strings[currentSize] = (String) value;
       break;
     }
 
@@ -203,21 +191,10 @@ public class ColumnBuffer {
       return (doubles.length != currentSize) ? Arrays.copyOfRange(doubles, 0, currentSize)
         : doubles;
     case BINARY:
-      // org.apache.hadoop.hive.serde2.thrift.ColumnBuffer expects a List<ByteBuffer>, so convert
-      // when reading the value. The Hive/Thrift stack also dislikes nulls, and returning a
-      // list with a different number of elements than expected.
-      return Arrays.stream(buffers)
-        .limit(currentSize)
-        .map(b -> (b != null) ? ByteBuffer.wrap(b) : EMPTY_BUFFER)
-        .collect(Collectors.toList());
+      return toList(Arrays.stream(buffers).map(b -> (b != null) ? ByteBuffer.wrap(b) : null),
+          EMPTY_BUFFER);
     case STRING:
-      // org.apache.hadoop.hive.serde2.thrift.ColumnBuffer expects a List<String>, so convert
-      // when reading the value. The Hive/Thrift stack also dislikes nulls, and returning a
-      // list with a different number of elements than expected.
-      return Arrays.stream(strings)
-        .limit(currentSize)
-        .map(s -> (s != null) ? s : EMPTY_STRING)
-        .collect(Collectors.toList());
+      return toList(Arrays.stream(strings), EMPTY_STRING);
     }
 
     return null;
@@ -225,6 +202,42 @@ public class ColumnBuffer {
 
   public BitSet getNulls() {
     return nulls != null ? BitSet.valueOf(nulls) : new BitSet();
+  }
+
+  public ColumnBuffer extractSubset(int start, int end) {
+    ColumnBuffer subset = new ColumnBuffer(type);
+    subset.currentSize = end - start;
+    subset.ensureCapacity();
+    switch (type) {
+      case BOOLEAN:
+        System.arraycopy(bools, start, subset.bools, 0, end - start);
+        break;
+      case BYTE:
+        System.arraycopy(bytes, start, subset.bytes, 0, end - start);
+        break;
+      case SHORT:
+        System.arraycopy(shorts, start, subset.shorts, 0, end - start);
+        break;
+      case INTEGER:
+        System.arraycopy(ints, start, subset.ints, 0, end - start);
+        break;
+      case LONG:
+        System.arraycopy(longs, start, subset.longs, 0, end - start);
+        break;
+      case FLOAT:
+        System.arraycopy(floats, start, subset.floats, 0, end - start);
+        break;
+      case DOUBLE:
+        System.arraycopy(doubles, start, subset.doubles, 0, end - start);
+        break;
+      case BINARY:
+        System.arraycopy(buffers, start, subset.buffers, 0, end - start);
+        break;
+      case STRING:
+        System.arraycopy(strings, start, subset.strings, 0, end - start);
+        break;
+    }
+    return subset;
   }
 
   private boolean isNull(int index) {
@@ -241,6 +254,25 @@ public class ColumnBuffer {
     return (nulls[byteIdx] & (1 << bitIdx)) != 0;
   }
 
+  /**
+   * Transforms and internal buffer into a list that meets Hive expectations. Used for
+   * string and binary fields.
+   *
+   * org.apache.hadoop.hive.serde2.thrift.ColumnBuffer expects a List<String> or List<ByteBuffer>,
+   * depending on the column type. The Hive/Thrift stack also dislikes nulls, and returning a list
+   * with a different number of elements than expected.
+   */
+  private <T> List<T> toList(Stream<T> data, T defaultValue) {
+    final List<T> ret = new ArrayList<>(currentSize);
+    data.limit(currentSize).forEach(e -> {
+      ret.add(e != null ? e : defaultValue);
+    });
+    while (ret.size() < currentSize) {
+      ret.add(defaultValue);
+    }
+    return ret;
+  }
+
   private void setNull(int index) {
     int byteIdx = (index / Byte.SIZE);
 
@@ -252,57 +284,6 @@ public class ColumnBuffer {
 
     int bitIdx = (index % Byte.SIZE);
     nulls[byteIdx] = (byte) (nulls[byteIdx] | (1 << bitIdx));
-  }
-
-  /**
-   * Converts a value from a Spark dataset into a string that looks like what Hive would
-   * generate. Because Spark generates rows that contain Scala types for non-primitive
-   * columns, this code depends on Scala and is thus succeptible to binary compatibility
-   * changes in the Scala libraries.
-   *
-   * The supported types are described in Spark's SQL programming guide, in the table
-   * listing the mapping of SQL types to Scala types.
-   *
-   * @param value The object to stringify.
-   * @param quoteStrings Whether to wrap String instances in quotes.
-   */
-  private String toHiveString(Object value, boolean quoteStrings) {
-    if (quoteStrings && value instanceof String) {
-      return "\"" + value + "\"";
-    } else if (value instanceof BigDecimal) {
-      return ((BigDecimal) value).stripTrailingZeros().toString();
-    } else if (value instanceof Map) {
-      return stream(new ScalaIterator<>(((Map<?,?>) value).iterator()))
-        .map(o -> toHiveString(o, true))
-        .sorted()
-        .collect(Collectors.joining(",", "{", "}"));
-    } else if (value instanceof Seq) {
-      return stream(new ScalaIterator<>(((Seq<?>) value).iterator()))
-        .map(o -> toHiveString(o, true))
-        .collect(Collectors.joining(",", "[", "]"));
-    } else if (value instanceof Tuple2) {
-      Tuple2 t = (Tuple2) value;
-      return String.format("%s:%s", toHiveString(t._1(), true), toHiveString(t._2(), true));
-    } else if (value instanceof Row) {
-      Row r = (Row) value;
-      final StructField[] fields = r.schema().fields();
-      final AtomicInteger idx = new AtomicInteger();
-
-      return stream(new ScalaIterator<>(r.toSeq().iterator()))
-        .map(o -> {
-          String fname = fields[idx.getAndIncrement()].name();
-          String fval = toHiveString(o, true);
-          return String.format("\"%s\":%s", fname, fval);
-        })
-        .collect(Collectors.joining(",", "{", "}"));
-    } else {
-      return value.toString();
-    }
-  }
-
-  private Stream<?> stream(Iterator<?> it) {
-    return StreamSupport.stream(
-      Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED), false);
   }
 
   private void ensureCapacity() {

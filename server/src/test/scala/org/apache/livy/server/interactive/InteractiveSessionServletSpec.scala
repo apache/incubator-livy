@@ -60,12 +60,14 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
 
       val session = mock[InteractiveSession]
       when(session.kind).thenReturn(Spark)
+      when(session.name).thenReturn(None)
       when(session.appId).thenReturn(None)
       when(session.appInfo).thenReturn(AppInfo())
       when(session.logLines()).thenReturn(IndexedSeq())
       when(session.state).thenReturn(SessionState.Idle)
       when(session.stop()).thenReturn(Future.successful(()))
       when(session.proxyUser).thenReturn(None)
+      when(session.heartbeatExpired).thenReturn(false)
       when(session.statements).thenAnswer(
         new Answer[IndexedSeq[Statement]]() {
           override def answer(args: InvocationOnMock): IndexedSeq[Statement] = statements
@@ -151,7 +153,14 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     }
   }
 
-  it("should show session properties") {
+  Seq(Some("TEST-interactive-session"), None)
+    .foreach { case name =>
+      it(s"should show session properties (name =$name") {
+        testShowSessionProperties(name: Option[String])
+      }
+    }
+
+  def testShowSessionProperties(name: Option[String]): Unit = {
     val id = 0
     val appId = "appid"
     val owner = "owner"
@@ -163,6 +172,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
 
     val session = mock[InteractiveSession]
     when(session.id).thenReturn(id)
+    when(session.name).thenReturn(name)
     when(session.appId).thenReturn(Some(appId))
     when(session.owner).thenReturn(owner)
     when(session.proxyUser).thenReturn(Some(proxyUser))
@@ -170,6 +180,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     when(session.kind).thenReturn(kind)
     when(session.appInfo).thenReturn(appInfo)
     when(session.logLines()).thenReturn(log)
+    when(session.heartbeatExpired).thenReturn(false)
 
     val req = mock[HttpServletRequest]
 
@@ -177,6 +188,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       .asInstanceOf[SessionInfo]
 
     view.id shouldEqual id
+    Option(view.name) shouldEqual name
     view.appId shouldEqual appId
     view.owner shouldEqual owner
     view.proxyUser shouldEqual proxyUser

@@ -33,7 +33,7 @@ import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf, Utils}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.SessionState
-import org.apache.livy.utils.{AppInfo, SparkApp}
+import org.apache.livy.utils.{AppInfo, Clock, SparkApp}
 
 class BatchSessionSpec
   extends FunSpec
@@ -56,6 +56,23 @@ class BatchSessionSpec
     script
   }
 
+  val runForeverScript: Path = {
+    val script = Files.createTempFile("livy-test-run-forever-script", ".py")
+    script.toFile.deleteOnExit()
+    val writer = new FileWriter(script.toFile)
+    try {
+      writer.write(
+        """
+          |import time
+          |while True:
+          | time.sleep(1)
+        """.stripMargin)
+    } finally {
+      writer.close()
+    }
+    script
+  }
+
   describe("A Batch process") {
     var sessionStore: SessionStore = null
 
@@ -70,7 +87,8 @@ class BatchSessionSpec
 
       val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
       val accessManager = new AccessManager(conf)
-      val batch = BatchSession.create(0, req, conf, accessManager, null, sessionStore)
+      val batch = BatchSession.create(0, None, req, conf, accessManager, null, None, sessionStore)
+      batch.start()
 
       Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
       (batch.state match {
@@ -87,7 +105,8 @@ class BatchSessionSpec
       val mockApp = mock[SparkApp]
       val accessManager = new AccessManager(conf)
       val batch = BatchSession.create(
-        0, req, conf, accessManager, null, sessionStore, Some(mockApp))
+        0, None, req, conf, accessManager, null, None, sessionStore, Some(mockApp))
+      batch.start()
 
       val expectedAppId = "APPID"
       batch.appIdKnown(expectedAppId)
@@ -100,18 +119,46 @@ class BatchSessionSpec
       batch.appInfo shouldEqual expectedAppInfo
     }
 
-    it("should recover session") {
+    it("should end with status dead when batch session exits with no 0 return code") {
+      val req = new CreateBatchRequest()
+      req.file = runForeverScript.toString
+      req.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
+
+      val conf = new LivyConf().set(LivyConf.LOCAL_FS_WHITELIST, sys.props("java.io.tmpdir"))
+      val accessManager = new AccessManager(conf)
+      val batch = BatchSession.create(0, None, req, conf, accessManager, null, None, sessionStore)
+      batch.start()
+      Clock.sleep(2)
+      batch.stopSession()
+
+      Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
+      (batch.state match {
+        case SessionState.Dead(_) => true
+        case _ => false
+      }) should be (true)
+    }
+
+    def testRecoverSession(name: Option[String]): Unit = {
       val conf = new LivyConf()
       val req = new CreateBatchRequest()
+      val name = Some("Test Batch Session")
       val mockApp = mock[SparkApp]
-      val m = BatchRecoveryMetadata(99, None, "appTag", null, None)
+      val m = BatchRecoveryMetadata(99, name, None, "appTag", null, None)
       val batch = BatchSession.recover(m, conf, sessionStore, Some(mockApp))
 
       batch.state shouldBe (SessionState.Recovering)
+      batch.name shouldBe (name)
 
       batch.appIdKnown("appId")
       verify(sessionStore, atLeastOnce()).save(
         Matchers.eq(BatchSession.RECOVERY_SESSION_TYPE), anyObject())
     }
+
+    Seq[Option[String]](None, Some("Test Batch Session"), null)
+      .foreach { case name =>
+        it(s"should recover session (name = $name)") {
+          testRecoverSession(name)
+        }
+      }
   }
 }

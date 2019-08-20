@@ -77,6 +77,7 @@ class ThriftSessionState {
     this.sessionId = sessionId;
     this.statements = new ConcurrentHashMap<>();
     this.spark = ctx.<SparkSession>sparkSession().newSession();
+    this.catalogJobStates = new ConcurrentHashMap<>();
   }
 
   SparkSession spark() {
@@ -101,10 +102,13 @@ class ThriftSessionState {
     return st;
   }
 
-  void cleanupStatement(String statementId) {
+  boolean cleanupStatement(String statementId) {
     checkNotNull(statementId, "No statement ID.");
     if (statements.remove(statementId) == null) {
-      throw statementNotFound(statementId);
+      return false;
+    } else {
+      ctx.sc().cancelJobGroup(statementId);
+      return true;
     }
   }
 
@@ -121,6 +125,37 @@ class ThriftSessionState {
     if (what == null) {
       throw new IllegalArgumentException(err);
     }
+  }
+
+
+  private final ConcurrentMap<String, CatalogJobState> catalogJobStates;
+
+  void registerCatalogJob(String jobId, Iterator<Object[]> results) {
+    checkNotNull(jobId, "No catalog job ID.");
+    CatalogJobState state = new CatalogJobState(results);
+    if (catalogJobStates.putIfAbsent(jobId, state) != null) {
+      throw new IllegalStateException(
+          String.format("Catalog job %s already registered.", jobId));
+    }
+  }
+
+  CatalogJobState findCatalogJob(String jobId) {
+    checkNotNull(jobId, "No catalog job ID.");
+    CatalogJobState state = catalogJobStates.get(jobId);
+    if (state == null) {
+      throw catalogJobNotFound(jobId);
+    }
+    return state;
+  }
+
+  boolean cleanupCatalogJob(String jobId) {
+    checkNotNull(jobId, "No catalog job ID.");
+    return catalogJobStates.remove(jobId) != null;
+  }
+
+  private NoSuchElementException catalogJobNotFound(String jobId) {
+    return new NoSuchElementException(
+        String.format("Catalog job %s not found in session %s.", jobId, sessionId));
   }
 
 }

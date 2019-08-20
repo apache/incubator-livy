@@ -23,13 +23,13 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.6.0-incubating-SNAPSHOT</version>
+    <version>0.7.0-incubating-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-python-api</artifactId>
-  <version>0.6.0-incubating-SNAPSHOT</version>
+  <version>0.7.0-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <build>
@@ -66,6 +66,9 @@
                 <argument>setup.py</argument>
                 <argument>test</argument>
               </arguments>
+              <environmentVariables>
+                <TMPDIR>${project.build.directory}/tmp</TMPDIR>
+              </environmentVariables>
             </configuration>
           </execution>
           <execution>

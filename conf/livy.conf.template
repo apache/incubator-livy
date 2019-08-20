@@ -50,8 +50,12 @@
 
 # Enabled to check whether timeout Livy sessions should be stopped.
 # livy.server.session.timeout-check = true
+#
+# Whether or not to skip timeout check for a busy session
+# livy.server.session.timeout-check.skip-busy = false
 
-# Time in milliseconds on how long Livy will wait before timing out an idle session.
+# Time in milliseconds on how long Livy will wait before timing out an inactive session.
+# Note that the inactive session could be busy running jobs.
 # livy.server.session.timeout = 1h
 #
 # How long a finished session state should be kept in LivyServer for query.
@@ -148,3 +152,16 @@
 # A list of users with comma separated has the permission to view other user's infomation, like
 # submitted session state, statement results.
 # livy.server.access-control.view-users =
+#
+# Authentication support for Livy server
+# Livy has a built-in SPnego authentication support for HTTP requests  with below configurations.
+# livy.server.auth.type = kerberos
+# livy.server.auth.kerberos.principal = <spnego principal>
+# livy.server.auth.kerberos.keytab = <spnego keytab>
+# livy.server.auth.kerberos.name-rules = DEFAULT
+#
+# If user wants to use custom authentication filter, configurations are:
+# livy.server.auth.type = <custom>
+# livy.server.auth.<custom>.class = <class of custom auth filter>
+# livy.server.auth.<custom>.param.<foo1> = <bar1>
+# livy.server.auth.<custom>.param.<foo2> = <bar2>

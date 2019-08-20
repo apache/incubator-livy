@@ -19,6 +19,8 @@ package org.apache.livy.thriftserver.session;
 
 import java.net.URI;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -83,17 +85,17 @@ public class ThriftSessionTest {
     // Start a second session. Try to cleanup a statement that belongs to another session.
     String s2 = nextSession();
     waitFor(new RegisterSessionJob(s2));
-    expectError(new CleanupStatementJob(s2, st1), "not found in session");
+    assertFalse(waitFor(new CleanupStatementJob(s2, st1)));
     waitFor(new UnregisterSessionJob(s2));
 
     // Clean up the statement's state.
-    waitFor(new CleanupStatementJob(s1, st1));
-    expectError(new CleanupStatementJob(s1, st1), "not found in session");
+    assertTrue(waitFor(new CleanupStatementJob(s1, st1)));
+    assertFalse(waitFor(new CleanupStatementJob(s1, st1)));
 
     // Insert data into the previously created table, and fetch results from it.
     String st2 = nextStatement();
     waitFor(newSqlJob(s1, st2, "INSERT INTO test VALUES (1, \"one\"), (2, \"two\")"));
-    waitFor(new CleanupStatementJob(s1, st2));
+    assertTrue(waitFor(new CleanupStatementJob(s1, st2)));
 
     String st3 = nextStatement();
     waitFor(newSqlJob(s1, st3, "SELECT * FROM test"));
@@ -111,7 +113,7 @@ public class ThriftSessionTest {
     assertEquals(Integer.valueOf(2), cols[0].get(1));
     assertEquals("two", cols[1].get(1));
 
-    waitFor(new CleanupStatementJob(s1, st3));
+    assertTrue(waitFor(new CleanupStatementJob(s1, st3)));
 
     // Run a statement that returns a null, to make sure the receiving side sees it correctly.
     String st4 = nextStatement();
@@ -123,10 +125,59 @@ public class ThriftSessionTest {
     assertEquals(1, cols[0].size());
     assertTrue(cols[0].getNulls().get(0));
 
-    waitFor(new CleanupStatementJob(s1, st4));
-
+    assertTrue(waitFor(new CleanupStatementJob(s1, st4)));
     // Tear down the session.
     waitFor(new UnregisterSessionJob(s1));
+
+    String s3 = nextSession();
+    waitFor(new RegisterSessionJob(s3));
+    String getSchemaJobId = "test_get_schema_job";
+    waitFor(new GetSchemasJob("default", s3, getSchemaJobId));
+    List<Object[]> schemas = waitFor(
+        new FetchCatalogResultJob(s3, getSchemaJobId, Integer.MAX_VALUE));
+    assertEquals(1, schemas.size());
+    assertEquals("default", schemas.get(0)[0]);
+    assertTrue(waitFor(new CleanupCatalogResultJob(s3, getSchemaJobId)));
+
+    String getTablesJobId = "test_get_tables_job";
+    List<String> testTableTypes = new ArrayList<>();
+    testTableTypes.add("Table");
+    waitFor(new GetTablesJob("default", "*",
+        testTableTypes, s3, getTablesJobId));
+    List<Object[]> tables = waitFor(
+        new FetchCatalogResultJob(s3, getTablesJobId, Integer.MAX_VALUE));
+    assertEquals(1, tables.size());
+    assertEquals("default", tables.get(0)[1]);
+    assertEquals("test", tables.get(0)[2]);
+    assertTrue(waitFor(new CleanupCatalogResultJob(s3, getTablesJobId)));
+
+    String getColumnsJobId = "test_get_columns_job";
+    waitFor(new GetColumnsJob("default", "test", ".*", s3, getColumnsJobId));
+    List<Object[]> columns = waitFor(
+        new FetchCatalogResultJob(s3, getColumnsJobId, Integer.MAX_VALUE));
+    assertEquals(2, columns.size());
+    assertEquals("default", columns.get(0)[1]);
+    assertEquals("test", columns.get(0)[2]);
+    assertEquals("id", columns.get(0)[3]);
+    assertEquals("integer", columns.get(0)[5]);
+    assertEquals("default", columns.get(1)[1]);
+    assertEquals("test", columns.get(1)[2]);
+    assertEquals("desc", columns.get(1)[3]);
+    assertEquals("string", columns.get(1)[5]);
+    assertTrue(waitFor(new CleanupCatalogResultJob(s3, getColumnsJobId)));
+
+    String getFunctionsJobId = "test_get_functions_job";
+    waitFor(new GetFunctionsJob("default", "unix_timestamp", s3, getFunctionsJobId));
+    List<Object[]> functions = waitFor(
+        new FetchCatalogResultJob(s3, getFunctionsJobId, Integer.MAX_VALUE));
+    assertEquals(1, functions.size());
+    assertNull(functions.get(0)[1]);
+    assertEquals("unix_timestamp", functions.get(0)[2]);
+    assertEquals("org.apache.spark.sql.catalyst.expressions.UnixTimestamp", functions.get(0)[5]);
+    assertTrue(waitFor(new CleanupCatalogResultJob(s3, getFunctionsJobId)));
+
+    // Tear down the session.
+    waitFor(new UnregisterSessionJob(s3));
   }
 
   private String nextSession() {

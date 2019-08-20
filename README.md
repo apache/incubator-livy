@@ -67,7 +67,7 @@ Livy is built using [Apache Maven](http://maven.apache.org). To check out and bu
 
 ```
 git clone https://github.com/apache/incubator-livy.git
-cd livy
+cd incubator-livy
 mvn package
 ```
 

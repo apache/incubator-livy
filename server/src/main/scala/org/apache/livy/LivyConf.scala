@@ -216,6 +216,9 @@ object LivyConf {
   // Whether session timeout should be checked, by default it will be checked, which means inactive
   // session will be stopped after "livy.server.session.timeout"
   val SESSION_TIMEOUT_CHECK = Entry("livy.server.session.timeout-check", true)
+  // Whether session timeout check should skip busy sessions, if set to true, then busy sessions
+  // that have jobs running will never timeout.
+  val SESSION_TIMEOUT_CHECK_SKIP_BUSY = Entry("livy.server.session.timeout-check.skip-busy", false)
   // How long will an inactive session be gc-ed.
   val SESSION_TIMEOUT = Entry("livy.server.session.timeout", "1h")
   // How long a finished session state will be kept in memory

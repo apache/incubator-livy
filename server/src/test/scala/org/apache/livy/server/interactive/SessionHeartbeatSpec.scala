@@ -18,6 +18,7 @@
 package org.apache.livy.server.interactive
 
 import scala.concurrent.duration._
+import scala.concurrent.Future
 import scala.language.postfixOps
 
 import org.mockito.Mockito.{never, verify, when}
@@ -55,7 +56,8 @@ class SessionHeartbeatSpec extends FunSpec with Matchers {
   }
 
   describe("SessionHeartbeatWatchdog") {
-    abstract class TestSession extends Session(0, null, null) with SessionHeartbeat {}
+    abstract class TestSession
+      extends Session(0, None, null, null) with SessionHeartbeat {}
     class TestWatchdog(conf: LivyConf)
       extends SessionManager[TestSession, RecoveryMetadata](
         conf,
@@ -68,11 +70,17 @@ class SessionHeartbeatSpec extends FunSpec with Matchers {
     it("should delete only expired sessions") {
       val expiredSession: TestSession = mock[TestSession]
       when(expiredSession.id).thenReturn(0)
+      when(expiredSession.name).thenReturn(None)
       when(expiredSession.heartbeatExpired).thenReturn(true)
+      when(expiredSession.stop()).thenReturn(Future.successful(()))
+      when(expiredSession.lastActivity).thenReturn(System.nanoTime())
 
       val nonExpiredSession: TestSession = mock[TestSession]
       when(nonExpiredSession.id).thenReturn(1)
+      when(nonExpiredSession.name).thenReturn(None)
       when(nonExpiredSession.heartbeatExpired).thenReturn(false)
+      when(nonExpiredSession.stop()).thenReturn(Future.successful(()))
+      when(nonExpiredSession.lastActivity).thenReturn(System.nanoTime())
 
       val n = new TestWatchdog(new LivyConf())
 

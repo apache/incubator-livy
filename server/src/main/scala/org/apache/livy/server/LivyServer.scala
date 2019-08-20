@@ -23,6 +23,7 @@ import java.util.concurrent._
 import java.util.EnumSet
 import javax.servlet._
 
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -259,11 +260,25 @@ class LivyServer extends Logging {
         server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
         info(s"SPNEGO auth enabled (principal = $principal)")
 
-     case null =>
+      case null =>
         // Nothing to do.
 
-      case other =>
-        throw new IllegalArgumentException(s"Invalid auth type: $other")
+      case customType =>
+        val authClassConf = s"livy.server.auth.$customType.class"
+        val authClass = livyConf.get(authClassConf)
+        require(authClass != null, s"$customType auth requires $authClassConf to be provided")
+
+        val holder = new FilterHolder()
+        holder.setClassName(authClass)
+
+        val prefix = s"livy.server.auth.$customType.param."
+        livyConf.asScala.filter { kv =>
+          kv.getKey.length > prefix.length && kv.getKey.startsWith(prefix)
+        }.foreach { kv =>
+          holder.setInitParameter(kv.getKey.substring(prefix.length), kv.getValue)
+        }
+        server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
+        info(s"$customType auth enabled")
     }
 
     if (livyConf.getBoolean(CSRF_PROTECTION)) {

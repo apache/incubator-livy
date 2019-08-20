@@ -36,12 +36,12 @@ public abstract class AbstractJobHandle<T> implements JobHandle<T> {
   }
 
   @Override
-  public State getState() {
+  public JobHandle.State getState() {
     return state;
   }
 
   @Override
-  public void addListener(Listener<T> l) {
+  public void addListener(JobHandle.Listener<T> l) {
     synchronized (listeners) {
       listeners.add(l);
       fireStateChange(state, l);
@@ -60,7 +60,7 @@ public abstract class AbstractJobHandle<T> implements JobHandle<T> {
    * @param newState The new state to change to.
    * @return Whether the state changed.
    */
-  public boolean changeState(State newState) {
+  public boolean changeState(JobHandle.State newState) {
     synchronized (listeners) {
       if (newState.ordinal() > state.ordinal() && state.ordinal() < State.CANCELLED.ordinal()) {
         state = newState;
