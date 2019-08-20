@@ -204,6 +204,12 @@ public class ColumnBuffer {
     return nulls != null ? BitSet.valueOf(nulls) : new BitSet();
   }
 
+  /**
+   * Extract subset data to a new column buffer.
+   * @param start start row number
+   * @param end end row number, which is not included in the subset data
+   * @return
+   */
   public ColumnBuffer extractSubset(int start, int end) {
     ColumnBuffer subset = new ColumnBuffer(type);
     subset.currentSize = end - start;
