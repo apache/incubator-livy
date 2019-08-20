@@ -381,7 +381,7 @@ public class RSCClient implements LivyClient {
     }
 
     private void handle(ChannelHandlerContext ctx, InitializationError msg) {
-      LOG.warn("Error reported from remote driver: %s", msg.stackTrace);
+      LOG.warn("Error reported from remote driver: {}", msg.stackTrace);
     }
 
     private void handle(ChannelHandlerContext ctx, JobResult msg) {
