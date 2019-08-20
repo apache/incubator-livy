@@ -17,12 +17,21 @@
 
 package org.apache.livy.thriftserver
 
+import java.net.URL
 import java.sql.{Connection, Date, SQLException, Statement, Types}
 
-import org.apache.hive.jdbc.HiveStatement
+import scala.collection.mutable.ArrayBuffer
+
+import org.apache.hive.jdbc.{HiveDriver, HiveStatement}
 
 import org.apache.livy.LivyConf
 
+object TestData {
+  def getTestDataFilePath(name: String): URL = {
+    Thread.currentThread().getContextClassLoader.getResource(s"data/files/$name")
+  }
+  val smallKv = getTestDataFilePath("small_kv.txt")
+}
 
 trait CommonThriftTests {
   def hiveSupportEnabled(sparkMajorVersion: Int, livyConf: LivyConf): Boolean = {
@@ -103,8 +112,10 @@ trait CommonThriftTests {
 
   def getTablesTest(connection: Connection): Unit = {
     val statement = connection.createStatement()
-    statement.execute("CREATE TABLE test_get_tables (id integer, desc string) USING json")
-    statement.close()
+    val queries = Seq(
+      "DROP TABLE IF EXISTS test_get_tables",
+      "CREATE TABLE test_get_tables (id integer, desc string) USING json")
+    queries.foreach(statement.execute)
 
     val metadata = connection.getMetaData
     val tablesResultSet = metadata.getTables("", "default", "*", Array("TABLE"))
@@ -119,13 +130,17 @@ trait CommonThriftTests {
     assert(tablesResultSet.getString(3) == "test_get_tables")
     assert(tablesResultSet.getString(4) == "TABLE")
     assert(!tablesResultSet.next())
+    statement.execute("DROP TABLE IF EXISTS test_get_tables")
+    statement.close()
   }
 
   def getColumnsTest(connection: Connection): Unit = {
     val metadata = connection.getMetaData
     val statement = connection.createStatement()
-    statement.execute("CREATE TABLE test_get_columns (id integer, desc string) USING json")
-    statement.close()
+    val queries = Seq(
+      "DROP TABLE IF EXISTS test_get_columns",
+      "CREATE TABLE test_get_columns (id integer, desc string) USING json")
+    queries.foreach(statement.execute)
 
     val columnsResultSet = metadata.getColumns("", "default", "test_get_columns", ".*")
     assert(columnsResultSet.getMetaData.getColumnCount == 23)
@@ -178,6 +193,8 @@ trait CommonThriftTests {
     assert(columnsResultSet.getString(22) == null)
     assert(columnsResultSet.getString(23) == "NO")
     assert(!columnsResultSet.next())
+    statement.execute("DROP TABLE IF EXISTS test_get_columns")
+    statement.close()
   }
 
   def operationLogRetrievalTest(statement: Statement): Unit = {
@@ -259,6 +276,268 @@ trait CommonThriftTests {
 class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
   override def mode: ServerMode.Value = ServerMode.binary
   override def port: Int = 20000
+  // In BinaryThriftServerSuite, we set ENABLE_HIVE_CONTEXT=true to support the creation
+  // of Hive tables and the creation of udf.
+  livyConf.set(LivyConf.ENABLE_HIVE_CONTEXT, true)
+
+  test("JDBC query execution") {
+    withJdbcStatement { statement =>
+      val queries = Seq(
+        "SET spark.sql.shuffle.partitions=3",
+        "DROP TABLE IF EXISTS test",
+        "CREATE TABLE test(key INT, val STRING)",
+        s"LOAD DATA LOCAL INPATH '${TestData.smallKv}' OVERWRITE INTO TABLE test",
+        "CACHE TABLE test")
+
+      queries.foreach(statement.execute)
+
+      assertResult(5, "Row count mismatch") {
+        val resultSet = statement.executeQuery("SELECT COUNT(*) FROM test")
+        resultSet.next()
+        resultSet.getInt(1)
+      }
+      statement.executeQuery("DROP TABLE IF EXISTS test")
+      statement.close()
+    }
+  }
+
+  test("test add jar and udf") {
+    withJdbcStatement { statement =>
+      val jarPath = "src/test/resources/TestUDTF.jar"
+      val jarURL = s"file://${System.getProperty("user.dir")}/$jarPath"
+      Seq(
+        "SET foo=bar",
+        s"ADD JAR $jarURL",
+        s"""CREATE TEMPORARY FUNCTION udtf_count2
+           |AS 'org.apache.spark.sql.hive.execution.GenericUDTFCount2'""".stripMargin
+      ).foreach(statement.execute)
+
+      val rs1 = statement.executeQuery("SET foo")
+
+      assert(rs1.next())
+      assert(rs1.getString(1) === "foo")
+      assert(rs1.getString(2) === "bar")
+
+      val rs2 = statement.executeQuery("DESCRIBE FUNCTION udtf_count2")
+
+      assert(rs2.next())
+      assert(rs2.getString(1) === "Function: udtf_count2")
+
+      assert(rs2.next())
+      assertResult("Class: org.apache.spark.sql.hive.execution.GenericUDTFCount2") {
+        rs2.getString(1)
+      }
+
+      assert(rs2.next())
+      assert(rs2.getString(1) === "Usage: N/A.")
+
+      statement.executeQuery("DROP TEMPORARY FUNCTION udtf_count2")
+      statement.close()
+
+    }
+  }
+
+  test("result set iterator") {
+    withJdbcStatement { statement =>
+      val queries = Seq(
+        "DROP TABLE IF EXISTS test_iterator",
+        "CREATE TABLE test_iterator(key INT, val STRING)",
+        s"LOAD DATA LOCAL INPATH '${TestData.smallKv}' OVERWRITE INTO TABLE test_iterator")
+
+      queries.foreach(statement.execute)
+
+      val resultSet = statement.executeQuery("SELECT key FROM test_iterator")
+
+      Seq(238, 86, 311, 27, 165).foreach { key =>
+        resultSet.next()
+        assert(resultSet.getInt(1) === key)
+      }
+      statement.executeQuery("DROP TABLE IF EXISTS test_iterator")
+      statement.close()
+    }
+  }
+
+  test("result set containing NULL") {
+    withJdbcStatement { statement =>
+
+      val queries = Seq(
+        "DROP TABLE IF EXISTS test_null",
+        "CREATE TABLE test_null(key INT, val STRING)",
+        "INSERT INTO test_null VALUES(null, 'val_01')")
+      queries.foreach(statement.execute)
+      assertResult(1, "Row count mismatch") {
+        val resultSet = statement.executeQuery("SELECT COUNT(*) FROM test_null WHERE key IS NULL")
+        resultSet.next()
+        resultSet.getInt(1)
+      }
+      statement.executeQuery("DROP TABLE IF EXISTS test_null")
+      statement.close()
+    }
+  }
+
+  test("Binary type support") {
+    withJdbcStatement { statement =>
+      val queries = Seq(
+        "DROP TABLE IF EXISTS test_binary",
+        "CREATE TABLE test_binary(key INT, value STRING)",
+        s"LOAD DATA LOCAL INPATH '${TestData.smallKv}' OVERWRITE INTO TABLE test_binary")
+
+      queries.foreach(statement.execute)
+
+      val expected: Array[Byte] = "val_238".getBytes
+      assertResult(expected) {
+        val resultSet = statement.executeQuery(
+          "SELECT CAST(value as BINARY) FROM test_binary LIMIT 1")
+        resultSet.next()
+        resultSet.getObject(1)
+      }
+      statement.executeQuery("DROP TABLE IF EXISTS test_binary")
+      statement.close()
+    }
+  }
+
+  test("test multiple session") {
+    var defaultV1: String = null
+    var defaultV2: String = null
+    var data: ArrayBuffer[Int] = null
+
+    // first delete test db and table with same name
+    withJdbcStatement { statement =>
+
+      val queries = Seq(
+        "DROP TABLE IF EXISTS test_map",
+        "DROP TABLE IF EXISTS db1.test_map2",
+        "DROP DATABASE IF EXISTS db1")
+
+      queries.foreach(statement.execute)
+    }
+
+    // create table
+    withJdbcStatement { statement =>
+
+      val queries = Seq(
+        "CREATE TABLE test_map(key INT, value STRING)",
+        s"LOAD DATA LOCAL INPATH '${TestData.smallKv}' OVERWRITE INTO TABLE test_map",
+        "CACHE TABLE test_table AS SELECT key FROM test_map ORDER BY key DESC",
+        "CREATE DATABASE db1")
+
+      queries.foreach(statement.execute)
+
+      val plan = statement.executeQuery("explain select * from test_table")
+      plan.next()
+      plan.next()
+      assert(plan.getString(1).contains("InMemoryTableScan"))
+
+      val rs1 = statement.executeQuery("SELECT key FROM test_table ORDER BY KEY DESC")
+      val buf1 = new collection.mutable.ArrayBuffer[Int]()
+      while (rs1.next()) {
+        buf1 += rs1.getInt(1)
+      }
+      rs1.close()
+
+      val rs2 = statement.executeQuery("SELECT key FROM test_map ORDER BY KEY DESC")
+      val buf2 = new collection.mutable.ArrayBuffer[Int]()
+      while (rs2.next()) {
+        buf2 += rs2.getInt(1)
+      }
+      rs2.close()
+
+      assert(buf1 === buf2)
+
+      data = buf1
+    }
+
+    // first session, we get the default value of the session status
+    withJdbcStatement { statement =>
+
+      val rs1 = statement.executeQuery(s"SET spark.sql.shuffle.partitions")
+      rs1.next()
+      defaultV1 = rs1.getString(1)
+      assert(defaultV1 != "200")
+      rs1.close()
+
+      val rs2 = statement.executeQuery("SET hive.cli.print.header")
+      rs2.next()
+
+      defaultV2 = rs2.getString(1)
+      assert(defaultV1 != "true")
+      rs2.close()
+    }
+
+    // second session, we update the session status
+    withJdbcStatement { statement =>
+
+      val queries = Seq(
+        s"SET spark.sql.shuffle.partitions=291",
+        "SET hive.cli.print.header=true"
+      )
+
+      queries.map(statement.execute)
+      val rs1 = statement.executeQuery(s"SET spark.sql.shuffle.partitions")
+      rs1.next()
+      assert("spark.sql.shuffle.partitions" === rs1.getString(1))
+      assert("291" === rs1.getString(2))
+      rs1.close()
+
+      val rs2 = statement.executeQuery("SET hive.cli.print.header")
+      rs2.next()
+      assert("hive.cli.print.header" === rs2.getString(1))
+      assert("true" === rs2.getString(2))
+      rs2.close()
+    }
+
+    // third session, we get the latest session status, supposed to be the
+    // default value
+    withJdbcStatement { statement =>
+
+      val rs1 = statement.executeQuery(s"SET spark.sql.shuffle.partitions")
+      rs1.next()
+      assert(defaultV1 === rs1.getString(1))
+      rs1.close()
+
+      val rs2 = statement.executeQuery("SET hive.cli.print.header")
+      rs2.next()
+      assert(defaultV2 === rs2.getString(1))
+      rs2.close()
+    }
+
+    // switch another database
+    withJdbcStatement { statement =>
+      statement.execute("USE db1")
+
+      // there is no test_map table in db1
+      intercept[SQLException] {
+        statement.executeQuery("SELECT key FROM test_map ORDER BY KEY DESC")
+      }
+
+      statement.execute("CREATE TABLE test_map2(key INT, value STRING)")
+    }
+
+    // access default database
+    withJdbcStatement { statement =>
+
+      // current database should still be `default`
+      intercept[SQLException] {
+        statement.executeQuery("SELECT key FROM test_map2")
+      }
+
+      statement.execute("USE db1")
+      // access test_map2
+      statement.executeQuery("SELECT key from test_map2")
+    }
+
+    // final delete test db and table
+    withJdbcStatement { statement =>
+
+      val queries = Seq(
+        "DROP TABLE IF EXISTS test_map",
+        "DROP TABLE IF EXISTS db1.test_map2",
+        "DROP DATABASE IF EXISTS db1")
+
+      queries.foreach(statement.execute)
+    }
+
+  }
 
   test("Reuse existing session") {
     withJdbcConnection { _ =>
