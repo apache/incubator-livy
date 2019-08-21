@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.livy.client.common;
 
 import com.sun.javafx.PlatformUtil;
@@ -8,12 +25,10 @@ import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.function.Supplier;
 
 import static java.nio.file.attribute.PosixFilePermission.*;
 
 public class OperatingSystemUtils {
-
 
     @FunctionalInterface
     public interface Procedure {
@@ -23,11 +38,6 @@ public class OperatingSystemUtils {
     @FunctionalInterface
     public interface ThrowingProcedure<ExceptionType extends Exception> {
         void execute() throws ExceptionType;
-    }
-
-    @FunctionalInterface
-    public interface ThrowingSupplier<ExceptionType extends Exception, T> {
-        T get() throws ExceptionType;
     }
 
     public static boolean isPosixCompliant() {
@@ -43,21 +53,14 @@ public class OperatingSystemUtils {
     }
 
     public static <ExceptionType extends Exception> void doBasedOnOsThrowsException( ThrowingProcedure<ExceptionType> doWhenPosixCompliant,  ThrowingProcedure<ExceptionType> doWhenWindows, String operationDescription) throws ExceptionType {
-        getBasedOnOsThrowsException(
-                () -> {doWhenPosixCompliant.execute(); return null;},
-                () -> {doWhenWindows.execute(); return null;},
-                operationDescription);
+        getBasedOnOS(doWhenPosixCompliant, doWhenWindows, operationDescription).execute();
     }
 
-    public static <T> T getBasedOnOs( Supplier<T> doWhenPosixCompliant, Supplier<T> doWhenWindows, String operationDescription) {
-        return getBasedOnOsThrowsException(() -> doWhenPosixCompliant.get(), () -> doWhenWindows.get(), operationDescription);
-    }
-
-    public static <ExceptionType extends Exception, T> T getBasedOnOsThrowsException(ThrowingSupplier<ExceptionType, T> doWhenPosixCompliant, ThrowingSupplier<ExceptionType, T> doWhenWindows, String operationDescription) throws ExceptionType {
+    public static <T> T getBasedOnOS(T getWhenPosixCompliant, T getWhenWindows, String operationDescription) {
         if (isPosixCompliant()) {
-            return doWhenPosixCompliant.get();
+            return getWhenPosixCompliant;
         } else if ( isWindows()) {
-            return doWhenWindows.get();
+            return getWhenWindows;
         } else {
             String seperator = operationDescription.isEmpty() ? "" : ": ";
             throw new UnsupportedOperationException("Operation" + seperator + operationDescription + " is not supported on this OS");
@@ -67,7 +70,7 @@ public class OperatingSystemUtils {
     public static void setOSAgnosticFilePermissions(File file, EnumSet<PosixFilePermission> permissions) throws IOException {
         OperatingSystemUtils.doBasedOnOsThrowsException(
                 () -> Files.setPosixFilePermissions(file.toPath(), permissions),
-                () -> file.setWritable(isWriteable(permissions), permissions.contains(OWNER_WRITE)), //whether or not a file is read-only is the applicable permission on Windows
+                () -> file.setWritable(isWriteable(permissions), permissions.contains(OWNER_WRITE)), //whether or not a file is read-only is the only applicable permission on Windows
                 "Setting file permissions"
         );
     }
