@@ -44,6 +44,7 @@ import static java.nio.file.attribute.PosixFilePermission.*;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Promise;
+import org.apache.livy.client.common.OperatingSystemUtils;
 import org.apache.spark.launcher.SparkLauncher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -299,9 +300,8 @@ class ContextLauncher {
         }
       }
     }
-
     File file = File.createTempFile("livyConf", ".properties");
-    Files.setPosixFilePermissions(file.toPath(), EnumSet.of(OWNER_READ, OWNER_WRITE));
+    OperatingSystemUtils.setOSAgnosticFilePermissions(file, EnumSet.of(OWNER_READ, OWNER_WRITE));
     //file.deleteOnExit();
 
     Writer writer = new OutputStreamWriter(new FileOutputStream(file), UTF_8);

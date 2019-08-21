@@ -19,13 +19,12 @@ package org.apache.livy
 
 import java.io.File
 import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.util.function.{Consumer, Supplier}
 import java.util.{Map => JMap}
 
 import scala.collection.JavaConverters._
-
 import org.apache.hadoop.conf.Configuration
-
-import org.apache.livy.client.common.ClientConf
+import org.apache.livy.client.common.{ClientConf, OperatingSystemUtils}
 import org.apache.livy.client.common.ClientConf.ConfEntry
 import org.apache.livy.client.common.ClientConf.DeprecatedConf
 
@@ -335,7 +334,10 @@ class LivyConf(loadDefaults: Boolean) extends ClientConf[LivyConf](null) {
 
   /** Return the path to the spark-submit executable. */
   def sparkSubmit(): String = {
-    sparkHome().map { _ + File.separator + "bin" + File.separator + "spark-submit" }.get
+    val posixSupplier = new Supplier[String]() { override def get() = "spark-submit" };
+    val windowsSupplier = new Supplier[String]() { override def get() = "spark-submit.cmd" };
+    val sparkSubmit = OperatingSystemUtils.getBasedOnOs(posixSupplier, windowsSupplier, "Getting Spark Submit");
+    sparkHome().map { _ + File.separator + "bin" + File.separator + sparkSubmit }.get
   }
 
   private val configDir: Option[File] = {
