@@ -204,6 +204,42 @@ public class ColumnBuffer {
     return nulls != null ? BitSet.valueOf(nulls) : new BitSet();
   }
 
+  public ColumnBuffer extractSubset(int start, int end) {
+    ColumnBuffer subset = new ColumnBuffer(type);
+    subset.currentSize = end - start;
+    subset.ensureCapacity();
+    switch (type) {
+      case BOOLEAN:
+        System.arraycopy(bools, start, subset.bools, 0, end - start);
+        break;
+      case BYTE:
+        System.arraycopy(bytes, start, subset.bytes, 0, end - start);
+        break;
+      case SHORT:
+        System.arraycopy(shorts, start, subset.shorts, 0, end - start);
+        break;
+      case INTEGER:
+        System.arraycopy(ints, start, subset.ints, 0, end - start);
+        break;
+      case LONG:
+        System.arraycopy(longs, start, subset.longs, 0, end - start);
+        break;
+      case FLOAT:
+        System.arraycopy(floats, start, subset.floats, 0, end - start);
+        break;
+      case DOUBLE:
+        System.arraycopy(doubles, start, subset.doubles, 0, end - start);
+        break;
+      case BINARY:
+        System.arraycopy(buffers, start, subset.buffers, 0, end - start);
+        break;
+      case STRING:
+        System.arraycopy(strings, start, subset.strings, 0, end - start);
+        break;
+    }
+    return subset;
+  }
+
   private boolean isNull(int index) {
     if (nulls == null) {
       return false;

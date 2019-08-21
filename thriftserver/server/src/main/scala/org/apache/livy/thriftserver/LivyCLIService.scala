@@ -215,8 +215,8 @@ class LivyCLIService(server: LivyThriftServer)
       sessionHandle: SessionHandle,
       catalogName: String,
       schemaName: String): OperationHandle = {
-    // TODO
-    throw new HiveSQLException("Operation GET_SCHEMAS is not yet supported")
+    sessionManager.operationManager.getSchemas(
+      sessionHandle, catalogName, schemaName)
   }
 
   @throws[HiveSQLException]
@@ -226,8 +226,8 @@ class LivyCLIService(server: LivyThriftServer)
       schemaName: String,
       tableName: String,
       tableTypes: util.List[String]): OperationHandle = {
-    // TODO
-    throw new HiveSQLException("Operation GET_TABLES is not yet supported")
+    sessionManager.operationManager.getTables(
+      sessionHandle, catalogName, schemaName, tableName, tableTypes)
   }
 
   @throws[HiveSQLException]
@@ -243,8 +243,8 @@ class LivyCLIService(server: LivyThriftServer)
       schemaName: String,
       tableName: String,
       columnName: String): OperationHandle = {
-    // TODO
-    throw new HiveSQLException("Operation GET_COLUMNS is not yet supported")
+    sessionManager.operationManager.getColumns(
+      sessionHandle, catalogName, schemaName, tableName, columnName)
   }
 
   @throws[HiveSQLException]
@@ -253,8 +253,8 @@ class LivyCLIService(server: LivyThriftServer)
       catalogName: String,
       schemaName: String,
       functionName: String): OperationHandle = {
-    // TODO
-    throw new HiveSQLException("Operation GET_FUNCTIONS is not yet supported")
+    sessionManager.operationManager.getFunctions(
+      sessionHandle, catalogName, schemaName, functionName)
   }
 
   @throws[HiveSQLException]
