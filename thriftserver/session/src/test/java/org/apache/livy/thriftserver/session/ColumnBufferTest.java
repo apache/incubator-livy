@@ -229,6 +229,74 @@ public class ColumnBufferTest {
     }
   }
 
+  @Test
+  public void testExtractSubset() {
+    testExtractSubsetWithType(DataType.BOOLEAN, new Object[]{true, false, true, false, null});
+    testExtractSubsetWithType(DataType.BYTE,
+      new Object[]{(byte)0, (byte)1, (byte)2, (byte)3, null});
+    testExtractSubsetWithType(DataType.SHORT,
+      new Object[]{(short)0, (short)1, (short)2, (short)3, null});
+    testExtractSubsetWithType(DataType.INTEGER, new Object[]{1, 2, 3, 4, null});
+    testExtractSubsetWithType(DataType.LONG, new Object[]{1L, 2L, 3L, 4L, null});
+    testExtractSubsetWithType(DataType.FLOAT, new Object[]{1.0f, 2.0f, 3.0f, 4.0f, null});
+    testExtractSubsetWithType(DataType.DOUBLE, new Object[]{1.0, 2.0, 3.0, 4.0, null});
+    testExtractSubsetWithType(DataType.BINARY, new Object[]{
+      new byte[]{0, 1},
+      new byte[]{0},
+      new byte[]{},
+      new byte[]{0, 1, 2},
+      null});
+    testExtractSubsetWithType(DataType.STRING, new Object[]{"a", "b", "c", "d", null});
+  }
+
+  private void testExtractSubsetWithType(
+      DataType type,
+      Object[] initValues) {
+    ColumnBuffer buffer = new ColumnBuffer(type);
+
+    // Check the passed in test data
+    // The number of initial value for test should be 5
+    assertEquals(5, initValues.length);
+    // The last one should be null
+    assertNull(initValues[4]);
+
+    for (Object o : initValues) {
+      buffer.add(o);
+    }
+
+    ColumnBuffer buffer1 = buffer.extractSubset(-1, 100);
+    assertEquals(5, buffer1.size());
+    // null bit should be set
+    assertTrue(buffer1.getNulls().get(4));
+    assertEquals(buffer.get(0), buffer1.get(0));
+    assertEquals(buffer.get(1), buffer1.get(1));
+    assertEquals(buffer.get(2), buffer1.get(2));
+    assertEquals(buffer.get(3), buffer1.get(3));
+    assertEquals(buffer.get(4), buffer1.get(4));
+
+    // Extract a part without null
+    ColumnBuffer buffer2 = buffer.extractSubset(0, 2);
+    assertEquals(2, buffer2.size());
+    // null bits should not be set
+    assertEquals(0, buffer2.getNulls().size());
+    assertEquals(buffer.get(0), buffer2.get(0));
+    assertEquals(buffer.get(1), buffer2.get(1));
+
+    // Extract a single element part
+    ColumnBuffer buffer3 = buffer.extractSubset(4, 5);
+    assertEquals(1, buffer3.size());
+    assertTrue(buffer3.getNulls().get(0));
+    assertEquals(buffer.get(4), buffer3.get(0));
+
+    // Extract no element part
+    ColumnBuffer buffer4 = buffer.extractSubset(3, 3);
+    assertEquals(0, buffer4.size());
+
+    // End < Start
+    ColumnBuffer buffer5 = buffer.extractSubset(2, 0);
+    assertEquals(0, buffer5.size());
+  }
+
   public static class TestBean {
     private int id;
     private boolean bool;

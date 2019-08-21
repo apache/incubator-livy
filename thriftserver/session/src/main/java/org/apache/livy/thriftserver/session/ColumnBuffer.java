@@ -208,10 +208,20 @@ public class ColumnBuffer {
    * Extract subset data to a new column buffer.
    * @param start start row number
    * @param end end row number, which is not included in the subset data
-   * @return
    */
   public ColumnBuffer extractSubset(int start, int end) {
     ColumnBuffer subset = new ColumnBuffer(type);
+
+    if (start < 0) {
+      start = 0;
+    }
+    if (end > this.currentSize) {
+      end = this.currentSize;
+    }
+    if (end <= start) {
+      return subset;
+    }
+
     subset.currentSize = end - start;
     subset.ensureCapacity();
     switch (type) {
@@ -243,6 +253,7 @@ public class ColumnBuffer {
         System.arraycopy(strings, start, subset.strings, 0, end - start);
         break;
     }
+    subset.nulls = getNulls().get(start, end).toByteArray();
     return subset;
   }
 
