@@ -207,7 +207,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
 
   private def doWithSession(fn: (S => Any),
       allowAll: Boolean,
-      checkFn: Option[(String, String) => Boolean]): Any = {
+      checkFn: Option[(String, String, String) => Boolean]): Any = {
     val idOrNameParam: String = params("id")
     val session = if (idOrNameParam.forall(_.isDigit)) {
       val sessionId = idOrNameParam.toInt
@@ -218,7 +218,11 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     }
     session match {
       case Some(session) =>
-        if (allowAll || checkFn.map(_(session.owner, effectiveUser(request))).getOrElse(false)) {
+        if (allowAll ||
+            checkFn.map(_(session.owner,
+                          effectiveUser(request),
+                          session.proxyUser.getOrElse("")))
+                   .getOrElse(false)) {
           fn(session)
         } else {
           Forbidden()
