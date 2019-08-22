@@ -85,7 +85,8 @@ public class OperatingSystemUtils {
     }
 
     private static boolean isWriteable(EnumSet<PosixFilePermission> permissions) {
-        return !Collections.disjoint(permissions, EnumSet.of(OWNER_WRITE, GROUP_WRITE,
+        return !Collections.disjoint(permissions, EnumSet.of(OWNER_WRITE,
+                                                             GROUP_WRITE,
                                                              OTHERS_WRITE));
     }
 
