@@ -17,17 +17,16 @@
 
 package org.apache.livy.client.common;
 
-import com.sun.javafx.PlatformUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
-
 import static java.nio.file.attribute.PosixFilePermission.*;
+
+import com.sun.javafx.PlatformUtil;
+import org.junit.Before;
+import org.junit.Test;
 import static org.junit.Assert.*;
+
 
 public class TestOperatingSystemUtils {
 
@@ -40,12 +39,14 @@ public class TestOperatingSystemUtils {
 
     @Test
     public void testIsPosixCompliant() {
-        assertEquals(PlatformUtil.isUnix() || PlatformUtil.isMac(), OperatingSystemUtils.isPosixCompliant());
+        assertEquals(PlatformUtil.isUnix() || PlatformUtil.isMac(),
+                     OperatingSystemUtils.isPosixCompliant());
     }
 
     @Test
     public void testIsWindows() {
-        assertEquals(PlatformUtil.isWindows(), OperatingSystemUtils.isWindows());
+        assertEquals(PlatformUtil.isWindows(),
+                     OperatingSystemUtils.isWindows());
     }
 
     @Test
@@ -105,7 +106,9 @@ public class TestOperatingSystemUtils {
     public void testSetOSAgnosticFilePermissions() throws IOException {
         File f = File.createTempFile("testFile", ".txt");
         f.deleteOnExit();
-        OperatingSystemUtils.setOSAgnosticFilePermissions(f, EnumSet.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE));
+        OperatingSystemUtils.setOSAgnosticFilePermissions(f, EnumSet.of(OWNER_READ,
+                                                                        OWNER_WRITE,
+                                                                        OWNER_EXECUTE));
         assertTrue(f.canExecute());
         assertTrue(f.canWrite());
         assertTrue(f.canRead());

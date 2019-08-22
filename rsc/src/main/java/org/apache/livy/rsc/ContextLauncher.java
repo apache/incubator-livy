@@ -44,17 +44,16 @@ import static java.nio.file.attribute.PosixFilePermission.*;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Promise;
-import org.apache.livy.client.common.OperatingSystemUtils;
 import org.apache.spark.launcher.SparkLauncher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.livy.client.common.OperatingSystemUtils;
 import org.apache.livy.client.common.TestUtils;
 import org.apache.livy.rsc.driver.RSCDriverBootstrapper;
 import org.apache.livy.rsc.rpc.Rpc;
 import org.apache.livy.rsc.rpc.RpcDispatcher;
 import org.apache.livy.rsc.rpc.RpcServer;
-
 import static org.apache.livy.rsc.RSCConf.Entry.*;
 
 /**
