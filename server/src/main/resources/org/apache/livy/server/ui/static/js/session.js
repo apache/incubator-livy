@@ -53,6 +53,7 @@ function appendSummary(session) {
     "<h3>Session " + session.id + "</h3>" +
     "<ul class='list-unstyled'>" +
       sumWrap("Application Id", appIdLink(session)) +
+      sumWrap("Name", session.name) +
       sumWrap("Owner", session.owner) +
       sumWrap("Proxy User", session.proxyUser) +
       sumWrap("Session Kind", session.kind) +
