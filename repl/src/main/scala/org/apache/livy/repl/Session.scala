@@ -17,7 +17,6 @@
 
 package org.apache.livy.repl
 
-
 import java.util.{LinkedHashMap => JLinkedHashMap}
 import java.util.Map.Entry
 import java.util.concurrent.Executors
@@ -148,10 +147,6 @@ class Session(
     _statements.toMap
   }
 
-  def nowTime(): Long = {
-    return System.currentTimeMillis()
-  }
-
   def execute(code: String, codeType: String = null): Int = {
     val tpe = if (codeType != null) {
       Kind(codeType)
@@ -165,8 +160,7 @@ class Session(
     val statement = new Statement(statementId, code, StatementState.Waiting, null)
     _statements.synchronized { _statements(statementId) = statement }
 
-    val start = System.currentTimeMillis()
-    statement.started = nowTime()
+    statement.started = System.currentTimeMillis()
 
     Future {
       setJobGroup(tpe, statementId)
@@ -179,7 +173,7 @@ class Session(
       statement.compareAndTransit(StatementState.Running, StatementState.Available)
       statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
       statement.updateProgress(1.0)
-      statement.completed = nowTime()
+      statement.completed = System.currentTimeMillis()
     }(interpreterExecutor)
 
     statementId
@@ -227,7 +221,7 @@ class Session(
       }
 
       if (statement.state.get() == StatementState.Cancelled) {
-        statement.completed = nowTime()
+        statement.completed = System.currentTimeMillis()
         info(s"Statement $statementId cancelled.")
       }
     }(cancelExecutor)
