@@ -125,9 +125,7 @@ class ColumnOrientedResultSet(
 
   override def extractSubset(maxRows: Int): ThriftResultSet = {
     val nRows = Math.min(numRows, maxRows)
-    val result = new ColumnOrientedResultSet(
-      columns.map(_.extractSubset(nRows))
-    )
+    val result = new ColumnOrientedResultSet(columns.map(_.extractSubset(nRows)))
     rowOffset += nRows
     result
   }

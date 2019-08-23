@@ -209,7 +209,7 @@ trait CommonThriftTests {
     assert(!tableTypesResultSet.next())
   }
 
-  def getTypeInforTest(connection: Connection): Unit = {
+  def getTypeInfoTest(connection: Connection): Unit = {
     val metadata = connection.getMetaData
     val typeInfoResultSet = metadata.getTypeInfo()
     val expectResults = Array(

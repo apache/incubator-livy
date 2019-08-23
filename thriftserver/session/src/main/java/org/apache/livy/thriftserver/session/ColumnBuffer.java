@@ -241,7 +241,9 @@ public class ColumnBuffer {
   }
 
   /**
-   * Extract subset data to a new column buffer.
+   * Extract subset data to a new ColumnBuffer. It will remove the extracted data from current
+   * ColumnBuffer.
+   *
    * @param end index of the end row, exclusive
    */
   public ColumnBuffer extractSubset(int end) {
