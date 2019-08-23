@@ -295,7 +295,7 @@ Returns a specified statement in a session.
 The <a href="#statement">statement</a> object.
 
 
-### POST /sessions/{sessionId}/statements/{statementId}/cancel
+### DELETE /sessions/{sessionId}/statements/{statementId}
 
 Cancel the specified statement in this session.
 

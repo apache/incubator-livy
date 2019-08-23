@@ -142,7 +142,7 @@ class InteractiveSessionServlet(
     }
   }
 
-  post("/:id/statements/:statementId/cancel") {
+  delete("/:id/statements/:statementId") {
     withModifyAccessSession { session =>
       val statementId = params("statementId")
       session.cancelStatement(statementId.toInt)

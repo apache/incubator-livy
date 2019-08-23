@@ -136,7 +136,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       data("statements").asInstanceOf[Seq[Map[String, Any]]](0)("id") should be (0)
     }
 
-    jpost[Map[String, Any]]("/0/statements/0/cancel", null, HttpServletResponse.SC_OK) { data =>
+    jdelete[Map[String, Any]]("/0/statements/0") { data =>
       data should equal(Map("msg" -> "canceled"))
     }
 
