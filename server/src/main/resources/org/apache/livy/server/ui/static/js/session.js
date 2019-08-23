@@ -35,7 +35,8 @@ function formatError(output) {
 }
 
 function timeWrap(time) {
-  if (time == 0.0) {
+  time = (time / 1000.0 / 60.0).toFixed(1)
+  if (time <= 0.0) {
     return "0.0min"
   } else {
     return time + "min"
@@ -43,6 +44,9 @@ function timeWrap(time) {
 }
 
 function localDateTime(timestamp) {
+  if(timestamp <= 0) {
+    return '-'
+  }
   var now = new Date(timestamp),
       y = now.getFullYear(),
       m = now.getMonth() + 1,
@@ -90,7 +94,7 @@ function loadStatementsTable(statements) {
         tdWrap(statementOutput(statement.output)) +
         tdWrap(localDateTime(statement.started)) +
         tdWrap(localDateTime(statement.completed)) +
-        tdWrap(timeWrap(statement.duration)) +
+        tdWrap(timeWrap(statement.completed - statement.started)) +
        "</tr>"
     );
   });

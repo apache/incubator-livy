@@ -180,8 +180,6 @@ class Session(
       statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
       statement.updateProgress(1.0)
       statement.completed = nowTime()
-      statement.duration = ((nowTime() - start) / 1000.0 / 60.0)
-        .formatted("%.1f").toDouble
     }(interpreterExecutor)
 
     statementId
@@ -230,8 +228,6 @@ class Session(
 
       if (statement.state.get() == StatementState.Cancelled) {
         statement.completed = nowTime()
-        statement.duration = ((nowTime() - statement.started) / 1000.0 / 60.0)
-          .formatted("%.1f").toDouble
         info(s"Statement $statementId cancelled.")
       }
     }(cancelExecutor)
