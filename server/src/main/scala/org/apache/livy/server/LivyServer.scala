@@ -38,12 +38,14 @@ import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
 import org.apache.livy._
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.interactive.InteractiveSessionServlet
-import org.apache.livy.server.recovery.{SessionStore, StateStore}
+import org.apache.livy.server.recovery.{SessionStore, StateStore, ZooKeeperStateStore}
 import org.apache.livy.server.ui.UIServlet
 import org.apache.livy.sessions.{BatchSessionManager, InteractiveSessionManager}
 import org.apache.livy.sessions.SessionManager.SESSION_RECOVERY_MODE_OFF
 import org.apache.livy.utils.LivySparkUtils._
 import org.apache.livy.utils.SparkYarnApp
+
+import org.apache.curator.utils.CloseableUtils;
 
 class LivyServer extends Logging {
 
@@ -394,16 +396,30 @@ class LivyServer extends Logging {
   }
 }
 
+object HighAvailabilitySettings {
+  val HA_ON = "on"
+  val HA_OFF = "off"
+}
+
 object LivyServer {
 
   def main(args: Array[String]): Unit = {
     val server = new LivyServer()
-    try {
-      server.start()
-      server.join()
-    } finally {
-      server.stop()
+    val livyConf = new LivyConf().loadFromFile("livy.conf")
+
+    //Test code for Livy HA implementation
+    if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON){
+      info("Starting HA connection")
+      val electorService: CuratorElectorService = new CuratorElectorService(livyConf, server);
+      electorService.start()     
+    }
+    else {
+      try {
+        server.start()
+        server.join()
+      } finally {
+        server.stop()
+      }
     }
   }
-
 }

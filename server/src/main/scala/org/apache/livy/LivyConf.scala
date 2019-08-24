@@ -184,6 +184,19 @@ object LivyConf {
    * zookeeper: Store state in a Zookeeper instance.
    */
   val RECOVERY_STATE_STORE = Entry("livy.server.recovery.state-store", null)
+
+  /**
+  * High Availability mode of Livy. Possible values:
+  * off: Default. Turn off High Availability. 
+  * on: Livy uses Zookeeper as a state store to ensure a livy server is always available with the
+  *     correct state.
+  * Must set livy.server.ha.zookeeper-url to configure HA
+  */
+  val HA_MODE = Entry("livy.server.ha.mode", "off")
+
+  // For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+  val HA_ZOOKEEPER_URL = Entry("livy.server.ha.zookeeper-url", "")
+
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
@@ -216,9 +229,6 @@ object LivyConf {
   // Whether session timeout should be checked, by default it will be checked, which means inactive
   // session will be stopped after "livy.server.session.timeout"
   val SESSION_TIMEOUT_CHECK = Entry("livy.server.session.timeout-check", true)
-  // Whether session timeout check should skip busy sessions, if set to true, then busy sessions
-  // that have jobs running will never timeout.
-  val SESSION_TIMEOUT_CHECK_SKIP_BUSY = Entry("livy.server.session.timeout-check.skip-busy", false)
   // How long will an inactive session be gc-ed.
   val SESSION_TIMEOUT = Entry("livy.server.session.timeout", "1h")
   // How long a finished session state will be kept in memory

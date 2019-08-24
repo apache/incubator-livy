@@ -50,12 +50,8 @@
 
 # Enabled to check whether timeout Livy sessions should be stopped.
 # livy.server.session.timeout-check = true
-#
-# Whether or not to skip timeout check for a busy session
-# livy.server.session.timeout-check.skip-busy = false
 
-# Time in milliseconds on how long Livy will wait before timing out an inactive session.
-# Note that the inactive session could be busy running jobs.
+# Time in milliseconds on how long Livy will wait before timing out an idle session.
 # livy.server.session.timeout = 1h
 #
 # How long a finished session state should be kept in LivyServer for query.
@@ -99,6 +95,16 @@
 # Whether to enable HiveContext in livy interpreter, if it is true hive-site.xml will be detected
 # on user request and then livy server classpath automatically.
 # livy.repl.enable-hive-context =
+
+# High Availability mode of Livy. Possible values:
+# off: Default. Turn off High Availability. 
+# on: Livy uses Zookeeper as a state store to ensure a livy server is always available with the
+#     correct state.
+# Must set livy.server.ha.zookeeper-url to configure HA
+# livy.server.ha.mode = off
+
+# For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+# livy.server.ha.zookeeper-url =
 
 # Recovery mode of Livy. Possible values:
 # off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
