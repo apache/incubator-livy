@@ -393,7 +393,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
 
   test("get types info test") {
     withJdbcConnection { c =>
-      getTypeInforTest(c)
+      getTypeInfoTest(c)
     }
   }
 }
@@ -453,7 +453,7 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
 
   test("get types info test") {
     withJdbcConnection { c =>
-      getTypeInforTest(c)
+      getTypeInfoTest(c)
     }
   }
 }
