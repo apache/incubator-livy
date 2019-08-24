@@ -111,7 +111,10 @@ class ColumnOrientedResultSet(
   }
 
   override def toTRowSet: TRowSet = {
+    // Spark beeline use old hive-jdbc-client doesn’t do null point ref check. When we new TRowSet,
+    // setColumes make sure column set not null.
     val tRowSet = new TRowSet(rowOffset, new util.ArrayList[TRow])
+    tRowSet.setColumns(new util.ArrayList[TColumn]())
     columns.foreach { c =>
       tRowSet.addToColumns(ThriftResultSet.toTColumn(c))
     }
