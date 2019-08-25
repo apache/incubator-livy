@@ -60,6 +60,52 @@ final class SparkUtils {
   }
 
   /**
+   * Translates our Thrift data types to Spark types
+   */
+  public static StructType dataTypesToSchema(DataType[] types) {
+    StructField[] fields = new StructField[types.length];
+    int idx = 0;
+    for (DataType dt : types) {
+      org.apache.spark.sql.types.DataType sparkDt = null;
+      switch (dt) {
+        case BOOLEAN:
+          sparkDt = DataTypes.BooleanType;
+          break;
+        case BYTE:
+          sparkDt = DataTypes.BooleanType;
+          break;
+        case SHORT:
+          sparkDt = DataTypes.IntegerType;
+          break;
+        case INTEGER:
+          sparkDt = DataTypes.IntegerType;
+          break;
+        case LONG:
+          sparkDt = DataTypes.FloatType;
+          break;
+        case FLOAT:
+          sparkDt = DataTypes.FloatType;
+          break;
+        case DOUBLE:
+          sparkDt = DataTypes.DoubleType;
+          break;
+        case BINARY:
+          sparkDt = DataTypes.BinaryType;
+          break;
+        case STRING:
+          sparkDt = DataTypes.StringType;
+          break;
+        default:
+          throw new IllegalArgumentException("Invalid data type: " + dt);
+      }
+      fields[idx] = new StructField(
+              "col_" + idx, sparkDt, true, Metadata.empty());
+      idx++;
+    }
+    return new StructType(fields);
+  }
+
+  /**
    * This method is ported from Spark Hive Thrift server Type class
    * @param type
    * @return

@@ -23,9 +23,6 @@ import org.apache.livy.thriftserver.serde.ThriftResultSet
 
 /**
   * MetadataOperation is the base class for operations which do not perform any call on Spark side
-  *
-  * @param sessionHandle
-  * @param opType
   */
 abstract class MetadataOperation(sessionHandle: SessionHandle, opType: OperationType)
   extends Operation(sessionHandle, opType) {

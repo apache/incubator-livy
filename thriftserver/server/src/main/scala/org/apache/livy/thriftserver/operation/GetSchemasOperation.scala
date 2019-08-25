@@ -26,8 +26,7 @@ import org.apache.livy.thriftserver.session.{GetSchemasJob, GetTablesJob}
 
 class GetSchemasOperation(
     sessionHandle: SessionHandle,
-    catalogName: String,
-    schemaName: String,
+    schemaPattern: String,
     sessionManager: LivyThriftSessionManager)
   extends SparkCatalogOperation(
     sessionHandle, OperationType.GET_SCHEMAS, sessionManager) with Logging {
@@ -37,8 +36,10 @@ class GetSchemasOperation(
     setState(OperationState.RUNNING)
     try {
       rscClient.submit(new GetSchemasJob(
-        convertSchemaPattern(schemaName), sessionId, jobId
-      )).get()
+        schemaPattern,
+        sessionId,
+        jobId,
+        GetSchemasOperation.SCHEMA.fields.map(_.fieldType.dataType))).get()
       setState(OperationState.FINISHED)
     } catch {
       case e: Throwable =>
@@ -58,6 +59,5 @@ class GetSchemasOperation(
 object GetSchemasOperation {
   val SCHEMA = Schema(
     Field("TABLE_SCHEM", BasicDataType("string"), "Schema name."),
-    Field("TABLE_CATALOG", BasicDataType("string"), "Catalog name.")
-  )
+    Field("TABLE_CATALOG", BasicDataType("string"), "Catalog name."))
 }
