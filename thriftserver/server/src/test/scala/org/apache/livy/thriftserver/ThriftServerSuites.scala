@@ -17,7 +17,7 @@
 
 package org.apache.livy.thriftserver
 
-import java.sql.{Connection, Date, SQLException, Statement}
+import java.sql.{Connection, Date, SQLException, Statement, Types}
 
 import org.apache.hive.jdbc.HiveStatement
 
@@ -190,6 +190,70 @@ trait CommonThriftTests {
       "Livy session has not yet started. Please wait for it to be ready...")
     assert(!logIterator.hasNext)
   }
+
+  def getCatalogTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val catalogResultSet = metadata.getCatalogs()
+    // Spark doesn't support getCatalog. In current implementation, it's a no-op and does not return
+    // any data
+    assert(!catalogResultSet.next())
+  }
+
+  def getTableTypeTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val tableTypesResultSet = metadata.getTableTypes()
+    tableTypesResultSet.next()
+    assert(tableTypesResultSet.getString(1) == "TABLE")
+    tableTypesResultSet.next()
+    assert(tableTypesResultSet.getString(1) == "VIEW")
+    assert(!tableTypesResultSet.next())
+  }
+
+  def getTypeInfoTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val typeInfoResultSet = metadata.getTypeInfo()
+    val expectResults = Array(
+      ("void", Types.NULL, 0, 1, false, 0, true, false, false, null, 0, 0, 0, 0, 0),
+      ("boolean", Types.BOOLEAN, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("byte", Types.TINYINT, 3, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("short", Types.SMALLINT, 5, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("integer", Types.INTEGER, 10, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("long", Types.BIGINT, 19, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("float", Types.FLOAT, 7, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("double", Types.DOUBLE, 15, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("date", Types.DATE, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("timestamp", Types.TIMESTAMP, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("string", Types.VARCHAR, 0, 1, true, 3, true, false, false, null, 0, 0, 0, 0, 0),
+      ("binary", Types.BINARY, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("decimal", Types.DECIMAL, 38, 1, false, 2, false, false, false, null, 0, 0, 0, 0, 10),
+      ("array", Types.ARRAY, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("map", Types.OTHER, 0, 1, false, 0, true, false, false, null, 0, 0, 0, 0, 0),
+      ("struct", Types.STRUCT, 0, 1, false, 2, true, false, false, null, 0, 0, 0, 0, 0),
+      ("udt", Types.OTHER, 0, 1, false, 0, true, false, false, null, 0, 0, 0, 0, 0)
+    )
+    for (expect <- expectResults) {
+      typeInfoResultSet.next()
+      assert(typeInfoResultSet.getString(1) == expect._1)
+      assert(typeInfoResultSet.getInt(2) == expect._2)
+      assert(typeInfoResultSet.getInt(3) == expect._3)
+      assert(typeInfoResultSet.getString(4) == null)
+      assert(typeInfoResultSet.getString(5) == null)
+      assert(typeInfoResultSet.getString(6) == null)
+      assert(typeInfoResultSet.getShort(7) == expect._4)
+      assert(typeInfoResultSet.getBoolean(8) == expect._5)
+      assert(typeInfoResultSet.getShort(9) == expect._6)
+      assert(typeInfoResultSet.getBoolean(10) == expect._7)
+      assert(typeInfoResultSet.getBoolean(11) == expect._8)
+      assert(typeInfoResultSet.getBoolean(12) == expect._9)
+      assert(typeInfoResultSet.getString(13) == expect._10)
+      assert(typeInfoResultSet.getShort(14) == expect._11)
+      assert(typeInfoResultSet.getShort(15) == expect._12)
+      assert(typeInfoResultSet.getInt(16) == expect._13)
+      assert(typeInfoResultSet.getInt(17) == expect._14)
+      assert(typeInfoResultSet.getInt(18) == expect._15)
+    }
+    assert(!typeInfoResultSet.next())
+  }
 }
 
 class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
@@ -314,6 +378,24 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       operationLogRetrievalTest(statement)
     }
   }
+
+  test("fetch catalog test") {
+    withJdbcConnection { c =>
+      getCatalogTest(c)
+    }
+  }
+
+  test("get table types test") {
+    withJdbcConnection { c =>
+      getTableTypeTest(c)
+    }
+  }
+
+  test("get types info test") {
+    withJdbcConnection { c =>
+      getTypeInfoTest(c)
+    }
+  }
 }
 
 class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
@@ -354,6 +436,24 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
   test("operation log retrieval test") {
     withJdbcStatement { statement =>
       operationLogRetrievalTest(statement)
+    }
+  }
+
+  test("fetch catalog test") {
+    withJdbcConnection { c =>
+      getCatalogTest(c)
+    }
+  }
+
+  test("get table types test") {
+    withJdbcConnection { c =>
+      getTableTypeTest(c)
+    }
+  }
+
+  test("get types info test") {
+    withJdbcConnection { c =>
+      getTypeInfoTest(c)
     }
   }
 }

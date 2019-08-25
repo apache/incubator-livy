@@ -229,6 +229,102 @@ public class ColumnBufferTest {
     }
   }
 
+  @Test
+  public void testExtractSubset() {
+    testExtractSubsetWithType(DataType.BOOLEAN, new Object[]{true, false, true, false, null});
+    testExtractSubsetWithType(DataType.BYTE,
+      new Object[]{(byte)0, (byte)1, (byte)2, (byte)3, null});
+    testExtractSubsetWithType(DataType.SHORT,
+      new Object[]{(short)0, (short)1, (short)2, (short)3, null});
+    testExtractSubsetWithType(DataType.INTEGER, new Object[]{1, 2, 3, 4, null});
+    testExtractSubsetWithType(DataType.LONG, new Object[]{1L, 2L, 3L, 4L, null});
+    testExtractSubsetWithType(DataType.FLOAT, new Object[]{1.0f, 2.0f, 3.0f, 4.0f, null});
+    testExtractSubsetWithType(DataType.DOUBLE, new Object[]{1.0, 2.0, 3.0, 4.0, null});
+    testExtractSubsetWithType(DataType.BINARY, new Object[]{
+      new byte[]{0, 1},
+      new byte[]{0},
+      new byte[]{},
+      new byte[]{0, 1, 2},
+      null});
+    testExtractSubsetWithType(DataType.STRING, new Object[]{"a", "b", "c", "d", null});
+
+    // When null bits is less than currentSize
+    ColumnBuffer buffer = new ColumnBuffer(DataType.STRING);
+    buffer.add(null);
+    buffer.add("a");
+    buffer.add("b");
+    ColumnBuffer subset = buffer.extractSubset(2);
+    assertEquals(2, subset.size());
+    assertNull(subset.get(0));
+    assertEquals("a", subset.get(1));
+    assertTrue(subset.getNulls().get(0));
+
+    // When value array length is less than currentSize
+    buffer = new ColumnBuffer(DataType.STRING);
+    for (int i = 0; i < 110; i++) {
+      buffer.add(null);
+    }
+    subset = buffer.extractSubset(110);
+    BitSet nullBits = subset.getNulls();
+    assertEquals(110, subset.size());
+    for (int i = 0; i < 110; i++) {
+      assertNull(subset.get(i));
+      assertTrue(nullBits.get(i));
+    }
+    assertEquals(0, buffer.size());
+  }
+
+  private void testExtractSubsetWithType(
+      DataType type,
+      Object[] initValues) {
+    ColumnBuffer buffer = new ColumnBuffer(type);
+
+    // Check the passed in test data
+    // The number of initial value for test should be 5
+    assertEquals(5, initValues.length);
+    // The last one should be null
+    assertNull(initValues[4]);
+
+    for (int i = 0; i < initValues.length; i++) {
+      buffer.add(initValues[i]);
+      // Binary column buffer will wrap byte[] in a ByteBuffer
+      // We update initValues for the following comparision for Binary ColumnBuffer
+      if (type == DataType.BINARY && initValues[i] != null) {
+        initValues[i] = ByteBuffer.wrap((byte[]) initValues[i]);
+      }
+    }
+
+    ColumnBuffer buffer1 = buffer.extractSubset(100);
+    assertEquals(5, buffer1.size());
+    // null bit should be set
+    assertTrue(buffer1.getNulls().get(4));
+    assertEquals(initValues[0], buffer1.get(0));
+    assertEquals(initValues[1], buffer1.get(1));
+    assertEquals(initValues[2], buffer1.get(2));
+    assertEquals(initValues[3], buffer1.get(3));
+    assertEquals(initValues[4], buffer1.get(4));
+    assertEquals(0, buffer.size());
+
+    // extract negative index
+    ColumnBuffer buffer2 = buffer1.extractSubset(-1);
+    assertEquals(0, buffer2.size());
+    assertEquals(5, buffer1.size());
+
+    // Extract single element
+    ColumnBuffer buffer3 = buffer1.extractSubset(1);
+    assertEquals(1, buffer3.size());
+    assertFalse(buffer3.getNulls().get(0));
+    assertEquals(initValues[0], buffer3.get(0));
+    assertEquals(4, buffer1.size());
+
+    // null bits should not be set
+    ColumnBuffer buffer4 = buffer1.extractSubset(2);
+    assertEquals(0, buffer4.getNulls().size());
+    assertEquals(initValues[1], buffer4.get(0));
+    assertEquals(initValues[2], buffer4.get(1));
+    assertEquals(2, buffer1.size());
+  }
+
   public static class TestBean {
     private int id;
     private boolean bool;

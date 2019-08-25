@@ -50,6 +50,6 @@ abstract class MetadataOperation(sessionHandle: SessionHandle, opType: Operation
     if (orientation.equals(FetchOrientation.FETCH_FIRST)) {
       rowSet.setRowOffset(0)
     }
-    rowSet
+    rowSet.extractSubset(maxRows.toInt)
   }
 }
