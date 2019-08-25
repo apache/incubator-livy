@@ -305,7 +305,7 @@ Cancel the specified statement in this session.
   <tr><th>Name</th><th>Description</th><th>Type</th></tr>
   <tr>
     <td>msg</td>
-    <td>is always "cancelled"</td>
+    <td>is always "canceled"</td>
     <td>string</td>
   </tr>
 </table>
