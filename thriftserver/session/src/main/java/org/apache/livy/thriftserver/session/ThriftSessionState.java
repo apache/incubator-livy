@@ -157,5 +157,4 @@ class ThriftSessionState {
     return new NoSuchElementException(
         String.format("Catalog job %s not found in session %s.", jobId, sessionId));
   }
-
 }
