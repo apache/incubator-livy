@@ -59,29 +59,39 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
     conf.set(LivyConf.LOCAL_FS_WHITELIST, "/allowed")
 
     // Test baseline.
-    assert(Session.prepareConf(Map(), Nil, Nil, Nil, Nil, conf) === Map("spark.master" -> "local"))
+    assert(Session.prepareConf("", Map(), Nil, Nil, Nil, Nil, conf)
+      === Map("spark.master" -> "local"))
 
     // Test validations.
     intercept[IllegalArgumentException] {
-      Session.prepareConf(Map("spark.do_not_set" -> "1"), Nil, Nil, Nil, Nil, conf)
+      Session.prepareConf("", Map("spark.do_not_set" -> "1"), Nil, Nil, Nil, Nil, conf)
     }
     conf.sparkFileLists.foreach { key =>
       intercept[IllegalArgumentException] {
-        Session.prepareConf(Map(key -> "file:/not_allowed"), Nil, Nil, Nil, Nil, conf)
+        Session.prepareConf("", Map(key -> "file:/not_allowed"), Nil, Nil, Nil, Nil, conf)
       }
     }
     intercept[IllegalArgumentException] {
-      Session.prepareConf(Map(), Seq("file:/not_allowed"), Nil, Nil, Nil, conf)
+      Session.prepareConf("", Map(), Seq("file:/not_allowed"), Nil, Nil, Nil, conf)
     }
     intercept[IllegalArgumentException] {
-      Session.prepareConf(Map(), Nil, Seq("file:/not_allowed"), Nil, Nil, conf)
+      Session.prepareConf("", Map(), Nil, Seq("file:/not_allowed"), Nil, Nil, conf)
     }
     intercept[IllegalArgumentException] {
-      Session.prepareConf(Map(), Nil, Nil, Seq("file:/not_allowed"), Nil, conf)
+      Session.prepareConf("", Map(), Nil, Nil, Seq("file:/not_allowed"), Nil, conf)
     }
     intercept[IllegalArgumentException] {
-      Session.prepareConf(Map(), Nil, Nil, Nil, Seq("file:/not_allowed"), conf)
+      Session.prepareConf("", Map(), Nil, Nil, Nil, Seq("file:/not_allowed"), conf)
     }
+
+    //Test owner
+    assert(Session.prepareConf("MyOwner", Map(), Nil, Nil, Nil, Nil, conf)
+      .get("spark.livy.owner") === "MyOwner")
+    assert(Session.prepareConf("", Map(), Nil, Nil, Nil, Nil, conf)
+      .get("spark.livy.owner") === "")
+    assert(Session.prepareConf(null, Map(), Nil, Nil, Nil, Nil, conf)
+      .get("spark.livy.owner") === "")
+
 
     // Test that file lists are merged and resolved.
     val base = "/file1.txt"
@@ -91,7 +101,7 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
     val userLists = Seq(LivyConf.SPARK_JARS, LivyConf.SPARK_FILES, LivyConf.SPARK_ARCHIVES,
       LivyConf.SPARK_PY_FILES)
     val baseConf = userLists.map { key => (key -> base) }.toMap
-    val result = Session.prepareConf(baseConf, other, other, other, other, conf)
+    val result = Session.prepareConf("", baseConf, other, other, other, other, conf)
     userLists.foreach { key => assert(result.get(key) === expected) }
   }
 
