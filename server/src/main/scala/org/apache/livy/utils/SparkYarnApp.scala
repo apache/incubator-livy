@@ -151,6 +151,10 @@ class SparkYarnApp private[utils] (
     }
   }
 
+  private def isProcessErrExit(): Boolean = {
+    process.isDefined && !process.get.isAlive && process.get.exitValue() != 0
+  }
+
   private def changeState(newState: SparkApp.State.Value): Unit = {
     if (state != newState) {
       listener.foreach(_.stateChanged(state, newState))
@@ -171,6 +175,10 @@ class SparkYarnApp private[utils] (
       appTag: String,
       pollInterval: Duration,
       deadline: Deadline): ApplicationId = {
+    if (isProcessErrExit()) {
+      throw new IllegalStateException("spark-submit start failed")
+    }
+
     val appTagLowerCase = appTag.toLowerCase()
 
     // FIXME Should not loop thru all YARN applications but YarnClient doesn't offer an API.
@@ -267,7 +275,7 @@ class SparkYarnApp private[utils] (
             appReport.getYarnApplicationState,
             appReport.getFinalApplicationStatus))
 
-          if (process.isDefined && !process.get.isAlive && process.get.exitValue() != 0) {
+          if (isProcessErrExit()) {
             if (killed) {
               changeState(SparkApp.State.KILLED)
             } else {
