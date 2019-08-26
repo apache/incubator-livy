@@ -50,14 +50,12 @@
 
 # Enabled to check whether timeout Livy sessions should be stopped.
 # livy.server.session.timeout-check = true
-
 #
 # Whether or not to skip timeout check for a busy session
 # livy.server.session.timeout-check.skip-busy = false
 
 # Time in milliseconds on how long Livy will wait before timing out an inactive session.
 # Note that the inactive session could be busy running jobs.
-# Time in milliseconds on how long Livy will wait before timing out an idle session.
 # livy.server.session.timeout = 1h
 #
 # How long a finished session state should be kept in LivyServer for query.
