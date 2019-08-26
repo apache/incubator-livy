@@ -160,13 +160,12 @@ class Session(
     val statement = new Statement(statementId, code, StatementState.Waiting, null)
     _statements.synchronized { _statements(statementId) = statement }
 
-    statement.started = System.currentTimeMillis()
-
     Future {
       setJobGroup(tpe, statementId)
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
       if (statement.state.get() == StatementState.Running) {
+        statement.started = System.currentTimeMillis()
         statement.output = executeCode(interpreter(tpe), statementId, code)
       }
 
