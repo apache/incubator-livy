@@ -122,6 +122,7 @@ class SparkYarnApp private[utils] (
   with Logging {
   import SparkYarnApp._
 
+  private var killed = false
   private val appIdPromise: Promise[ApplicationId] = Promise()
   private[utils] var state: SparkApp.State = SparkApp.State.STARTING
   private var yarnDiagnostics: IndexedSeq[String] = IndexedSeq.empty[String]
@@ -132,6 +133,7 @@ class SparkYarnApp private[utils] (
     ("\nYARN Diagnostics: " +: yarnDiagnostics)
 
   override def kill(): Unit = synchronized {
+    killed = true
     if (isRunning) {
       try {
         val timeout = SparkYarnApp.getYarnTagToAppIdTimeout(livyConf)
@@ -264,6 +266,14 @@ class SparkYarnApp private[utils] (
             appReport.getApplicationId,
             appReport.getYarnApplicationState,
             appReport.getFinalApplicationStatus))
+
+          if (process.isDefined && !process.get.isAlive && process.get.exitValue() != 0) {
+            if (killed) {
+              changeState(SparkApp.State.KILLED)
+            } else {
+              changeState(SparkApp.State.FAILED)
+            }
+          }
 
           val latestAppInfo = {
             val attempt =
