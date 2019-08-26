@@ -35,7 +35,7 @@ function formatError(output) {
 }
 
 function formatDuration(milliseconds) {
-  if(milliseconds <= 0) {
+  if(milliseconds < 0) {
     return '-'
   }
   if (milliseconds < 100) {
