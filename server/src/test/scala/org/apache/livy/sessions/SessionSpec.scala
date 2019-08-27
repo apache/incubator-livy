@@ -60,7 +60,7 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
 
     // Test baseline.
     assert(Session.prepareConf("", Map(), Nil, Nil, Nil, Nil, conf)
-      === Map("spark.master" -> "local"))
+      === Map("spark.master" -> "local", "spark.livy.owner" -> ""))
 
     // Test validations.
     intercept[IllegalArgumentException] {
