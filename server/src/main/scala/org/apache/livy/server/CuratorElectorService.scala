@@ -44,7 +44,7 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
   import CuratorElectorService._
 
   val haAddress = livyConf.get(LivyConf.HA_ZOOKEEPER_URL)
-  require(!haAddress.isEmpty, s"Please config ${LivyConf.HA_ZOOKEEPER_URL.key}.")
+  require(!haAddress.isEmpty, s"Please configure ${LivyConf.HA_ZOOKEEPER_URL.key}.")
   val haKeyPrefix = livyConf.get(HA_KEY_PREFIX_CONF)
   val retryValue = livyConf.get(HA_RETRY_CONF)
   // a regex to match patterns like "m, n" where m and n both are integer values
