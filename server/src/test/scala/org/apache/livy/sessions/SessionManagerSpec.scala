@@ -25,7 +25,7 @@ import scala.util.{Failure, Try}
 import org.mockito.Mockito.{doReturn, never, verify, when}
 import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.concurrent.Eventually._
-import org.scalatest.mock.MockitoSugar.mock
+import org.scalatestplus.mockito.MockitoSugar.mock
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.server.batch.{BatchRecoveryMetadata, BatchSession}

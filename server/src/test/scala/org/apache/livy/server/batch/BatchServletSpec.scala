@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponse._
 import scala.concurrent.duration.Duration
 
 import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar.mock
+import org.scalatestplus.mockito.MockitoSugar.mock
 
 import org.apache.livy.{LivyConf, Utils}
 import org.apache.livy.server.{AccessManager, BaseSessionServletSpec}
