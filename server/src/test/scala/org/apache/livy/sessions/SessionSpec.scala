@@ -86,11 +86,11 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
 
     // Test owner
     assert(Session.prepareConf("MyOwner", Map(), Nil, Nil, Nil, Nil, conf)
-      .get("spark.livy.owner") === "MyOwner")
+      .get("spark.livy.owner") === Some("MyOwner"))
     assert(Session.prepareConf("", Map(), Nil, Nil, Nil, Nil, conf)
-      .get("spark.livy.owner") === "")
+      .get("spark.livy.owner") === Some(""))
     assert(Session.prepareConf(null, Map(), Nil, Nil, Nil, Nil, conf)
-      .get("spark.livy.owner") === "")
+      .get("spark.livy.owner") === Some(""))
 
 
     // Test that file lists are merged and resolved.
