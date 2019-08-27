@@ -396,6 +396,20 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       getTypeInfoTest(c)
     }
   }
+
+  test("LIVY-652: should set session name correctly") {
+    val livySessionManager = LivyThriftServer.getInstance.get.livySessionManager
+    val testSessionName = "MySessionName"
+    assert(livySessionManager.get(testSessionName).isEmpty)
+    withJdbcConnection("default", Seq(s"livy.session.name=${testSessionName}")) { c =>
+      //execute a statement and block until session is ready
+      val statement = c.createStatement()
+      statement.executeQuery("select current_database()")
+      statement.close()
+
+      assert(!livySessionManager.get(testSessionName).isEmpty)
+    }
+  }
 }
 
 class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
