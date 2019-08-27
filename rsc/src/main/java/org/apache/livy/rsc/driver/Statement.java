@@ -28,6 +28,8 @@ public class Statement {
   @JsonRawValue
   public volatile String output;
   public double progress;
+  public long started = 0;
+  public long completed = 0;
 
   public Statement(Integer id, String code, StatementState state, String output) {
     this.id = id;

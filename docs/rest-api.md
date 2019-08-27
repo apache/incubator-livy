@@ -726,6 +726,21 @@ A statement represents the result of an execution statement.
     <td>The execution output</td>
     <td>statement output</td>
   </tr>
+  <tr>
+     <td>progress</td>
+     <td>The execution progress</td>
+     <td>double</td>
+  </tr>
+  <tr>
+     <td>started</td>
+     <td>The start time of statement code</td>
+     <td>long</td>
+  </tr>
+  <tr>
+     <td>completed</td>
+     <td>The complete time of statement code</td>
+     <td>long</td>
+  </tr> 
 </table>
 
 #### Statement State

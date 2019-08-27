@@ -34,6 +34,41 @@ function formatError(output) {
   return preWrap(errStr);
 }
 
+function formatDuration(milliseconds) {
+  if(milliseconds < 0) {
+    return '-'
+  }
+  if (milliseconds < 100) {
+    return milliseconds + " ms";
+  }
+  var seconds = milliseconds * 1.0 / 1000;
+  if (seconds < 1) {
+    return seconds.toFixed(1) + " s";
+  }
+  if (seconds < 60) {
+    return seconds.toFixed(0) + " s";
+  }
+  var minutes = seconds / 60;
+  if (minutes < 10) {
+    return minutes.toFixed(1) + " min";
+  } else if (minutes < 60) {
+    return minutes.toFixed(0) + " min";
+  }
+  var hours = minutes / 60;
+  return hours.toFixed(1) + " h";
+}
+
+function localDateTime(milliseconds) {
+  if(milliseconds <= 0) {
+    return '-'
+  }
+  var now = new Date(milliseconds),
+      y = now.getFullYear(),
+      m = now.getMonth() + 1,
+      d = now.getDate();
+  return y + "-" + (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d) + " " + now.toTimeString().substr(0, 8);
+}
+
 function statementOutput(output) {
   if (output) {
     var data = output.data;
@@ -72,6 +107,9 @@ function loadStatementsTable(statements) {
         tdWrap(progressBar(statement.progress)) +
         tdWrap(statement.output ? statement.output.status : "") +
         tdWrap(statementOutput(statement.output)) +
+        tdWrap(localDateTime(statement.started)) +
+        tdWrap(localDateTime(statement.completed)) +
+        tdWrap(formatDuration(statement.completed - statement.started)) +
        "</tr>"
     );
   });

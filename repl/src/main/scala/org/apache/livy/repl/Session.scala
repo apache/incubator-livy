@@ -165,12 +165,14 @@ class Session(
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
       if (statement.state.get() == StatementState.Running) {
+        statement.started = System.currentTimeMillis()
         statement.output = executeCode(interpreter(tpe), statementId, code)
       }
 
       statement.compareAndTransit(StatementState.Running, StatementState.Available)
       statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
       statement.updateProgress(1.0)
+      statement.completed = System.currentTimeMillis()
     }(interpreterExecutor)
 
     statementId
@@ -218,6 +220,7 @@ class Session(
       }
 
       if (statement.state.get() == StatementState.Cancelled) {
+        statement.completed = System.currentTimeMillis()
         info(s"Statement $statementId cancelled.")
       }
     }(cancelExecutor)
