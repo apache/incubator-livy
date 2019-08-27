@@ -26,7 +26,7 @@ import scala.concurrent.duration.Duration
 import org.mockito.Matchers
 import org.mockito.Matchers.anyObject
 import org.mockito.Mockito._
-import org.scalatest.{BeforeAndAfter, FunSpec, ShouldMatchers}
+import org.scalatest.{BeforeAndAfter, FunSpec, Matchers => ShouldMatchers}
 import org.scalatestplus.mockito.MockitoSugar.mock
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf, Utils}
