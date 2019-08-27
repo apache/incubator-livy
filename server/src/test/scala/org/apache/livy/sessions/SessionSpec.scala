@@ -84,7 +84,7 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
       Session.prepareConf("", Map(), Nil, Nil, Nil, Seq("file:/not_allowed"), conf)
     }
 
-    //Test owner
+    // Test owner
     assert(Session.prepareConf("MyOwner", Map(), Nil, Nil, Nil, Nil, conf)
       .get("spark.livy.owner") === "MyOwner")
     assert(Session.prepareConf("", Map(), Nil, Nil, Nil, Nil, conf)
