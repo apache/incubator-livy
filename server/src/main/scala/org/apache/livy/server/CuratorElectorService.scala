@@ -1,18 +1,31 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.livy.server
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
-import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import java.io.Closeable
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
-//import org.apache.curator.x.async.AsyncCuratorFramework;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.CuratorFramework
+import org.apache.curator.framework.CuratorFrameworkFactory
+import org.apache.curator.framework.recipes.leader.LeaderLatch
+import org.apache.curator.framework.recipes.leader.LeaderLatchListener
 import org.apache.curator.retry.RetryNTimes
 
 import org.apache.livy.{LivyConf, Logging}
@@ -23,7 +36,10 @@ object CuratorElectorService {
   val HA_RETRY_CONF = Entry("livy.server.ha.retry-policy", "5,100")
 }
 
-class CuratorElectorService(livyConf:LivyConf, livyServer: LivyServer) extends LeaderLatchListener {
+class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
+  extends LeaderLatchListener
+  with Logging
+{
 
   import CuratorElectorService._
 
@@ -57,54 +73,51 @@ class CuratorElectorService(livyConf:LivyConf, livyServer: LivyServer) extends L
   def isLeader() {
     transitionToActive();
   }
-      
+
   def notLeader(){
     transitionToStandby();
   }
 
-  def start():Unit = {
-    transitionToStandby();
+  def start() : Unit = {
+    transitionToStandby()
 
     client.start()
     leaderLatch.start()
-      
     leaderLatch.await()
-    //We are the leader now join the webserver to the main thread
-    System.out.println("starting join")
-    server.join()
-    System.out.println("join completed?")
 
+    // This instance is now the leader. Joining the webserver to the main thread
+    info("starting join")
+    server.join()
+    info("join completed?")
     close()
   }
 
-
-
-  def close():Unit = {
+  def close() : Unit = {
     transitionToStandby();
     leaderLatch.close();
   }
 
-  def transitionToActive():Unit = {
-    System.out.println("Transitioning to Active state")
+  def transitionToActive() : Unit = {
+    info("Transitioning to Active state")
     if(currentState == HAState.Active){
-      System.out.println("Already in Active State");
+      info("Already in Active State")
     }
-    else{
+    else {
       server.start()
       currentState = HAState.Active
-      System.out.println("Transition complete");
+      info("Transition complete")
     }
   }
 
-  def transitionToStandby():Unit = {
-    System.out.println("Transitioning to Standby state")
+  def transitionToStandby() : Unit = {
+    info("Transitioning to Standby state")
     if(currentState == HAState.Standby){
-      System.out.println("Already in Standby State");
+      info("Already in Standby State");
     }
     else {
       server.stop();
       currentState = HAState.Standby
-      System.out.println("Transition complete");
+      info("Transition complete");
     }
   }
 }

@@ -27,6 +27,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+import org.apache.curator.utils.CloseableUtils
 import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hadoop.security.authentication.server._
 import org.eclipse.jetty.servlet.FilterHolder
@@ -44,8 +45,6 @@ import org.apache.livy.sessions.{BatchSessionManager, InteractiveSessionManager}
 import org.apache.livy.sessions.SessionManager.SESSION_RECOVERY_MODE_OFF
 import org.apache.livy.utils.LivySparkUtils._
 import org.apache.livy.utils.SparkYarnApp
-
-import org.apache.curator.utils.CloseableUtils;
 
 class LivyServer extends Logging {
 
@@ -407,11 +406,10 @@ object LivyServer {
     val server = new LivyServer()
     val livyConf = new LivyConf().loadFromFile("livy.conf")
 
-    //Test code for Livy HA implementation
     if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON){
       info("Starting HA connection")
-      val electorService: CuratorElectorService = new CuratorElectorService(livyConf, server);
-      electorService.start()     
+      val electorService: CuratorElectorService = new CuratorElectorService(livyConf, server)
+      electorService.start()
     }
     else {
       try {
