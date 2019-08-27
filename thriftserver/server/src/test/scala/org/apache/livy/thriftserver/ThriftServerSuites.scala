@@ -402,7 +402,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
     val testSessionName = "MySessionName"
     assert(livySessionManager.get(testSessionName).isEmpty)
     withJdbcConnection("default", Seq(s"livy.session.name=${testSessionName}")) { c =>
-      //execute a statement and block until session is ready
+      // execute a statement and block until session is ready
       val statement = c.createStatement()
       statement.executeQuery("select current_database()")
       statement.close()
