@@ -57,7 +57,7 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
   }
 
   val client: CuratorFramework = CuratorFrameworkFactory.newClient(haAddress, retryPolicy)
-  val leaderKey = "/$haKeyPrefix/leader"
+  val leaderKey = s"/$haKeyPrefix/leader"
 
   var server : LivyServer = livyServer
 
