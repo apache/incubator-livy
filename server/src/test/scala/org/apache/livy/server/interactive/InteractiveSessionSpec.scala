@@ -95,7 +95,7 @@ class InteractiveSessionSpec extends FunSpec
     it(desc) {
       assume(session != null, "No active session.")
       eventually(timeout(60 seconds), interval(100 millis)) {
-        session.state shouldBe (SessionState.Idle)
+        session.state shouldBe (SessionState.Idle())
       }
       fn(session)
     }
@@ -173,7 +173,7 @@ class InteractiveSessionSpec extends FunSpec
       verify(sessionStore, atLeastOnce()).save(
         MockitoMatchers.eq(InteractiveSession.RECOVERY_SESSION_TYPE), anyObject())
 
-      session.state should (be(SessionState.Starting) or be(SessionState.Idle))
+      session.state should (be(SessionState.Starting()) or be(SessionState.Idle()))
     }
 
     it("should propagate RSC configuration properties") {
@@ -227,7 +227,7 @@ class InteractiveSessionSpec extends FunSpec
 
       result should equal (expectedResult)
       eventually(timeout(10 seconds), interval(30 millis)) {
-        session.state shouldBe (SessionState.Idle)
+        session.state shouldBe (SessionState.Idle())
       }
     }
 
@@ -266,7 +266,7 @@ class InteractiveSessionSpec extends FunSpec
       val s = InteractiveSession.recover(m, conf, sessionStore, None, Some(mockClient))
       s.start()
 
-      s.state shouldBe (SessionState.Recovering)
+      s.state shouldBe (SessionState.Recovering())
 
       s.appIdKnown("appId")
       verify(sessionStore, atLeastOnce()).save(
@@ -283,7 +283,7 @@ class InteractiveSessionSpec extends FunSpec
       val s = InteractiveSession.recover(m, conf, sessionStore, None, Some(mockClient))
       s.start()
 
-      s.state shouldBe (SessionState.Recovering)
+      s.state shouldBe (SessionState.Recovering())
 
       s.appIdKnown("appId")
       verify(sessionStore, atLeastOnce()).save(
