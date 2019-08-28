@@ -115,7 +115,7 @@ object BatchSession extends Logging {
       id,
       name,
       appTag,
-      SessionState.Starting,
+      SessionState.Starting(),
       livyConf,
       owner,
       impersonatedUser,
@@ -132,7 +132,7 @@ object BatchSession extends Logging {
       m.id,
       m.name,
       m.appTag,
-      SessionState.Recovering,
+      SessionState.Recovering(),
       livyConf,
       m.owner,
       m.proxyUser,
@@ -184,7 +184,7 @@ class BatchSession(
       debug(s"$this state changed from $oldState to $newState")
       newState match {
         case SparkApp.State.RUNNING =>
-          _state = SessionState.Running
+          _state = SessionState.Running()
           info(s"Batch session $id created [appid: ${appId.orNull}, state: ${state.toString}, " +
             s"info: ${appInfo.asJavaMap}]")
         case SparkApp.State.FINISHED => _state = SessionState.Success()

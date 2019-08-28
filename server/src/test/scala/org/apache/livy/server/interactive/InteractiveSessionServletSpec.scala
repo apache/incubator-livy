@@ -64,7 +64,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       when(session.appId).thenReturn(None)
       when(session.appInfo).thenReturn(AppInfo())
       when(session.logLines()).thenReturn(IndexedSeq())
-      when(session.state).thenReturn(SessionState.Idle)
+      when(session.state).thenReturn(SessionState.Idle())
       when(session.stop()).thenReturn(Future.successful(()))
       when(session.proxyUser).thenReturn(None)
       when(session.heartbeatExpired).thenReturn(false)
@@ -165,7 +165,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     val appId = "appid"
     val owner = "owner"
     val proxyUser = "proxyUser"
-    val state = SessionState.Running
+    val state = SessionState.Running()
     val kind = Spark
     val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
     val log = IndexedSeq[String]("log1", "log2")

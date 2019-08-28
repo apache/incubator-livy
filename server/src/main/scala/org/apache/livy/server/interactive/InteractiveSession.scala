@@ -117,7 +117,7 @@ object InteractiveSession extends Logging {
       None,
       appTag,
       client,
-      SessionState.Starting,
+      SessionState.Starting(),
       request.kind,
       request.heartbeatTimeoutInSecond,
       livyConf,
@@ -144,7 +144,7 @@ object InteractiveSession extends Logging {
       metadata.appId,
       metadata.appTag,
       client,
-      SessionState.Recovering,
+      SessionState.Recovering(),
       metadata.kind,
       metadata.heartbeatTimeoutS,
       livyConf,
@@ -429,7 +429,7 @@ class InteractiveSession(
         override def onJobFailed(job: JobHandle[Void], cause: Throwable): Unit = errorOut()
 
         override def onJobSucceeded(job: JobHandle[Void], result: Void): Unit = {
-          transition(SessionState.Running)
+          transition(SessionState.Running())
           info(s"Interactive session $id created [appid: ${appId.orNull}, " +
             s"owner: $owner, proxyUser:" +
             s" $proxyUser, state: ${state.toString}, kind: ${kind.toString}, " +
@@ -440,7 +440,7 @@ class InteractiveSession(
           // Other code might call stop() to close the RPC channel. When RPC channel is closing,
           // this callback might be triggered. Check and don't call stop() to avoid nested called
           // if the session is already shutting down.
-          if (serverSideState != SessionState.ShuttingDown) {
+          if (serverSideState != SessionState.ShuttingDown()) {
             transition(SessionState.Error())
             stop()
             app.foreach { a =>
@@ -460,18 +460,18 @@ class InteractiveSession(
       heartbeatTimeout.toSeconds.toInt, owner, proxyUser, rscDriverUri)
 
   override def state: SessionState = {
-    if (serverSideState == SessionState.Running) {
+    if (serverSideState == SessionState.Running()) {
       // If session is in running state, return the repl state from RSCClient.
       client
         .flatMap(s => Option(s.getReplState))
         .map(SessionState(_))
-        .getOrElse(SessionState.Busy) // If repl state is unknown, assume repl is busy.
+        .getOrElse(SessionState.Busy()) // If repl state is unknown, assume repl is busy.
     } else serverSideState
   }
 
   override def stopSession(): Unit = {
     try {
-      transition(SessionState.ShuttingDown)
+      transition(SessionState.ShuttingDown())
       sessionStore.remove(RECOVERY_SESSION_TYPE, id)
       client.foreach { _.stop(true) }
     } catch {
@@ -591,7 +591,7 @@ class InteractiveSession(
 
   private def ensureRunning(): Unit = synchronized {
     serverSideState match {
-      case SessionState.Running =>
+      case SessionState.Running() =>
       case _ =>
         throw new IllegalStateException("Session is in state %s" format serverSideState)
     }

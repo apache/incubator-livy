@@ -45,6 +45,12 @@ object Kind {
     case "sql" => SQL
     case other => throw new IllegalArgumentException(s"Invalid kind: $other")
   }
+
+  val kinds: Seq[Kind] = Seq(Spark, PySpark, SparkR, Shared, SQL)
+
+  def isValid(kind: String): Boolean = {
+    kinds.map(_.name).contains(kind)
+  }
 }
 
 class SessionKindModule extends SimpleModule("SessionKind") {

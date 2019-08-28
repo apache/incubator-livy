@@ -155,7 +155,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
         case _ =>
           if (!sessionTimeoutCheck) {
             false
-          } else if (session.state == SessionState.Busy && sessionTimeoutCheckSkipBusy) {
+          } else if (session.state == SessionState.Busy() && sessionTimeoutCheckSkipBusy) {
             false
           } else if (session.isInstanceOf[BatchSession]) {
             false

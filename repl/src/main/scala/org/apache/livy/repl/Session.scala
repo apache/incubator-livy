@@ -65,7 +65,7 @@ class Session(
 
   private implicit val formats = DefaultFormats
 
-  private var _state: SessionState = SessionState.NotStarted
+  private var _state: SessionState = SessionState.NotStarted()
 
   // Number of statements kept in driver's memory
   private val numRetainedStatements = livyConf.getInt(RSCConf.Entry.RETAINED_STATEMENTS)
@@ -120,7 +120,7 @@ class Session(
 
   def start(): Future[SparkEntries] = {
     val future = Future {
-      changeState(SessionState.Starting)
+      changeState(SessionState.Starting())
 
       // Always start SparkInterpreter after beginning, because we rely on SparkInterpreter to
       // initialize SparkContext and create SparkEntries.
@@ -133,7 +133,7 @@ class Session(
         interpGroup.put(Spark, sparkInterp)
       }
 
-      changeState(SessionState.Idle)
+      changeState(SessionState.Idle())
       entries
     }(interpreterExecutor)
 
@@ -263,12 +263,12 @@ class Session(
   private def executeCode(interp: Option[Interpreter],
      executionCount: Int,
      code: String): String = {
-    changeState(SessionState.Busy)
+    changeState(SessionState.Busy())
 
     def transitToIdle() = {
       val executingLastStatement = executionCount == newStatementId.intValue() - 1
       if (_statements.isEmpty || executingLastStatement) {
-        changeState(SessionState.Idle)
+        changeState(SessionState.Idle())
       }
     }
 

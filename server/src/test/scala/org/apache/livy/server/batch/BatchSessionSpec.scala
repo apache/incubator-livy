@@ -146,7 +146,7 @@ class BatchSessionSpec
       val m = BatchRecoveryMetadata(99, name, None, "appTag", null, None)
       val batch = BatchSession.recover(m, conf, sessionStore, Some(mockApp))
 
-      batch.state shouldBe (SessionState.Recovering)
+      batch.state shouldBe (SessionState.Recovering())
       batch.name shouldBe (name)
 
       batch.appIdKnown("appId")

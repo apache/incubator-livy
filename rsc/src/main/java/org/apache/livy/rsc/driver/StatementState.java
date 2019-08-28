@@ -20,6 +20,7 @@ package org.apache.livy.rsc.driver;
 import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,13 +74,18 @@ public enum StatementState {
     PREDECESSORS = Collections.unmodifiableMap(predecessors);
   }
 
-  static boolean isValid(StatementState from, StatementState to) {
+  static boolean isAllowed(StatementState from, StatementState to) {
     return PREDECESSORS.get(to).contains(from);
+  }
+
+  public static boolean isValid(String state) {
+    return Arrays.stream(values())
+            .map(x -> StringUtils.capitalize(x.state)).anyMatch(state::equals);
   }
 
   static void validate(StatementState from, StatementState to) {
     LOG.debug("{} -> {}", from, to);
-    if (!isValid(from, to)) {
+    if (!isAllowed(from, to)) {
       throw new IllegalStateException("Illegal Transition: " + from + " -> " + to);
     }
   }

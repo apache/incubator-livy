@@ -276,7 +276,7 @@ private class HttpClientTestBootstrap extends LifeCycle {
         when(session.name).thenReturn(None)
         when(session.appId).thenReturn(None)
         when(session.appInfo).thenReturn(AppInfo())
-        when(session.state).thenReturn(SessionState.Idle)
+        when(session.state).thenReturn(SessionState.Idle())
         when(session.proxyUser).thenReturn(None)
         when(session.kind).thenReturn(Spark)
         when(session.stop()).thenReturn(Future.successful(()))
