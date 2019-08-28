@@ -72,16 +72,16 @@ final class SparkUtils {
           sparkDt = DataTypes.BooleanType;
           break;
         case BYTE:
-          sparkDt = DataTypes.BooleanType;
+          sparkDt = DataTypes.ByteType;
           break;
         case SHORT:
-          sparkDt = DataTypes.IntegerType;
+          sparkDt = DataTypes.ShortType;
           break;
         case INTEGER:
           sparkDt = DataTypes.IntegerType;
           break;
         case LONG:
-          sparkDt = DataTypes.FloatType;
+          sparkDt = DataTypes.LongType;
           break;
         case FLOAT:
           sparkDt = DataTypes.FloatType;
