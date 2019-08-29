@@ -49,7 +49,7 @@ public class FetchResultJob implements Job<ResultSet> {
     StatementState st = session.findStatement(statementId);
     Iterator<Row> iter = st.iter;
 
-    ResultSet rs = new ResultSet(st.types, st.schema);
+    ResultSet rs = new ResultSet(st.types);
     int count = 0;
     while (iter.hasNext() && count < maxRows) {
       Row row = iter.next();

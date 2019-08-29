@@ -36,5 +36,4 @@ class StatementState {
     this.iter = iter;
     this.types = SparkUtils.translateSchema(schema);
   }
-
 }
