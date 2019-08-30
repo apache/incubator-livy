@@ -26,13 +26,6 @@ import org.apache.hive.jdbc.{HiveDriver, HiveStatement}
 
 import org.apache.livy.LivyConf
 
-object TestData {
-  def getTestDataFilePath(name: String): URL = {
-    Thread.currentThread().getContextClassLoader.getResource(s"data/files/$name")
-  }
-  val smallKv = getTestDataFilePath("small_kv.txt")
-}
-
 trait CommonThriftTests {
   def hiveSupportEnabled(sparkMajorVersion: Int, livyConf: LivyConf): Boolean = {
     sparkMajorVersion > 1 || livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
@@ -274,6 +267,10 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
   // of Hive tables.
   livyConf.set(LivyConf.ENABLE_HIVE_CONTEXT, true)
 
+  def getTestDataFilePath(): URL = {
+    Thread.currentThread().getContextClassLoader.getResource("data/files/small_kv.txt")
+  }
+
   test("result set containing NULL") {
     withJdbcStatement { statement =>
       val queries = Seq(
@@ -293,7 +290,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
     withJdbcStatement { statement =>
       val queries = Seq(
         "CREATE TABLE test_binary(key INT, value STRING)",
-        s"LOAD DATA LOCAL INPATH '${TestData.smallKv}' OVERWRITE INTO TABLE test_binary")
+        s"LOAD DATA LOCAL INPATH '${getTestDataFilePath}' OVERWRITE INTO TABLE test_binary")
 
       queries.foreach(statement.execute)
 
@@ -316,7 +313,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
     withJdbcStatement { statement =>
       val queries = Seq(
         "CREATE TABLE test_map(key INT, value STRING)",
-        s"LOAD DATA LOCAL INPATH '${TestData.smallKv}' OVERWRITE INTO TABLE test_map",
+        s"LOAD DATA LOCAL INPATH '${getTestDataFilePath}' OVERWRITE INTO TABLE test_map",
         "CACHE TABLE test_table AS SELECT key FROM test_map ORDER BY key DESC",
         "CREATE DATABASE db1")
 

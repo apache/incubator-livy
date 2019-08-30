@@ -23,19 +23,19 @@ language: scala
 matrix:
   include:
   - name: "Spark 2.2 Unit Tests"
-    env: MVN_FLAG='-Pthriftserver -Pintegration-test -Pcoverage -DskipITs'
+    env: MVN_FLAG='-Pthriftserver -DskipITs'
   - name: "Spark 2.2 Thrift ITs"
     env: MVN_FLAG='-Pthriftserver -DskipTests'
   - name: "Spark 2.2 ITs Without Thrift"
     env: MVN_FLAG='-Pintegration-test -Pcoverage -DskipTests'
   - name: "Spark 2.3 Unit Tests"
-    env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -Pintegration-test -Pcoverage -DskipITs'
+    env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipITs'
   - name: "Spark 2.2 Thrift ITs"
     env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipTests'
   - name: "Spark 2.3 ITs Without Thrift"
     env: MVN_FLAG='-Pspark-2.3 -Pintegration-test -Pcoverage -DskipTests'
   - name: "Spark 2.4 Unit Tests"
-    env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -Pintegration-test -Pcoverage -DskipITs'
+    env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipITs'
   - name: "Spark 2.2 Thrift ITs"
     env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipTests'
   - name: "Spark 2.4 ITs Without Thrift"
