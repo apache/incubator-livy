@@ -26,9 +26,8 @@ import org.apache.livy.thriftserver.session.GetTablesJob
 
 class GetTablesOperation(
     sessionHandle: SessionHandle,
-    catalogName: String,
-    schemaName: String,
-    tableName: String,
+    schemaPattern: String,
+    tablePattern: String,
     tableTypes: java.util.List[String],
     sessionManager: LivyThriftSessionManager)
   extends SparkCatalogOperation(
@@ -39,12 +38,12 @@ class GetTablesOperation(
     setState(OperationState.RUNNING)
     try {
       rscClient.submit(new GetTablesJob(
-        convertSchemaPattern(schemaName),
-        convertIdentifierPattern(tableName, datanucleusFormat = true),
+        schemaPattern,
+        tablePattern,
         tableTypes,
         sessionId,
-        jobId
-      )).get()
+        jobId,
+        GetTablesOperation.SCHEMA.fields.map(_.fieldType.dataType))).get()
 
       setState(OperationState.FINISHED)
     } catch {
@@ -68,6 +67,5 @@ object GetTablesOperation {
     Field("TABLE_SCHEM", BasicDataType("string"), "Schema name."),
     Field("TABLE_NAME", BasicDataType("string"), "Table name."),
     Field("TABLE_TYPE", BasicDataType("string"), "The table type, e.g. \"TABLE\", \"VIEW\", etc."),
-    Field("REMARKS", BasicDataType("string"), "Comments about the table.")
-  )
+    Field("REMARKS", BasicDataType("string"), "Comments about the table."))
 }
