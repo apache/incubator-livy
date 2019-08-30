@@ -119,7 +119,7 @@ class BatchSessionSpec
       batch.appInfo shouldEqual expectedAppInfo
     }
 
-    it("should end with status dead when batch session exits with no 0 return code") {
+    it("should end with status killed when batch session was stopped") {
       val req = new CreateBatchRequest()
       req.file = runForeverScript.toString
       req.conf = Map("spark.driver.extraClassPath" -> sys.props("java.class.path"))
@@ -133,7 +133,7 @@ class BatchSessionSpec
 
       Utils.waitUntil({ () => !batch.state.isActive }, Duration(10, TimeUnit.SECONDS))
       (batch.state match {
-        case SessionState.Dead(_) => true
+        case SessionState.Killed(_) => true
         case _ => false
       }) should be (true)
     }

@@ -79,7 +79,7 @@ public class ColumnBufferTest {
 
       ds.write().format("parquet").saveAsTable("types_test");
 
-      ResultSet rs = new ResultSet(SparkUtils.translateSchema(ds.schema()), ds.schema().json());
+      ResultSet rs = new ResultSet(SparkUtils.translateSchema(ds.schema()));
       for (Row r : spark.table("types_test").collectAsList()) {
         Object[] cols = new Object[r.length()];
         for (int i = 0; i < cols.length; i++) {
