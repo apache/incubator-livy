@@ -23,7 +23,7 @@ import java.sql.{Connection, Date, SQLException, Statement, Types}
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
-import org.apache.hive.jdbc.{HiveDriver, HiveStatement}
+import org.apache.hive.jdbc.HiveStatement
 
 import org.apache.livy.LivyConf
 
@@ -294,8 +294,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
         val queries = Seq(
           "CREATE TABLE test_map(key INT, value STRING)",
           s"LOAD DATA LOCAL INPATH '${getTestDataFilePath}' OVERWRITE INTO TABLE test_map",
-          "CACHE TABLE test_table AS SELECT key FROM test_map ORDER BY key DESC",
-          "CREATE DATABASE db1")
+          "CACHE TABLE test_table AS SELECT key FROM test_map ORDER BY key DESC")
 
         queries.foreach(statement.execute)
 
@@ -327,22 +326,22 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       withJdbcStatement { statement =>
         val rs1 = statement.executeQuery(s"SET spark.sql.shuffle.partitions")
         rs1.next()
-        defaultV1 = rs1.getString(1)
-        assert(defaultV1 != "200")
+        assert("spark.sql.shuffle.partitions" ===  rs1.getString(1))
+        defaultV1 = rs1.getString(2)
         rs1.close()
 
         val rs2 = statement.executeQuery("SET hive.cli.print.header")
         rs2.next()
 
-        defaultV2 = rs2.getString(1)
-        assert(defaultV1 != "true")
+        assert("hive.cli.print.header" === rs2.getString(1))
+        defaultV2 = rs2.getString(2)
         rs2.close()
       }
 
       // second session, we update the session status
       withJdbcStatement { statement =>
         val queries = Seq(
-          s"SET spark.sql.shuffle.partitions=291",
+          "SET spark.sql.shuffle.partitions=291",
           "SET hive.cli.print.header=true"
         )
 
@@ -365,45 +364,21 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       withJdbcStatement { statement =>
         val rs1 = statement.executeQuery(s"SET spark.sql.shuffle.partitions")
         rs1.next()
-        assert(defaultV1 === rs1.getString(1))
+        assert("spark.sql.shuffle.partitions" === rs1.getString(1))
+        assert(defaultV1 === rs1.getString(2))
         rs1.close()
 
         val rs2 = statement.executeQuery("SET hive.cli.print.header")
         rs2.next()
-        assert(defaultV2 === rs2.getString(1))
+        assert("hive.cli.print.header" === rs2.getString(1))
+        assert(defaultV2 === rs2.getString(2))
         rs2.close()
       }
 
-      // switch another database
-      withJdbcStatement { statement =>
-        statement.execute("USE db1")
-        // there is no test_map table in db1
-        intercept[SQLException] {
-          statement.executeQuery("SELECT key FROM test_map ORDER BY KEY DESC")
-        }
-
-        statement.execute("CREATE TABLE test_map2(key INT, value STRING)")
-      }
-
-      // access default database
-      withJdbcStatement { statement =>
-        // current database should still be `default`
-        intercept[SQLException] {
-          statement.executeQuery("SELECT key FROM test_map2")
-        }
-
-        statement.execute("USE db1")
-        // access test_map2
-        statement.executeQuery("SELECT key from test_map2")
-      }
     } finally {
       // final delete test db and table
       withJdbcStatement { statement =>
-        val queries = Seq(
-          "DROP TABLE IF EXISTS test_map",
-          "DROP TABLE IF EXISTS db1.test_map2",
-          "DROP DATABASE IF EXISTS db1")
-        queries.foreach(statement.execute)
+        statement.executeQuery("DROP TABLE IF EXISTS test_map")
       }
     }
   }
