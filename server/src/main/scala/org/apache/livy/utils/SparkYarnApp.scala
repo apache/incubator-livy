@@ -209,7 +209,7 @@ class SparkYarnApp private[utils] (
       .getOrElse(IndexedSeq.empty)
   }
 
-  private def isRunning: Boolean = {
+  def isRunning: Boolean = {
     state != SparkApp.State.FAILED && state != SparkApp.State.FINISHED &&
       state != SparkApp.State.KILLED
   }
