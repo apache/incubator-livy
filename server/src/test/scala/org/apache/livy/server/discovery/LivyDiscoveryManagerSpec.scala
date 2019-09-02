@@ -37,7 +37,8 @@ class LivyDiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
     conf.set(LivyConf.LIVY_ZOOKEEPER_URL, "host")
     val key = conf.get(LivyConf.LIVY_SERVER_ZOOKEEPER_NAMESPACE)
     val prefixedKey = s"/livy/$key"
-    val testAddress = new URI(s"http://${InetAddress.getLocalHost.getHostAddress}:${conf.getInt(LivyConf.SERVER_PORT)}")
+    val ipAddress = InetAddress.getLocalHost.getHostAddress
+    val testAddress = new URI(s"http://${ipAddress}:${conf.getInt(LivyConf.SERVER_PORT)}")
     val testData: Array[Byte] = serializeToBytes(testAddress)
 
     def withMock[R](testBody: TestFixture => R): R = {
