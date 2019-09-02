@@ -25,6 +25,7 @@ import org.apache.zookeeper.data.Stat
 import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.FunSpec
 import org.scalatest.mock.MockitoSugar.mock
+
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.LivyConf.LIVY_ZOOKEEPER_URL
 import org.apache.livy.server.LivyServer
