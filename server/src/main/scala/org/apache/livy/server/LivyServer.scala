@@ -401,8 +401,8 @@ class LivyServer extends Logging {
 
   private def resolvedSeverHost(livyConf: LivyConf) = {
     val host = livyConf.get(LivyConf.SERVER_HOST)
-    if (host.equals(livyConf.get(LivyConf.SERVER_HOST.dflt.toString))) {
-      InetAddress.getLocalHost.getHostName
+    if (host.equals(LivyConf.SERVER_HOST.dflt.toString)) {
+      InetAddress.getLocalHost.getHostAddress
     } else {
       host
     }
