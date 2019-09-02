@@ -16,7 +16,7 @@
  */
 package org.apache.livy.server.discovery
 
-import java.net.URI
+import java.net.{InetAddress, URI}
 
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api.{ExistsBuilder, GetDataBuilder, SetDataBuilder, UnhandledErrorListener}
@@ -25,7 +25,6 @@ import org.apache.zookeeper.data.Stat
 import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.FunSpec
 import org.scalatest.mock.MockitoSugar.mock
-
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.LivyConf.LIVY_ZOOKEEPER_URL
 import org.apache.livy.server.LivyServer
@@ -38,7 +37,7 @@ class LivyDiscoveryManagerSpec extends FunSpec with LivyBaseUnitTestSuite
     conf.set(LivyConf.LIVY_ZOOKEEPER_URL, "host")
     val key = conf.get(LivyConf.LIVY_SERVER_ZOOKEEPER_NAMESPACE)
     val prefixedKey = s"/livy/$key"
-    val testAddress = new URI(s"http://0.0.0.0:${conf.getInt(LivyConf.SERVER_PORT)}")
+    val testAddress = new URI(s"http://${InetAddress.getLocalHost.getHostAddress}:${conf.getInt(LivyConf.SERVER_PORT)}")
     val testData: Array[Byte] = serializeToBytes(testAddress)
 
     def withMock[R](testBody: TestFixture => R): R = {
