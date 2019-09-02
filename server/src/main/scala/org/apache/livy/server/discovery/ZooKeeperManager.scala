@@ -32,7 +32,7 @@ trait ZooKeeperManager extends JsonMapper with Logging {
   val mockCuratorClient: Option[CuratorFramework]
 
   private val zkAddress = livyConf.get(LivyConf.LIVY_ZOOKEEPER_URL)
-  require(Option(zkAddress).isDefined, s"Please config ${LivyConf.LIVY_ZOOKEEPER_URL.key}.")
+  require(Option(zkAddress).isDefined, s"Please configure ${LivyConf.LIVY_ZOOKEEPER_URL.key}.")
   private val zkKeyPrefix = livyConf.get(LivyConf.LIVY_ZOOKEEPER_NAMESPACE)
   private val maxRetries = livyConf.getInt(LivyConf.LIVY_ZOOKEEPER_CONNECTION_MAX_RETRIES)
   private val sleepTime = livyConf.getInt(LivyConf.LIVY_ZOOKEEPER_CONNECTION_RETRY_INTERVAL)
