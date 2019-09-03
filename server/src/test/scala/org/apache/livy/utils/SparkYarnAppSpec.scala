@@ -35,7 +35,7 @@ import org.mockito.stubbing.Answer
 import org.scalatest.FunSpec
 import org.scalatest.mock.MockitoSugar.mock
 
-import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
+import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf, Utils}
 import org.apache.livy.utils.SparkApp._
 
 class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
@@ -145,6 +145,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         when(mockYarnClient.getApplicationReport(appId)).thenReturn(mockAppReport)
 
         val app = new SparkYarnApp(appTag, appIdOption, None, None, livyConf, mockYarnClient)
+        Utils.waitUntil({ () => app.isRunning }, Duration(10, TimeUnit.SECONDS))
         cleanupThread(app.yarnAppMonitorThread) {
           app.kill()
           appKilled = true

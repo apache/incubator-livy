@@ -209,7 +209,8 @@ class SparkYarnApp private[utils] (
       .getOrElse(IndexedSeq.empty)
   }
 
-  private def isRunning: Boolean = {
+  // Exposed for unit test.
+  private[utils] def isRunning: Boolean = {
     state != SparkApp.State.FAILED && state != SparkApp.State.FINISHED &&
       state != SparkApp.State.KILLED
   }
