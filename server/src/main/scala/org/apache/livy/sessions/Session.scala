@@ -154,6 +154,7 @@ abstract class Session(
 
   protected var _appId: Option[String] = None
 
+  @volatile
   private var _lastActivity = System.nanoTime()
 
   // Directory where the session's staging files are created. The directory is only accessible

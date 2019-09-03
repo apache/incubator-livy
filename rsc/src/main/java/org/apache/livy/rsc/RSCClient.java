@@ -64,6 +64,8 @@ public class RSCClient implements LivyClient {
   private Process driverProcess;
   private volatile boolean isAlive;
   private volatile String replState;
+  // Record the last activity timestamp of the repl
+  private volatile long replLastActivity = System.nanoTime();
 
   RSCClient(RSCConf conf, Promise<ContextInfo> ctx, Process driverProcess) throws IOException {
     this.conf = conf;
@@ -315,6 +317,16 @@ public class RSCClient implements LivyClient {
     return replState;
   }
 
+  /**
+   * Get the timestamp of the last activity of the repl. The activity includes: job start,
+   * job stop and repl status change.
+   *
+   * @return last activity timestamp
+   */
+  public long getReplLastActivity() {
+    return replLastActivity;
+  }
+
   private class ClientProtocol extends BaseProtocol {
 
     <T> JobHandleImpl<T> submit(Job<T> job) {
@@ -390,6 +402,7 @@ public class RSCClient implements LivyClient {
         LOG.info("Received result for {}", msg.id);
         // TODO: need a better exception for this.
         Throwable error = msg.error != null ? new RuntimeException(msg.error) : null;
+        replLastActivity = System.nanoTime();
         if (error == null) {
           handle.setSuccess(msg.result);
         } else {
@@ -403,6 +416,7 @@ public class RSCClient implements LivyClient {
     private void handle(ChannelHandlerContext ctx, JobStarted msg) {
       JobHandleImpl<?> handle = jobs.get(msg.id);
       if (handle != null) {
+        replLastActivity = System.nanoTime();
         handle.changeState(JobHandle.State.STARTED);
       } else {
         LOG.warn("Received event for unknown job {}", msg.id);
@@ -411,6 +425,10 @@ public class RSCClient implements LivyClient {
 
     private void handle(ChannelHandlerContext ctx, ReplState msg) {
       LOG.trace("Received repl state for {}", msg.state);
+      // Update last activity timestamp when there's state change.
+      if (replState == null || !replState.equals(msg.state)) {
+        replLastActivity = System.nanoTime();
+      }
       replState = msg.state;
     }
   }
