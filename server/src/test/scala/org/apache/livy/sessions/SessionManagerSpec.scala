@@ -17,6 +17,8 @@
 
 package org.apache.livy.sessions
 
+import java.util.concurrent.TimeUnit
+
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -27,7 +29,7 @@ import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.mock.MockitoSugar.mock
 
-import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
+import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf, Utils}
 import org.apache.livy.server.batch.{BatchRecoveryMetadata, BatchSession}
 import org.apache.livy.server.interactive.InteractiveSession
 import org.apache.livy.server.recovery.SessionStore
@@ -92,6 +94,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       an[IllegalArgumentException] should be thrownBy manager.register(session2)
       manager.get(session1.id).isDefined should be(true)
       manager.get(session2.id).isDefined should be(false)
+      Utils.waitUntil({ () => session2.stopped }, Duration(10, TimeUnit.SECONDS))
       assert(!session1.stopped)
       assert(session2.stopped)
       manager.shutdown()
