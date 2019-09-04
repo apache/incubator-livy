@@ -228,7 +228,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       createInteractiveRequest.kind = Spark
       val newSession = InteractiveSession.create(
         server.livySessionManager.nextId(),
-        None,
+        createInteractiveRequest.name,
         username,
         None,
         server.livyConf,
