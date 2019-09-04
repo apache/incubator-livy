@@ -276,13 +276,6 @@ trait CommonThriftTests {
 class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
   override def mode: ServerMode.Value = ServerMode.binary
   override def port: Int = 20000
-  // In BinaryThriftServerSuite, we set ENABLE_HIVE_CONTEXT=true to support the creation
-  // of Hive tables.
-  livyConf.set(LivyConf.ENABLE_HIVE_CONTEXT, true)
-
-  def getTestDataFilePath(): URL = {
-    Thread.currentThread().getContextClassLoader.getResource("data/files/small_kv.txt")
-  }
 
   test("test multiple session") {
     var defaultV1: String = null
@@ -292,8 +285,7 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       // create table
       withJdbcStatement { statement =>
         val queries = Seq(
-          "CREATE TABLE test_map(key INT, value STRING)",
-          s"LOAD DATA LOCAL INPATH '${getTestDataFilePath}' OVERWRITE INTO TABLE test_map",
+          "CREATE TABLE test_map(key INT, value STRING) USING json",
           "CACHE TABLE test_table AS SELECT key FROM test_map ORDER BY key DESC")
 
         queries.foreach(statement.execute)

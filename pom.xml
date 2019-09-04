@@ -192,6 +192,7 @@
     <module>client-http</module>
     <module>core</module>
     <module>core/scala-2.11</module>
+    <module>coverage</module>
     <module>examples</module>
     <module>python-api</module>
     <module>repl</module>
@@ -202,6 +203,7 @@
     <module>scala-api/scala-2.11</module>
     <module>server</module>
     <module>test-lib</module>
+    <module>integration-test</module>
   </modules>
 
   <dependencies>
@@ -1007,20 +1009,6 @@
   </reporting>
 
   <profiles>
-    <profile>
-      <id>integration-test</id>
-      <modules>
-        <module>integration-test</module>
-      </modules>
-    </profile>
-
-    <profile>
-      <id>coverage</id>
-      <modules>
-        <module>coverage</module>
-      </modules>
-    </profile>
-
     <profile>
       <id>thriftserver</id>
       <modules>
