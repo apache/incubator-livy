@@ -318,8 +318,8 @@ public class RSCClient implements LivyClient {
   }
 
   /**
-   * Get the timestamp of the last activity of the repl. The activity includes: job start,
-   * job stop and repl status change.
+   * Get the timestamp of the last activity of the repl. It will be updated when the repl state
+   * changed from busy to others
    *
    * @return last activity timestamp
    */
@@ -402,7 +402,6 @@ public class RSCClient implements LivyClient {
         LOG.info("Received result for {}", msg.id);
         // TODO: need a better exception for this.
         Throwable error = msg.error != null ? new RuntimeException(msg.error) : null;
-        replLastActivity = System.nanoTime();
         if (error == null) {
           handle.setSuccess(msg.result);
         } else {
@@ -416,7 +415,6 @@ public class RSCClient implements LivyClient {
     private void handle(ChannelHandlerContext ctx, JobStarted msg) {
       JobHandleImpl<?> handle = jobs.get(msg.id);
       if (handle != null) {
-        replLastActivity = System.nanoTime();
         handle.changeState(JobHandle.State.STARTED);
       } else {
         LOG.warn("Received event for unknown job {}", msg.id);
@@ -425,8 +423,8 @@ public class RSCClient implements LivyClient {
 
     private void handle(ChannelHandlerContext ctx, ReplState msg) {
       LOG.trace("Received repl state for {}", msg.state);
-      // Update last activity timestamp when there's state change.
-      if (replState == null || !replState.equals(msg.state)) {
+      // Update last activity timestamp when state change is from busy to others.
+      if ("busy".equals(replState) || !"busy".equals(msg.state)) {
         replLastActivity = System.nanoTime();
       }
       replState = msg.state;
