@@ -83,13 +83,12 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
 
     client.start()
     leaderLatch.start()
-    leaderLatch.await()
 
-    // This instance is now the leader. Joining the webserver to the main thread
-    info("starting join")
-    server.join()
-    info("join completed?")
-    close()
+    try {
+      Thread.currentThread.join()
+    }finally {
+      transitionToStandby()
+    }
   }
 
   def close() : Unit = {

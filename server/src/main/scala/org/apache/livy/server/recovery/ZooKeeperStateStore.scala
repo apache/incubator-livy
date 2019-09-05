@@ -46,7 +46,7 @@ class ZooKeeperStateStore(
   }
 
   private val zkAddress = livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
-  require(!zkAddress.isEmpty, s"Please configure ${LivyConf.RECOVERY_STATE_STORE_URL.key}.")
+  require(!zkAddress.isEmpty, s"Please config ${LivyConf.RECOVERY_STATE_STORE_URL.key}.")
   private val zkKeyPrefix = livyConf.get(ZK_KEY_PREFIX_CONF)
   private val retryValue = livyConf.get(ZK_RETRY_CONF)
   // a regex to match patterns like "m, n" where m and n both are integer values
