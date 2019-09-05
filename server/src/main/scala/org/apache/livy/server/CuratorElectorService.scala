@@ -86,7 +86,7 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
 
     try {
       Thread.currentThread.join()
-    }finally {
+    } finally {
       transitionToStandby()
     }
   }
