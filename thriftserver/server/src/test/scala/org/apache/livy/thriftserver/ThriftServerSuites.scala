@@ -17,7 +17,6 @@
 
 package org.apache.livy.thriftserver
 
-import java.net.URL
 import java.sql.{Connection, Date, SQLException, Statement, Types}
 
 import scala.collection.mutable.ArrayBuffer
@@ -289,10 +288,8 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       assert("spark.sql.shuffle.partitions" === rs1.getString(1))
       defaultV1 = rs1.getString(2)
       rs1.close()
-
       val rs2 = statement.executeQuery("SET hive.cli.print.header")
       rs2.next()
-
       assert("hive.cli.print.header" === rs2.getString(1))
       defaultV2 = rs2.getString(2)
       rs2.close()
@@ -304,14 +301,12 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
         "SET spark.sql.shuffle.partitions=291",
         "SET hive.cli.print.header=true"
       )
-
       queries.map(statement.execute)
       val rs1 = statement.executeQuery("SET spark.sql.shuffle.partitions")
       rs1.next()
       assert("spark.sql.shuffle.partitions" === rs1.getString(1))
       assert("291" === rs1.getString(2))
       rs1.close()
-
       val rs2 = statement.executeQuery("SET hive.cli.print.header")
       rs2.next()
       assert("hive.cli.print.header" === rs2.getString(1))
@@ -327,7 +322,6 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
       assert("spark.sql.shuffle.partitions" === rs1.getString(1))
       assert(defaultV1 === rs1.getString(2))
       rs1.close()
-
       val rs2 = statement.executeQuery("SET hive.cli.print.header")
       rs2.next()
       assert("hive.cli.print.header" === rs2.getString(1))
