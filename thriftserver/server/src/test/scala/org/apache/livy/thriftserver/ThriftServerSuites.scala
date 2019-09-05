@@ -281,98 +281,60 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
     var defaultV1: String = null
     var defaultV2: String = null
     var data: ArrayBuffer[Int] = null
-    try {
-      // create table
-      withJdbcStatement { statement =>
-        val queries = Seq(
-          "CREATE TABLE test_map(key INT, value STRING) USING json",
-          "CACHE TABLE test_table AS SELECT key FROM test_map ORDER BY key DESC")
 
-        queries.foreach(statement.execute)
+    // first session, we get the default value of the session status
+    withJdbcStatement { statement =>
+      val rs1 = statement.executeQuery("SET spark.sql.shuffle.partitions")
+      rs1.next()
+      assert("spark.sql.shuffle.partitions" === rs1.getString(1))
+      defaultV1 = rs1.getString(2)
+      rs1.close()
 
-        val plan = statement.executeQuery("explain select * from test_table")
-        plan.next()
-        plan.next()
-        assert(plan.getString(1).contains("InMemoryTableScan"))
+      val rs2 = statement.executeQuery("SET hive.cli.print.header")
+      rs2.next()
 
-        val rs1 = statement.executeQuery("SELECT key FROM test_table ORDER BY KEY DESC")
-        val buf1 = new collection.mutable.ArrayBuffer[Int]()
-        while (rs1.next()) {
-          buf1 += rs1.getInt(1)
-        }
-        rs1.close()
-
-        val rs2 = statement.executeQuery("SELECT key FROM test_map ORDER BY KEY DESC")
-        val buf2 = new collection.mutable.ArrayBuffer[Int]()
-        while (rs2.next()) {
-          buf2 += rs2.getInt(1)
-        }
-        rs2.close()
-
-        assert(buf1 === buf2)
-
-        data = buf1
-      }
-
-      // first session, we get the default value of the session status
-      withJdbcStatement { statement =>
-        val rs1 = statement.executeQuery(s"SET spark.sql.shuffle.partitions")
-        rs1.next()
-        assert("spark.sql.shuffle.partitions" ===  rs1.getString(1))
-        defaultV1 = rs1.getString(2)
-        rs1.close()
-
-        val rs2 = statement.executeQuery("SET hive.cli.print.header")
-        rs2.next()
-
-        assert("hive.cli.print.header" === rs2.getString(1))
-        defaultV2 = rs2.getString(2)
-        rs2.close()
-      }
-
-      // second session, we update the session status
-      withJdbcStatement { statement =>
-        val queries = Seq(
-          "SET spark.sql.shuffle.partitions=291",
-          "SET hive.cli.print.header=true"
-        )
-
-        queries.map(statement.execute)
-        val rs1 = statement.executeQuery(s"SET spark.sql.shuffle.partitions")
-        rs1.next()
-        assert("spark.sql.shuffle.partitions" === rs1.getString(1))
-        assert("291" === rs1.getString(2))
-        rs1.close()
-
-        val rs2 = statement.executeQuery("SET hive.cli.print.header")
-        rs2.next()
-        assert("hive.cli.print.header" === rs2.getString(1))
-        assert("true" === rs2.getString(2))
-        rs2.close()
-      }
-
-      // third session, we get the latest session status, supposed to be the
-      // default value
-      withJdbcStatement { statement =>
-        val rs1 = statement.executeQuery(s"SET spark.sql.shuffle.partitions")
-        rs1.next()
-        assert("spark.sql.shuffle.partitions" === rs1.getString(1))
-        assert(defaultV1 === rs1.getString(2))
-        rs1.close()
-
-        val rs2 = statement.executeQuery("SET hive.cli.print.header")
-        rs2.next()
-        assert("hive.cli.print.header" === rs2.getString(1))
-        assert(defaultV2 === rs2.getString(2))
-        rs2.close()
-      }
-
-    } finally {
-      // final delete test db and table
-      withJdbcStatement { statement =>
-        statement.executeQuery("DROP TABLE IF EXISTS test_map")
-      }
+      assert("hive.cli.print.header" === rs2.getString(1))
+      defaultV2 = rs2.getString(2)
+      rs2.close()
     }
+
+    // second session, we update the session status
+    withJdbcStatement { statement =>
+      val queries = Seq(
+        "SET spark.sql.shuffle.partitions=291",
+        "SET hive.cli.print.header=true"
+      )
+
+      queries.map(statement.execute)
+      val rs1 = statement.executeQuery("SET spark.sql.shuffle.partitions")
+      rs1.next()
+      assert("spark.sql.shuffle.partitions" === rs1.getString(1))
+      assert("291" === rs1.getString(2))
+      rs1.close()
+
+      val rs2 = statement.executeQuery("SET hive.cli.print.header")
+      rs2.next()
+      assert("hive.cli.print.header" === rs2.getString(1))
+      assert("true" === rs2.getString(2))
+      rs2.close()
+    }
+
+    // third session, we get the latest session status, supposed to be the
+    // default value
+    withJdbcStatement { statement =>
+      val rs1 = statement.executeQuery("SET spark.sql.shuffle.partitions")
+      rs1.next()
+      assert("spark.sql.shuffle.partitions" === rs1.getString(1))
+      assert(defaultV1 === rs1.getString(2))
+      rs1.close()
+
+      val rs2 = statement.executeQuery("SET hive.cli.print.header")
+      rs2.next()
+      assert("hive.cli.print.header" === rs2.getString(1))
+      assert(defaultV2 === rs2.getString(2))
+      rs2.close()
+    }
+
   }
 
   test("Reuse existing session") {
