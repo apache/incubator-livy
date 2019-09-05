@@ -19,6 +19,9 @@ package org.apache.livy.thriftserver
 
 import java.sql.{Connection, Date, SQLException, Statement, Types}
 
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
+
 import org.apache.hive.jdbc.HiveStatement
 
 import org.apache.livy.LivyConf
@@ -31,7 +34,8 @@ trait CommonThriftTests {
 
   def dataTypesTest(statement: Statement, mapSupported: Boolean): Unit = {
     val resultSet = statement.executeQuery(
-      "select 1, 'a', cast(null as int), 1.2345, CAST('2018-08-06' as date)")
+      "select 1, 'a', cast(null as int), 1.2345, CAST('2018-08-06' as date), " +
+        "CAST('123' as BINARY)")
     resultSet.next()
     assert(resultSet.getInt(1) == 1)
     assert(resultSet.getString(2) == "a")
@@ -39,6 +43,9 @@ trait CommonThriftTests {
     assert(resultSet.wasNull())
     assert(resultSet.getDouble(4) == 1.2345)
     assert(resultSet.getDate(5) == Date.valueOf("2018-08-06"))
+    val resultBytes = Source.fromInputStream(resultSet.getBinaryStream(6))
+      .map(_.toByte).toArray
+    assert("123".getBytes.sameElements(resultBytes))
     assert(!resultSet.next())
 
     val resultSetWithNulls = statement.executeQuery("select cast(null as string), " +
@@ -103,81 +110,90 @@ trait CommonThriftTests {
 
   def getTablesTest(connection: Connection): Unit = {
     val statement = connection.createStatement()
-    statement.execute("CREATE TABLE test_get_tables (id integer, desc string) USING json")
-    statement.close()
+    try {
+      statement.execute("CREATE TABLE test_get_tables (id integer, desc string) USING json")
+      val metadata = connection.getMetaData
+      val tablesResultSet = metadata.getTables("", "default", "*", Array("TABLE"))
+      assert(tablesResultSet.getMetaData.getColumnCount == 5)
+      assert(tablesResultSet.getMetaData.getColumnName(1) == "TABLE_CAT")
+      assert(tablesResultSet.getMetaData.getColumnName(2) == "TABLE_SCHEM")
+      assert(tablesResultSet.getMetaData.getColumnName(3) == "TABLE_NAME")
+      assert(tablesResultSet.getMetaData.getColumnName(4) == "TABLE_TYPE")
+      assert(tablesResultSet.getMetaData.getColumnName(5) == "REMARKS")
 
-    val metadata = connection.getMetaData
-    val tablesResultSet = metadata.getTables("", "default", "*", Array("TABLE"))
-    assert(tablesResultSet.getMetaData.getColumnCount == 5)
-    assert(tablesResultSet.getMetaData.getColumnName(1) == "TABLE_CAT")
-    assert(tablesResultSet.getMetaData.getColumnName(2) == "TABLE_SCHEM")
-    assert(tablesResultSet.getMetaData.getColumnName(3) == "TABLE_NAME")
-    assert(tablesResultSet.getMetaData.getColumnName(4) == "TABLE_TYPE")
-    assert(tablesResultSet.getMetaData.getColumnName(5) == "REMARKS")
+      tablesResultSet.next()
+      assert(tablesResultSet.getString(3) == "test_get_tables")
+      assert(tablesResultSet.getString(4) == "TABLE")
+      assert(!tablesResultSet.next())
+    } finally {
+      statement.execute("DROP TABLE IF EXISTS test_get_tables")
+      statement.close()
+    }
 
-    tablesResultSet.next()
-    assert(tablesResultSet.getString(3) == "test_get_tables")
-    assert(tablesResultSet.getString(4) == "TABLE")
-    assert(!tablesResultSet.next())
   }
 
   def getColumnsTest(connection: Connection): Unit = {
     val metadata = connection.getMetaData
     val statement = connection.createStatement()
-    statement.execute("CREATE TABLE test_get_columns (id integer, desc string) USING json")
-    statement.close()
+    try {
+      statement.execute("CREATE TABLE test_get_columns (id integer, desc string) USING json")
 
-    val columnsResultSet = metadata.getColumns("", "default", "test_get_columns", ".*")
-    assert(columnsResultSet.getMetaData.getColumnCount == 23)
-    columnsResultSet.next()
-    assert(columnsResultSet.getString(1) == "")
-    assert(columnsResultSet.getString(2) == "default")
-    assert(columnsResultSet.getString(3) == "test_get_columns")
-    assert(columnsResultSet.getString(4) == "id")
-    assert(columnsResultSet.getInt(5) == 4)
-    assert(columnsResultSet.getString(6) == "integer")
-    assert(columnsResultSet.getInt(7) == 10)
-    assert(columnsResultSet.getString(8) == null)
-    assert(columnsResultSet.getInt(9) == 0)
-    assert(columnsResultSet.getInt(10) == 10)
-    assert(columnsResultSet.getInt(11) == 1)
-    assert(columnsResultSet.getString(12) == "")
-    assert(columnsResultSet.getString(13) == null)
-    assert(columnsResultSet.getString(14) == null)
-    assert(columnsResultSet.getString(15) == null)
-    assert(columnsResultSet.getString(15) == null)
-    assert(columnsResultSet.getInt(17) == 0)
-    assert(columnsResultSet.getString(18) == "YES")
-    assert(columnsResultSet.getString(19) == null)
-    assert(columnsResultSet.getString(20) == null)
-    assert(columnsResultSet.getString(21) == null)
-    assert(columnsResultSet.getString(22) == null)
-    assert(columnsResultSet.getString(23) == "NO")
-    columnsResultSet.next()
-    assert(columnsResultSet.getString(1) == "")
-    assert(columnsResultSet.getString(2) == "default")
-    assert(columnsResultSet.getString(3) == "test_get_columns")
-    assert(columnsResultSet.getString(4) == "desc")
-    assert(columnsResultSet.getInt(5) == 12)
-    assert(columnsResultSet.getString(6) == "string")
-    assert(columnsResultSet.getInt(7) == Integer.MAX_VALUE)
-    assert(columnsResultSet.getString(8) == null)
-    assert(columnsResultSet.getString(9) == null)
-    assert(columnsResultSet.getString(10) == null)
-    assert(columnsResultSet.getInt(11) == 1)
-    assert(columnsResultSet.getString(12) == "")
-    assert(columnsResultSet.getString(13) == null)
-    assert(columnsResultSet.getString(14) == null)
-    assert(columnsResultSet.getString(15) == null)
-    assert(columnsResultSet.getString(16) == null)
-    assert(columnsResultSet.getInt(17) == 1)
-    assert(columnsResultSet.getString(18) == "YES")
-    assert(columnsResultSet.getString(19) == null)
-    assert(columnsResultSet.getString(20) == null)
-    assert(columnsResultSet.getString(21) == null)
-    assert(columnsResultSet.getString(22) == null)
-    assert(columnsResultSet.getString(23) == "NO")
-    assert(!columnsResultSet.next())
+      val columnsResultSet = metadata.getColumns("", "default", "test_get_columns", ".*")
+      assert(columnsResultSet.getMetaData.getColumnCount == 23)
+      columnsResultSet.next()
+      assert(columnsResultSet.getString(1) == "")
+      assert(columnsResultSet.getString(2) == "default")
+      assert(columnsResultSet.getString(3) == "test_get_columns")
+      assert(columnsResultSet.getString(4) == "id")
+      assert(columnsResultSet.getInt(5) == 4)
+      assert(columnsResultSet.getString(6) == "integer")
+      assert(columnsResultSet.getInt(7) == 10)
+      assert(columnsResultSet.getString(8) == null)
+      assert(columnsResultSet.getInt(9) == 0)
+      assert(columnsResultSet.getInt(10) == 10)
+      assert(columnsResultSet.getInt(11) == 1)
+      assert(columnsResultSet.getString(12) == "")
+      assert(columnsResultSet.getString(13) == null)
+      assert(columnsResultSet.getString(14) == null)
+      assert(columnsResultSet.getString(15) == null)
+      assert(columnsResultSet.getString(15) == null)
+      assert(columnsResultSet.getInt(17) == 0)
+      assert(columnsResultSet.getString(18) == "YES")
+      assert(columnsResultSet.getString(19) == null)
+      assert(columnsResultSet.getString(20) == null)
+      assert(columnsResultSet.getString(21) == null)
+      assert(columnsResultSet.getString(22) == null)
+      assert(columnsResultSet.getString(23) == "NO")
+      columnsResultSet.next()
+      assert(columnsResultSet.getString(1) == "")
+      assert(columnsResultSet.getString(2) == "default")
+      assert(columnsResultSet.getString(3) == "test_get_columns")
+      assert(columnsResultSet.getString(4) == "desc")
+      assert(columnsResultSet.getInt(5) == 12)
+      assert(columnsResultSet.getString(6) == "string")
+      assert(columnsResultSet.getInt(7) == Integer.MAX_VALUE)
+      assert(columnsResultSet.getString(8) == null)
+      assert(columnsResultSet.getString(9) == null)
+      assert(columnsResultSet.getString(10) == null)
+      assert(columnsResultSet.getInt(11) == 1)
+      assert(columnsResultSet.getString(12) == "")
+      assert(columnsResultSet.getString(13) == null)
+      assert(columnsResultSet.getString(14) == null)
+      assert(columnsResultSet.getString(15) == null)
+      assert(columnsResultSet.getString(16) == null)
+      assert(columnsResultSet.getInt(17) == 1)
+      assert(columnsResultSet.getString(18) == "YES")
+      assert(columnsResultSet.getString(19) == null)
+      assert(columnsResultSet.getString(20) == null)
+      assert(columnsResultSet.getString(21) == null)
+      assert(columnsResultSet.getString(22) == null)
+      assert(columnsResultSet.getString(23) == "NO")
+      assert(!columnsResultSet.next())
+    } finally {
+      statement.execute("DROP TABLE IF EXISTS test_get_columns")
+      statement.close()
+    }
+
   }
 
   def operationLogRetrievalTest(statement: Statement): Unit = {
@@ -259,6 +275,61 @@ trait CommonThriftTests {
 class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests {
   override def mode: ServerMode.Value = ServerMode.binary
   override def port: Int = 20000
+
+  test("test multiple session") {
+    var defaultV1: String = null
+    var defaultV2: String = null
+    var data: ArrayBuffer[Int] = null
+
+    // first session, we get the default value of the session status
+    withJdbcStatement { statement =>
+      val rs1 = statement.executeQuery("SET spark.sql.shuffle.partitions")
+      rs1.next()
+      assert("spark.sql.shuffle.partitions" === rs1.getString(1))
+      defaultV1 = rs1.getString(2)
+      rs1.close()
+      val rs2 = statement.executeQuery("SET hive.cli.print.header")
+      rs2.next()
+      assert("hive.cli.print.header" === rs2.getString(1))
+      defaultV2 = rs2.getString(2)
+      rs2.close()
+    }
+
+    // second session, we update the session status
+    withJdbcStatement { statement =>
+      val queries = Seq(
+        "SET spark.sql.shuffle.partitions=291",
+        "SET hive.cli.print.header=true"
+      )
+      queries.map(statement.execute)
+      val rs1 = statement.executeQuery("SET spark.sql.shuffle.partitions")
+      rs1.next()
+      assert("spark.sql.shuffle.partitions" === rs1.getString(1))
+      assert("291" === rs1.getString(2))
+      rs1.close()
+      val rs2 = statement.executeQuery("SET hive.cli.print.header")
+      rs2.next()
+      assert("hive.cli.print.header" === rs2.getString(1))
+      assert("true" === rs2.getString(2))
+      rs2.close()
+    }
+
+    // third session, we get the latest session status, supposed to be the
+    // default value
+    withJdbcStatement { statement =>
+      val rs1 = statement.executeQuery("SET spark.sql.shuffle.partitions")
+      rs1.next()
+      assert("spark.sql.shuffle.partitions" === rs1.getString(1))
+      assert(defaultV1 === rs1.getString(2))
+      rs1.close()
+      val rs2 = statement.executeQuery("SET hive.cli.print.header")
+      rs2.next()
+      assert("hive.cli.print.header" === rs2.getString(1))
+      assert(defaultV2 === rs2.getString(2))
+      rs2.close()
+    }
+
+  }
 
   test("Reuse existing session") {
     withJdbcConnection { _ =>
