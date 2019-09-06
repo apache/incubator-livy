@@ -590,7 +590,7 @@ A session represents an interactive shell.
   </tr>
   <tr>
     <td>kind</td>
-    <td>Session kind (spark, pyspark, or sparkr)</td>
+    <td>Session kind (spark, pyspark, sparkr, or sql)</td>
     <td><a href="#session-kind">session kind</a></td>
   </tr>
   <tr>
