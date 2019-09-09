@@ -425,8 +425,8 @@ public class RSCClient implements LivyClient {
     private void handle(ChannelHandlerContext ctx, ReplState msg) {
       LOG.trace("Received repl state for {}", msg.state);
       // Update last activity timestamp when state change is from busy to idle.
-      if (SessionState.Busy.state().equals(replState) && msg != null &&
-        SessionState.Idle.state().equals(msg.state)) {
+      if (SessionState.Busy$.MODULE$.state().equals(replState) && msg != null &&
+        SessionState.Idle$.MODULE$.state().equals(msg.state)) {
         replLastActivity = System.nanoTime();
       }
       replState = msg.state;
