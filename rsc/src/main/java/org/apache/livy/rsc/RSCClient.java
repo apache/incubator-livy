@@ -34,6 +34,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
+import org.apache.livy.sessions.SessionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -319,7 +320,7 @@ public class RSCClient implements LivyClient {
 
   /**
    * Get the timestamp of the last activity of the repl. It will be updated when the repl state
-   * changed from busy to others
+   * changed from busy to idle
    *
    * @return last activity timestamp
    */
@@ -423,8 +424,9 @@ public class RSCClient implements LivyClient {
 
     private void handle(ChannelHandlerContext ctx, ReplState msg) {
       LOG.trace("Received repl state for {}", msg.state);
-      // Update last activity timestamp when state change is from busy to others.
-      if ("busy".equals(replState) || !"busy".equals(msg.state)) {
+      // Update last activity timestamp when state change is from busy to idle.
+      if (SessionState.Busy.state().equals(replState) && msg != null &&
+        SessionState.Idle.state().equals(msg.state)) {
         replLastActivity = System.nanoTime();
       }
       replState = msg.state;
