@@ -17,13 +17,17 @@
 
 package org.apache.livy;
 
-import java.util.List;
 import java.util.concurrent.Future;
 
 /**
  * A handle to a submitted job. Allows for monitoring and controlling of the running remote job.
  */
 public interface JobHandle<T> extends Future<T> {
+
+  /**
+   * @return Return the current job id
+   */
+  long getJobId();
 
   /**
    * Return the current state of the job.

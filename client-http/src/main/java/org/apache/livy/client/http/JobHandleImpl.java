@@ -83,6 +83,11 @@ class JobHandleImpl<T> extends AbstractJobHandle<T> {
   }
 
   @Override
+  public long getJobId() {
+    return jobId;
+  }
+
+  @Override
   public T get() throws ExecutionException, InterruptedException {
     try {
       return get(true, -1, TimeUnit.MILLISECONDS);

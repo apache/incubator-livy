@@ -44,6 +44,15 @@ class JobHandleImpl<T> extends AbstractJobHandle<T> {
     this.promise = promise;
   }
 
+  @Override
+  public long getJobId() {
+    try {
+      return Long.parseLong(jobId);
+    } catch (NumberFormatException e) {
+      return -1;
+    }
+  }
+
   /** Requests a running job to be cancelled. */
   @Override
   public boolean cancel(boolean mayInterrupt) {

@@ -187,4 +187,6 @@ private abstract class AbstractJobHandleStub[T] private[livy] extends JobHandle[
   override def cancel(mayInterruptIfRunning: Boolean): Boolean = false
 
   override def isDone: Boolean = true
+
+  override def getJobId: Long = -1
 }

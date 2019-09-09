@@ -87,6 +87,10 @@ public class TestAbstractJobHandle {
       throw new UnsupportedOperationException();
     }
 
+    @Override
+    public long getJobId() {
+      throw new UnsupportedOperationException();
+    }
   }
 
 }
