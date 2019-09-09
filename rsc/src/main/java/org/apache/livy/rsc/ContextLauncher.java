@@ -207,7 +207,7 @@ class ContextLauncher {
     if (!conf.getBoolean(CLIENT_IN_PROCESS) &&
         // For tests which doesn't shutdown RscDriver gracefully, JaCoCo exec isn't dumped properly.
         // Disable JaCoCo for this case.
-        !conf.getBoolean(TEST_STUCK_END_SESSION)) {
+        !conf.getBoolean(TEST_NO_CODE_COVERAGE_ANALYSIS)) {
       // For testing; propagate jacoco settings so that we also do coverage analysis
       // on the launched driver. We replace the name of the main file ("main.exec")
       // so that we don't end up fighting with the main test launcher.

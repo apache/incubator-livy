@@ -114,14 +114,16 @@ class InteractiveIT extends BaseIntegrationTestSuite {
   }
 
   test("application kills session") {
-    withNewSession(Spark) { s =>
+    val noCodeCoverageConf = s"${RSCConf.Entry.TEST_NO_CODE_COVERAGE_ANALYSIS.key()}"
+    withNewSession(Spark, Map(noCodeCoverageConf -> "true")) { s =>
       s.runFatalStatement("System.exit(0)")
     }
   }
 
   test("should kill RSCDriver if it doesn't respond to end session") {
     val testConfName = s"${RSCConf.LIVY_SPARK_PREFIX}${RSCConf.Entry.TEST_STUCK_END_SESSION.key()}"
-    withNewSession(Spark, Map(testConfName -> "true")) { s =>
+    val noCodeCoverageConf = s"${RSCConf.Entry.TEST_NO_CODE_COVERAGE_ANALYSIS.key()}"
+    withNewSession(Spark, Map(testConfName -> "true", noCodeCoverageConf -> "true")) { s =>
       val appId = s.appId()
       s.stop()
       val appReport = cluster.yarnClient.getApplicationReport(appId)
