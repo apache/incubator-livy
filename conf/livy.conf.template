@@ -160,6 +160,13 @@
 # livy.server.auth.kerberos.keytab = <spnego keytab>
 # livy.server.auth.kerberos.name-rules = DEFAULT
 #
+# livy.server.auth.type = ldap
+# livy.server.auth.ldap.url = null
+# livy.server.auth.ldap.base-dn = null
+# livy.server.auth.ldap.username-domain = null
+# livy.server.auth.ldap.enable-start-tls = false
+# livy.server.auth.ldap.security-authentication = simple
+#
 # If user wants to use custom authentication filter, configurations are:
 # livy.server.auth.type = <custom>
 # livy.server.auth.<custom>.class = <class of custom auth filter>

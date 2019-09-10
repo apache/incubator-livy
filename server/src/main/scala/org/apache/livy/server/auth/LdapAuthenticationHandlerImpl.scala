@@ -28,16 +28,15 @@ import javax.net.ssl.{HostnameVerifier, SSLSession}
 import javax.servlet.ServletException
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
-import com.google.common.annotations.VisibleForTesting
 import org.apache.commons.codec.binary.Base64
 import org.apache.hadoop.security.authentication.client.AuthenticationException
 import org.apache.hadoop.security.authentication.server.{AuthenticationHandler, AuthenticationToken}
 
 import org.apache.livy._
 
-object LdapAuthenticationHandlerImpl extends Logging {
+object LdapAuthenticationHandlerImpl {
   val AUTHORIZATION_SCHEME = "Basic"
-  val TYPE = "org.apache.livy.server.auth.LdapAuthenticationHandlerImpl"
+  val TYPE = "ldap"
   val SECURITY_AUTHENTICATION = "simple"
   val PROVIDER_URL = "ldap.providerurl"
   val BASE_DN = "ldap.basedn"
@@ -51,8 +50,7 @@ object LdapAuthenticationHandlerImpl extends Logging {
   private def indexOfDomainMatch(userName: String): Integer = {
     if (userName == null) {
       -1
-    }
-    else {
+    } else {
       val idx = userName.indexOf(47)
       val idx2 = userName.indexOf(64)
       var endIdx = Math.min(idx, idx2)
@@ -62,12 +60,12 @@ object LdapAuthenticationHandlerImpl extends Logging {
   }
 }
 
-class LdapAuthenticationHandlerImpl extends AuthenticationHandler {
-  private var ldapDomain: String = null
-  private var baseDN: String = null
-  private var providerUrl: String = null
-  private var enableStartTls: Boolean = false
-  private var disableHostNameVerification: Boolean = false
+class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
+  private var ldapDomain = "null"
+  private var baseDN = "null"
+  private var providerUrl = "null"
+  private var enableStartTls = false
+  private var disableHostNameVerification = false
 
   def getType: String = LdapAuthenticationHandlerImpl.TYPE
 
@@ -91,12 +89,12 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler {
   @throws[IOException]
   @throws[AuthenticationException]
   def managementOperation(token: AuthenticationToken, request: HttpServletRequest,
-                          response: HttpServletResponse) : Boolean = true
+    response: HttpServletResponse) : Boolean = true
 
   @throws[IOException]
   @throws[AuthenticationException]
   def authenticate(request: HttpServletRequest,
-                   response: HttpServletResponse): AuthenticationToken = {
+    response: HttpServletResponse): AuthenticationToken = {
     var token: AuthenticationToken = null
     var authorization = request.getHeader("Authorization")
     if (authorization != null && authorization.regionMatches(true, 0,
@@ -107,41 +105,50 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler {
       val credentials = new String(base64.decode(authorization),
         StandardCharsets.UTF_8).split(":", 2)
       if (credentials.length == 2) {
-        LdapAuthenticationHandlerImpl.debug(s"Authenticating  [${credentials(0)}] user")
+        debug(s"Authenticating  [${credentials(0)}] user")
         token = this.authenticateUser(credentials(0), credentials(1))
         response.setStatus(200)
       }
-    }
-    else {
+    } else {
       response.setHeader("WWW-Authenticate", "Basic")
       response.setStatus(401)
-      if (authorization == null) LdapAuthenticationHandlerImpl.trace("Basic auth starting")
-      else LdapAuthenticationHandlerImpl.warn("\'Authorization\' does not start " +
-        s"with \'Basic\' :   ${authorization} ")
+      if (authorization == null) {
+        trace("Basic auth starting")
+      } else {
+        warn("\'Authorization\' does not start " + s"with \'Basic\' :   ${authorization} ")
+      }
     }
     token
   }
 
   @throws[AuthenticationException]
-  private def authenticateUser(userName: String, password: String) = if (
-    userName != null && !userName.isEmpty) {
-    var principle: String = userName
-    if (!LdapAuthenticationHandlerImpl.hasDomain(userName) &&
-      this.ldapDomain != null) {
-      principle = userName + "@" + this.ldapDomain
+  private def authenticateUser(userName: String, password: String) = {
+    if (userName != null && !userName.isEmpty) {
+      var principle: String = userName
+      if (!LdapAuthenticationHandlerImpl.hasDomain(userName) &&
+        this.ldapDomain != null) {
+        principle = userName + "@" + this.ldapDomain
+      }
+      if (password != null && !password.isEmpty) {
+        var bindDN: String = principle
+        if (this.baseDN != null) {
+          bindDN = "uid=" + principle + "," + this.baseDN
+        }
+        if (this.enableStartTls.booleanValue) {
+          this.authenticateWithTlsExtension(bindDN, password)
+        } else {
+          this.authenticateWithoutTlsExtension(bindDN, password)
+        }
+        new AuthenticationToken(userName, userName, "ldap")
+      } else {
+        throw new AuthenticationException(
+          "Error validating LDAP user: a null or blank password has been provided")
+      }
+    } else {
+      throw new AuthenticationException(
+        "Error validating LDAP user: a null or blank username has been provided")
     }
-    if (password != null && !password.isEmpty) {
-      var bindDN: String = principle
-      if (this.baseDN != null) bindDN = "uid=" + principle + "," + this.baseDN
-      if (this.enableStartTls.booleanValue) this.authenticateWithTlsExtension(bindDN, password)
-      else this.authenticateWithoutTlsExtension(bindDN, password)
-      new AuthenticationToken(userName, userName, "ldap")
-    }
-    else throw new AuthenticationException(
-      "Error validating LDAP user: a null or blank password has been provided")
   }
-  else throw new AuthenticationException(
-    "Error validating LDAP user: a null or blank username has been provided")
 
   @throws[AuthenticationException]
   private def authenticateWithTlsExtension(userDN: String, password: String) = {
@@ -152,23 +159,29 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler {
     try {
       ctx = new InitialLdapContext(env, null.asInstanceOf[Array[Control]])
       val ex = ctx.extendedOperation(new StartTlsRequest).asInstanceOf[StartTlsResponse]
-      if (this.disableHostNameVerification.booleanValue) ex.setHostnameVerifier(
-        new HostnameVerifier() {
+      if (this.disableHostNameVerification.booleanValue) {
+        ex.setHostnameVerifier(new HostnameVerifier() {
           override def verify(hostname: String, session: SSLSession) = true
         })
+      }
       ex.negotiate
       ctx.addToEnvironment("java.naming.security.authentication",
         LdapAuthenticationHandlerImpl.SECURITY_AUTHENTICATION)
       ctx.addToEnvironment("java.naming.security.principal", userDN)
       ctx.addToEnvironment("java.naming.security.credentials", password)
       ctx.lookup(userDN)
-      LdapAuthenticationHandlerImpl.debug(s"Authentication successful for ${userDN}")
+      debug(s"Authentication successful for ${userDN}")
     } catch {
       case exception@(_: IOException | _: NamingException) =>
         throw new AuthenticationException("Error validating LDAP user", exception)
-    } finally if (ctx != null) try ctx.close()
-    catch {
-      case exception: NamingException =>
+    } finally {
+      if (ctx != null) {
+        try {
+          ctx.close()
+        } catch {
+          case exception: NamingException =>
+        }
+      }
     }
   }
 
@@ -184,7 +197,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler {
     try {
       val e = new InitialDirContext(env)
       e.close()
-      LdapAuthenticationHandlerImpl.debug(s"Authentication successful for ${userDN}")
+      debug(s"Authentication successful for ${userDN}")
     } catch {
       case exception: NamingException =>
         throw new AuthenticationException("Error validating LDAP user", exception)

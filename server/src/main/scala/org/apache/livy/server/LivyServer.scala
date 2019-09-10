@@ -263,7 +263,8 @@ class LivyServer extends Logging {
 
       case authType @ LdapAuthenticationHandlerImpl.TYPE =>
         val holder = new FilterHolder(new AuthenticationFilter())
-        holder.setInitParameter(AuthenticationFilter.AUTH_TYPE, authType)
+        holder.setInitParameter(AuthenticationFilter.AUTH_TYPE,
+          LdapAuthenticationHandlerImpl.getClass.getCanonicalName.dropRight(1))
         Option(livyConf.get(LivyConf.AUTH_LDAP_URL)).foreach { url =>
           holder.setInitParameter(LdapAuthenticationHandlerImpl.PROVIDER_URL, url)
         }
@@ -279,7 +280,7 @@ class LivyServer extends Logging {
           livyConf.get(LivyConf.AUTH_LDAP_ENABLE_START_TLS))
         server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
         info("LDAP auth enabled.")
-        
+
       case null =>
         // Nothing to do.
 

@@ -121,6 +121,10 @@
     <!-- Set this to "true" to skip PySpark3 tests. -->
     <skipPySpark3Tests>false</skipPySpark3Tests>
 
+    <!-- Required for testing LDAP integration -->
+    <apacheds.version>2.0.0-M21</apacheds.version>
+    <ldap-api.version>1.0.0-M33</ldap-api.version>
+
     <!--
       Properties for the copyright header style checks. Modules that use the ASF header
       should override the "copyright.header" property.
