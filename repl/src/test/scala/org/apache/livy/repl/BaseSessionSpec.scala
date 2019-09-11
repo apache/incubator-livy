@@ -60,7 +60,7 @@ abstract class BaseSessionSpec(kind: Kind)
       // Session's constructor should fire an initial state change event.
       stateChangedCalled.intValue() shouldBe 1
       Await.ready(session.start(), 30 seconds)
-      assert(session.state === SessionState.Idle)
+      assert(session.state === SessionState.Idle())
       // There should be at least 1 state change event fired when session transits to idle.
       stateChangedCalled.intValue() should (be > 1)
       testCode(session)
@@ -74,14 +74,14 @@ abstract class BaseSessionSpec(kind: Kind)
     val future = session.start()
     try {
       Await.ready(future, 60 seconds)
-      session.state should (equal (SessionState.Starting) or equal (SessionState.Idle))
+      session.state should (equal (SessionState.Starting()) or equal (SessionState.Idle()))
     } finally {
       session.close()
     }
   }
 
   it should "eventually become the idle state" in withSession { session =>
-    session.state should equal (SessionState.Idle)
+    session.state should equal (SessionState.Idle())
   }
 
 }

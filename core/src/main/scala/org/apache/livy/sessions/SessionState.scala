@@ -30,13 +30,13 @@ class FinishedSessionState(
 object SessionState {
 
   def apply(s: String): SessionState = s match {
-    case "not_started" => NotStarted
-    case "starting" => Starting
-    case "recovering" => Recovering
-    case "idle" => Idle
-    case "running" => Running
-    case "busy" => Busy
-    case "shutting_down" => ShuttingDown
+    case "not_started" => NotStarted()
+    case "starting" => Starting()
+    case "recovering" => Recovering()
+    case "idle" => Idle()
+    case "running" => Running()
+    case "busy" => Busy()
+    case "shutting_down" => ShuttingDown()
     case "error" => Error()
     case "dead" => Dead()
     case "killed" => Killed()
@@ -44,19 +44,19 @@ object SessionState {
     case _ => throw new IllegalArgumentException(s"Illegal session state: $s")
   }
 
-  object NotStarted extends SessionState("not_started", true)
+  case class NotStarted() extends SessionState("not_started", true)
 
-  object Starting extends SessionState("starting", true)
+  case class Starting() extends SessionState("starting", true)
 
-  object Recovering extends SessionState("recovering", true)
+  case class Recovering() extends SessionState("recovering", true)
 
-  object Idle extends SessionState("idle", true)
+  case class Idle() extends SessionState("idle", true)
 
-  object Running extends SessionState("running", true)
+  case class Running() extends SessionState("running", true)
 
-  object Busy extends SessionState("busy", true)
+  case class Busy() extends SessionState("busy", true)
 
-  object ShuttingDown extends SessionState("shutting_down", false)
+  case class ShuttingDown() extends SessionState("shutting_down", false)
 
   case class Killed(override val time: Long = System.nanoTime()) extends
     FinishedSessionState("killed", false, time)
@@ -69,4 +69,11 @@ object SessionState {
 
   case class Success(override val time: Long = System.nanoTime()) extends
     FinishedSessionState("success", false, time)
+
+  val states: Seq[SessionState] = Seq(NotStarted(), Starting(), Recovering(), Idle(), Running(),
+    Busy(), ShuttingDown(), Killed(), Error(), Dead(), Success())
+
+  def isValid(state: String): Boolean = {
+    states.map(_.state).contains(state)
+  }
 }

@@ -67,7 +67,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       val session2 = manager.register(new MockSession(manager.nextId(), null, livyConf))
       manager.get(session1.id).isDefined should be(true)
       manager.get(session2.id).isDefined should be(true)
-      session2.serverState = SessionState.Busy
+      session2.serverState = SessionState.Busy()
       eventually(timeout(5 seconds), interval(100 millis)) {
         Await.result(manager.collectGarbage(), Duration.Inf)
         (manager.get(session1.id).isDefined, manager.get(session2.id).isDefined) should
@@ -134,12 +134,12 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       }
 
       // Batch session should not be gc-ed when alive
-      for (s <- Seq(SessionState.Running,
-        SessionState.Idle,
-        SessionState.Recovering,
-        SessionState.NotStarted,
-        SessionState.Busy,
-        SessionState.ShuttingDown)) {
+      for (s <- Seq(SessionState.Running(),
+        SessionState.Idle(),
+        SessionState.Recovering(),
+        SessionState.NotStarted(),
+        SessionState.Busy(),
+        SessionState.ShuttingDown())) {
         changeStateAndCheck(s) { sm => sm.get(session.id) should be (Some(session)) }
       }
 

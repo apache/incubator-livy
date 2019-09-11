@@ -172,7 +172,7 @@ class JobApiSpec extends BaseInteractiveServletSpec {
   protected def waitForIdle(id: Int): Unit = {
     eventually(timeout(1 minute), interval(100 millis)) {
       jget[SessionInfo](s"/$id") { status =>
-        status.state should be (SessionState.Idle.toString())
+        status.state should be (SessionState.Idle().toString())
       }
     }
   }
