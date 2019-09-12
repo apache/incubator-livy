@@ -131,6 +131,11 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
       if (tooManySessions) {
         BadRequest(ResponseMessage("Rejected, too many sessions are being created!"))
       } else {
+        // LIVY-664: Check if name is duplicated before create a session
+        val newSessionName = sessionName(request)
+        if (newSessionName.isDefined && sessionManager.get(newSessionName.get).isDefined) {
+          BadRequest(ResponseMessage(s"Duplicate session name: ${newSessionName.get}"))
+        }
         val session = sessionManager.register(createSession(request))
         // Because it may take some time to establish the session, update the last activity
         // time before returning the session info to the client.
@@ -159,6 +164,11 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
    * Returns the remote user for the given request. Separate method so that tests can override it.
    */
   protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser()
+
+  /**
+   * Return the session name
+   */
+  protected def sessionName(req: HttpServletRequest): Option[String]
 
   /**
    * Returns the impersonated user as given by "doAs" as a request parameter.
