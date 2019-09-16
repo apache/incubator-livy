@@ -201,7 +201,7 @@ public class ThriftSessionTest {
   }
 
   private SqlJob newSqlJob(String session, String stId, String statement) {
-    return new SqlJob(session, stId, statement, "true", "incrementalPropName");
+    return new SqlJob(session, stId, statement, "true", "incrementalPropName", Integer.MAX_VALUE);
   }
 
   /**

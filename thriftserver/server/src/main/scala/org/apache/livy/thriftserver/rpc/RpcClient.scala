@@ -50,7 +50,8 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
       statementId,
       statement,
       defaultIncrementalCollect,
-      s"spark.${LivyConf.THRIFT_INCR_COLLECT_ENABLED}"))
+      s"spark.${LivyConf.THRIFT_INCR_COLLECT_ENABLED}",
+      livySession.livyConf.getInt(LivyConf.THRIFT_RESULTSET_DEFAULT_FETCH_SIZE)))
   }
 
   @throws[Exception]

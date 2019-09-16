@@ -37,9 +37,10 @@ public class SqlJob implements Job<Void> {
   private final String statement;
   private final String defaultIncrementalCollect;
   private final String incrementalCollectEnabledProp;
+  private final Integer batchSize;
 
   public SqlJob() {
-    this(null, null, null, null, null);
+    this(null, null, null, null, null, Integer.MAX_VALUE);
   }
 
   public SqlJob(
@@ -47,12 +48,14 @@ public class SqlJob implements Job<Void> {
       String statementId,
       String statement,
       String defaultIncrementalCollect,
-      String incrementalCollectEnabledProp) {
+      String incrementalCollectEnabledProp,
+      Integer batchSize) {
     this.sessionId = sessionId;
     this.statementId = statementId;
     this.statement = statement;
     this.defaultIncrementalCollect = defaultIncrementalCollect;
     this.incrementalCollectEnabledProp = incrementalCollectEnabledProp;
+    this.batchSize = batchSize;
   }
 
   @Override
@@ -77,7 +80,7 @@ public class SqlJob implements Job<Void> {
 
     Iterator<Row> iter;
     if (incremental) {
-      iter = new ScalaIterator<>(df.rdd().toLocalIterator());
+      iter = new ScalaRDDStreamIterator<>(new RDDStreamIterator(df.rdd(), batchSize, spark.sparkContext(), scala.reflect.ClassTag$.MODULE$.apply(Row.class)));
     } else {
       iter = df.collectAsList().iterator();
     }
