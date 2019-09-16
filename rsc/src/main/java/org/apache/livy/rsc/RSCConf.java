@@ -81,7 +81,10 @@ public class RSCConf extends ClientConf<RSCConf> {
     RETAINED_SHARE_VARIABLES("retained.share-variables", 100),
 
     // Number of result rows to get for SQL Interpreters.
-    SQL_NUM_ROWS("sql.num-rows", 1000);
+    SQL_NUM_ROWS("sql.num-rows", 1000),
+
+    THRIFT_COLLECT_RDD_BATCH_ENABLED("thrift.collect.rdd.batch.enabled", false),
+    THRIFT_COLLECT_RDD_BATCH_SIZE("thrift.collect.rdd.batch.size", 100);
 
     private final String key;
     private final Object dflt;

@@ -38,6 +38,7 @@ import org.apache.hive.service.server.ThreadFactoryWithGarbageCleanup
 
 import org.apache.livy.LivyConf
 import org.apache.livy.Logging
+import org.apache.livy.rsc.RSCConf
 import org.apache.livy.server.interactive.{CreateInteractiveRequest, InteractiveSession}
 import org.apache.livy.sessions.Spark
 import org.apache.livy.thriftserver.SessionStates._
@@ -535,6 +536,7 @@ object LivyThriftSessionManager extends Logging {
   // variable
   private val livySessionIdConfigKey = "set:hiveconf:livy.server.sessionId"
   private val livySessionConfRegexp = "set:hiveconf:livy.session.conf.(.*)".r
+  private val livyRSCConfRegexp = "set:hiveconf:livy.rsc.(.*)".r
   private val hiveVarPattern = "set:hivevar:(.*)".r
 
   private def convertConfValueToInt(key: String, value: String) = {
@@ -579,6 +581,8 @@ object LivyThriftSessionManager extends Logging {
                 createInteractiveRequest.heartbeatTimeoutInSecond = heartbeatTimeoutInSecond
               }
             case livySessionConfRegexp(livyConfKey) => extraLivyConf += (livyConfKey -> value)
+            case livyRSCConfRegexp(livyConfKey) =>
+              extraLivyConf += ((RSCConf.RSC_CONF_PREFIX + livyConfKey) -> value)
             // set the hivevars specified by the user
             case hiveVarPattern(confKey) => statements += s"set hivevar:${confKey.trim}=$value"
             case _ if key == livySessionIdConfigKey => // Ignore it, we handle it later

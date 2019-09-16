@@ -111,6 +111,10 @@ object InteractiveSession extends Logging {
       Option(builder.build().asInstanceOf[RSCClient])
     }
 
+    request.conf.foreach {
+      case (key, value) => livyConf.set(key, value)
+    }
+
     new InteractiveSession(
       id,
       name,

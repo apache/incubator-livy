@@ -100,7 +100,6 @@ object LivyConf {
 
   // Thrift configurations
   val THRIFT_SERVER_ENABLED = Entry("livy.server.thrift.enabled", false)
-  val THRIFT_INCR_COLLECT_ENABLED = Entry("livy.server.thrift.incrementalCollect", false)
   val THRIFT_SESSION_CREATION_TIMEOUT = Entry("livy.server.thrift.session.creationTimeout", "10m")
   // The following configs are the same present in Hive
   val THRIFT_RESULTSET_DEFAULT_FETCH_SIZE =

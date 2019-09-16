@@ -126,6 +126,40 @@ public class ThriftSessionTest {
     assertTrue(cols[0].getNulls().get(0));
 
     assertTrue(waitFor(new CleanupStatementJob(s1, st4)));
+
+    // test collect rdd to driver by batch
+    String st5 = nextStatement();
+    waitFor(newStreamSqlJob(s1, st5, "SELECT * FROM test", 1));
+
+    rs = waitFor(new FetchResultJob(s1, st5, 1));
+    cols = rs.getColumns();
+
+    assertEquals(Integer.valueOf(1), cols[0].get(0));
+    assertEquals("one", cols[1].get(0));
+
+    rs = waitFor(new FetchResultJob(s1, st5, 1));
+    cols = rs.getColumns();
+    assertEquals(Integer.valueOf(2), cols[0].get(0));
+    assertEquals("two", cols[1].get(0));
+
+    assertTrue(waitFor(new CleanupStatementJob(s1, st5)));
+
+    String st6 = nextStatement();
+    waitFor(newStreamSqlJob(s1, st6, "SELECT * FROM test", Integer.MAX_VALUE));
+
+    rs = waitFor(new FetchResultJob(s1, st6, Integer.MAX_VALUE));
+    cols = rs.getColumns();
+
+    assertEquals(2, cols[0].size());
+    assertEquals(2, cols[1].size());
+
+    assertEquals(Integer.valueOf(1), cols[0].get(0));
+    assertEquals("one", cols[1].get(0));
+    assertEquals(Integer.valueOf(2), cols[0].get(1));
+    assertEquals("two", cols[1].get(1));
+
+    assertTrue(waitFor(new CleanupStatementJob(s1, st6)));
+
     // Tear down the session.
     waitFor(new UnregisterSessionJob(s1));
 
@@ -201,7 +235,11 @@ public class ThriftSessionTest {
   }
 
   private SqlJob newSqlJob(String session, String stId, String statement) {
-    return new SqlJob(session, stId, statement, "true", "incrementalPropName");
+    return new SqlJob(session, stId, statement, "true", "incrementalPropName", Integer.MAX_VALUE);
+  }
+
+  private SqlJob newStreamSqlJob(String session, String stId, String statement, Integer batchSize) {
+    return new SqlJob(session, stId, statement, "true", "incrementalPropName", batchSize);
   }
 
   /**

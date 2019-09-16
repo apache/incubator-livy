@@ -20,12 +20,13 @@ package org.apache.livy.thriftserver.rpc
 import org.apache.hive.service.cli.SessionHandle
 
 import org.apache.livy._
+import org.apache.livy.rsc.RSCConf
 import org.apache.livy.server.interactive.InteractiveSession
 import org.apache.livy.thriftserver.session._
 
 class RpcClient(livySession: InteractiveSession) extends Logging {
   private val defaultIncrementalCollect =
-    livySession.livyConf.getBoolean(LivyConf.THRIFT_INCR_COLLECT_ENABLED).toString
+    livySession.livyConf.getBoolean(RSCConf.Entry.THRIFT_COLLECT_RDD_BATCH_ENABLED).toString
 
   private val rscClient = livySession.client.get
 
@@ -40,6 +41,7 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
       sessionHandle: SessionHandle,
       statementId: String,
       statement: String): JobHandle[_] = {
+    val batchSize = livySession.livyConf.getInt(RSCConf.Entry.THRIFT_COLLECT_RDD_BATCH_SIZE)
     info(s"RSC client is executing SQL query: $statement, statementId = $statementId, session = " +
       sessionHandle)
     require(null != statementId, s"Invalid statementId specified. StatementId = $statementId")
@@ -50,7 +52,8 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
       statementId,
       statement,
       defaultIncrementalCollect,
-      s"spark.${LivyConf.THRIFT_INCR_COLLECT_ENABLED}"))
+      s"spark.${RSCConf.Entry.THRIFT_COLLECT_RDD_BATCH_ENABLED}",
+      livySession.livyConf.getInt(RSCConf.Entry.THRIFT_COLLECT_RDD_BATCH_SIZE)));
   }
 
   @throws[Exception]
