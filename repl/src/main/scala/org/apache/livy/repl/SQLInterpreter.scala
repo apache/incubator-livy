@@ -91,6 +91,9 @@ class SQLInterpreter(
             // Convert java BigDecimal type to Scala BigDecimal, because current version of
             // Json4s doesn't support java BigDecimal as a primitive type (LIVY-455).
             case i: java.math.BigDecimal => BigDecimal(i)
+            // Convert java.sql.Date type data to String, because java.sql.Date cannot extracted
+            // correctly with Json4s (LIVY-683).
+            case d: java.sql.Date => d.toString
             case e => e
           }
         }
