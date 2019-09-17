@@ -49,6 +49,13 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.livy</groupId>
+      <artifactId>livy-core_${scala.binary.version}</artifactId>
+      <version>${project.version}</version>
+      <!-- Or it will conflict with repl jars -->
+      <scope>provided</scope>
+    </dependency>
 
     <dependency>
       <groupId>com.esotericsoftware.kryo</groupId>

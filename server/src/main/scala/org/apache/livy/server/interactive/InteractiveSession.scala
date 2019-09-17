@@ -626,4 +626,16 @@ class InteractiveSession(
   }
 
   override def infoChanged(appInfo: AppInfo): Unit = { this.appInfo = appInfo }
+
+  override def lastActivity: Long = {
+    val serverSideLastActivity = super.lastActivity
+    if (serverSideState == SessionState.Running) {
+      // If the rsc client is running, we compare the lastActivity of the session and the repl,
+      // and return the more latest one
+      client.flatMap { s => Option(s.getReplLastActivity) }.filter(_ > serverSideLastActivity)
+        .getOrElse(serverSideLastActivity)
+    } else {
+      serverSideLastActivity
+    }
+  }
 }
