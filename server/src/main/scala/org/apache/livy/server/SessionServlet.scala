@@ -133,7 +133,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
       } else {
         // LIVY-664: Check if name is duplicated before create a session
         val newSessionName = sessionName(request)
-        if (newSessionName.isDefined && sessionManager.get(newSessionName.get).isDefined) {
+        if (newSessionName.isDefined && sessionManager.contains(newSessionName.get)) {
           BadRequest(ResponseMessage(s"Duplicate session name: ${newSessionName.get}"))
         }
         val session = sessionManager.register(createSession(request))
@@ -166,7 +166,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   protected def remoteUser(req: HttpServletRequest): String = req.getRemoteUser()
 
   /**
-   * Return the session name
+   * Returns the session name
    */
   protected def sessionName(req: HttpServletRequest): Option[String]
 
