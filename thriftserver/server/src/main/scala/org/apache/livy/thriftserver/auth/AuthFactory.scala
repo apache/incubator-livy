@@ -77,8 +77,9 @@ class AuthFactory(val conf: LivyConf) extends Logging {
   def getAuthTransFactory: TTransportFactory = {
     val isAuthKerberos = authTypeStr.equalsIgnoreCase(AuthTypes.KERBEROS.getAuthName)
     val isAuthNoSASL = authTypeStr.equalsIgnoreCase(AuthTypes.NOSASL.getAuthName)
-    // TODO: add LDAP and PAM when supported
-    val isAuthOther = authTypeStr.equalsIgnoreCase(AuthTypes.NONE.getAuthName) ||
+    // TODO: add PAM when supported
+    val isAuthOther = authTypeStr.equalsIgnoreCase(AuthTypes.LDAP.getAuthName) ||
+      authTypeStr.equalsIgnoreCase(AuthTypes.NONE.getAuthName) ||
       authTypeStr.equalsIgnoreCase(AuthTypes.CUSTOM.getAuthName)
 
     saslServer.map { server =>
