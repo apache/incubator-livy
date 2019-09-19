@@ -48,6 +48,12 @@ class ScalaJobHandleTest extends FunSuite
     scalaJobHandle = new ScalaJobHandle(mockJobHandle)
   }
 
+  test("return current job id") {
+    val jobId = "3";
+    when(mockJobHandle.getJobId).thenReturn(jobId)
+    assertResult(jobId)(scalaJobHandle.jobId)
+  }
+
   test("get result when job is already complete") {
     when(mockJobHandle.get(timeoutInMilliseconds, TimeUnit.MILLISECONDS)).thenReturn("hello")
     val result = Await.result(scalaJobHandle, 5 seconds)
@@ -188,5 +194,5 @@ private abstract class AbstractJobHandleStub[T] private[livy] extends JobHandle[
 
   override def isDone: Boolean = true
 
-  override def getJobId: Long = -1
+  override def getJobId: String = null
 }

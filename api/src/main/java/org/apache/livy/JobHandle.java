@@ -27,7 +27,7 @@ public interface JobHandle<T> extends Future<T> {
   /**
    * @return Return the current job id
    */
-  long getJobId();
+  String getJobId();
 
   /**
    * Return the current state of the job.

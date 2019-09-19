@@ -49,6 +49,7 @@ def mock_and_validate_create_new_session(defaults):
         load_defaults=defaults)
     assert client_test._config.get(client_test._CONFIG_SECTION,
         'spark.app.name') == app_name
+    assert client_test.session_id() == session_id
     if defaults:
         assert client_test._config.has_option(client_test._CONFIG_SECTION,
             'spark.config')
@@ -153,6 +154,7 @@ def test_submit_job_verify_running_state():
     submit_job_future.add_running_callback(handle_job_running_callback)
     lock.wait(15)
     assert invoked_running_callback
+    assert submit_job_future.job_id() == job_id
 
 
 @responses.activate
@@ -168,6 +170,7 @@ def test_submit_job_verify_queued_state():
     submit_job_future.add_queued_callback(handle_job_queued_callback)
     lock.wait(15)
     assert invoked_queued_callback
+    assert submit_job_future.job_id() == job_id
 
 
 @responses.activate
@@ -177,6 +180,7 @@ def test_submit_job_verify_succeeded_state():
         result='Z0FKVkZGc3hNREFzSURJd01Dd2dNekF3TENBME1EQmRjUUF1')
     result = submit_job_future.result(15)
     assert result == '[100, 200, 300, 400]'
+    assert submit_job_future.job_id() == job_id
 
 
 @responses.activate
@@ -185,6 +189,7 @@ def test_submit_job_verify_failed_state():
         error='Error job')
     exception = submit_job_future.exception(15)
     assert isinstance(exception, Exception)
+    assert submit_job_future.job_id() == job_id
 
 
 @responses.activate

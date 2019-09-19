@@ -45,12 +45,8 @@ class JobHandleImpl<T> extends AbstractJobHandle<T> {
   }
 
   @Override
-  public long getJobId() {
-    try {
-      return Long.parseLong(jobId);
-    } catch (NumberFormatException e) {
-      return -1;
-    }
+  public String getJobId() {
+    return jobId;
   }
 
   /** Requests a running job to be cancelled. */

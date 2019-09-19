@@ -83,8 +83,8 @@ class JobHandleImpl<T> extends AbstractJobHandle<T> {
   }
 
   @Override
-  public long getJobId() {
-    return jobId;
+  public String getJobId() {
+    return String.valueOf(jobId);
   }
 
   @Override

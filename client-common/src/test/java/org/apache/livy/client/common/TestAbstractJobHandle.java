@@ -88,7 +88,7 @@ public class TestAbstractJobHandle {
     }
 
     @Override
-    public long getJobId() {
+    public String getJobId() {
       throw new UnsupportedOperationException();
     }
   }
