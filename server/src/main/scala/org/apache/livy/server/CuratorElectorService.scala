@@ -74,11 +74,11 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
     transitionToActive();
   }
 
-  def notLeader(){
+  def notLeader() {
     transitionToStandby();
   }
 
-  def start() : Unit = {
+  def start(): Unit = {
     transitionToStandby()
 
     client.start()
@@ -91,14 +91,14 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
     }
   }
 
-  def close() : Unit = {
+  def close(): Unit = {
     transitionToStandby();
     leaderLatch.close();
   }
 
-  def transitionToActive() : Unit = {
+  def transitionToActive(): Unit = {
     info("Transitioning to Active state")
-    if(currentState == HAState.Active){
+    if(currentState == HAState.Active) {
       info("Already in Active State")
     }
     else {
@@ -108,9 +108,9 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
     }
   }
 
-  def transitionToStandby() : Unit = {
+  def transitionToStandby(): Unit = {
     info("Transitioning to Standby state")
-    if(currentState == HAState.Standby){
+    if(currentState == HAState.Standby) {
       info("Already in Standby State");
     }
     else {

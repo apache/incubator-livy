@@ -406,7 +406,7 @@ object LivyServer {
     val server = new LivyServer()
     val livyConf = new LivyConf().loadFromFile("livy.conf")
 
-    if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON){
+    if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON) {
       info("Starting HA connection")
       val electorService: CuratorElectorService = new CuratorElectorService(livyConf, server)
       electorService.start()
