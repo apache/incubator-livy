@@ -289,8 +289,10 @@ public class RSCClient implements LivyClient {
     return contextInfo;
   }
 
-  public Future<Integer> submitReplCode(String code, String codeType) throws Exception {
-    return deferredCall(new BaseProtocol.ReplJobRequest(code, codeType), Integer.class);
+  public Future<Integer> submitReplCode(String code, String codeType,
+   String interpreterGroup) throws Exception {
+    return deferredCall(new BaseProtocol.ReplJobRequest(code, codeType, interpreterGroup),
+     Integer.class);
   }
 
   public void cancelReplCode(int statementId) throws Exception {

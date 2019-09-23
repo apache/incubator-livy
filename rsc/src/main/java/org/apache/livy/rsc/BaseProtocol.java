@@ -174,14 +174,16 @@ public abstract class BaseProtocol extends RpcDispatcher {
 
     public final String code;
     public final String codeType;
+    public final String interpreterGroup;
 
-    public ReplJobRequest(String code, String codeType) {
+    public ReplJobRequest(String code, String codeType, String interpreterGroup) {
       this.code = code;
       this.codeType = codeType;
+      this.interpreterGroup = interpreterGroup;
     }
 
     public ReplJobRequest() {
-      this(null, null);
+      this(null, null, null);
     }
   }
 

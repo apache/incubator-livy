@@ -57,6 +57,8 @@ class Session(
   extends Logging {
   import Session._
 
+  private val DEFAULT_INTERPRETER_GROUP_KEY: String = "default"
+
   private val interpreterExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
 
@@ -81,6 +83,8 @@ class Session(
   private val defaultInterpKind = Kind(livyConf.get(RSCConf.Entry.SESSION_KIND))
 
   private val interpGroup = new mutable.HashMap[Kind, Interpreter]()
+  // Map of interpreterGroupKey -> InterpreterGroup
+  private val sessionsMap = new mutable.HashMap[String, mutable.HashMap[Kind, Interpreter]]()
 
   @volatile private var entries: SparkEntries = _
 
@@ -91,29 +95,42 @@ class Session(
     entries.sc().sc
   }
 
-  private[repl] def interpreter(kind: Kind): Option[Interpreter] = interpGroup.synchronized {
-    if (interpGroup.contains(kind)) {
-      Some(interpGroup(kind))
+  private[repl] def interpreter(kind: Kind, interpreterGroupKey: String =
+   DEFAULT_INTERPRETER_GROUP_KEY): Option[Interpreter] =
+   sessionsMap.synchronized {
+    val key = if (interpreterGroupKey == null) {
+      DEFAULT_INTERPRETER_GROUP_KEY
     } else {
-      try {
-        require(entries != null,
-          "SparkEntries should not be null when lazily initialize other interpreters.")
+      interpreterGroupKey
+    }
+    var intpGroupOpt = sessionsMap.get(key)
+    if (intpGroupOpt == None) {
+      sessionsMap.put(key, new mutable.HashMap[Kind, Interpreter])
+    }
 
-        val interp = kind match {
-          case Spark =>
-            // This should never be touched here.
-            throw new IllegalStateException("SparkInterpreter should not be lazily created.")
-          case PySpark => PythonInterpreter(sparkConf, entries)
-          case SparkR => SparkRInterpreter(sparkConf, entries)
-          case SQL => new SQLInterpreter(sparkConf, livyConf, entries)
+    val intpGroup = sessionsMap.get(key).get
+    intpGroup.synchronized {
+      if (intpGroup.contains(kind)) {
+        Some(intpGroup(kind))
+      } else {
+        try {
+          require(entries != null,
+            "SparkEntries should not be null when lazily initialize other interpreters.")
+
+          val interp = kind match {
+            case Spark => new SparkInterpreter(sparkConf)
+            case PySpark => PythonInterpreter(sparkConf, entries)
+            case SparkR => SparkRInterpreter(sparkConf, entries)
+            case SQL => new SQLInterpreter(sparkConf, livyConf, entries)
+          }
+          interp.start()
+          intpGroup(kind) = interp
+          Some(interp)
+        } catch {
+          case NonFatal(e) =>
+            warn(s"Fail to start interpreter $kind", e)
+            None
         }
-        interp.start()
-        interpGroup(kind) = interp
-        Some(interp)
-      } catch {
-        case NonFatal(e) =>
-          warn(s"Fail to start interpreter $kind", e)
-          None
       }
     }
   }
@@ -147,7 +164,8 @@ class Session(
     _statements.toMap
   }
 
-  def execute(code: String, codeType: String = null): Int = {
+  def execute(code: String, codeType: String = null, interpreterGroup: String =
+   DEFAULT_INTERPRETER_GROUP_KEY): Int = {
     val tpe = if (codeType != null) {
       Kind(codeType)
     } else if (defaultInterpKind != Shared) {
@@ -161,12 +179,12 @@ class Session(
     _statements.synchronized { _statements(statementId) = statement }
 
     Future {
-      setJobGroup(tpe, statementId)
+      setJobGroup(tpe, statementId, interpreterGroup)
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
       if (statement.state.get() == StatementState.Running) {
         statement.started = System.currentTimeMillis()
-        statement.output = executeCode(interpreter(tpe), statementId, code)
+        statement.output = executeCode(interpreter(tpe, interpreterGroup), statementId, code)
       }
 
       statement.compareAndTransit(StatementState.Running, StatementState.Available)
@@ -333,7 +351,7 @@ class Session(
     compact(render(resultInJson))
   }
 
-  private def setJobGroup(codeType: Kind, statementId: Int): String = {
+  private def setJobGroup(codeType: Kind, statementId: Int, interpreterGroup: String): String = {
     val jobGroup = statementIdToJobGroup(statementId)
     val (cmd, tpe) = codeType match {
       case Spark | SQL =>
@@ -353,7 +371,7 @@ class Session(
         }
     }
     // Set the job group
-    executeCode(interpreter(tpe), statementId, cmd)
+    executeCode(interpreter(tpe, interpreterGroup), statementId, cmd)
   }
 
   private def statementIdToJobGroup(statementId: Int): String = {

@@ -55,7 +55,7 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
   }
 
   def handle(ctx: ChannelHandlerContext, msg: BaseProtocol.ReplJobRequest): Int = {
-    session.execute(EOLUtils.convertToSystemEOL(msg.code), msg.codeType)
+    session.execute(EOLUtils.convertToSystemEOL(msg.code), msg.codeType, msg.interpreterGroup)
   }
 
   def handle(ctx: ChannelHandlerContext, msg: BaseProtocol.CancelReplJobRequest): Unit = {
