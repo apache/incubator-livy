@@ -34,6 +34,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
+import org.apache.livy.ConcurrentBoundedLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,6 +103,10 @@ public class RSCClient implements LivyClient {
 
   public boolean isAlive() {
     return isAlive;
+  }
+
+  public void setOperationMessage(ConcurrentBoundedLinkedQueue<String> operationMessage) {
+    protocol.setOperationMessage(operationMessage);
   }
 
   public Process getDriverProcess() {
@@ -381,6 +386,12 @@ public class RSCClient implements LivyClient {
       return jobId;
     }
 
+    ConcurrentBoundedLinkedQueue<String> operationMessage;
+    public void setOperationMessage(ConcurrentBoundedLinkedQueue<String> operationMessage) {
+      this.operationMessage = operationMessage;
+    }
+
+
     Future<BypassJobStatus> getBypassJobStatus(String id) {
       return deferredCall(new GetBypassJobStatus(id), BypassJobStatus.class);
     }
@@ -412,6 +423,13 @@ public class RSCClient implements LivyClient {
         LOG.warn("Received result for unknown job {}", msg.id);
       }
     }
+
+    private void handle(ChannelHandlerContext ctx, JobProcessMessage msg){
+      if (operationMessage != null){
+        operationMessage.add(msg.mes);
+      }
+    }
+
 
     private void handle(ChannelHandlerContext ctx, JobStarted msg) {
       JobHandleImpl<?> handle = jobs.get(msg.id);

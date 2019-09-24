@@ -144,7 +144,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       server.livySessionManager.delete(livySession)
     } else {
       // We unregister the session only if we don't close it, as it is unnecessary in that case
-      val rpcClient = new RpcClient(livySession)
+      val rpcClient = new RpcClient(livySession, None)
       try {
         rpcClient.executeUnregisterSession(sessionHandle).get()
       } catch {
@@ -196,7 +196,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       sessionHandle: SessionHandle,
       livySession: InteractiveSession,
       initStatements: List[String]): Unit = {
-    val rpcClient = new RpcClient(livySession)
+    val rpcClient = new RpcClient(livySession, None)
     rpcClient.executeRegisterSession(sessionHandle).get()
     initStatements.foreach { statement =>
       val statementId = UUID.randomUUID().toString

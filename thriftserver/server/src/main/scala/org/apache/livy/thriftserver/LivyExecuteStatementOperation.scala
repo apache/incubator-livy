@@ -18,15 +18,13 @@
 package org.apache.livy.thriftserver
 
 import java.security.PrivilegedExceptionAction
-import java.util.concurrent.{ConcurrentLinkedQueue, RejectedExecutionException}
+import java.util.concurrent.RejectedExecutionException
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
-
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hive.service.cli._
-
-import org.apache.livy.Logging
+import org.apache.livy.{ConcurrentBoundedLinkedQueue, LivyConf, Logging}
 import org.apache.livy.thriftserver.SessionStates._
 import org.apache.livy.thriftserver.operation.Operation
 import org.apache.livy.thriftserver.rpc.RpcClient
@@ -44,7 +42,9 @@ class LivyExecuteStatementOperation(
   /**
    * Contains the messages which have to be sent to the client.
    */
-  private val operationMessages = new ConcurrentLinkedQueue[String]
+  private val operationMessages =
+    new ConcurrentBoundedLinkedQueue[String](sessionManager.livyConf.getInt(
+      LivyConf.THRIFT_OPERATION_LOG_MAX_SIZE))
 
   // The initialization need to be lazy in order not to block when the instance is created
   private lazy val rpcClient = {
@@ -54,7 +54,7 @@ class LivyExecuteStatementOperation(
         "Livy session has not yet started. Please wait for it to be ready...")
     }
     // This call is blocking, we are waiting for the session to be ready.
-    new RpcClient(sessionManager.getLivySession(sessionHandle))
+    new RpcClient(sessionManager.getLivySession(sessionHandle), Some(operationMessages))
   }
   private var rowOffset = 0L
 

@@ -23,13 +23,17 @@ import org.apache.livy._
 import org.apache.livy.server.interactive.InteractiveSession
 import org.apache.livy.thriftserver.session._
 
-class RpcClient(livySession: InteractiveSession) extends Logging {
+class RpcClient(livySession: InteractiveSession,
+                operationMessages: Option[ConcurrentBoundedLinkedQueue[String]]) extends Logging {
   private val defaultIncrementalCollect =
     livySession.livyConf.getBoolean(LivyConf.THRIFT_INCR_COLLECT_ENABLED).toString
 
   private val rscClient = livySession.client.get
+  rscClient.setOperationMessage(operationMessages.orNull)
 
   def isValid: Boolean = rscClient.isAlive
+
+  def getOperationMessages: Option[ConcurrentBoundedLinkedQueue[String]] = operationMessages
 
   private def sessionId(sessionHandle: SessionHandle): String = {
     sessionHandle.getSessionId.toString
@@ -42,9 +46,12 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
       statement: String): JobHandle[_] = {
     info(s"RSC client is executing SQL query: $statement, statementId = $statementId, session = " +
       sessionHandle)
+    operationMessages.foreach(_.add(s"RSC client is executing SQL query: $statement, " +
+      s"statementId = $statementId, session = " + sessionHandle))
     require(null != statementId, s"Invalid statementId specified. StatementId = $statementId")
     require(null != statement, s"Invalid statement specified. StatementId = $statement")
     livySession.recordActivity()
+    operationMessages.foreach(_.add("The query is submitted to remote server successfully."))
     rscClient.submit(new SqlJob(
       sessionId(sessionHandle),
       statementId,
@@ -67,6 +74,8 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
   @throws[Exception]
   def fetchResultSchema(sessionHandle: SessionHandle, statementId: String): JobHandle[String] = {
     info(s"RSC client is fetching result schema for statementId = $statementId")
+    operationMessages.foreach(_.add(s"RSC client is fetching result schema " +
+      s"for statementId = $statementId"))
     require(null != statementId, s"Invalid statementId specified. statementId = $statementId")
     livySession.recordActivity()
     rscClient.submit(new FetchResultSchemaJob(sessionId(sessionHandle), statementId))
@@ -78,6 +87,8 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
       statementId: String,
       cancelJob: Boolean = false): JobHandle[java.lang.Boolean] = {
     info(s"Cleaning up remote session for statementId = $statementId")
+    operationMessages.foreach(_.add(s"Cleaning up remote session " +
+      s"for statementId = $statementId"))
     require(null != statementId, s"Invalid statementId specified. statementId = $statementId")
     livySession.recordActivity()
     rscClient.submit(new CleanupStatementJob(sessionId(sessionHandle), statementId))
@@ -92,6 +103,7 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
   @throws[Exception]
   def executeRegisterSession(sessionHandle: SessionHandle): JobHandle[_] = {
     info(s"RSC client is executing register session $sessionHandle")
+    operationMessages.foreach(_.add(s"RSC client is executing register session $sessionHandle"))
     livySession.recordActivity()
     rscClient.submit(new RegisterSessionJob(sessionId(sessionHandle)))
   }
@@ -102,6 +114,7 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
   @throws[Exception]
   def executeUnregisterSession(sessionHandle: SessionHandle): JobHandle[_] = {
     info(s"RSC client is executing unregister session $sessionHandle")
+    operationMessages.foreach(_.add(s"RSC client is executing unregister session $sessionHandle"))
     livySession.recordActivity()
     rscClient.submit(new UnregisterSessionJob(sessionId(sessionHandle)))
   }

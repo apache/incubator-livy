@@ -49,6 +49,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.SparkStageInfo;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -210,6 +212,34 @@ public class RSCDriver extends BaseProtocol {
     // At this point we install the idle timeout handler, in case the Livy server fails to connect
     // back.
     setupIdleTimeout();
+  }
+
+  /**
+   * calculate each stage's process and broadcast message to the end user
+   * @param jobId
+   */
+  void handleProcessMessage(String jobId){
+    if (jc == null){
+      return;
+    }
+    JavaSparkContext sc = this.jc.sc();
+    int[] activeStageIds = sc.sc().statusTracker().getActiveStageIds();
+    for (int stageId: activeStageIds) {
+      SparkStageInfo stageInfo = sc.sc().statusTracker().getStageInfo(stageId).get();
+      if (stageInfo != null){
+        String name = stageInfo.name();
+        int all = stageInfo.numTasks();
+        int complete = stageInfo.numCompletedTasks();
+        if (all == 0){
+          continue;
+        }
+        double p = complete / (double)all;
+        String processMes = "stage:" + name + ", all tasks:" + all + ", completed tasks:" + complete
+                + ", percentage:" + p * 100 + "%";
+        LOG.info(processMes);
+        broadcast(new JobProcessMessage(jobId, processMes));
+      }
+    }
   }
 
   private void registerClient(final Rpc client) {

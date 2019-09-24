@@ -17,12 +17,15 @@
 
 package org.apache.livy.rsc.driver;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.apache.livy.rsc.RSCConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,10 +45,17 @@ public class JobWrapper<T> implements Callable<Void> {
 
   private Future<?> future;
 
+  private long firstDelayMSec = 500L;
+  private long updatePeriodMSec;
+
+  private Timer timer = new Timer("refresh progress", true);
+
   public JobWrapper(RSCDriver driver, String jobId, Job<T> job) {
     this.driver = driver;
     this.jobId = jobId;
     this.job = job;
+    this.updatePeriodMSec =
+            driver.livyConf.getLong(RSCConf.Entry.JOB_PROCESS_MSG_UPDATE_INTERVAL);
   }
 
   @Override
@@ -59,6 +69,14 @@ public class JobWrapper<T> implements Callable<Void> {
           driver.jobContext().sc().setJobGroup(jobId, "", true);
         }
       }
+
+      timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+          driver.handleProcessMessage(jobId);
+        }
+      }, firstDelayMSec, updatePeriodMSec);
+
 
       jobStarted();
       T result = job.call(driver.jobContext());
@@ -87,6 +105,7 @@ public class JobWrapper<T> implements Callable<Void> {
       return false;
     } else {
       isCancelled = true;
+      timer.cancel();
       driver.jobContext().sc().cancelJobGroup(jobId);
       return future != null ? future.cancel(true) : true;
     }
@@ -98,6 +117,7 @@ public class JobWrapper<T> implements Callable<Void> {
     } else {
       driver.jobFinished(jobId, null, error);
     }
+    timer.cancel();
   }
 
   protected void jobStarted() {

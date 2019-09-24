@@ -126,6 +126,19 @@ public abstract class BaseProtocol extends RpcDispatcher {
 
   }
 
+  protected static class JobProcessMessage {
+    public final String mes;
+    public final String id;
+    public JobProcessMessage(String id, String mes) {
+      this.id = id;
+      this.mes = mes;
+    }
+    public JobProcessMessage() {
+      this(null, null);
+    }
+
+  }
+
   protected static class JobStarted {
 
     public final String id;
