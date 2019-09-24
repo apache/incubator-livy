@@ -21,7 +21,6 @@ import java.io.File
 import java.net.URLClassLoader
 import java.nio.file.{Files, Paths}
 
-import scala.collection.JavaConversions._
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.Completion.ScalaCompleter
 import scala.tools.nsc.interpreter.IMain
@@ -61,7 +60,7 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
     settings.usejavacp.value = true
     settings.embeddedDefaults(Thread.currentThread().getContextClassLoader())
 
-    System.setProperty("scala.repl.name.line", "$line"+this.hashCode().toString());
+    System.setProperty("scala.repl.name.line", "$line" + this.hashCode().toString());
     sparkILoop = new SparkILoop(None, new JPrintWriter(outputStream, true))
     sparkILoop.settings = settings
     sparkILoop.createInterpreter()

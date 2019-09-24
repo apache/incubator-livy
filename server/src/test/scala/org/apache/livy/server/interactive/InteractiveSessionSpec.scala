@@ -264,7 +264,8 @@ class InteractiveSessionSpec extends FunSpec
     }
 
     withSession("should scope the execution to the interpreter group") { session =>
-      val resultFromGroup1 = executeStatement("val a=10\nprint(a)", Some("spark"), Some("intpGroup1"))
+      val resultFromGroup1 = executeStatement("val a=10\nprint(a)", Some("spark"),
+       Some("intpGroup1"))
       resultFromGroup1 should equal (Extraction.decompose(Map(
         "status" -> "ok",
         "execution_count" -> 5,

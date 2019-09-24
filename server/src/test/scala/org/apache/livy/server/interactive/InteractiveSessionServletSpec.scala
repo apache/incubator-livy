@@ -132,7 +132,8 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       data("interpreterGroup") shouldBe "default"
     }
 
-    jpost[Map[String, Any]]("/0/statements", ExecuteRequest("foo", Some("spark"), Some("foo-group"))) { data =>
+    jpost[Map[String, Any]]("/0/statements", ExecuteRequest("foo", Some("spark"),
+     Some("foo-group"))) { data =>
       data("id") should be (0)
       data("code") shouldBe "1+1"
       data("progress") should be (0.0)
