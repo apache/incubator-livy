@@ -18,7 +18,6 @@
 package org.apache.livy.rsc.driver;
 
 import org.apache.spark.SparkConf;
-
 import org.junit.Test;
 
 import org.apache.livy.rsc.BaseProtocol;
@@ -26,7 +25,7 @@ import org.apache.livy.rsc.RSCConf;
 
 public class TestRSCDriver {
   @Test(expected = IllegalArgumentException.class)
-  public void testCancelJobFailedAfterInitializeFailedShouldThrowOriginalException()
+  public void testCancelJobAfterInitializeFailed()
       throws Exception {
     //use empty Conf to trigger initialize throw IllegalArgumentException
     RSCDriver rscDriver = new RSCDriver(new SparkConf(), new RSCConf());
