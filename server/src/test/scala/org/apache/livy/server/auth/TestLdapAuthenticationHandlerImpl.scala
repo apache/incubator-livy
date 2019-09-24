@@ -86,6 +86,7 @@ class TestLdapAuthenticationHandlerImpl extends  AbstractLdapTestUnit {
     val credentials = base64.encodeToString("bjones:p@ssw0rd".getBytes)
     val authHeader = BASIC + " " + credentials
     Mockito.when(request.getHeader(AUTHORIZATION_HEADER)).thenReturn(authHeader)
+
     val token = handler.authenticate(request, response)
     Assert.assertNotNull(token)
     Mockito.verify(response).setStatus(HttpServletResponse.SC_OK)
@@ -98,6 +99,7 @@ class TestLdapAuthenticationHandlerImpl extends  AbstractLdapTestUnit {
   def testRequestWithoutAuthorization(): Unit = {
     val request = Mockito.mock(classOf[HttpServletRequest])
     val response = Mockito.mock(classOf[HttpServletResponse])
+
     Assert.assertNull(handler.authenticate(request, response))
     Mockito.verify(response).setHeader(WWW_AUTHENTICATE_HEADER, BASIC)
     Mockito.verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED)
@@ -112,6 +114,7 @@ class TestLdapAuthenticationHandlerImpl extends  AbstractLdapTestUnit {
     val credentials = "bjones:invalidpassword"
     Mockito.when(request.getHeader(AUTHORIZATION_HEADER)).
       thenReturn(base64.encodeToString(credentials.getBytes))
+
     Assert.assertNull(handler.authenticate(request, response))
     Mockito.verify(response).setHeader(WWW_AUTHENTICATE_HEADER, BASIC)
     Mockito.verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED)
@@ -135,6 +138,7 @@ class TestLdapAuthenticationHandlerImpl extends  AbstractLdapTestUnit {
     val credentials = base64.encodeToString("bjones:foo123".getBytes)
     val authHeader = BASIC + " " + credentials
     Mockito.when(request.getHeader(AUTHORIZATION_HEADER)).thenReturn(authHeader)
+
     try {
       handler.authenticate(request, response)
       Assert.fail

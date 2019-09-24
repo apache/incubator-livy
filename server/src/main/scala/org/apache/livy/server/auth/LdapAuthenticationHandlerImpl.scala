@@ -35,6 +35,7 @@ import org.apache.hadoop.security.authentication.server.{AuthenticationHandler, 
 import org.apache.livy._
 
 object LdapAuthenticationHandlerImpl {
+
   val AUTHORIZATION_SCHEME = "Basic"
   val TYPE = "ldap"
   val SECURITY_AUTHENTICATION = "simple"
@@ -47,13 +48,25 @@ object LdapAuthenticationHandlerImpl {
     indexOfDomainMatch(userName) > 0
   }
 
+  /**
+    * Get the index separating the user name from domain name (the user's name up
+    * to the first '/' or '@').
+    *
+    * @param userName full user name.
+    * @return index of domain match or -1 if not found
+    */
+
   private def indexOfDomainMatch(userName: String): Integer = {
     if (userName == null) {
       -1
     } else {
-      val idx = userName.indexOf(47)
-      val idx2 = userName.indexOf(64)
+      val idx = userName.indexOf('/')
+      val idx2 = userName.indexOf('@')
+      // Use the earlier match.
       var endIdx = Math.min(idx, idx2)
+
+      // Unless at least one of '/' or '@' was not found, in
+      // which case, user the latter match.
       if (endIdx == -1) endIdx = Math.max(idx, idx2)
       endIdx
     }
@@ -77,6 +90,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
     this.enableStartTls = config.getProperty(LdapAuthenticationHandlerImpl.ENABLE_START_TLS,
       "false").toBoolean
     require(this.providerUrl != null, "The LDAP URI can not be null")
+
     if (this.enableStartTls.booleanValue) {
       val tmp = this.providerUrl.toLowerCase
       require(!tmp.startsWith("ldaps"), "Can not use ldaps and StartTLS option at the same time")
@@ -97,6 +111,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
     response: HttpServletResponse): AuthenticationToken = {
     var token: AuthenticationToken = null
     var authorization = request.getHeader("Authorization")
+
     if (authorization != null && authorization.regionMatches(true, 0,
       LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME, 0,
       LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME.length)) {
@@ -104,14 +119,16 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
       val base64 = new Base64(0)
       val credentials = new String(base64.decode(authorization),
         StandardCharsets.UTF_8).split(":", 2)
+
       if (credentials.length == 2) {
         debug(s"Authenticating  [${credentials(0)}] user")
         token = this.authenticateUser(credentials(0), credentials(1))
-        response.setStatus(200)
+        response.setStatus(HttpServletResponse.SC_OK)
       }
     } else {
       response.setHeader("WWW-Authenticate", "Basic")
-      response.setStatus(401)
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
+
       if (authorization == null) {
         trace("Basic auth starting")
       } else {
@@ -122,23 +139,28 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
   }
 
   @throws[AuthenticationException]
-  private def authenticateUser(userName: String, password: String) = {
+  private def authenticateUser(userName: String, password: String): AuthenticationToken = {
     if (userName != null && !userName.isEmpty) {
       var principle: String = userName
+
       if (!LdapAuthenticationHandlerImpl.hasDomain(userName) &&
         this.ldapDomain != null) {
         principle = userName + "@" + this.ldapDomain
       }
+
       if (password != null && !password.isEmpty) {
         var bindDN: String = principle
+
         if (this.baseDN != null) {
           bindDN = "uid=" + principle + "," + this.baseDN
         }
+
         if (this.enableStartTls.booleanValue) {
           this.authenticateWithTlsExtension(bindDN, password)
         } else {
           this.authenticateWithoutTlsExtension(bindDN, password)
         }
+
         new AuthenticationToken(userName, userName, "ldap")
       } else {
         throw new AuthenticationException(
@@ -151,11 +173,12 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
   }
 
   @throws[AuthenticationException]
-  private def authenticateWithTlsExtension(userDN: String, password: String) = {
+  private def authenticateWithTlsExtension(userDN: String, password: String): Unit = {
     var ctx: InitialLdapContext = null
     val env = new util.Hashtable[String, String]
     env.put("java.naming.factory.initial", "com.sun.jndi.ldap.LdapCtxFactory")
     env.put("java.naming.provider.url", this.providerUrl)
+
     try {
       ctx = new InitialLdapContext(env, null.asInstanceOf[Array[Control]])
       val ex = ctx.extendedOperation(new StartTlsRequest).asInstanceOf[StartTlsResponse]
@@ -165,6 +188,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
         })
       }
       ex.negotiate
+
       ctx.addToEnvironment("java.naming.security.authentication",
         LdapAuthenticationHandlerImpl.SECURITY_AUTHENTICATION)
       ctx.addToEnvironment("java.naming.security.principal", userDN)
@@ -186,7 +210,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
   }
 
   @throws[AuthenticationException]
-  private def authenticateWithoutTlsExtension(userDN: String, password: String) = {
+  private def authenticateWithoutTlsExtension(userDN: String, password: String): Unit = {
     val env = new util.Hashtable[String, String]
     env.put("java.naming.factory.initial", "com.sun.jndi.ldap.LdapCtxFactory")
     env.put("java.naming.provider.url", this.providerUrl)
@@ -194,6 +218,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
       LdapAuthenticationHandlerImpl.SECURITY_AUTHENTICATION)
     env.put("java.naming.security.principal", userDN)
     env.put("java.naming.security.credentials", password)
+
     try {
       val e = new InitialDirContext(env)
       e.close()
