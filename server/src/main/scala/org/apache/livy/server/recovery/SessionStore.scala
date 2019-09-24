@@ -50,6 +50,8 @@ class SessionStore(
     store.set(sessionManagerPath(sessionType), SessionManagerState(id))
   }
 
+  def getStore: StateStore = store
+
   /**
    * Return all sessions stored in the store with specified session type.
    */

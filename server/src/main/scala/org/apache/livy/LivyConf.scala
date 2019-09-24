@@ -177,6 +177,16 @@ object LivyConf {
    * configure the state store.
    */
   val RECOVERY_MODE = Entry("livy.server.recovery.mode", "off")
+
+  /**
+    * Whether to enable HA with multi-active mode, by default it is false.
+    * If it is enabled, must set livy.server.zookeeper.url.
+    */
+  val HA_MULTI_ACTIVE_ENABLED = Entry("livy.server.ha.multi-active.enabled", false)
+
+  // Zookeeper address used for HA and state store. e.g. host1:port1, host2:port2
+  val ZOOKEEPER_URL = Entry("livy.server.zookeeper.url", "")
+
   /**
    * Where Livy should store state to for recovery. Possible values:
    * <empty>: Default. State store disabled.
@@ -187,7 +197,7 @@ object LivyConf {
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
-   * For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+   * For zookeeper, please set livy.server.zookeeper.url
    */
   val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
 

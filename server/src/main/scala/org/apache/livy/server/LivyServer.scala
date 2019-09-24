@@ -38,7 +38,7 @@ import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
 import org.apache.livy._
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.interactive.InteractiveSessionServlet
-import org.apache.livy.server.recovery.{SessionStore, StateStore}
+import org.apache.livy.server.recovery.{SessionStore, StateStore, ZooKeeperManager}
 import org.apache.livy.server.ui.UIServlet
 import org.apache.livy.sessions.{BatchSessionManager, InteractiveSessionManager}
 import org.apache.livy.sessions.SessionManager.SESSION_RECOVERY_MODE_OFF
@@ -145,10 +145,21 @@ class LivyServer extends Logging {
       Future { SparkYarnApp.yarnClient }
     }
 
-    StateStore.init(livyConf)
+    val zkManager = {
+      if (livyConf.getBoolean(LivyConf.HA_MULTI_ACTIVE_ENABLED) ||
+        livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
+        Some(new ZooKeeperManager(livyConf))
+      } else {
+        None
+      }
+    }
+
+    StateStore.init(livyConf, zkManager)
+
     val sessionStore = new SessionStore(livyConf)
-    val batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
-    val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)
+
+    val batchSessionManager = new BatchSessionManager(livyConf, sessionStore, zkManager)
+    val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore, zkManager)
 
     server = new WebServer(livyConf, host, port)
     server.context.setResourceBase("src/main/org/apache/livy/server")
