@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.livy.Job;
 import org.apache.livy.rsc.RSCConf;
 
-
 public class JobWrapper<T> implements Callable<Void> {
 
   private static final Logger LOG = LoggerFactory.getLogger(JobWrapper.class);
@@ -50,7 +49,6 @@ public class JobWrapper<T> implements Callable<Void> {
   private long updatePeriodMSec;
 
   private Timer timer = new Timer("refresh progress", true);
-
 
   public JobWrapper(RSCDriver driver, String jobId, Job<T> job) {
     this.driver = driver;
