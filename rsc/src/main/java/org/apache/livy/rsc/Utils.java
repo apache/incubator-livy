@@ -20,6 +20,7 @@ package org.apache.livy.rsc;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.base.Throwables;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -91,13 +92,7 @@ public class Utils {
   }
 
   public static String stackTraceAsString(Throwable t) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(t.getClass().getName()).append(": ").append(t.getMessage());
-    for (StackTraceElement e : t.getStackTrace()) {
-      sb.append("\n");
-      sb.append(e.toString());
-    }
-    return sb.toString();
+    return Throwables.getStackTraceAsString(t);
   }
 
   public static <T> void addListener(Future<T> future, final FutureListener<T> lsnr) {
