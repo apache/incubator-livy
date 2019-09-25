@@ -47,8 +47,8 @@ import org.mockito.Mockito
   "dc=com \ndc: example\nobjectClass: top\n" + "objectClass: domain\n\n"))))
 @ApplyLdifs(Array("dn: uid=bjones,dc=example,dc=com", "cn: Bob Jones", "sn: Jones",
   "objectClass: inetOrgPerson", "uid: bjones", "userPassword: p@ssw0rd"))
-class TestLdapAuthenticationHandlerImpl extends  AbstractLdapTestUnit {
-  private var handler: LdapAuthenticationHandlerImpl = null
+class TestLdapAuthenticationHandlerImpl extends AbstractLdapTestUnit {
+  private val handler: LdapAuthenticationHandlerImpl = new LdapAuthenticationHandlerImpl
   // HTTP header used by the server endpoint during an authentication sequence.
   val WWW_AUTHENTICATE_HEADER = "WWW-Authenticate"
   // HTTP header used by the client endpoint during an authentication sequence.
@@ -59,12 +59,10 @@ class TestLdapAuthenticationHandlerImpl extends  AbstractLdapTestUnit {
   @Before
   @throws[Exception]
   def setup(): Unit = {
-    handler = new LdapAuthenticationHandlerImpl
-    try
+    try {
       handler.init(getDefaultProperties)
-    catch {
+    } catch {
       case e: Exception =>
-        handler = null
         throw e
     }
   }
