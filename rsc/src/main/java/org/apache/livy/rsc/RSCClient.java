@@ -34,10 +34,11 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
-import org.apache.livy.ConcurrentBoundedLinkedQueue;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.livy.ConcurrentBoundedLinkedQueue;
 import org.apache.livy.Job;
 import org.apache.livy.JobHandle;
 import org.apache.livy.LivyClient;
@@ -46,6 +47,7 @@ import org.apache.livy.rsc.driver.AddFileJob;
 import org.apache.livy.rsc.driver.AddJarJob;
 import org.apache.livy.rsc.rpc.Rpc;
 import org.apache.livy.sessions.SessionState;
+
 
 import static org.apache.livy.rsc.RSCConf.Entry.*;
 
@@ -335,6 +337,9 @@ public class RSCClient implements LivyClient {
 
   private class ClientProtocol extends BaseProtocol {
 
+    private  final int TerminalWidth =
+            Integer.parseInt(System.getProperty("COLUMNS", "80"));
+
     <T> JobHandleImpl<T> submit(Job<T> job) {
       final String jobId = UUID.randomUUID().toString();
       Object msg = new JobRequest<T>(jobId, job);
@@ -426,7 +431,23 @@ public class RSCClient implements LivyClient {
 
     private void handle(ChannelHandlerContext ctx, JobProcessMessage msg){
       if (operationMessage != null){
-        operationMessage.add(msg.mes);
+        StringBuilder bar = new StringBuilder();
+        String head = "[Stage " + msg.stageId + ":";
+        String tail = "(" + msg.completed + " + " + msg.actived + ") / " + msg.all + "]";
+        int processWid = TerminalWidth - head.length() - tail.length();
+        int barWid = processWid * msg.completed / msg.all;
+        bar.append(head);
+        for (int i = 0; i < processWid; i++) {
+          if (i < barWid){
+            bar.append("=");
+          }else if (i == barWid){
+            bar.append(">");
+          }else {
+            bar.append(" ");
+          }
+        }
+        bar.append(tail);
+        operationMessage.add(bar.toString());
       }
     }
 

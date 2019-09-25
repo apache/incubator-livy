@@ -227,17 +227,13 @@ public class RSCDriver extends BaseProtocol {
     for (int stageId: activeStageIds) {
       SparkStageInfo stageInfo = sc.sc().statusTracker().getStageInfo(stageId).get();
       if (stageInfo != null){
-        String name = stageInfo.name();
         int all = stageInfo.numTasks();
-        int complete = stageInfo.numCompletedTasks();
+        int completed = stageInfo.numCompletedTasks();
+        int actived = stageInfo.numActiveTasks();
         if (all == 0){
           continue;
         }
-        double p = complete / (double)all;
-        String processMes = "stage:" + name + ", all tasks:" + all + ", completed tasks:" + complete
-                + ", percentage:" + p * 100 + "%";
-        LOG.info(processMes);
-        broadcast(new JobProcessMessage(jobId, processMes));
+        broadcast(new JobProcessMessage(jobId, stageId, completed, actived, all));
       }
     }
   }
