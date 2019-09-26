@@ -50,7 +50,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.SparkStageInfo;
-import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.SparkStatusTracker;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +90,6 @@ public class RSCDriver extends BaseProtocol {
 
   private RpcServer server;
   private volatile JobContextImpl jc;
-  private JavaSparkContext javaSparkContext;
   private volatile boolean running;
 
   protected final SparkConf conf;
@@ -220,16 +220,16 @@ public class RSCDriver extends BaseProtocol {
    * @param jobId
    */
   void handleProcessMessage(String jobId){
-    LOG.info("handleProcessMessage method called");
+    SparkStatusTracker sparkStatusTracker;
     synchronized (jcLock){
       if (jc == null){
         return;
       }
+      sparkStatusTracker = jc.sc().sc().statusTracker();
     }
-    int[] activeStageIds = jc.sc().sc().statusTracker().getActiveStageIds();
-    LOG.info("anhui: activeStageIds is " + activeStageIds.length);
+    int[] activeStageIds = sparkStatusTracker.getActiveStageIds();
     for (int stageId: activeStageIds) {
-      SparkStageInfo stageInfo = jc.sc().sc().statusTracker().getStageInfo(stageId).get();
+      SparkStageInfo stageInfo = sparkStatusTracker.getStageInfo(stageId).get();
       if (stageInfo != null){
         int all = stageInfo.numTasks();
         int completed = stageInfo.numCompletedTasks();
@@ -312,10 +312,9 @@ public class RSCDriver extends BaseProtocol {
    * @return The initalized SparkContext
    */
   protected SparkEntries initializeSparkEntries() throws Exception {
-    LOG.info("anhui initializeSparkEntries");
     SparkEntries entries = new SparkEntries(conf);
     // Explicitly call sc() to initialize SparkContext.
-    javaSparkContext = entries.sc();
+    entries.sc();
     return entries;
   }
 
