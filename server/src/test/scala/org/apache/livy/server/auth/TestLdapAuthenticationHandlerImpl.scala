@@ -38,15 +38,31 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito
 
 /**
-  * This unit test verifies the functionality of LdapAuthenticationHandlerImpl.
-  */
+ * This unit test verifies the functionality of LdapAuthenticationHandlerImpl.
+ */
 @RunWith(classOf[FrameworkRunner])
-@CreateLdapServer(transports = Array(new CreateTransport(protocol = "LDAP", address = "localhost")))
-@CreateDS(allowAnonAccess = true, partitions = Array(new CreatePartition(name = "Test_Partition",
-  suffix = "dc=example,dc=com", contextEntry = new ContextEntry(entryLdif = "dn: dc=example," +
-  "dc=com \ndc: example\nobjectClass: top\n" + "objectClass: domain\n\n"))))
-@ApplyLdifs(Array("dn: uid=bjones,dc=example,dc=com", "cn: Bob Jones", "sn: Jones",
-  "objectClass: inetOrgPerson", "uid: bjones", "userPassword: p@ssw0rd"))
+@CreateLdapServer(transports = Array(
+  new CreateTransport(
+    protocol = "LDAP",
+    address = "localhost"
+  )))
+@CreateDS(
+  allowAnonAccess = true,
+  partitions = Array(
+    new CreatePartition(
+      name = "Test_Partition",
+      suffix = "dc=example,dc=com",
+      contextEntry = new ContextEntry(entryLdif = "dn: dc=example," +
+        "dc=com \ndc: example\nobjectClass: top\nobjectClass: domain\n\n")
+    )))
+@ApplyLdifs(Array(
+  "dn: uid=bjones,dc=example,dc=com",
+  "cn: Bob Jones",
+  "sn: Jones",
+  "objectClass: inetOrgPerson",
+  "uid: bjones",
+  "userPassword: p@ssw0rd"
+))
 class TestLdapAuthenticationHandlerImpl extends AbstractLdapTestUnit {
   private val handler: LdapAuthenticationHandlerImpl = new LdapAuthenticationHandlerImpl
   // HTTP header used by the server endpoint during an authentication sequence.
@@ -57,14 +73,8 @@ class TestLdapAuthenticationHandlerImpl extends AbstractLdapTestUnit {
   val BASIC = "Basic"
 
   @Before
-  @throws[Exception]
   def setup(): Unit = {
-    try {
-      handler.init(getDefaultProperties)
-    } catch {
-      case e: Exception =>
-        throw e
-    }
+    handler.init(getDefaultProperties)
   }
 
   protected def getDefaultProperties: Properties = {
@@ -75,8 +85,7 @@ class TestLdapAuthenticationHandlerImpl extends AbstractLdapTestUnit {
     p
   }
 
-  @Test(timeout = 60000)
-  @throws[Exception]
+  @Test
   def testRequestWithAuthorization(): Unit = {
     val request = Mockito.mock(classOf[HttpServletRequest])
     val response = Mockito.mock(classOf[HttpServletResponse])
@@ -92,8 +101,7 @@ class TestLdapAuthenticationHandlerImpl extends AbstractLdapTestUnit {
     Assert.assertEquals("bjones", token.getName)
   }
 
-  @Test(timeout = 60000)
-  @throws[Exception]
+  @Test
   def testRequestWithoutAuthorization(): Unit = {
     val request = Mockito.mock(classOf[HttpServletRequest])
     val response = Mockito.mock(classOf[HttpServletResponse])
@@ -103,8 +111,7 @@ class TestLdapAuthenticationHandlerImpl extends AbstractLdapTestUnit {
     Mockito.verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED)
   }
 
-  @Test(timeout = 60000)
-  @throws[Exception]
+  @Test
   def testRequestWithInvalidAuthorization(): Unit = {
     val request = Mockito.mock(classOf[HttpServletRequest])
     val response = Mockito.mock(classOf[HttpServletResponse])
@@ -118,8 +125,7 @@ class TestLdapAuthenticationHandlerImpl extends AbstractLdapTestUnit {
     Mockito.verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED)
   }
 
-  @Test(timeout = 60000)
-  @throws[Exception]
+  @Test
   def testRequestWithIncompleteAuthorization(): Unit = {
     val request = Mockito.mock(classOf[HttpServletRequest])
     val response = Mockito.mock(classOf[HttpServletResponse])
@@ -127,8 +133,7 @@ class TestLdapAuthenticationHandlerImpl extends AbstractLdapTestUnit {
     Assert.assertNull(handler.authenticate(request, response))
   }
 
-  @Test(timeout = 60000)
-  @throws[Exception]
+  @Test
   def testRequestWithWrongCredentials(): Unit = {
     val request = Mockito.mock(classOf[HttpServletRequest])
     val response = Mockito.mock(classOf[HttpServletResponse])

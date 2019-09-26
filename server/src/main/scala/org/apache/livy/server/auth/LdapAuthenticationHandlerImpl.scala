@@ -23,7 +23,7 @@ import java.util
 import java.util.Properties
 import javax.naming.NamingException
 import javax.naming.directory.InitialDirContext
-import javax.naming.ldap.{Control, InitialLdapContext, StartTlsRequest, StartTlsResponse}
+import javax.naming.ldap.{InitialLdapContext, StartTlsRequest, StartTlsResponse}
 import javax.net.ssl.{HostnameVerifier, SSLSession}
 import javax.servlet.ServletException
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
@@ -49,14 +49,10 @@ object LdapAuthenticationHandlerImpl {
   }
 
   /**
-    * Get the index separating the user name from domain name (the user's name up
-    * to the first '/' or '@').
-    *
-    * @param userName full user name.
-    * @return index of domain match or -1 if not found
-    */
-
-  private def indexOfDomainMatch(userName: String): Integer = {
+   * Get the index separating the user name from domain name (the user's name up
+   * to the first '/' or '@').
+   */
+  private def indexOfDomainMatch(userName: String): Int = {
     if (userName == null) {
       -1
     } else {
@@ -67,8 +63,7 @@ object LdapAuthenticationHandlerImpl {
 
       // Unless at least one of '/' or '@' was not found, in
       // which case, user the latter match.
-      if (endIdx == -1) endIdx = Math.max(idx, idx2)
-      endIdx
+      if (endIdx == -1) Math.max(idx, idx2) else endIdx
     }
   }
 }
@@ -92,13 +87,12 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
     require(this.providerUrl != null, "The LDAP URI can not be null")
 
     if (this.enableStartTls.booleanValue) {
-      val tmp = this.providerUrl.toLowerCase
-      require(!tmp.startsWith("ldaps"), "Can not use ldaps and StartTLS option at the same time")
+      require(!this.providerUrl.toLowerCase.startsWith("ldaps"),
+        "Can not use ldaps and StartTLS option at the same time")
     }
   }
 
-  def destroy(): Unit = {
-  }
+  def destroy(): Unit = { }
 
   @throws[IOException]
   @throws[AuthenticationException]
@@ -107,21 +101,28 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
 
   @throws[IOException]
   @throws[AuthenticationException]
-  def authenticate(request: HttpServletRequest,
+  def authenticate(
+    request: HttpServletRequest,
     response: HttpServletResponse): AuthenticationToken = {
     var token: AuthenticationToken = null
     var authorization = request.getHeader("Authorization")
+    var regionMatch = false
+    if (authorization != null) regionMatch = authorization.regionMatches(
+      true,
+      0,
+      LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME,
+      0,
+      LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME.length
+    )
 
-    if (authorization != null && authorization.regionMatches(true, 0,
-      LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME, 0,
-      LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME.length)) {
+    if (authorization != null && regionMatch) {
       authorization = authorization.substring("Basic".length).trim
       val base64 = new Base64(0)
       val credentials = new String(base64.decode(authorization),
         StandardCharsets.UTF_8).split(":", 2)
 
       if (credentials.length == 2) {
-        debug(s"Authenticating  [${credentials(0)}] user")
+        debug(s"Authenticating [${credentials(0)}] user")
         token = this.authenticateUser(credentials(0), credentials(1))
         response.setStatus(HttpServletResponse.SC_OK)
       }
@@ -132,7 +133,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
       if (authorization == null) {
         trace("Basic auth starting")
       } else {
-        warn("\'Authorization\' does not start " + s"with \'Basic\' :   ${authorization} ")
+        warn(s"Authorization does not start with Basic : ${authorization} ")
       }
     }
     token
@@ -141,24 +142,23 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
   @throws[AuthenticationException]
   private def authenticateUser(userName: String, password: String): AuthenticationToken = {
     if (userName != null && !userName.isEmpty) {
-      var principle: String = userName
+      var principle = userName
 
-      if (!LdapAuthenticationHandlerImpl.hasDomain(userName) &&
-        this.ldapDomain != null) {
-        principle = userName + "@" + this.ldapDomain
+      if (!LdapAuthenticationHandlerImpl.hasDomain(userName) && ldapDomain != null) {
+        principle = userName + "@" + ldapDomain
       }
 
       if (password != null && !password.isEmpty) {
-        var bindDN: String = principle
-
-        if (this.baseDN != null) {
-          bindDN = "uid=" + principle + "," + this.baseDN
+        val bindDN = if (baseDN != null) {
+          "uid=" + principle + "," + baseDN
+        } else {
+          principle
         }
 
-        if (this.enableStartTls.booleanValue) {
-          this.authenticateWithTlsExtension(bindDN, password)
+        if (enableStartTls) {
+          authenticateWithTlsExtension(bindDN, password)
         } else {
-          this.authenticateWithoutTlsExtension(bindDN, password)
+          authenticateWithoutTlsExtension(bindDN, password)
         }
 
         new AuthenticationToken(userName, userName, "ldap")
@@ -177,10 +177,10 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
     var ctx: InitialLdapContext = null
     val env = new util.Hashtable[String, String]
     env.put("java.naming.factory.initial", "com.sun.jndi.ldap.LdapCtxFactory")
-    env.put("java.naming.provider.url", this.providerUrl)
+    env.put("java.naming.provider.url", providerUrl)
 
     try {
-      ctx = new InitialLdapContext(env, null.asInstanceOf[Array[Control]])
+      ctx = new InitialLdapContext(env, null)
       val ex = ctx.extendedOperation(new StartTlsRequest).asInstanceOf[StartTlsResponse]
       if (this.disableHostNameVerification.booleanValue) {
         ex.setHostnameVerifier(new HostnameVerifier() {
@@ -213,7 +213,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
   private def authenticateWithoutTlsExtension(userDN: String, password: String): Unit = {
     val env = new util.Hashtable[String, String]
     env.put("java.naming.factory.initial", "com.sun.jndi.ldap.LdapCtxFactory")
-    env.put("java.naming.provider.url", this.providerUrl)
+    env.put("java.naming.provider.url", providerUrl)
     env.put("java.naming.security.authentication",
       LdapAuthenticationHandlerImpl.SECURITY_AUTHENTICATION)
     env.put("java.naming.security.principal", userDN)
