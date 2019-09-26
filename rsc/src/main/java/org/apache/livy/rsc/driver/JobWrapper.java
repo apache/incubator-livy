@@ -106,7 +106,7 @@ public class JobWrapper<T> implements Callable<Void> {
     } else {
       isCancelled = true;
       timer.cancel();
-      LOG.debug("refreshing process timer is canceled!");
+      LOG.debug("refreshing process timer is canceled by cancel method!");
       driver.jobContext().sc().cancelJobGroup(jobId);
       return future != null ? future.cancel(true) : true;
     }
@@ -119,7 +119,7 @@ public class JobWrapper<T> implements Callable<Void> {
       driver.jobFinished(jobId, null, error);
     }
     timer.cancel();
-    LOG.debug("refreshing process timer is finished!");
+    LOG.debug("refreshing process timer is canceled by finished method!");
   }
 
   protected void jobStarted() {
