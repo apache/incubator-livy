@@ -204,7 +204,11 @@ trait CommonThriftTests {
     // Only execute statement support operation log retrieval and it only produce one log
     assert(logIterator.next() ==
       "Livy session has not yet started. Please wait for it to be ready...")
-    assert(!logIterator.hasNext)
+    var endMsg: String = null
+    while (logIterator.hasNext){
+      endMsg = logIterator.next()
+    }
+    assert(endMsg.startsWith("RSC client is fetching result schema for statementId"))
   }
 
   def getCatalogTest(connection: Connection): Unit = {
