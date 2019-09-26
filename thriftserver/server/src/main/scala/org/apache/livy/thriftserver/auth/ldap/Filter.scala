@@ -19,17 +19,17 @@ package org.apache.livy.thriftserver.auth.ldap
 import javax.security.sasl.AuthenticationException
 
 /**
-  * The object that filters LDAP users.
-  * <br>
-  * The assumption is that this user was already authenticated by a previous bind operation.
-  */
+ * The object that filters LDAP users.
+ * <br>
+ * The assumption is that this user was already authenticated by a previous bind operation.
+ */
 trait Filter {
   /**
-    * Applies this filter to the authenticated user.
-    *
-    * @param user   username
-    * @throws AuthenticationException
-    */
+   * Applies this filter to the authenticated user.
+   *
+   * @param user   username
+   * @throws AuthenticationException
+   */
   @throws[AuthenticationException]
   def apply(user: String): Unit
 }

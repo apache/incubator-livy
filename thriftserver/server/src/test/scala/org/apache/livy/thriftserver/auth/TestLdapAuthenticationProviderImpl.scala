@@ -35,34 +35,47 @@ import org.junit.runner.RunWith
 import org.apache.livy.LivyConf
 
 /**
-  * This unit test verifies the functionality of LdapAuthenticationProviderImpl.
-  */
+ * This unit test verifies the functionality of LdapAuthenticationProviderImpl.
+ */
 @RunWith(classOf[FrameworkRunner])
-@CreateLdapServer(transports = Array(new CreateTransport(protocol = "LDAP", address = "localhost")))
-@CreateDS(allowAnonAccess = true, partitions = Array(new CreatePartition(name = "Test_Partition",
-  suffix = "dc=example,dc=com", contextEntry = new ContextEntry(entryLdif = "dn: dc=example," +
-    "dc=com \ndc: example\nobjectClass: top\n" + "objectClass: domain\n\n"))))
-@ApplyLdifs(Array("dn: uid=bjones,dc=example,dc=com", "cn: Bob Jones", "sn: Jones",
-  "objectClass: inetOrgPerson", "uid: bjones", "userPassword: p@ssw0rd"))
+@CreateLdapServer(transports = Array(
+  new CreateTransport(
+    protocol = "LDAP",
+    address = "localhost"
+  )))
+@CreateDS(
+  allowAnonAccess = true,
+  partitions = Array(
+    new CreatePartition(
+      name = "Test_Partition",
+      suffix = "dc=example,dc=com",
+      contextEntry = new ContextEntry(entryLdif = "dn: dc=example," +
+        "dc=com \ndc: example\nobjectClass: top\nobjectClass: domain\n\n")
+    )))
+@ApplyLdifs(Array(
+  "dn: uid=bjones,dc=example,dc=com",
+  "cn: Bob Jones",
+  "sn: Jones",
+  "objectClass: inetOrgPerson",
+  "uid: bjones",
+  "userPassword: p@ssw0rd"
+))
 class TestLdapAuthenticationProviderImpl extends AbstractLdapTestUnit {
   private var handler: LdapAuthenticationProviderImpl = null
-  private var user = "bjones"
-  private var pwd = "p@ssw0rd"
   val livyConf = new LivyConf()
 
   @Before
-  @throws[Exception]
   def setup(): Unit = {
     livyConf.set(LivyConf.THRIFT_AUTHENTICATION, "ldap")
     livyConf.set(LivyConf.THRIFT_LDAP_AUTHENTICATION_BASEDN, "dc=example,dc=com")
     livyConf.set(LivyConf.THRIFT_LDAP_AUTHENTICATION_URL, String.format("ldap://%s:%s", "localhost",
       AbstractLdapTestUnit.getLdapServer.getPort.toString))
-    livyConf.set(LivyConf.THRIFT_LDAP_AUTHENTICATION_USERFILTER, "bjones,jake")
   }
 
-  @Test(timeout = 60000)
-  @throws[AuthenticationException]
+  @Test
   def testAuthenticatePasses(): Unit = {
+    val user = "bjones"
+    val pwd = "p@ssw0rd"
 
     try {
       handler = new LdapAuthenticationProviderImpl(livyConf)
@@ -75,11 +88,28 @@ class TestLdapAuthenticationProviderImpl extends AbstractLdapTestUnit {
     }
   }
 
-  @Test(timeout = 60000)
-  @throws[Exception]
-  def testAuthenticateWithWrongUser(): Unit = {
+  @Test
+  def testAuthenticateWithGroupPasses(): Unit = {
+    val user = "bjones"
+    val pwd = "p@ssw0rd"
 
+    livyConf.set(LivyConf.THRIFT_LDAP_AUTHENTICATION_USERFILTER, "bjones,jake")
+    try {
+      handler = new LdapAuthenticationProviderImpl(livyConf)
+      handler.Authenticate(user, pwd)
+    } catch {
+      case e: AuthenticationException =>
+        val message = String.format("Authentication failed for user '%s' with password '%s'",
+          user, pwd)
+        throw new AssertionError(message, e)
+    }
+  }
+
+  @Test
+  def testAuthenticateWithWrongUser(): Unit = {
     val wrongUser = "jake"
+    val pwd = "p@ssw0rd"
+
     try {
       handler = new LdapAuthenticationProviderImpl(livyConf)
       handler.Authenticate(wrongUser, pwd)
@@ -91,11 +121,11 @@ class TestLdapAuthenticationProviderImpl extends AbstractLdapTestUnit {
     }
   }
 
-  @Test(timeout = 60000)
-  @throws[Exception]
+  @Test
   def testAuthenticateWithWrongPassword(): Unit = {
-
+    val user = "bjones"
     val wrongPwd = "wrongPwd"
+
     try {
       handler = new LdapAuthenticationProviderImpl(livyConf)
       handler.Authenticate(user, wrongPwd)
@@ -107,10 +137,10 @@ class TestLdapAuthenticationProviderImpl extends AbstractLdapTestUnit {
     }
   }
 
-  @Test(timeout = 60000)
-  @throws[AuthenticationException]
+  @Test
   def testAuthenticateWithWrongGroup(): Unit = {
-
+    val user = "bjones"
+    val pwd = "p@ssw0rd"
     livyConf.set(LivyConf.THRIFT_LDAP_AUTHENTICATION_USERFILTER, "user1,user2")
 
     try {

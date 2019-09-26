@@ -26,23 +26,18 @@ import org.apache.livy.LivyConf
 
 object LdapAuthenticationProviderImpl {
 
-  // Initialize the Chain FilterFactory List. Now GroupFilter is not supported.
-  // If needed, GroupFilterFactory can be added in this list.
-  var chainFactories: List[FilterFactory] = List[FilterFactory](new UserFilterFactory)
+  // Initialize the Chain Filter List. Now GroupFilter is not supported.
+  // If needed, GroupFilter can be added in this list.
 
-  private def resolveFilter(conf: LivyConf): Filter = {
-    var filter: Filter = null
-    for (filterProvider: FilterFactory <- chainFactories) {
-      if (filter != filterProvider.getInstance(conf)) {
-        filter = filterProvider.getInstance(conf)
-      }
-    }
+  private def createFilters(conf: LivyConf): Filter = {
+    val chainFilters: List[Filter] = List[Filter](new UserFilter(conf))
+    val filter: Filter = new ChainFilter(chainFilters)
     filter
   }
 }
 
 class LdapAuthenticationProviderImpl(val conf: LivyConf) extends PasswdAuthenticationProvider {
-  final private val filter: Filter = LdapAuthenticationProviderImpl.resolveFilter(conf)
+  final private val filter: Filter = LdapAuthenticationProviderImpl.createFilters(conf)
   final private val searchFactory: DirSearchFactory = new LdapSearchFactory()
 
   @throws[AuthenticationException]

@@ -24,8 +24,8 @@ import javax.security.sasl.AuthenticationException
 import org.apache.livy.{LivyConf, Logging}
 
 /**
-  * A factory for LDAP search objects.
-  */
+ * A factory for LDAP search objects.
+ */
 object LdapSearchFactory extends Logging {
 
   @throws[NamingException]

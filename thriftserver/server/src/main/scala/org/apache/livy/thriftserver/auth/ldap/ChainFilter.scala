@@ -16,17 +16,17 @@
  */
 package org.apache.livy.thriftserver.auth.ldap
 
-import org.apache.livy.LivyConf
+import javax.security.sasl.AuthenticationException
 
 /**
-  * Factory for the filter.
-  */
-trait FilterFactory {
-  /**
-    * Returns an instance of the corresponding filter.
-    *
-    * @param conf Livy properties used to configure the filter.
-    * @return the filter or { @code null} if this filter doesn't support provided set of properties
-    */
-  def getInstance(conf: LivyConf): Filter
+ * A factory that produces a Filter that is implemented as a chain of other filters.
+ * The chain of filters are created as a result of
+ * getInstance(org.apache.livy.LivyConf)
+ */
+
+class ChainFilter(val chainedFilters: List[Filter]) extends Filter {
+  @throws[AuthenticationException]
+  def apply(user: String): Unit = {
+    chainedFilters.foreach { f => f.apply(user) }
+  }
 }
