@@ -17,10 +17,11 @@
 
 package org.apache.livy.rsc;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.base.Throwables;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -92,7 +93,9 @@ public class Utils {
   }
 
   public static String stackTraceAsString(Throwable t) {
-    return Throwables.getStackTraceAsString(t);
+    StringWriter stringWriter = new StringWriter();
+    t.printStackTrace(new PrintWriter(stringWriter));
+    return stringWriter.toString();
   }
 
   public static <T> void addListener(Future<T> future, final FutureListener<T> lsnr) {
