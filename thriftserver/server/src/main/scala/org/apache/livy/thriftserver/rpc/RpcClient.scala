@@ -41,7 +41,6 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
       sessionHandle: SessionHandle,
       statementId: String,
       statement: String): JobHandle[_] = {
-    val batchSize = livySession.livyConf.getInt(RSCConf.Entry.THRIFT_COLLECT_RDD_BATCH_SIZE)
     info(s"RSC client is executing SQL query: $statement, statementId = $statementId, session = " +
       sessionHandle)
     require(null != statementId, s"Invalid statementId specified. StatementId = $statementId")

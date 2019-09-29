@@ -94,11 +94,34 @@ public class RDDStreamIterator<T> implements Iterator<T> {
     }
 
     public boolean hasNext() {
-        if(iter.hasNext()) {
+        if (iter.hasNext()) {
             return true;
         }
+
+        if (curPartitionIndex < maxPartitionIndex) {
+            return true;
+        }
+
+        if (curPartitionIndex == maxPartitionIndex &&
+                curRowIndex < partitionSizeList.get(curPartitionIndex)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public T next() {
+        if (iter.hasNext()) {
+            return iter.next();
+        }
+
         if (curPartitionIndex > maxPartitionIndex) {
-            return false;
+            return null;
+        }
+
+        if (curPartitionIndex == maxPartitionIndex &&
+                curRowIndex >= partitionSizeList.get(curPartitionIndex)) {
+            return null;
         }
 
         iter = collectPartitionByBatch();
@@ -109,10 +132,6 @@ public class RDDStreamIterator<T> implements Iterator<T> {
             curRowIndex = curRowIndex + batchSize;
         }
 
-        return iter.hasNext();
-    }
-
-    public T next() {
         return iter.next();
     }
 
