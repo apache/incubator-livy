@@ -26,7 +26,7 @@ import scala.util.control.NonFatal
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hive.service.cli._
 
-import org.apache.livy.{ConcurrentBoundedLinkedQueue, LivyConf, Logging}
+import org.apache.livy.Logging
 import org.apache.livy.thriftserver.SessionStates._
 import org.apache.livy.thriftserver.operation.Operation
 import org.apache.livy.thriftserver.rpc.RpcClient
@@ -45,9 +45,7 @@ class LivyExecuteStatementOperation(
    * Contains the messages which have to be sent to the client.
    */
   private val operationMessages =
-    new ConcurrentBoundedLinkedQueue[String](sessionManager.livyConf.getInt(
-      LivyConf.THRIFT_OPERATION_LOG_MAX_SIZE))
-
+    sessionManager.getSessionInfo(sessionHandle).operationMessages
   // The initialization need to be lazy in order not to block when the instance is created
   private lazy val rpcClient = {
     val sessionState = sessionManager.livySessionState(sessionHandle)
@@ -56,7 +54,7 @@ class LivyExecuteStatementOperation(
         "Livy session has not yet started. Please wait for it to be ready...")
     }
     // This call is blocking, we are waiting for the session to be ready.
-    new RpcClient(sessionManager.getLivySession(sessionHandle), Some(operationMessages))
+    new RpcClient(sessionManager.getLivySession(sessionHandle))
   }
   private var rowOffset = 0L
 
@@ -140,6 +138,8 @@ class LivyExecuteStatementOperation(
     setState(OperationState.RUNNING)
 
     try {
+      operationMessages.offer(s"RSC client is executing SQL query: $statement, " +
+        s"statementId = $statementId, session = " + sessionHandle)
       rpcClient.executeSql(sessionHandle, statementId, statement).get()
     } catch {
       case e: Throwable =>

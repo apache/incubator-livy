@@ -37,10 +37,7 @@ import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.livy.ConcurrentBoundedLinkedQueue;
-import org.apache.livy.Job;
-import org.apache.livy.JobHandle;
-import org.apache.livy.LivyClient;
+import org.apache.livy.*;
 import org.apache.livy.client.common.BufferUtils;
 import org.apache.livy.rsc.driver.AddFileJob;
 import org.apache.livy.rsc.driver.AddJarJob;
@@ -103,10 +100,6 @@ public class RSCClient implements LivyClient {
 
   public boolean isAlive() {
     return isAlive;
-  }
-
-  public void setOperationMessage(ConcurrentBoundedLinkedQueue<String> operationMessage) {
-    protocol.setOperationMessage(operationMessage);
   }
 
   public Process getDriverProcess() {
@@ -335,8 +328,11 @@ public class RSCClient implements LivyClient {
 
   private class ClientProtocol extends BaseProtocol {
 
-    private  final int TerminalWidth =
+    private final int TERMINAL_WIDTH =
             Integer.parseInt(System.getProperty("COLUMNS", "80"));
+
+    private final ConcurrentBoundedLinkedQueue<String> operationMessages =
+            OperationMessageManager.get();
 
     <T> JobHandleImpl<T> submit(Job<T> job) {
       final String jobId = UUID.randomUUID().toString();
@@ -389,11 +385,6 @@ public class RSCClient implements LivyClient {
       return jobId;
     }
 
-    ConcurrentBoundedLinkedQueue<String> operationMessage;
-    public void setOperationMessage(ConcurrentBoundedLinkedQueue<String> operationMessage) {
-      this.operationMessage = operationMessage;
-    }
-
     Future<BypassJobStatus> getBypassJobStatus(String id) {
       return deferredCall(new GetBypassJobStatus(id), BypassJobStatus.class);
     }
@@ -427,24 +418,24 @@ public class RSCClient implements LivyClient {
     }
 
     private void handle(ChannelHandlerContext ctx, JobProcessMessage msg){
-      if (operationMessage != null){
+      if (operationMessages != null) {
         StringBuilder bar = new StringBuilder();
         String head = "[Stage " + msg.stageId + ":";
         String tail = "(" + msg.completed + " + " + msg.actived + ") / " + msg.all + "]";
-        int processWid = TerminalWidth - head.length() - tail.length();
-        int barWid = processWid * msg.completed / msg.all;
+        int processWidth = TERMINAL_WIDTH - head.length() - tail.length();
+        int currentWidth = processWidth * msg.completed / msg.all;
         bar.append(head);
-        for (int i = 0; i < processWid; i++) {
-          if (i < barWid){
+        for (int i = 0; i < processWidth; i++) {
+          if (i < currentWidth){
             bar.append("=");
-          }else if (i == barWid){
+          } else if (i == currentWidth) {
             bar.append(">");
-          }else {
+          } else {
             bar.append(" ");
           }
         }
         bar.append(tail);
-        operationMessage.add(bar.toString());
+        operationMessages.offer(bar.toString());
       }
     }
 

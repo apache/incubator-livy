@@ -216,7 +216,7 @@ public class RSCDriver extends BaseProtocol {
   }
 
   /**
-   * calculate each stage's process and broadcast message to the end user
+   * Calculate each stage's process and broadcast message to the end user
    * @param jobId
    */
   void handleProcessMessage(String jobId){

@@ -36,8 +36,8 @@ import org.apache.hive.service.cli.{HiveSQLException, SessionHandle}
 import org.apache.hive.service.rpc.thrift.TProtocolVersion
 import org.apache.hive.service.server.ThreadFactoryWithGarbageCleanup
 
-import org.apache.livy.LivyConf
-import org.apache.livy.Logging
+import org.apache.livy.{ConcurrentBoundedLinkedQueue, LivyConf, Logging,
+  OperationMessageManager}
 import org.apache.livy.server.interactive.{CreateInteractiveRequest, InteractiveSession}
 import org.apache.livy.sessions.Spark
 import org.apache.livy.thriftserver.SessionStates._
@@ -144,7 +144,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       server.livySessionManager.delete(livySession)
     } else {
       // We unregister the session only if we don't close it, as it is unnecessary in that case
-      val rpcClient = new RpcClient(livySession, None)
+      val rpcClient = new RpcClient(livySession)
       try {
         rpcClient.executeUnregisterSession(sessionHandle).get()
       } catch {
@@ -196,7 +196,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       sessionHandle: SessionHandle,
       livySession: InteractiveSession,
       initStatements: List[String]): Unit = {
-    val rpcClient = new RpcClient(livySession, None)
+    val rpcClient = new RpcClient(livySession)
     rpcClient.executeRegisterSession(sessionHandle).get()
     initStatements.foreach { statement =>
       val statementId = UUID.randomUUID().toString
@@ -220,8 +220,11 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       delegationToken: String): SessionHandle = {
     val sessionHandle = new SessionHandle(protocol)
     incrementConnections(username, ipAddress, SessionInfo.getForwardedAddresses)
+    val operationMessages = new ConcurrentBoundedLinkedQueue[String](livyConf.getInt(
+      LivyConf.THRIFT_OPERATION_LOG_MAX_SIZE))
     sessionInfo.put(sessionHandle,
-      new SessionInfo(username, ipAddress, SessionInfo.getForwardedAddresses, protocol))
+      new SessionInfo(username, ipAddress, SessionInfo.getForwardedAddresses, operationMessages,
+        protocol))
     val (initStatements, createInteractiveRequest, sessionId) =
       LivyThriftSessionManager.processSessionConf(sessionConf, supportUseDatabase)
     val createLivySession = () => {
@@ -244,6 +247,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       try {
         livyServiceUGI.doAs(new PrivilegedExceptionAction[InteractiveSession] {
           override def run(): InteractiveSession = {
+            OperationMessageManager.set(operationMessages)
             livySession =
               getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
             synchronized {
@@ -252,6 +256,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
               }
             }
             initSession(sessionHandle, livySession, initStatements)
+            operationMessages.offer(s"application id is: ${livySession.appId.orNull}")
             livySession
           }
         })

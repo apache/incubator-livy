@@ -21,11 +21,12 @@ import java.util
 
 import org.apache.hive.service.rpc.thrift.TProtocolVersion
 
-import org.apache.livy.Logging
+import org.apache.livy.{ConcurrentBoundedLinkedQueue, Logging}
 
 case class SessionInfo(username: String,
     ipAddress: String,
     forwardedAddresses: util.List[String],
+    operationMessages: ConcurrentBoundedLinkedQueue[String],
     protocolVersion: TProtocolVersion) {
   val creationTime: Long = System.currentTimeMillis()
 }

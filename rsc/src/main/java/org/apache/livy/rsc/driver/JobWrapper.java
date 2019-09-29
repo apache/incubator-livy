@@ -45,8 +45,8 @@ public class JobWrapper<T> implements Callable<Void> {
 
   private Future<?> future;
 
-  private long firstDelayMSec = 500L;
-  private long updatePeriodMSec;
+  private final long firstDelayMSec = 500L;
+  private final long updatePeriodMSec;
 
   private Timer timer = new Timer("refresh progress", true);
 
@@ -55,7 +55,7 @@ public class JobWrapper<T> implements Callable<Void> {
     this.jobId = jobId;
     this.job = job;
     this.updatePeriodMSec =
-            driver.livyConf.getLong(RSCConf.Entry.JOB_PROCESS_MSG_UPDATE_INTERVAL);
+            driver.livyConf.getTimeAsMs(RSCConf.Entry.JOB_PROCESS_MSG_UPDATE_INTERVAL);
   }
 
   @Override
