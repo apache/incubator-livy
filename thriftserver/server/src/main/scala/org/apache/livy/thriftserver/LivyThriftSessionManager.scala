@@ -220,8 +220,11 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       delegationToken: String): SessionHandle = {
     val sessionHandle = new SessionHandle(protocol)
     incrementConnections(username, ipAddress, SessionInfo.getForwardedAddresses)
-    val operationMessages = new ConcurrentBoundedLinkedQueue[String](livyConf.getInt(
-      LivyConf.THRIFT_OPERATION_LOG_MAX_SIZE))
+
+    val operationMessages = if (livyConf.getBoolean(LivyConf.THRIFT_LOG_OPERATION_ENABLED)) {
+      Some(new ConcurrentBoundedLinkedQueue[String](livyConf.getLong(
+        LivyConf.THRIFT_OPERATION_LOG_MAX_SIZE)))
+    } else None
     sessionInfo.put(sessionHandle,
       new SessionInfo(username, ipAddress, SessionInfo.getForwardedAddresses, operationMessages,
         protocol))
@@ -247,7 +250,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       try {
         livyServiceUGI.doAs(new PrivilegedExceptionAction[InteractiveSession] {
           override def run(): InteractiveSession = {
-            OperationMessageManager.set(operationMessages)
+            OperationMessageManager.set(operationMessages.orNull)
             livySession =
               getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
             synchronized {
@@ -256,7 +259,8 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
               }
             }
             initSession(sessionHandle, livySession, initStatements)
-            operationMessages.offer(s"application id is: ${livySession.appId.orNull}")
+            operationMessages.foreach(
+              _.offer(s"tracking URL: ${livySession.appInfo.sparkUiUrl.orNull}"))
             livySession
           }
         })

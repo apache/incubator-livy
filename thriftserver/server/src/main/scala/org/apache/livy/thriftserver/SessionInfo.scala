@@ -26,7 +26,7 @@ import org.apache.livy.{ConcurrentBoundedLinkedQueue, Logging}
 case class SessionInfo(username: String,
     ipAddress: String,
     forwardedAddresses: util.List[String],
-    operationMessages: ConcurrentBoundedLinkedQueue[String],
+    operationMessages: Option[ConcurrentBoundedLinkedQueue[String]],
     protocolVersion: TProtocolVersion) {
   val creationTime: Long = System.currentTimeMillis()
 }
