@@ -426,7 +426,7 @@ public class RSCClient implements LivyClient {
         int currentWidth = processWidth * msg.completed / msg.all;
         bar.append(head);
         for (int i = 0; i < processWidth; i++) {
-          if (i < currentWidth){
+          if (i < currentWidth) {
             bar.append("=");
           } else if (i == currentWidth) {
             bar.append(">");
