@@ -49,22 +49,17 @@ object LdapAuthenticationHandlerImpl {
   }
 
   /**
-   * Get the index separating the user name from domain name (the user's name up
-   * to the first '/' or '@').
-   */
+    * Get the index separating the user name from domain name (the user's name up
+    * to the first '/' or '@').
+    */
   private def indexOfDomainMatch(userName: String): Int = {
-    if (userName == null) {
-      -1
-    } else {
-      val idx = userName.indexOf('/')
-      val idx2 = userName.indexOf('@')
-      // Use the earlier match.
-      var endIdx = Math.min(idx, idx2)
+    val idx = userName.indexOf('/')
+    val idx2 = userName.indexOf('@')
+    // Use the earlier match.
+    var endIdx = Math.min(idx, idx2)
 
-      // Unless at least one of '/' or '@' was not found, in
-      // which case, user the latter match.
-      if (endIdx == -1) Math.max(idx, idx2) else endIdx
-    }
+    // If neither '/' nor '@' was found, using the latter
+    if (endIdx == -1) Math.max(idx, idx2) else endIdx
   }
 }
 
@@ -86,7 +81,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
       "false").toBoolean
     require(this.providerUrl != null, "The LDAP URI can not be null")
 
-    if (this.enableStartTls.booleanValue) {
+    if (enableStartTls) {
       require(!this.providerUrl.toLowerCase.startsWith("ldaps"),
         "Can not use ldaps and StartTLS option at the same time")
     }
@@ -96,26 +91,20 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
 
   @throws[IOException]
   @throws[AuthenticationException]
-  def managementOperation(token: AuthenticationToken, request: HttpServletRequest,
-    response: HttpServletResponse) : Boolean = true
+  def managementOperation(token: AuthenticationToken,
+                          request: HttpServletRequest,
+                          response: HttpServletResponse): Boolean = true
 
   @throws[IOException]
   @throws[AuthenticationException]
-  def authenticate(
-    request: HttpServletRequest,
-    response: HttpServletResponse): AuthenticationToken = {
+  def authenticate(request: HttpServletRequest,
+                   response: HttpServletResponse): AuthenticationToken = {
     var token: AuthenticationToken = null
     var authorization = request.getHeader("Authorization")
-    var regionMatch = false
-    if (authorization != null) regionMatch = authorization.regionMatches(
-      true,
-      0,
-      LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME,
-      0,
-      LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME.length
-    )
 
-    if (authorization != null && regionMatch) {
+    if (authorization != null && authorization.regionMatches(true, 0,
+      LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME, 0,
+      LdapAuthenticationHandlerImpl.AUTHORIZATION_SCHEME.length)) {
       authorization = authorization.substring("Basic".length).trim
       val base64 = new Base64(0)
       val credentials = new String(base64.decode(authorization),
