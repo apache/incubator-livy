@@ -21,7 +21,7 @@ import org.apache.livy.{LivyConf, Logging}
 /**
  * Static utility methods related to LDAP authentication module.
  */
-object LdapUtils extends Logging{
+object LdapUtils extends Logging {
 
   /**
    * Extracts username from user DN.
@@ -61,16 +61,13 @@ object LdapUtils extends Logging{
    */
   def indexOfDomainMatch(userName: String): Int = {
     var endIdx = -1
-    if (userName == null) {
-      endIdx = -1
-    } else {
-      val idx = userName.indexOf('/')
-      val idx2 = userName.indexOf('@')
-      endIdx = Math.min(idx, idx2) // Use the earlier match.
-      // Unless at least one of '/' or '@' was not found, in
-      // which case, user the latter match.
-      if (endIdx == -1) endIdx = Math.max(idx, idx2)
-    }
+    val idx = userName.indexOf('/')
+    val idx2 = userName.indexOf('@')
+    endIdx = Math.min(idx, idx2)
+
+    // If neither '/' nor '@' was found, using the latter
+    if (endIdx == -1) endIdx = Math.max(idx, idx2)
+
     endIdx
   }
 

@@ -26,12 +26,12 @@ import org.apache.livy.LivyConf
 
 object LdapAuthenticationProviderImpl {
 
-  // Initialize the Chain Filter List. Now GroupFilter is not supported.
-  // If needed, GroupFilter can be added in this list.
-
+  /**
+   * Initialize the Chain Filter List. Now GroupFilter is not supported.
+   * If needed, GroupFilter can be added in this list.
+   */
   private def createFilters(conf: LivyConf): Filter = {
-    val chainFilters: List[Filter] = List[Filter](new UserFilter(conf))
-    val filter: Filter = new ChainFilter(chainFilters)
+    val filter: Filter = new ChainFilter(List(new UserFilter(conf)))
     filter
   }
 }
@@ -49,32 +49,29 @@ class LdapAuthenticationProviderImpl(val conf: LivyConf) extends PasswdAuthentic
   @throws[AuthenticationException]
   private def createDirSearch(user: String, password: String): Unit = {
     if (StringUtils.isBlank(user) || StringUtils.isEmpty(user)) {
-      throw new AuthenticationException("Error validating LDAP:" +
-        " a null or blank user name has been provided")
+      throw new AuthenticationException(
+        "Error validating LDAP: a null or blank user name has been provided")
     }
     if (StringUtils.isBlank(password) || StringUtils.isEmpty(password)) {
-      throw new AuthenticationException("Error validating LDAP:" +
-        " a null or blank password has been provided")
+      throw new AuthenticationException(
+        "Error validating LDAP: a null or blank password has been provided")
     }
     val principal = LdapUtils.createCandidatePrincipal(conf, user)
     try {
       searchFactory.getInstance(conf, principal, password)
     } catch {
       case e: AuthenticationException =>
-        throw new AuthenticationException(s"Error validating " +
-          s"LDAP user: $user, password: $password", e)
+        throw new AuthenticationException(
+          s"Error validating LDAP user: $user, password: $password", e)
     }
   }
 
   @throws[AuthenticationException]
   private def applyFilter(user: String): Unit = {
-    if (filter != null) {
-      if (LdapUtils.hasDomain(user)) {
-        filter.apply(LdapUtils.extractUserName(user))
-      }
-      else {
-        filter.apply(user)
-      }
+    if (LdapUtils.hasDomain(user)) {
+      filter.apply(LdapUtils.extractUserName(user))
+    } else {
+      filter.apply(user)
     }
   }
 }

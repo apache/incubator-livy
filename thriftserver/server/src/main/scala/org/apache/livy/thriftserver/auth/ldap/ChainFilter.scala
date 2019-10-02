@@ -27,6 +27,6 @@ import javax.security.sasl.AuthenticationException
 class ChainFilter(val chainedFilters: List[Filter]) extends Filter {
   @throws[AuthenticationException]
   def apply(user: String): Unit = {
-    chainedFilters.foreach { f => f.apply(user) }
+    chainedFilters.foreach { f => f(user) }
   }
 }
