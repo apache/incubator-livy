@@ -25,6 +25,7 @@ import javax.security.sasl.{AuthorizeCallback, Sasl}
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION
+import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hadoop.security.SaslRpcServer.AuthMethod
 import org.apache.hive.service.auth.{SaslQOP, TSetIpAddressProcessor}
 import org.apache.hive.service.auth.AuthenticationProviderFactory.AuthMethods
@@ -61,8 +62,23 @@ class AuthFactory(val conf: LivyConf) extends Logging {
       None
     }
 
+  private val ugi =
+    try {
+      if (UserGroupInformation.isSecurityEnabled) {
+        val principal = conf.get(LivyConf.AUTH_KERBEROS_PRINCIPAL)
+        val keyTabFile = conf.get(LivyConf.AUTH_KERBEROS_KEYTAB)
+        UserGroupInformation.loginUserFromKeytabAndReturnUGI(
+          SecurityUtil.getServerPrincipal(principal, "0.0.0.0"), keyTabFile)
+      } else {
+        UserGroupInformation.getCurrentUser
+      }
+    } catch {
+      case e: IOException =>
+        throw new TTransportException("Failed to get user", e)
+    }
+
   private val saslServer: Option[AuthBridgeServer] = secretManager.map { sm =>
-      new AuthBridgeServer(sm)
+      new AuthBridgeServer(sm, ugi)
     }
 
   def getSaslProperties: util.Map[String, String] = {
