@@ -121,15 +121,21 @@
 
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s
+# How long to find the yarn app
+# livy.server.yarn.app-lookup-interval = 1s
 # When the cluster is busy, we may fail to launch yarn app in app-lookup-timeout, then it would
 # cause session leakage, so we need to check session leakage.
 # How long to check livy session leakage
 # livy.server.yarn.app-leakage.check-timeout = 600s
 # how often to check livy session leakage
 # livy.server.yarn.app-leakage.check-interval = 60s
+# how long to monitor the yarn app
+# livy.server.yarn.app-monitor.timeout = 10000ms
+# If Livy can't monitor the yarn app successfully within this max times, consider the app failed.
+# livy.server.yarn.app-monitor.max-failed.times = 120
 
 # How often Livy polls YARN to refresh YARN app state.
-# livy.server.yarn.poll-interval = 5s
+# livy.server.yarn.poll-interval = 500ms
 #
 # Days to keep Livy server request logs.
 # livy.server.request-log-retain.days = 5

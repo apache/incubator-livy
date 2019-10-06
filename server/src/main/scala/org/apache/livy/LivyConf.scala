@@ -204,9 +204,11 @@ object LivyConf {
 
   // If Livy can't find the yarn app within this time, consider it lost.
   val YARN_APP_LOOKUP_TIMEOUT = Entry("livy.server.yarn.app-lookup-timeout", "120s")
+  // How long to find the yarn app.
+  val YARN_APP_LOOKUP_INTERVAL = Entry("livy.server.yarn.app-lookup-interval", "1s")
 
   // How often Livy polls YARN to refresh YARN app state.
-  val YARN_POLL_INTERVAL = Entry("livy.server.yarn.poll-interval", "5s")
+  val YARN_POLL_INTERVAL = Entry("livy.server.yarn.poll-interval", "500ms")
 
   // Days to keep Livy server request logs.
   val REQUEST_LOG_RETAIN_DAYS = Entry("livy.server.request-log-retain.days", 5)
@@ -220,6 +222,11 @@ object LivyConf {
   val YARN_APP_LEAKAGE_CHECK_TIMEOUT = Entry("livy.server.yarn.app-leakage.check-timeout", "600s")
   // how often to check livy session leakage
   val YARN_APP_LEAKAGE_CHECK_INTERVAL = Entry("livy.server.yarn.app-leakage.check-interval", "60s")
+  // how long to monitor the yarn app
+  val YARN_APP_MONITOR_TIMEOUT = Entry("livy.server.yarn.app-monitor.timeout", "10000ms")
+  // If Livy can't monitor the yarn app successfully within this max times, consider the app failed.
+  val YARN_APP_MONITOR_MAX_FAILED_TIMES =
+    Entry("livy.server.yarn.app-monitor.max-failed.times", "120")
 
   // Whether session timeout should be checked, by default it will be checked, which means inactive
   // session will be stopped after "livy.server.session.timeout"
