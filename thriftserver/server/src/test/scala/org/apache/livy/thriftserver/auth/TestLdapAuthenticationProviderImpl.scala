@@ -82,8 +82,8 @@ class TestLdapAuthenticationProviderImpl extends AbstractLdapTestUnit {
       handler.Authenticate(user, pwd)
     } catch {
       case e: AuthenticationException =>
-        val message = String.format("Authentication failed for user '%s' with password '%s'",
-          user, pwd)
+        val message = String.format("Authentication failed for user '%s'",
+          user)
         throw new AssertionError(message, e)
     }
   }
@@ -99,8 +99,8 @@ class TestLdapAuthenticationProviderImpl extends AbstractLdapTestUnit {
       handler.Authenticate(user, pwd)
     } catch {
       case e: AuthenticationException =>
-        val message = String.format("Authentication failed for user '%s' with password '%s'",
-          user, pwd)
+        val message = String.format("Authentication failed for user '%s'",
+          user)
         throw new AssertionError(message, e)
     }
   }

@@ -21,7 +21,6 @@ import javax.security.sasl.AuthenticationException
 /**
  * A factory that produces a Filter that is implemented as a chain of other filters.
  */
-
 class ChainFilter(val chainedFilters: List[Filter]) extends Filter {
   @throws[AuthenticationException]
   def apply(user: String): Unit = {

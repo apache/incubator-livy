@@ -25,7 +25,6 @@ import org.apache.livy.{LivyConf, Logging}
  * The produced filter object filters out all users that are not on the provided in
  * Livy configuration list.
  */
-
 class UserFilter(conf: LivyConf) extends Filter with Logging {
   private val userFilterStr = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_USERFILTER)
 

@@ -25,13 +25,11 @@ import org.apache.livy.LivyConf
  */
 trait DirSearchFactory {
   /**
-   * Returns an instance of DirSearch}.
+   * Returns an instance of DirSearch.
    *
    * @param conf     Livy configuration
    * @param user     username
    * @param password user password
-   * @return instance of { @code DirSearch}
-   * @throws AuthenticationException
    */
   @throws[AuthenticationException]
   def getInstance(conf: LivyConf, user: String, password: String): Unit

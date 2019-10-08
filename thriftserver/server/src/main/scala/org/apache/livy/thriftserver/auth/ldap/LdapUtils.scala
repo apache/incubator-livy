@@ -32,9 +32,6 @@ object LdapUtils extends Logging {
    * LdapUtils.extractUserName("UserName@mycorp.com")             = "UserName"
    * LdapUtils.extractUserName("cn=UserName,dc=mycompany,dc=com") = "UserName"
    * </pre>
-   *
-   * @param userDn
-   * @return
    */
   def extractUserName(userDn: String): String = {
     var userName = userDn
@@ -54,10 +51,7 @@ object LdapUtils extends Logging {
 
   /**
    * Get the index separating the user name from domain name (the user's name up
-   * to the first '/' or '@').
-   *
-   * @param userName full user name.
-   * @return index of domain match or -1 if not found
+   * to the first '/' or '@'). Index of domain match or -1 if not found
    */
   def indexOfDomainMatch(userName: String): Int = {
     var endIdx = -1
@@ -80,9 +74,6 @@ object LdapUtils extends Logging {
    * LdapUtils.hasDomain("user1@mycorp.com") = true
    * LdapUtils.hasDomain("user1")            = false
    * </pre>
-   *
-   * @param userName username
-   * @return true if { @code userName} contains { @code @<domain>} part
    */
   def hasDomain(userName: String): Boolean = {
     indexOfDomainMatch(userName) > 0
@@ -97,9 +88,6 @@ object LdapUtils extends Logging {
    * LdapUtils.isDn("cn=UserName,dc=mycompany,dc=com") = true
    * LdapUtils.isDn("user1")                           = false
    * </pre>
-   *
-   * @param name name to be checked
-   * @return true if the provided name is a distinguished name
    */
   def isDn(name: String): Boolean = {
     name.contains("=")
@@ -107,10 +95,6 @@ object LdapUtils extends Logging {
 
   /**
    * Creates a principal to be used for user authentication.
-   *
-   * @param conf Livy configuration
-   * @param user username
-   * @return a list of user's principal
    */
   def createCandidatePrincipal(conf: LivyConf, user: String): String = {
     val ldapDomain = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_DOMAIN)
