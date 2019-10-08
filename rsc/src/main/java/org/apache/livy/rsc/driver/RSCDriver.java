@@ -233,11 +233,12 @@ public class RSCDriver extends BaseProtocol {
       if (stageInfo != null){
         int all = stageInfo.numTasks();
         int completed = stageInfo.numCompletedTasks();
-        int actived = stageInfo.numActiveTasks();
+        int active = stageInfo.numActiveTasks();
+        int failed = stageInfo.numFailedTasks();
         if (all == 0){
           continue;
         }
-        broadcast(new JobProcessMessage(jobId, stageId, completed, actived, all));
+        broadcast(new JobProcessMessage(jobId, stageId, completed, active, failed, all));
       }
     }
   }

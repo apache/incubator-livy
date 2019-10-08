@@ -328,9 +328,8 @@ public class RSCClient implements LivyClient {
 
   private class ClientProtocol extends BaseProtocol {
 
-    private final int TERMINAL_WIDTH =
-            Integer.parseInt(System.getProperty("COLUMNS", "80"));
-
+    private final String PROCESS_FORMAT = "stage %3s: percentage: %3d%% active: %s " +
+            "completed: %s failed: %s all: %s";
     private final ConcurrentBoundedLinkedQueue<String> operationMessages =
             OperationMessageManager.get();
 
@@ -419,23 +418,9 @@ public class RSCClient implements LivyClient {
 
     private void handle(ChannelHandlerContext ctx, JobProcessMessage msg){
       if (operationMessages != null) {
-        StringBuilder bar = new StringBuilder();
-        String head = "[Stage " + msg.stageId + ":";
-        String tail = "(" + msg.completed + " + " + msg.actived + ") / " + msg.all + "]";
-        int processWidth = TERMINAL_WIDTH - head.length() - tail.length();
-        int currentWidth = processWidth * msg.completed / msg.all;
-        bar.append(head);
-        for (int i = 0; i < processWidth; i++) {
-          if (i < currentWidth) {
-            bar.append("=");
-          } else if (i == currentWidth) {
-            bar.append(">");
-          } else {
-            bar.append(" ");
-          }
-        }
-        bar.append(tail);
-        operationMessages.offer(bar.toString());
+        int percentage = (int)Math.round(msg.completed / (double)msg.all * 100);
+        operationMessages.offer(String.format(PROCESS_FORMAT, msg.stageId, percentage, msg.active,
+                msg.completed, msg.failed, msg.all));
       }
     }
 
