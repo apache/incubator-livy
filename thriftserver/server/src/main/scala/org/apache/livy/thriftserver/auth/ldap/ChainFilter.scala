@@ -20,8 +20,6 @@ import javax.security.sasl.AuthenticationException
 
 /**
  * A factory that produces a Filter that is implemented as a chain of other filters.
- * The chain of filters are created as a result of
- * getInstance(org.apache.livy.LivyConf)
  */
 
 class ChainFilter(val chainedFilters: List[Filter]) extends Filter {

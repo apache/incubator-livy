@@ -29,8 +29,10 @@ import org.apache.livy.{LivyConf, Logging}
 object LdapSearchFactory extends Logging {
 
   @throws[NamingException]
-  private def createDirContext(conf: LivyConf, principal: String,
-                               password: String): InitialDirContext = {
+  private def createDirContext(
+      conf: LivyConf,
+      principal: String,
+      password: String): InitialDirContext = {
     val env = new Hashtable[String, Any]
     val ldapUrl = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_URL)
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")

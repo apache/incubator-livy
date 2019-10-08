@@ -31,8 +31,7 @@ object LdapAuthenticationProviderImpl {
    * If needed, GroupFilter can be added in this list.
    */
   private def createFilters(conf: LivyConf): Filter = {
-    val filter: Filter = new ChainFilter(List(new UserFilter(conf)))
-    filter
+    new ChainFilter(List(new UserFilter(conf)))
   }
 }
 
@@ -62,16 +61,16 @@ class LdapAuthenticationProviderImpl(val conf: LivyConf) extends PasswdAuthentic
     } catch {
       case e: AuthenticationException =>
         throw new AuthenticationException(
-          s"Error validating LDAP user: $user, password: $password", e)
+          s"Error validating LDAP user: $user", e)
     }
   }
 
   @throws[AuthenticationException]
   private def applyFilter(user: String): Unit = {
     if (LdapUtils.hasDomain(user)) {
-      filter.apply(LdapUtils.extractUserName(user))
+      filter(LdapUtils.extractUserName(user))
     } else {
-      filter.apply(user)
+      filter(user)
     }
   }
 }

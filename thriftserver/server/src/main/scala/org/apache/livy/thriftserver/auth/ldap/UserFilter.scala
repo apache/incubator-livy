@@ -24,8 +24,6 @@ import org.apache.livy.{LivyConf, Logging}
  * A factory for a Filter based on a list of allowed users.
  * The produced filter object filters out all users that are not on the provided in
  * Livy configuration list.
- *
- * @see LivyConf.THRIFT_LDAP_AUTHENTICATION_USERFILTER
  */
 
 class UserFilter(conf: LivyConf) extends Filter with Logging {
