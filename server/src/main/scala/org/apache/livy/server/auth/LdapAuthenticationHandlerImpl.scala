@@ -171,7 +171,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
     try {
       ctx = new InitialLdapContext(env, null)
       val ex = ctx.extendedOperation(new StartTlsRequest).asInstanceOf[StartTlsResponse]
-      if (this.disableHostNameVerification.booleanValue) {
+      if (this.disableHostNameVerification) {
         ex.setHostnameVerifier(new HostnameVerifier() {
           override def verify(hostname: String, session: SSLSession) = true
         })
@@ -185,7 +185,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
       ctx.lookup(userDN)
       debug(s"Authentication successful for ${userDN}")
     } catch {
-      case exception@(_: IOException | _: NamingException) =>
+      case exception @ (_: IOException | _: NamingException) =>
         throw new AuthenticationException("Error validating LDAP user", exception)
     } finally {
       if (ctx != null) {
