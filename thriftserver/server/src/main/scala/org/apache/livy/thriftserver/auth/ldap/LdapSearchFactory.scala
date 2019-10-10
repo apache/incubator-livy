@@ -33,7 +33,7 @@ object LdapSearchFactory extends Logging {
       conf: LivyConf,
       principal: String,
       password: String): InitialDirContext = {
-    val env = new Hashtable[String, Any]
+    val env = new Hashtable[String, String]
     val ldapUrl = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_URL)
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
     env.put(Context.PROVIDER_URL, ldapUrl)

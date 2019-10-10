@@ -100,12 +100,12 @@ object LdapUtils extends Logging {
     val ldapDomain = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_DOMAIN)
     val ldapBaseDN = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_BASEDN)
 
-    var principle: String = user
+    var principle = user
     if (!hasDomain(user) && ldapDomain != null) {
       principle = user + "@" + ldapDomain
     }
 
-    var bindDN: String = principle
+    var bindDN = principle
     if (ldapBaseDN != null) {
       bindDN = "uid=" + principle + "," + ldapBaseDN
     }
