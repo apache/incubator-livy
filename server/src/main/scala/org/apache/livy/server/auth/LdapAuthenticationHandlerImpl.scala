@@ -97,8 +97,9 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
 
   @throws[IOException]
   @throws[AuthenticationException]
-  def authenticate(request: HttpServletRequest,
-                   response: HttpServletResponse): AuthenticationToken = {
+  def authenticate(
+      request: HttpServletRequest,
+      response: HttpServletResponse): AuthenticationToken = {
     var token: AuthenticationToken = null
     var authorization = request.getHeader("Authorization")
 
