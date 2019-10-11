@@ -91,9 +91,10 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
 
   @throws[IOException]
   @throws[AuthenticationException]
-  def managementOperation(token: AuthenticationToken,
-                          request: HttpServletRequest,
-                          response: HttpServletResponse): Boolean = true
+  def managementOperation(
+      token: AuthenticationToken,
+      request: HttpServletRequest,
+      response: HttpServletResponse): Boolean = true
 
   @throws[IOException]
   @throws[AuthenticationException]
