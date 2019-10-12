@@ -56,7 +56,7 @@ object LdapAuthenticationHandlerImpl {
     val idx = userName.indexOf('/')
     val idx2 = userName.indexOf('@')
     // Use the earlier match.
-    var endIdx = Math.min(idx, idx2)
+    val endIdx = Math.min(idx, idx2)
 
     // If neither '/' nor '@' was found, using the latter
     if (endIdx == -1) Math.max(idx, idx2) else endIdx
@@ -77,8 +77,8 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
     this.baseDN = config.getProperty(LdapAuthenticationHandlerImpl.BASE_DN)
     this.providerUrl = config.getProperty(LdapAuthenticationHandlerImpl.PROVIDER_URL)
     this.ldapDomain = config.getProperty(LdapAuthenticationHandlerImpl.LDAP_BIND_DOMAIN)
-    this.enableStartTls = config.getProperty(LdapAuthenticationHandlerImpl.ENABLE_START_TLS,
-      "false").toBoolean
+    this.enableStartTls = config.getProperty(
+      LdapAuthenticationHandlerImpl.ENABLE_START_TLS, "false").toBoolean
     require(this.providerUrl != null, "The LDAP URI can not be null")
 
     if (enableStartTls) {
@@ -132,35 +132,32 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
 
   @throws[AuthenticationException]
   private def authenticateUser(userName: String, password: String): AuthenticationToken = {
-    if (userName != null && !userName.isEmpty) {
-      var principle = userName
-
-      if (!LdapAuthenticationHandlerImpl.hasDomain(userName) && ldapDomain != null) {
-        principle = userName + "@" + ldapDomain
-      }
-
-      if (password != null && !password.isEmpty) {
-        val bindDN = if (baseDN != null) {
-          "uid=" + principle + "," + baseDN
-        } else {
-          principle
-        }
-
-        if (enableStartTls) {
-          authenticateWithTlsExtension(bindDN, password)
-        } else {
-          authenticateWithoutTlsExtension(bindDN, password)
-        }
-
-        new AuthenticationToken(userName, userName, "ldap")
-      } else {
-        throw new AuthenticationException(
-          "Error validating LDAP user: a null or blank password has been provided")
-      }
-    } else {
+    if (userName == null || userName.isEmpty) {
       throw new AuthenticationException(
         "Error validating LDAP user: a null or blank username has been provided")
     }
+    if (password == null || password.isEmpty) {
+      throw new AuthenticationException(
+        "Error validating LDAP user: a null or blank password has been provided")
+    }
+
+    var principle = userName
+    if (!LdapAuthenticationHandlerImpl.hasDomain(userName) && ldapDomain != null) {
+      principle = userName + "@" + ldapDomain
+    }
+    val bindDN = if (baseDN != null) {
+      "uid=" + principle + "," + baseDN
+    } else {
+      principle
+    }
+
+    if (enableStartTls) {
+      authenticateWithTlsExtension(bindDN, password)
+    } else {
+      authenticateWithoutTlsExtension(bindDN, password)
+    }
+
+    new AuthenticationToken(userName, userName, "ldap")
   }
 
   @throws[AuthenticationException]
