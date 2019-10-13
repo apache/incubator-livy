@@ -20,7 +20,6 @@ import javax.security.sasl.AuthenticationException
 
 /**
  * The object that filters LDAP users.
- * <br>
  * The assumption is that this user was already authenticated by a previous bind operation.
  */
 trait Filter {

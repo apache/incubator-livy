@@ -24,19 +24,8 @@ import org.apache.hive.service.auth.PasswdAuthenticationProvider
 import org.apache.livy.thriftserver.auth.ldap._
 import org.apache.livy.LivyConf
 
-object LdapAuthenticationProviderImpl {
-
-  /**
-   * Initialize the Chain Filter List. Now GroupFilter is not supported.
-   * If needed, GroupFilter can be added in this list.
-   */
-  private def createFilters(conf: LivyConf): Filter = {
-    new ChainFilter(List(new UserFilter(conf)))
-  }
-}
-
 class LdapAuthenticationProviderImpl(val conf: LivyConf) extends PasswdAuthenticationProvider {
-  final private val filter: Filter = LdapAuthenticationProviderImpl.createFilters(conf)
+  final private val filter: Filter = new ChainFilter(List(new UserFilter(conf)))
   final private val searchFactory: DirSearchFactory = new LdapSearchFactory()
 
   @throws[AuthenticationException]
@@ -60,8 +49,7 @@ class LdapAuthenticationProviderImpl(val conf: LivyConf) extends PasswdAuthentic
       searchFactory.getInstance(conf, principal, password)
     } catch {
       case e: AuthenticationException =>
-        throw new AuthenticationException(
-          s"Error validating LDAP user: $user", e)
+        throw new AuthenticationException(s"Error validating LDAP user: $user", e)
     }
   }
 

@@ -27,21 +27,18 @@ import org.apache.livy.{LivyConf, Logging}
  */
 class UserFilter(conf: LivyConf) extends Filter with Logging {
   private val userFilterStr = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_USERFILTER)
+  private val userFilter: List[String] =
+      if (userFilterStr != null) userFilterStr.split(",").toList else Nil
 
   @throws[AuthenticationException]
   def apply(user: String): Unit = {
-
-    if (userFilterStr != null) {
-      val userFilter: List[String] = userFilterStr.split(",").toList
-
-      if (!userFilter.isEmpty) {
-        info("Authenticating user '{}' using user filter", user)
-        val userName = LdapUtils.extractUserName(user).toLowerCase
-        if (!userFilter.contains(userName)) {
-          info("Authentication failed based on user membership")
-          throw new AuthenticationException("Authentication failed: "
-            + "User not a member of specified list")
-        }
+    if (!userFilter.isEmpty) {
+      info("Authenticating user '{}' using user filter", user)
+      val userName = LdapUtils.extractUserName(user).toLowerCase
+      if (!userFilter.contains(userName)) {
+        info("Authentication failed based on user membership")
+        throw new AuthenticationException(
+          "Authentication failed: User not a member of specified list")
       }
     }
   }

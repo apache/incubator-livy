@@ -25,28 +25,24 @@ object LdapUtils extends Logging {
 
   /**
    * Extracts username from user DN.
-   * <br>
-   * <b>Examples:</b>
-   * <pre>
+   * Examples:
    * LdapUtils.extractUserName("UserName")                        = "UserName"
    * LdapUtils.extractUserName("UserName@mycorp.com")             = "UserName"
    * LdapUtils.extractUserName("cn=UserName,dc=mycompany,dc=com") = "UserName"
-   * </pre>
    */
   def extractUserName(userDn: String): String = {
-    var userName = userDn
-
     if (!isDn(userDn) && !hasDomain(userDn)) {
-      userName = userDn
+      userDn
     } else {
       val domainIdx = indexOfDomainMatch(userDn)
       if (domainIdx > 0) {
-        userName = userDn.substring(0, domainIdx)
+        userDn.substring(0, domainIdx)
       } else if (userDn.contains("=")) {
-        userName = userDn.substring(userDn.indexOf("=") + 1, userDn.indexOf(","))
+        userDn.substring(userDn.indexOf("=") + 1, userDn.indexOf(","))
+      } else {
+        userDn
       }
     }
-    userName
   }
 
   /**
@@ -59,21 +55,16 @@ object LdapUtils extends Logging {
     val idx2 = userName.indexOf('@')
     endIdx = Math.min(idx, idx2)
 
-    // If neither '/' nor '@' was found, using the latter
+    // If either '/' or '@' was missing, return the one which was found
     if (endIdx == -1) endIdx = Math.max(idx, idx2)
-
     endIdx
   }
 
   /**
    * Check for a domain part in the provided username.
-   * <br>
-   * <b>Example:</b>
-   * <br>
-   * <pre>
+   * Example:
    * LdapUtils.hasDomain("user1@mycorp.com") = true
    * LdapUtils.hasDomain("user1")            = false
-   * </pre>
    */
   def hasDomain(userName: String): Boolean = {
     indexOfDomainMatch(userName) > 0
@@ -81,13 +72,9 @@ object LdapUtils extends Logging {
 
   /**
    * Detects DN names.
-   * <br>
-   * <b>Example:</b>
-   * <br>
-   * <pre>
+   * Example:
    * LdapUtils.isDn("cn=UserName,dc=mycompany,dc=com") = true
    * LdapUtils.isDn("user1")                           = false
-   * </pre>
    */
   def isDn(name: String): Boolean = {
     name.contains("=")

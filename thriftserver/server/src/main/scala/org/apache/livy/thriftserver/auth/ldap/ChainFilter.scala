@@ -19,7 +19,7 @@ package org.apache.livy.thriftserver.auth.ldap
 import javax.security.sasl.AuthenticationException
 
 /**
- * A factory that produces a Filter that is implemented as a chain of other filters.
+ * Apply all the filters that  created from ChainFilter
  */
 class ChainFilter(val chainedFilters: List[Filter]) extends Filter {
   @throws[AuthenticationException]
