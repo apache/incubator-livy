@@ -9,16 +9,8 @@ logs/*
 **/build.marker
 **/dependency-reduced-pom.xml
 **/target/**
-**/bootstrap.css
-**/bootstrap.css.map
-**/bootstrap.js
 **/bootstrap.min.css
-**/bootstrap.min.css.map
 **/bootstrap.min.js
-**/bootstrap-theme.css.map
-**/bootstrap-theme.min.css.map
-**/bootstrap-theme.css
-**/bootstrap-theme.min.css
 **/dataTables.bootstrap.min.css
 **/dataTables.bootstrap.min.js
 **/jquery.dataTables.min.js
