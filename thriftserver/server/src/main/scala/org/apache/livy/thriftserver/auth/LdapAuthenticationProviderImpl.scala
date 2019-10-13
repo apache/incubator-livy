@@ -23,6 +23,7 @@ import org.apache.hive.service.auth.PasswdAuthenticationProvider
 
 import org.apache.livy.thriftserver.auth.ldap._
 import org.apache.livy.LivyConf
+import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
 
 class LdapAuthenticationProviderImpl(val conf: LivyConf) extends PasswdAuthenticationProvider {
   final private val filter: Filter = new ChainFilter(List(new UserFilter(conf)))
@@ -55,7 +56,7 @@ class LdapAuthenticationProviderImpl(val conf: LivyConf) extends PasswdAuthentic
 
   @throws[AuthenticationException]
   private def applyFilter(user: String): Unit = {
-    if (LdapUtils.hasDomain(user)) {
+    if (LdapAuthenticationHandlerImpl.hasDomain(user)) {
       filter(LdapUtils.extractUserName(user))
     } else {
       filter(user)

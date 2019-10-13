@@ -17,6 +17,7 @@
 package org.apache.livy.thriftserver.auth.ldap
 
 import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
 
 /**
  * Static utility methods related to LDAP authentication module.
@@ -31,10 +32,10 @@ object LdapUtils extends Logging {
    * LdapUtils.extractUserName("cn=UserName,dc=mycompany,dc=com") = "UserName"
    */
   def extractUserName(userDn: String): String = {
-    if (!isDn(userDn) && !hasDomain(userDn)) {
+    if (!isDn(userDn) && !LdapAuthenticationHandlerImpl.hasDomain(userDn)) {
       userDn
     } else {
-      val domainIdx = indexOfDomainMatch(userDn)
+      val domainIdx = LdapAuthenticationHandlerImpl.indexOfDomainMatch(userDn)
       if (domainIdx > 0) {
         userDn.substring(0, domainIdx)
       } else if (userDn.contains("=")) {
@@ -43,31 +44,6 @@ object LdapUtils extends Logging {
         userDn
       }
     }
-  }
-
-  /**
-   * Get the index separating the user name from domain name (the user's name up
-   * to the first '/' or '@'). Index of domain match or -1 if not found
-   */
-  def indexOfDomainMatch(userName: String): Int = {
-    var endIdx = -1
-    val idx = userName.indexOf('/')
-    val idx2 = userName.indexOf('@')
-    endIdx = Math.min(idx, idx2)
-
-    // If either '/' or '@' was missing, return the one which was found
-    if (endIdx == -1) endIdx = Math.max(idx, idx2)
-    endIdx
-  }
-
-  /**
-   * Check for a domain part in the provided username.
-   * Example:
-   * LdapUtils.hasDomain("user1@mycorp.com") = true
-   * LdapUtils.hasDomain("user1")            = false
-   */
-  def hasDomain(userName: String): Boolean = {
-    indexOfDomainMatch(userName) > 0
   }
 
   /**
@@ -86,17 +62,17 @@ object LdapUtils extends Logging {
   def createCandidatePrincipal(conf: LivyConf, user: String): String = {
     val ldapDomain = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_DOMAIN)
     val ldapBaseDN = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_BASEDN)
-
-    var principle = user
-    if (!hasDomain(user) && ldapDomain != null) {
-      principle = user + "@" + ldapDomain
+    val principle = if (!LdapAuthenticationHandlerImpl.hasDomain(user) && ldapDomain != null) {
+      user + "@" + ldapDomain
+    } else {
+      user
     }
 
-    var bindDN = principle
     if (ldapBaseDN != null) {
-      bindDN = "uid=" + principle + "," + ldapBaseDN
+      "uid=" + principle + "," + ldapBaseDN
+    } else {
+      principle
     }
-    bindDN
   }
 }
 
