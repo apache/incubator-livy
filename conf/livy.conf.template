@@ -135,7 +135,7 @@
 # livy.server.yarn.app-monitor.max-failed.times = 120
 
 # How often Livy polls YARN to refresh YARN app state.
-# livy.server.yarn.poll-interval = 500ms
+# livy.server.yarn.poll-interval = 5s
 #
 # Days to keep Livy server request logs.
 # livy.server.request-log-retain.days = 5

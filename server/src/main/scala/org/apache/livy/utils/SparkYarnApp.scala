@@ -18,8 +18,9 @@ package org.apache.livy.utils
 
 import java.util.concurrent.Executors
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -41,13 +42,16 @@ object SparkYarnApp extends Logging {
     mockYarnClient = client
     sessionLeakageCheckInterval = livyConf.getTimeAsMs(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL)
     sessionLeakageCheckTimeout = livyConf.getTimeAsMs(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT)
+
     yarnPollInterval = livyConf.getTimeAsMs(LivyConf.YARN_POLL_INTERVAL)
     yarnAppMonitorTimeout = livyConf.getTimeAsMs(LivyConf.YARN_APP_MONITOR_TIMEOUT)
     yarnAppMonitorMaxFailedTimes = livyConf.getTimeAsMs(LivyConf.YARN_APP_MONITOR_MAX_FAILED_TIMES)
     yarnAppLookUpInterval = livyConf.getTimeAsMs(LivyConf.YARN_APP_LOOKUP_INTERVAL)
+
     leakedAppsGCThread.setDaemon(true)
     leakedAppsGCThread.setName("LeakedAppsGCThread")
     leakedAppsGCThread.start()
+
     yarnAppMonitorThread.setDaemon(true)
     yarnAppMonitorThread.setName("YarnAppMonitorThread")
     yarnAppMonitorThread.start()
@@ -67,7 +71,7 @@ object SparkYarnApp extends Logging {
 
   private[utils] val leakedAppTags = new java.util.concurrent.ConcurrentHashMap[String, Long]()
 
-  private[utils] val appList = new ListBuffer[SparkYarnApp]()
+  private[utils] val appMap = new TrieMap[SparkYarnApp, String]()
 
   private var sessionLeakageCheckTimeout: Long = _
 
@@ -126,23 +130,25 @@ object SparkYarnApp extends Logging {
     override def run() : Unit = {
       val executor = Executors.newSingleThreadExecutor
       while (true) {
-        for (app <- appList) {
-          val handler = executor.submit(new Runnable {
-            override def run(): Unit = {
-              app.monitorSparkYarnApp()
+        for ((app, appTag) <- appMap) {
+          Future {
+            val handler = executor.submit(new Runnable {
+              override def run(): Unit = {
+                app.monitorSparkYarnApp()
+              }
+            })
+            try {
+              // prevent the rpc block of one app from blocking all apps
+              handler.get(yarnAppMonitorTimeout, MILLISECONDS)
+            } catch {
+              case e: Exception => {
+                handler.cancel(true)
+                error(s"monitor app: ${appTag} exception:", e)
+              }
             }
-          })
-          try {
-            // prevent the rpc block of one app from blocking all apps
-            handler.get(yarnAppMonitorTimeout, MILLISECONDS)
-          } catch {
-            case e: Exception => {
-              handler.cancel(true)
-              error(s"monitor app: ${app.getAppTag} exception:", e)
+            if (!app.isRunning) {
+              appMap -= app
             }
-          }
-          if (!app.isRunning) {
-            appList -= app
           }
         }
         Thread.sleep(yarnPollInterval)
@@ -172,7 +178,7 @@ class SparkYarnApp private[utils] (
   with Logging {
   import SparkYarnApp._
 
-  appList += this
+  appMap.put(this, appTag)
 
   private var killed = false
   private[utils] var state: SparkApp.State = SparkApp.State.STARTING
@@ -184,8 +190,6 @@ class SparkYarnApp private[utils] (
     ("stdout: " +: process.map(_.inputLines).getOrElse(ArrayBuffer.empty[String])) ++
     ("\nstderr: " +: process.map(_.errorLines).getOrElse(ArrayBuffer.empty[String])) ++
     ("\nYARN Diagnostics: " +: yarnDiagnostics)
-
-  private def getAppTag = appTag
 
   override def kill(): Unit = synchronized {
     killed = true
