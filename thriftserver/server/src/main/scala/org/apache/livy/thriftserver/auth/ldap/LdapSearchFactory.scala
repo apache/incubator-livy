@@ -49,7 +49,7 @@ object LdapSearchFactory extends Logging {
 class LdapSearchFactory extends DirSearchFactory with Logging {
 
   @throws(classOf[AuthenticationException])
-  def getInstance(conf: LivyConf, principal: String, password: String): Unit = {
+  def getInstance(conf: LivyConf, principal: String, password: String): InitialDirContext = {
     try {
       LdapSearchFactory.createDirContext(conf, principal, password)
     } catch {

@@ -16,6 +16,7 @@
  */
 package org.apache.livy.thriftserver.auth.ldap
 
+import javax.naming.directory.InitialDirContext
 import javax.security.sasl.AuthenticationException
 
 import org.apache.livy.LivyConf
@@ -32,5 +33,5 @@ trait DirSearchFactory {
    * @param password user password
    */
   @throws[AuthenticationException]
-  def getInstance(conf: LivyConf, user: String, password: String): Unit
+  def getInstance(conf: LivyConf, user: String, password: String): InitialDirContext
 }

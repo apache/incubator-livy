@@ -21,14 +21,12 @@ import javax.security.sasl.AuthenticationException
 import org.apache.livy.{LivyConf, Logging}
 
 /**
- * A factory for a Filter based on a list of allowed users.
- * The produced filter object filters out all users that are not on the provided in
- * Livy configuration list.
+ * Filter out all users that are not in the provided in Livy configuration list.
  */
 class UserFilter(conf: LivyConf) extends Filter with Logging {
   private val userFilterStr = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_USERFILTER)
-  private val userFilter: List[String] =
-      if (userFilterStr != null) userFilterStr.split(",").toList else Nil
+  private val userFilter: Set[String] =
+      if (userFilterStr != null) userFilterStr.split(",").toSet else Set()
 
   @throws[AuthenticationException]
   def apply(user: String): Unit = {

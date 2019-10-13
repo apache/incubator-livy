@@ -19,9 +19,9 @@ package org.apache.livy.thriftserver.auth.ldap
 import javax.security.sasl.AuthenticationException
 
 /**
- * Apply all the filters that  created from ChainFilter
+ * Applies all the filters passed as param to the `ChainFilter`
  */
-class ChainFilter(val chainedFilters: List[Filter]) extends Filter {
+class ChainFilter(val chainedFilters: Seq[Filter]) extends Filter {
   @throws[AuthenticationException]
   def apply(user: String): Unit = {
     chainedFilters.foreach { f => f(user) }
