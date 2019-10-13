@@ -36,6 +36,7 @@ import org.scalatra.metrics.MetricsSupportExtensions._
 import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
 
 import org.apache.livy._
+import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.interactive.InteractiveSessionServlet
 import org.apache.livy.server.recovery.{SessionStore, StateStore}
@@ -259,6 +260,26 @@ class LivyServer extends Logging {
           livyConf.get(AUTH_KERBEROS_NAME_RULES))
         server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
         info(s"SPNEGO auth enabled (principal = $principal)")
+
+      case authType @ LdapAuthenticationHandlerImpl.TYPE =>
+        val holder = new FilterHolder(new AuthenticationFilter())
+        holder.setInitParameter(AuthenticationFilter.AUTH_TYPE,
+          LdapAuthenticationHandlerImpl.getClass.getCanonicalName.dropRight(1))
+        Option(livyConf.get(LivyConf.AUTH_LDAP_URL)).foreach { url =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.PROVIDER_URL, url)
+        }
+        Option(livyConf.get(LivyConf.AUTH_LDAP_USERNAME_DOMAIN)).foreach { domain =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.LDAP_BIND_DOMAIN, domain)
+        }
+        Option(livyConf.get(LivyConf.AUTH_LDAP_BASE_DN)).foreach { baseDN =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.BASE_DN, baseDN)
+        }
+        holder.setInitParameter(LdapAuthenticationHandlerImpl.SECURITY_AUTHENTICATION,
+          livyConf.get(LivyConf.AUTH_LDAP_SECURITY_AUTH))
+        holder.setInitParameter(LdapAuthenticationHandlerImpl.ENABLE_START_TLS,
+          livyConf.get(LivyConf.AUTH_LDAP_ENABLE_START_TLS))
+        server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
+        info("LDAP auth enabled.")
 
       case null =>
         // Nothing to do.

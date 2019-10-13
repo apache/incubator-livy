@@ -87,6 +87,13 @@ object LivyConf {
   val HADOOP_CREDENTIAL_PROVIDER_PATH = Entry("livy.hadoop.security.credential.provider.path", null)
 
   val AUTH_TYPE = Entry("livy.server.auth.type", null)
+  // Ldap configurations
+  val AUTH_LDAP_URL = Entry("livy.server.auth.ldap.url", null)
+  val AUTH_LDAP_BASE_DN = Entry("livy.server.auth.ldap.base-dn", null)
+  val AUTH_LDAP_USERNAME_DOMAIN = Entry("livy.server.auth.ldap.username-domain", null)
+  val AUTH_LDAP_ENABLE_START_TLS = Entry("livy.server.auth.ldap.enable-start-tls", "false")
+  val AUTH_LDAP_SECURITY_AUTH = Entry("livy.server.auth.ldap.security-authentication", "simple")
+  // kerberos configurations
   val AUTH_KERBEROS_PRINCIPAL = Entry("livy.server.auth.kerberos.principal", null)
   val AUTH_KERBEROS_KEYTAB = Entry("livy.server.auth.kerberos.keytab", null)
   val AUTH_KERBEROS_NAME_RULES = Entry("livy.server.auth.kerberos.name-rules", "DEFAULT")
