@@ -219,10 +219,10 @@ public class RSCDriver extends BaseProtocol {
    * Calculate each stage's process and broadcast message to the end user
    * @param jobId
    */
-  void handleProcessMessage(String jobId){
+  void handleProcessMessage(String jobId) {
     SparkStatusTracker sparkStatusTracker;
-    synchronized (jcLock){
-      if (jc == null){
+    synchronized (jcLock) {
+      if (jc == null) {
         return;
       }
       sparkStatusTracker = jc.sc().sc().statusTracker();
@@ -230,12 +230,12 @@ public class RSCDriver extends BaseProtocol {
     int[] activeStageIds = sparkStatusTracker.getActiveStageIds();
     for (int stageId: activeStageIds) {
       SparkStageInfo stageInfo = sparkStatusTracker.getStageInfo(stageId).get();
-      if (stageInfo != null){
+      if (stageInfo != null) {
         int all = stageInfo.numTasks();
         int completed = stageInfo.numCompletedTasks();
         int active = stageInfo.numActiveTasks();
         int failed = stageInfo.numFailedTasks();
-        if (all == 0){
+        if (all == 0) {
           continue;
         }
         broadcast(new JobProcessMessage(jobId, stageId, completed, active, failed, all));

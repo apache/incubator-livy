@@ -36,8 +36,7 @@ import org.apache.hive.service.cli.{HiveSQLException, SessionHandle}
 import org.apache.hive.service.rpc.thrift.TProtocolVersion
 import org.apache.hive.service.server.ThreadFactoryWithGarbageCleanup
 
-import org.apache.livy.{ConcurrentBoundedLinkedQueue, LivyConf, Logging,
-  OperationMessageManager}
+import org.apache.livy.{ConcurrentBoundedLinkedQueue, LivyConf, Logging}
 import org.apache.livy.server.interactive.{CreateInteractiveRequest, InteractiveSession}
 import org.apache.livy.sessions.Spark
 import org.apache.livy.thriftserver.SessionStates._
@@ -250,13 +249,15 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       try {
         livyServiceUGI.doAs(new PrivilegedExceptionAction[InteractiveSession] {
           override def run(): InteractiveSession = {
-            OperationMessageManager.set(operationMessages.orNull)
             livySession =
               getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
             synchronized {
               managedLivySessionActiveUsers.get(livySession.id).foreach { numUsers =>
                 managedLivySessionActiveUsers(livySession.id) = numUsers + 1
               }
+            }
+            if (livySession.client.isDefined) {
+              livySession.client.get.setOperationMessage(operationMessages.orNull)
             }
             initSession(sessionHandle, livySession, initStatements)
             operationMessages.foreach(

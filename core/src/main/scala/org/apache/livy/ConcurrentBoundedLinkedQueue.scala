@@ -19,10 +19,10 @@ package org.apache.livy
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
-class ConcurrentBoundedLinkedQueue[E](capacity: Long) extends ConcurrentLinkedQueue[E]{
+class ConcurrentBoundedLinkedQueue[E](capacity: Long) extends ConcurrentLinkedQueue[E] {
 
   override def offer(e: E): Boolean = {
-    if (this.size() ==  capacity){
+    if (this.size() == capacity) {
       this.poll()
     }
     super.offer(e)

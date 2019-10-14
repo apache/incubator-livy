@@ -195,7 +195,7 @@ class LivyExecuteStatementOperation(
    */
   def getOperationMessages: Seq[String] = {
     def fetchNext(acc: mutable.ListBuffer[String]): Boolean = {
-      if (operationMessages.isEmpty){
+      if (operationMessages.isEmpty) {
         return false
       }
       val m = operationMessages.get.poll()

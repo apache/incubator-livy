@@ -70,13 +70,13 @@ public class JobWrapper<T> implements Callable<Void> {
         }
       }
 
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                driver.handleProcessMessage(jobId);
-            }
-        }, firstDelayMSec, updatePeriodMSec);
-        LOG.debug("refreshing process timer is started!");
+      timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+          driver.handleProcessMessage(jobId);
+        }
+      }, firstDelayMSec, updatePeriodMSec);
+      LOG.debug("refreshing process timer is started!");
 
       jobStarted();
       T result = job.call(driver.jobContext());

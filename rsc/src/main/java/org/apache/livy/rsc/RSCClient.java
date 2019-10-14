@@ -147,6 +147,10 @@ public class RSCClient implements LivyClient {
     }
   }
 
+  public void setOperationMessage(ConcurrentBoundedLinkedQueue<String> operationMessage) {
+    protocol.setOperationMessages(operationMessage);
+  }
+
   private void connectionError(Throwable error) {
     LOG.error("Failed to connect to context.", error);
     try {
@@ -330,8 +334,11 @@ public class RSCClient implements LivyClient {
 
     private final String PROCESS_FORMAT = "stage %3s: percentage: %3d%% active: %s " +
             "completed: %s failed: %s all: %s";
-    private final ConcurrentBoundedLinkedQueue<String> operationMessages =
-            OperationMessageManager.get();
+    private ConcurrentBoundedLinkedQueue<String> operationMessages;
+
+    public void setOperationMessages(ConcurrentBoundedLinkedQueue<String> operationMessages) {
+      this.operationMessages = operationMessages;
+    }
 
     <T> JobHandleImpl<T> submit(Job<T> job) {
       final String jobId = UUID.randomUUID().toString();
@@ -416,9 +423,9 @@ public class RSCClient implements LivyClient {
       }
     }
 
-    private void handle(ChannelHandlerContext ctx, JobProcessMessage msg){
+    private void handle(ChannelHandlerContext ctx, JobProcessMessage msg) {
       if (operationMessages != null) {
-        int percentage = (int)Math.round(msg.completed / (double)msg.all * 100);
+        int percentage = (int) Math.round(msg.completed / (double) msg.all * 100);
         operationMessages.offer(String.format(PROCESS_FORMAT, msg.stageId, percentage, msg.active,
                 msg.completed, msg.failed, msg.all));
       }
