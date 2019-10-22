@@ -174,11 +174,6 @@ object LivyConf {
     Entry("livy.server.thrift.delegation.token.max-lifetime", "7d")
   val THRIFT_DELEGATION_TOKEN_RENEW_INTERVAL =
     Entry("livy.server.thrift.delegation.token.renew-interval", "1d")
-  val THRIFT_LDAP_AUTHENTICATION_URL = Entry("livy.server.thrift.ldap.authentication.url", null)
-  val THRIFT_LDAP_AUTHENTICATION_BASEDN =
-    Entry("livy.server.thrift.ldap.authentication.basedn", null)
-  val THRIFT_LDAP_AUTHENTICATION_DOMAIN =
-    Entry("livy.server.thrift.ldap.authentication.domain", null)
   val THRIFT_LDAP_AUTHENTICATION_USERFILTER =
     Entry("livy.server.thrift.ldap.authentication.userfilter", null)
   /**

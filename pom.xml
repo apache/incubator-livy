@@ -129,6 +129,7 @@
       Properties for the copyright header style checks. Modules that use the ASF header
       should override the "copyright.header" property.
     -->
+
     <!--
       Artifacts that should not be deployed to a maven repo should override the "skipDeploy"
       property in their pom.

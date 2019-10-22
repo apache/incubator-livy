@@ -66,9 +66,8 @@ class TestLdapAuthenticationProviderImpl extends AbstractLdapTestUnit {
 
   @Before
   def setup(): Unit = {
-    livyConf.set(LivyConf.THRIFT_AUTHENTICATION, "ldap")
-    livyConf.set(LivyConf.THRIFT_LDAP_AUTHENTICATION_BASEDN, "dc=example,dc=com")
-    livyConf.set(LivyConf.THRIFT_LDAP_AUTHENTICATION_URL, String.format("ldap://%s:%s", "localhost",
+    livyConf.set(LivyConf.AUTH_LDAP_BASE_DN, "dc=example,dc=com")
+    livyConf.set(LivyConf.AUTH_LDAP_URL, String.format("ldap://%s:%s", "localhost",
       AbstractLdapTestUnit.getLdapServer.getPort.toString))
   }
 

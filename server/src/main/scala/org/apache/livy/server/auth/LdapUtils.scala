@@ -14,28 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.livy.thriftserver.auth.ldap
+package org.apache.livy.server.auth
 
-import org.apache.livy.{LivyConf, Logging}
-import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
+import org.apache.livy.LivyConf
 
 /**
  * Static utility methods related to LDAP authentication module.
  */
-object LdapUtils extends Logging {
+object LdapUtils {
+
+  def hasDomain(userName: String): Boolean = {
+    indexOfDomainMatch(userName) > 0
+  }
+
+  /**
+   * Get the index separating the user name from domain name (the user's name up
+   * to the first '/' or '@').
+   */
+  def indexOfDomainMatch(userName: String): Int = {
+    val idx = userName.indexOf('/')
+    val idx2 = userName.indexOf('@')
+    // Use the earlier match.
+    val endIdx = Math.min(idx, idx2)
+    // If neither '/' nor '@' was found, using the latter
+    if (endIdx == -1) Math.max(idx, idx2) else endIdx
+  }
 
   /**
    * Extracts username from user DN.
-   * Examples:
-   * LdapUtils.extractUserName("UserName")                        = "UserName"
-   * LdapUtils.extractUserName("UserName@mycorp.com")             = "UserName"
-   * LdapUtils.extractUserName("cn=UserName,dc=mycompany,dc=com") = "UserName"
    */
   def extractUserName(userDn: String): String = {
-    if (!isDn(userDn) && !LdapAuthenticationHandlerImpl.hasDomain(userDn)) {
+    if (!isDn(userDn) && !hasDomain(userDn)) {
       userDn
     } else {
-      val domainIdx = LdapAuthenticationHandlerImpl.indexOfDomainMatch(userDn)
+      val domainIdx = indexOfDomainMatch(userDn)
       if (domainIdx > 0) {
         userDn.substring(0, domainIdx)
       } else if (userDn.contains("=")) {
@@ -48,9 +60,6 @@ object LdapUtils extends Logging {
 
   /**
    * Detects DN names.
-   * Example:
-   * LdapUtils.isDn("cn=UserName,dc=mycompany,dc=com") = true
-   * LdapUtils.isDn("user1")                           = false
    */
   def isDn(name: String): Boolean = {
     name.contains("=")
@@ -60,9 +69,9 @@ object LdapUtils extends Logging {
    * Creates a principal to be used for user authentication.
    */
   def createCandidatePrincipal(conf: LivyConf, user: String): String = {
-    val ldapDomain = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_DOMAIN)
-    val ldapBaseDN = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_BASEDN)
-    val principle = if (!LdapAuthenticationHandlerImpl.hasDomain(user) && ldapDomain != null) {
+    val ldapDomain = conf.get(LivyConf.AUTH_LDAP_USERNAME_DOMAIN)
+    val ldapBaseDN = conf.get(LivyConf.AUTH_LDAP_BASE_DN )
+    val principle = if (!hasDomain(user) && ldapDomain != null) {
       user + "@" + ldapDomain
     } else {
       user

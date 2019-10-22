@@ -34,14 +34,13 @@ object LdapSearchFactory extends Logging {
       principal: String,
       password: String): InitialDirContext = {
     val env = new Hashtable[String, String]
-    val ldapUrl = conf.get(LivyConf.THRIFT_LDAP_AUTHENTICATION_URL)
+    val ldapUrl = conf.get(LivyConf.AUTH_LDAP_URL)
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
     env.put(Context.PROVIDER_URL, ldapUrl)
     env.put(Context.SECURITY_AUTHENTICATION, "simple")
     env.put(Context.SECURITY_CREDENTIALS, password)
     env.put(Context.SECURITY_PRINCIPAL, principal)
 
-    debug("Connecting using principal {} to ldap url {}", principal, ldapUrl)
     new InitialDirContext(env)
   }
 }
@@ -54,7 +53,6 @@ class LdapSearchFactory extends DirSearchFactory with Logging {
       LdapSearchFactory.createDirContext(conf, principal, password)
     } catch {
       case e: NamingException =>
-        debug("Could not connect to the LDAP Server:Authentication failed for {}", principal)
         throw new AuthenticationException("Error validating LDAP user", e)
     }
   }

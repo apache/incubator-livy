@@ -19,6 +19,7 @@ package org.apache.livy.thriftserver.auth.ldap
 import javax.security.sasl.AuthenticationException
 
 import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.server.auth.LdapUtils
 
 /**
  * Filter out all users that are not in the provided in Livy configuration list.
