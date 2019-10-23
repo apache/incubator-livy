@@ -96,7 +96,12 @@ class LivyThriftDynamicServiceRegister(server: LivyThriftServer, thriftCLIServic
     if ((thriftCLIService == null) || (thriftCLIService.getServerIPAddress == null)) {
       throw new Exception("Unable to get the server address; it hasn't been initialized yet.")
     }
-    return thriftCLIService.getServerIPAddress.getHostName
+    val thriftBindHost = server.livyConf.get(LivyConf.THRIFT_BIND_HOST)
+    if (thriftBindHost != null && !thriftBindHost.isEmpty) {
+      return thriftBindHost
+    } else {
+      return thriftCLIService.getServerIPAddress.getHostName
+    }
   }
 
   private def getServerPortNumber(): Int = {
