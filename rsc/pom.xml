@@ -50,6 +50,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.livy</groupId>
       <artifactId>livy-core_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
@@ -58,7 +63,7 @@
     </dependency>
 
     <dependency>
-      <groupId>com.esotericsoftware.kryo</groupId>
+      <groupId>com.esotericsoftware</groupId>
       <artifactId>kryo</artifactId>
     </dependency>
     <dependency>
@@ -116,11 +121,6 @@
       <artifactId>hadoop-common</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -140,7 +140,9 @@
               <artifactSet>
                 <includes>
                   <include>org.apache.livy:livy-client-common</include>
-                  <include>com.esotericsoftware.kryo:kryo</include>
+                  <include>com.esotericsoftware:kryo</include>
+                  <include>com.esotericsoftware:minlog</include>
+                  <include>com.esotericsoftware:reflectasm</include>
                 </includes>
               </artifactSet>
               <filters>

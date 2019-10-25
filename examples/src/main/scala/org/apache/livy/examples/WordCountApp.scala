@@ -119,7 +119,7 @@ object WordCountApp {
     scalaClient.submit { context =>
       val sqlctx = context.sqlctx
       val rdd = sqlctx.read.json(inputPath)
-      rdd.registerTempTable("words")
+      rdd.createOrReplaceTempView("words")
       val result = sqlctx.sql("select word, count(word) as word_count from words " +
         "group by word order by word_count desc limit 1")
       result.first().toString()

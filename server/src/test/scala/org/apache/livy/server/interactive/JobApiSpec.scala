@@ -29,7 +29,7 @@ import scala.language.postfixOps
 
 import org.apache.hadoop.security.UserGroupInformation
 import org.scalatest.concurrent.Eventually._
-import org.scalatest.mock.MockitoSugar.mock
+import org.scalatestplus.mockito.MockitoSugar.mock
 
 import org.apache.livy.{Job, JobHandle, LivyConf}
 import org.apache.livy.client.common.{BufferUtils, Serializer}

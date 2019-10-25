@@ -22,6 +22,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 import org.scalatest.FunSuite
 

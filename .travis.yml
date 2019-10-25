@@ -34,6 +34,12 @@ matrix:
     env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipITs'
   - name: "Spark 2.4 ITs"
     env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipTests'
+  - name: "Spark 3.0 Unit Tests"
+    env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipITs'
+  - name: "Spark 3.0 ITs"
+    env: 
+      - MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipTests'
+      - PYSPARK_ROW_FIELD_SORTING_ENABLED=true
 
 jdk:
   - oraclejdk8

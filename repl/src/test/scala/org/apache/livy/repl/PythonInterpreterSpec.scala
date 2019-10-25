@@ -255,6 +255,11 @@ class Python2InterpreterSpec extends PythonBaseInterpreterSpec {
 
   implicit val formats = DefaultFormats
 
+  override protected def withFixture(test: NoArgTest) = {
+    assume(!sys.props.getOrElse("skipPython2Tests", "false").toBoolean, "Skipping Python2 tests.")
+    test()
+  }
+
   override def createInterpreter(): Interpreter = {
     val sparkConf = new SparkConf()
     PythonInterpreter(sparkConf, new SparkEntries(sparkConf))

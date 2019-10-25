@@ -243,7 +243,9 @@ class ContextLauncher {
       launcher.setAppResource(SparkLauncher.NO_RESOURCE);
       launcher.setPropertiesFile(confFile.getAbsolutePath());
       launcher.setMainClass(RSCDriverBootstrapper.class.getName());
-
+      if (conf.get(MASTER) != null) {
+        launcher.setMaster(conf.get(MASTER));
+      }
       if (conf.get(PROXY_USER) != null) {
         launcher.addSparkArg("--proxy-user", conf.get(PROXY_USER));
       }

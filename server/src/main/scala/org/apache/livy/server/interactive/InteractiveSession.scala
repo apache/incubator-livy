@@ -208,7 +208,13 @@ object InteractiveSession extends Logging {
             if (new File(sparkHome, "RELEASE").isFile) {
               new File(sparkHome, "jars")
             } else {
-              new File(sparkHome, "assembly/target/scala-2.11/jars")
+              new File(sparkHome, "assembly/target/scala-*/jars")
+            }
+          case 3 =>
+            if (new File(sparkHome, "RELEASE").isFile) {
+              new File(sparkHome, "jars")
+            } else {
+              new File(sparkHome, "assembly/target/scala-2.12/jars")
             }
           case v =>
             throw new RuntimeException(s"Unsupported Spark major version: $sparkMajorVersion")
@@ -415,13 +421,13 @@ class InteractiveSession(
     } else {
       val uriFuture = Future { client.get.getServerUri.get() }
 
-      uriFuture.onSuccess { case url =>
+      uriFuture.foreach { case url =>
         rscDriverUri = Option(url)
         sessionSaveLock.synchronized {
           sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
         }
       }
-      uriFuture.onFailure { case e => warn("Fail to get rsc uri", e) }
+      uriFuture.failed.foreach { case e => warn("Fail to get rsc uri", e) }
 
       // Send a dummy job that will return once the client is ready to be used, and set the
       // state to "idle" at that point.

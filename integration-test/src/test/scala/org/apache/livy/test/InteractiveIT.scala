@@ -41,7 +41,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       // with the mini cluster
       s.run("""sc.getConf.get("spark.executor.instances")""").verifyResult("res1: String = 1\n")
 
-      s.run("val sql = new org.apache.spark.sql.SQLContext(sc)").verifyResult(
+      s.run("val sql = spark.sqlContext").verifyResult(
         ".*" + Pattern.quote(
         "sql: org.apache.spark.sql.SQLContext = org.apache.spark.sql.SQLContext") + ".*")
       s.run("abcde").verifyError(evalue = ".*?:[0-9]+: error: not found: value abcde.*")
@@ -51,7 +51,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       // Verify query submission
       s.run(s"""val df = spark.createDataFrame(Seq(("jerry", 20), ("michael", 21)))""")
         .verifyResult(".*" + Pattern.quote("df: org.apache.spark.sql.DataFrame") + ".*")
-      s.run("df.registerTempTable(\"people\")").result()
+      s.run("df.createOrReplaceTempView(\"people\")").result()
       s.run("SELECT * FROM people", Some(SQL)).verifyResult(".*\"jerry\",20.*\"michael\",21.*")
 
       // Verify Livy internal configurations are not exposed.
@@ -99,6 +99,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
   }
 
   test("R interactive session") {
+    assume(!sys.props.getOrElse("skipRTests", "false").toBoolean, "Skipping R tests.")
     withNewSession(SparkR) { s =>
       // R's output sometimes includes the count of statements, which makes it annoying to test
       // things. This helps a bit.

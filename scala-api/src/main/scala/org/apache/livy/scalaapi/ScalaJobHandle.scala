@@ -190,6 +190,19 @@ class ScalaJobHandle[T] private[livy] (jobHandle: JobHandle[T]) extends Future[T
     getJavaFutureResult(jobHandle, atMost)
     this
   }
+
+  // These two methods must be implemented in Scala 2.12. They're implemented as a no-op here
+  // and then filled in with a real implementation in the two subclasses below. The no-op exists
+  // here so that those implementations can declare "override", necessary in 2.12, while working
+  // in 2.11, where the method doesn't exist in the superclass.
+  // After 2.11 support goes away, remove these two:
+
+  def transform[S](f: (Try[T]) => Try[S])(implicit executor: ExecutionContext): Future[S] =
+    throw new UnsupportedOperationException()
+
+  def transformWith[S](f: (Try[T]) => Future[S])(implicit executor: ExecutionContext): Future[S] =
+    throw new UnsupportedOperationException()
+
 }
 
 private abstract class AbstractScalaJobHandleListener[T] extends Listener[T] {

@@ -82,7 +82,9 @@ public class RSCConf extends ClientConf<RSCConf> {
     RETAINED_SHARE_VARIABLES("retained.share-variables", 100),
 
     // Number of result rows to get for SQL Interpreters.
-    SQL_NUM_ROWS("sql.num-rows", 1000);
+    SQL_NUM_ROWS("sql.num-rows", 1000),
+
+    MASTER("spark.master", null);
 
     private final String key;
     private final Object dflt;

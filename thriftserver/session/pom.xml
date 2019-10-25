@@ -106,5 +106,17 @@
         <json4s.version>3.5.3</json4s.version>
       </properties>
     </profile>
+    <profile>
+      <id>spark-2.4-2.12</id>
+      <properties>
+        <json4s.version>3.5.3</json4s.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>spark-3.0</id>
+      <properties>
+        <json4s.version>3.6.6</json4s.version>
+      </properties>
+    </profile>
   </profiles>
 </project>

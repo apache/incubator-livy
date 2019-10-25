@@ -20,7 +20,7 @@ package org.apache.livy.server
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse._
 
-import org.scalatest.mock.MockitoSugar.mock
+import org.scalatestplus.mockito.MockitoSugar.mock
 
 import org.apache.livy.LivyConf
 import org.apache.livy.server.recovery.SessionStore

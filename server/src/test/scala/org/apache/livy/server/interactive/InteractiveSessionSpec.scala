@@ -31,7 +31,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.scalatest.{BeforeAndAfterAll, FunSpec, Matchers}
 import org.scalatest.concurrent.Eventually._
-import org.scalatest.mock.MockitoSugar.mock
+import org.scalatestplus.mockito.MockitoSugar.mock
 
 import org.apache.livy.{ExecuteRequest, JobHandle, LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.rsc.{PingJob, RSCClient, RSCConf}
@@ -189,26 +189,19 @@ class InteractiveSessionSpec extends FunSpec
       assert(properties(RSCConf.Entry.RPC_CHANNEL_LOG_LEVEL.key()) === "TRACE")
     }
 
-    withSession("should execute `1 + 2` == 3") { session =>
-      val pyResult = executeStatement("1 + 2", Some("pyspark"))
-      pyResult should equal (Extraction.decompose(Map(
+    withSession("should execute `1 + 2` == 3 (pyspark)") { session =>
+      executeStatement("1 + 2", Some("pyspark")) should equal (Extraction.decompose(Map(
         "status" -> "ok",
         "execution_count" -> 0,
         "data" -> Map("text/plain" -> "3")))
       )
+    }
 
-      val scalaResult = executeStatement("1 + 2", Some("spark"))
-      scalaResult should equal (Extraction.decompose(Map(
+    withSession("should execute `1 + 2` == 3 (spark)") { session =>
+      executeStatement("1 + 2", Some("spark")) should equal (Extraction.decompose(Map(
         "status" -> "ok",
         "execution_count" -> 1,
         "data" -> Map("text/plain" -> "res0: Int = 3\n")))
-      )
-
-      val rResult = executeStatement("1 + 2", Some("sparkr"))
-      rResult should equal (Extraction.decompose(Map(
-        "status" -> "ok",
-        "execution_count" -> 2,
-        "data" -> Map("text/plain" -> "[1] 3")))
       )
     }
 
@@ -216,7 +209,7 @@ class InteractiveSessionSpec extends FunSpec
       val result = executeStatement("x")
       val expectedResult = Extraction.decompose(Map(
         "status" -> "error",
-        "execution_count" -> 3,
+        "execution_count" -> 2,
         "ename" -> "NameError",
         "evalue" -> "name 'x' is not defined",
         "traceback" -> List(
@@ -228,6 +221,16 @@ class InteractiveSessionSpec extends FunSpec
       result should equal (expectedResult)
       eventually(timeout(10 seconds), interval(30 millis)) {
         session.state shouldBe (SessionState.Idle)
+      }
+    }
+
+    withSession("should execute `1 + 2` == 3 (sparkr)") { session => {
+        assume(!sys.props.getOrElse("skipRTests", "false").toBoolean, "Skipping R tests.")
+        executeStatement("1 + 2", Some("sparkr")) should equal (Extraction.decompose(Map(
+          "status" -> "ok",
+          "execution_count" -> 3,
+          "data" -> Map("text/plain" -> "[1] 3")))
+        )
       }
     }
 

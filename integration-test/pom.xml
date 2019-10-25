@@ -49,9 +49,49 @@
       <version>${project.version}</version>
     </dependency>
 
+
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>livy-rsc</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>livy-server</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>livy-core_2.11</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>livy-core_2.12</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.json4s</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scalatra</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.module</groupId>
+          <artifactId>jackson-module-scala_2.11</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.module</groupId>
+          <artifactId>jackson-module-scala_2.12</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>livy-core_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -70,6 +110,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.json4s</groupId>
+      <artifactId>json4s-ast_${scala.binary.version}</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
     </dependency>
@@ -80,14 +125,58 @@
     </dependency>
 
     <dependency>
+      <groupId>org.json4s</groupId>
+      <artifactId>json4s-core_${scala.binary.version}</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.json4s</groupId>
+      <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatra</groupId>
+      <artifactId>scalatra_${scala.binary.version}</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatra</groupId>
+      <artifactId>scalatra-json_${scala.binary.version}</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatra</groupId>
+      <artifactId>scalatra-metrics_${scala.binary.version}</artifactId>
+      <version>${scalatra.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.typesafe.akka</groupId>
+          <artifactId>akka-actor_${scala.binary.version}</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
       <groupId>com.fasterxml.jackson.module</groupId>
       <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
     </dependency>
 
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>livy-client-http</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>livy-test-lib</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.asynchttpclient</groupId>
       <artifactId>async-http-client</artifactId>
-      <version>2.10.1</version>
     </dependency>
 
     <dependency>

@@ -516,7 +516,8 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
           statement.close()
         }
       }
-      assert(caught.getMessage.contains("Table or view not found: `global_temp`.`invalid_table`"))
+      assert(caught.getMessage.replaceAll("`", "")
+        .contains("Table or view not found: global_temp.invalid_table"))
     }
   }
 

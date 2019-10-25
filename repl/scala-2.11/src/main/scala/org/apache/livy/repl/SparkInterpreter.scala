@@ -27,12 +27,10 @@ import scala.tools.nsc.interpreter.IMain
 import scala.tools.nsc.interpreter.JLineCompletion
 import scala.tools.nsc.interpreter.JPrintWriter
 import scala.tools.nsc.interpreter.Results.Result
-import scala.util.control.NonFatal
 
 import org.apache.spark.SparkConf
 import org.apache.spark.repl.SparkILoop
 
-import org.apache.livy.rsc.driver.SparkEntries
 
 /**
  * This represents a Spark interpreter. It is not thread safe.
