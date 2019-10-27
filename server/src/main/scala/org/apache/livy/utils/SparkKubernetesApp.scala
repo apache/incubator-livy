@@ -39,6 +39,9 @@ object SparkKubernetesApp extends Logging {
   lazy val kubernetesClient: LivyKubernetesClient =
     KubernetesClientFactory.createKubernetesClient(livyConf)
 
+  private var livyConf: LivyConf = _
+  private var sessionLeakageCheckTimeout: Long = _
+  private var sessionLeakageCheckInterval: Long = _
   private val leakedAppTags = new java.util.concurrent.ConcurrentHashMap[String, Long]()
 
   private val leakedAppsGCThread = new Thread() {
@@ -70,26 +73,11 @@ object SparkKubernetesApp extends Logging {
     }
   }
 
-  private var livyConf: LivyConf = _
-
-  private var cacheLogSize: Int = _
-  private var appLookupTimeout: FiniteDuration = _
-  private var pollInterval: FiniteDuration = _
-
-  private var sessionLeakageCheckTimeout: Long = _
-  private var sessionLeakageCheckInterval: Long = _
-
   def init(livyConf: LivyConf): Unit = {
     this.livyConf = livyConf
-
-    cacheLogSize = livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)
-    appLookupTimeout = livyConf.getTimeAsMs(LivyConf.KUBERNETES_APP_LOOKUP_TIMEOUT).milliseconds
-    pollInterval = livyConf.getTimeAsMs(LivyConf.KUBERNETES_POLL_INTERVAL).milliseconds
-
     sessionLeakageCheckInterval =
       livyConf.getTimeAsMs(LivyConf.KUBERNETES_APP_LEAKAGE_CHECK_INTERVAL)
     sessionLeakageCheckTimeout = livyConf.getTimeAsMs(LivyConf.KUBERNETES_APP_LEAKAGE_CHECK_TIMEOUT)
-
     leakedAppsGCThread.setDaemon(true)
     leakedAppsGCThread.setName("LeakedAppsGCThread")
     leakedAppsGCThread.start()
@@ -118,13 +106,18 @@ class SparkKubernetesApp private[utils](
 
   import SparkKubernetesApp._
 
+  private val appLookupTimeout =
+    livyConf.getTimeAsMs(LivyConf.KUBERNETES_APP_LOOKUP_TIMEOUT).milliseconds
+  private val cacheLogSize = livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)
+  private val pollInterval = livyConf.getTimeAsMs(LivyConf.KUBERNETES_POLL_INTERVAL).milliseconds
+
   private var kubernetesAppLog: IndexedSeq[String] = IndexedSeq.empty[String]
   private var kubernetesDiagnostics: IndexedSeq[String] = IndexedSeq.empty[String]
 
   private var state: SparkApp.State = SparkApp.State.STARTING
   private val appPromise: Promise[KubernetesApplication] = Promise()
 
-  private val kubernetesAppMonitorThread = Utils
+  private[utils] val kubernetesAppMonitorThread = Utils
     .startDaemonThread(s"kubernetesAppMonitorThread-$this") {
       try {
         val app = try {
@@ -141,12 +134,12 @@ class SparkKubernetesApp private[utils](
         listener.foreach(_.appIdKnown(appId))
 
         while (isRunning) {
-          Clock.sleep(pollInterval.toMillis)
-
           val appReport = withRetry(kubernetesClient.getApplicationReport(app, cacheLogSize))
           kubernetesAppLog = appReport.getApplicationLog
           kubernetesDiagnostics = appReport.getApplicationDiagnostics
           changeState(mapKubernetesState(appReport.getApplicationState, appTag))
+
+          Clock.sleep(pollInterval.toMillis)
         }
         debug(s"Application $appId is in state $state\nDiagnostics:" +
           s"\n${kubernetesDiagnostics.mkString("\n")}")
@@ -179,7 +172,7 @@ class SparkKubernetesApp private[utils](
       // There's a chance the Kubernetes app hasn't been submitted during a livy-server failure.
       // We don't want a stuck session that can't be deleted. Emit a warning and move on.
       case _: TimeoutException | _: InterruptedException =>
-        warn("Deleting a session while its Kubernetes application is not found.")
+        warn("Attempted to delete a session while its Kubernetes application is not found.")
         kubernetesAppMonitorThread.interrupt()
     } finally {
       process.foreach(_.destroy())
