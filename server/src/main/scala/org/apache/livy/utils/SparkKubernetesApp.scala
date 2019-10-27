@@ -253,7 +253,6 @@ object KubernetesApplicationState {
 }
 
 object KubernetesConstants {
-  val REQUESTED_BY_ANNOTATION = "requested-by"
   val CREATED_BY_ANNOTATION = "created-by"
 
   val SPARK_APP_ID_LABEL = "spark-app-selector"
@@ -333,7 +332,7 @@ private[utils] case class KubernetesAppReport(
 }
 
 private[utils] class LivyKubernetesClient(
-  client: NamespacedKubernetesClient, namespaces: Set[String] = Set.empty) {
+  client: DefaultKubernetesClient, namespaces: Set[String] = Set.empty) {
 
   import KubernetesConstants._
   import scala.collection.JavaConverters._
