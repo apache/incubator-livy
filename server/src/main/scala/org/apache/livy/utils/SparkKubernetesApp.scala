@@ -148,7 +148,8 @@ class SparkKubernetesApp private[utils](
           kubernetesDiagnostics = appReport.getApplicationDiagnostics
           changeState(mapKubernetesState(appReport.getApplicationState, appTag))
         }
-        debug(s"Application $appId is in state $state\nDiagnostics:\n${kubernetesDiagnostics.mkString("\n")}")
+        debug(s"Application $appId is in state $state\nDiagnostics:" +
+          s"\n${kubernetesDiagnostics.mkString("\n")}")
       } catch {
         case _: InterruptedException =>
           kubernetesDiagnostics = ArrayBuffer("Application stopped by user.")
