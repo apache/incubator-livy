@@ -14,18 +14,95 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.livy.utils
 
 import java.util.Objects._
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.concurrent.duration._
 
 import io.fabric8.kubernetes.api.model._
-import org.mockito.Mockito.when
+import org.mockito.Matchers.{eq => eqs, _}
+import org.mockito.Mockito.{atLeast, verify, when}
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.FunSpec
-import org.scalatest.mock.MockitoSugar._
+import org.scalatest.mock.MockitoSugar.mock
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
+import org.apache.livy.utils.KubernetesApplicationState._
+import org.apache.livy.utils.SparkApp.State
 
 class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
+
+  private def cleanupThread(t: Thread)(f: => Unit) = {
+    try { f } finally { t.interrupt() }
+  }
+
+  private def mockSleep(ms: Long) = {
+    Thread.`yield`()
+  }
+
+  describe("SparkKubernetesApp") {
+    val TEST_TIMEOUT = 30 seconds
+    val appId = "app_id"
+    val appTag = "app_tag"
+    val livyConf = new LivyConf(false)
+    livyConf.set(LivyConf.KUBERNETES_APP_LOOKUP_TIMEOUT, "30s")
+
+    it("should poll Kubernetes state and terminate") {
+      Clock.withSleepMethod(mockSleep) {
+        val mockApp = mock[KubernetesApplication]
+        when(mockApp.getApplicationId).thenReturn(appId)
+        when(mockApp.getApplicationTag).thenReturn(appTag)
+        val mockAppReport = mock[KubernetesAppReport]
+        when(mockAppReport.getApplicationLog).thenReturn(IndexedSeq("app", "log"))
+        when(mockAppReport.getApplicationDiagnostics).thenReturn(IndexedSeq("app", "diagnostics"))
+        val mockClient = mock[LivyKubernetesClient]
+        when(mockClient.getApplications(any(), any(), any())).thenReturn(Seq(mockApp))
+        when(mockClient.getApplicationReport(eqs(mockApp), any(), any())).thenReturn(mockAppReport)
+        val mockListener = mock[SparkAppListener]
+
+        // Simulate Kubernetes app state progression.
+        val applicationStateList = List(
+          PENDING,
+          CONTAINER_CREATING,
+          RUNNING,
+          COMPLETED
+        )
+        val stateIndex = new AtomicInteger(0)
+        when(mockAppReport.getApplicationState).thenAnswer(
+          new Answer[String] {
+            override def answer(inv: InvocationOnMock): String = {
+              stateIndex.getAndIncrement() match {
+                case i if i < applicationStateList.size =>
+                  applicationStateList(i)
+                case _ =>
+                  applicationStateList.last
+              }
+            }
+          }
+        )
+
+        val app = new SparkKubernetesApp(
+          appTag, None, None, Some(mockListener), livyConf, mockClient)
+
+        cleanupThread(app.kubernetesAppMonitorThread) {
+          app.kubernetesAppMonitorThread.join(TEST_TIMEOUT.toMillis)
+          assert(!app.kubernetesAppMonitorThread.isAlive,
+            "KubernetesAppMonitorThread should terminate after Kubernetes app is finished.")
+          verify(mockClient, atLeast(1)).getApplications(any(), anyString(), anyString())
+          verify(mockClient, atLeast(1))
+            .getApplicationReport(eqs(mockApp), anyInt(), anyString())
+          verify(mockListener).appIdKnown(appId)
+          verify(mockListener).infoChanged(eqs(AppInfo()))
+          verify(mockListener).stateChanged(State.STARTING, State.RUNNING)
+          verify(mockListener).stateChanged(State.RUNNING, State.FINISHED)
+        }
+      }
+    }
+  }
 
   describe("KubernetesAppReport") {
     it("should return application state") {
