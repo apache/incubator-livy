@@ -407,26 +407,28 @@ private[utils] object KubernetesClientFactory {
     val caCertFile = livyConf.get(LivyConf.KUBERNETES_CA_CERT_FILE).toOption
     val clientKeyFile = livyConf.get(LivyConf.KUBERNETES_CLIENT_KEY_FILE).toOption
     val clientCertFile = livyConf.get(LivyConf.KUBERNETES_CLIENT_CERT_FILE).toOption
+    val clientNamespace = livyConf.get(LivyConf.KUBERNETES_DEFAULT_NAMESPACE).toOption
 
     val config = new ConfigBuilder()
       .withApiVersion("v1")
       .withMasterUrl(masterUrl)
       .withOption(oauthTokenValue) {
-        (token, configBuilder) => configBuilder.withOauthToken(token)
+        (token, builder) => builder.withOauthToken(token)
       }
       .withOption(oauthTokenFile) {
-        (file, configBuilder) =>
-          configBuilder
-            .withOauthToken(Files.toString(new File(file), Charsets.UTF_8))
+        (file, builder) => builder.withOauthToken(Files.toString(new File(file), Charsets.UTF_8))
       }
       .withOption(caCertFile) {
-        (file, configBuilder) => configBuilder.withCaCertFile(file)
+        (file, builder) => builder.withCaCertFile(file)
       }
       .withOption(clientKeyFile) {
-        (file, configBuilder) => configBuilder.withClientKeyFile(file)
+        (file, builder) => builder.withClientKeyFile(file)
       }
       .withOption(clientCertFile) {
-        (file, configBuilder) => configBuilder.withClientCertFile(file)
+        (file, builder) => builder.withClientCertFile(file)
+      }
+      .withOption(clientNamespace) {
+        (namespace, builder) => builder.withNamespace(namespace)
       }
       .build()
     new LivyKubernetesClient(
