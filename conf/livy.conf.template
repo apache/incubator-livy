@@ -215,3 +215,5 @@
 # livy.server.kubernetes.clientKeyFile =
 # Kubernetes client cert file path
 # livy.server.kubernetes.clientCertFile =
+# Kubernetes client default namespace.
+# livy.server.kubernetes.defaultNamespace =

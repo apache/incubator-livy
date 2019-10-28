@@ -259,6 +259,8 @@ object LivyConf {
   val KUBERNETES_CLIENT_KEY_FILE = Entry("livy.server.kubernetes.clientKeyFile", "")
   // Kubernetes client cert file path.
   val KUBERNETES_CLIENT_CERT_FILE = Entry("livy.server.kubernetes.clientCertFile", "")
+  // Kubernetes client default namespace.
+  val KUBERNETES_DEFAULT_NAMESPACE = Entry("livy.server.kubernetes.defaultNamespace", "")
 
   // Comma-separated list of the Kubernetes namespaces to allow for applications creation.
   // All namespaces are allowed if empty.
