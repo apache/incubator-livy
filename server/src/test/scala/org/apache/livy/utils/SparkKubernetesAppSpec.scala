@@ -118,7 +118,7 @@ class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
   }
 
   describe("KubernetesClientFactory") {
-    it("should build KubernetesApi url from LivyConf masterUrl") {
+    it("should build KubernetesApi url from LivyConf master url") {
       def actual(sparkMaster: String): String =
         KubernetesClientFactory.sparkMasterToKubernetesApi(sparkMaster)
 
@@ -136,7 +136,7 @@ class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
       assert(nonNull(KubernetesClientFactory.createKubernetesClient(new LivyConf(false))))
     }
 
-    it("should throw IllegalArgumentException in both oauth file and token provided") {
+    it("should throw IllegalArgumentException if both oauth file and token provided") {
       val conf = new LivyConf(false)
         .set(LivyConf.KUBERNETES_OAUTH_TOKEN_FILE, "dummy_path")
         .set(LivyConf.KUBERNETES_OAUTH_TOKEN_VALUE, "dummy_value")
