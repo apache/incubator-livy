@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.sql.Timestamp;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -332,9 +333,9 @@ public class RSCClient implements LivyClient {
 
   private class ClientProtocol extends BaseProtocol {
 
-    private final String PROCESS_FORMAT = "stage %3s: percentage: %3d%% active: %s " +
+    private final String PROCESS_FORMAT = "%-23s percentage: %3d%% active: %s " +
             "completed: %s failed: %s all: %s";
-    private ConcurrentBoundedLinkedQueue<String> operationMessages;
+    private volatile ConcurrentBoundedLinkedQueue<String> operationMessages;
 
     public void setOperationMessages(ConcurrentBoundedLinkedQueue<String> operationMessages) {
       this.operationMessages = operationMessages;
@@ -425,9 +426,15 @@ public class RSCClient implements LivyClient {
 
     private void handle(ChannelHandlerContext ctx, JobProcessMessage msg) {
       if (operationMessages != null) {
-        int percentage = (int) Math.round(msg.completed / (double) msg.all * 100);
-        operationMessages.offer(String.format(PROCESS_FORMAT, msg.stageId, percentage, msg.active,
-                msg.completed, msg.failed, msg.all));
+          int percentage = (int) Math.round(msg.completed / (double) msg.all * 100);
+          operationMessages.offer(
+                  String.format(PROCESS_FORMAT,
+                          new Timestamp(System.currentTimeMillis()),
+                          percentage,
+                          msg.active,
+                          msg.completed,
+                          msg.failed,
+                          msg.all));
       }
     }
 

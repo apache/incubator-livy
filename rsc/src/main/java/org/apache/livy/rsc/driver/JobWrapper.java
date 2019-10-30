@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.livy.Job;
+import org.apache.livy.SqlJobStatement;
 import org.apache.livy.rsc.RSCConf;
 
 public class JobWrapper<T> implements Callable<Void> {
@@ -48,7 +49,7 @@ public class JobWrapper<T> implements Callable<Void> {
   private final long firstDelayMSec = 500L;
   private final long updatePeriodMSec;
 
-  private Timer timer = new Timer("refresh progress", true);
+  private Timer timer = new Timer("Job process updater", true);
 
   public JobWrapper(RSCDriver driver, String jobId, Job<T> job) {
     this.driver = driver;
@@ -69,14 +70,17 @@ public class JobWrapper<T> implements Callable<Void> {
           driver.jobContext().sc().setJobGroup(jobId, "", true);
         }
       }
+      if (job instanceof SqlJobStatement) {
+        SqlJobStatement sqlJob = (SqlJobStatement) this.job;
+        timer.schedule(new TimerTask() {
+          @Override
+          public void run() {
+            driver.handleProcessMessage(sqlJob.getStatementId());
+          }
+        }, firstDelayMSec, updatePeriodMSec);
+        LOG.debug("refreshing process timer is started!");
+      }
 
-      timer.schedule(new TimerTask() {
-        @Override
-        public void run() {
-          driver.handleProcessMessage(jobId);
-        }
-      }, firstDelayMSec, updatePeriodMSec);
-      LOG.debug("refreshing process timer is started!");
 
       jobStarted();
       T result = job.call(driver.jobContext());

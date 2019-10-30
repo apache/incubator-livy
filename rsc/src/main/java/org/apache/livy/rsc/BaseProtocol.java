@@ -128,22 +128,20 @@ public abstract class BaseProtocol extends RpcDispatcher {
 
   protected static class JobProcessMessage {
     public final String id;
-    public final int stageId;
     public final int completed;
     public final int all;
     public final int active;
     public final int failed;
-    public JobProcessMessage(String id, int stageId, int completed, int active, int failed,
+    public JobProcessMessage(String id, int completed, int active, int failed,
                              int all) {
       this.id = id;
-      this.stageId = stageId;
       this.completed = completed;
       this.active = active;
       this.failed = failed;
       this.all = all;
     }
     public JobProcessMessage() {
-      this(null, 0, 0, 0, 0, 0);
+      this(null,  0, 0, 0, 0);
     }
 
   }

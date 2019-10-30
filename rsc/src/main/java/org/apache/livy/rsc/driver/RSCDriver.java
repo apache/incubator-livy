@@ -47,10 +47,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
-import org.apache.spark.SparkStageInfo;
-import org.apache.spark.SparkStatusTracker;
+import org.apache.spark.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -217,9 +214,10 @@ public class RSCDriver extends BaseProtocol {
 
   /**
    * Calculate each stage's process and broadcast message to the end user
-   * @param jobId
+   *
+   * @param sqlJobStatementId
    */
-  void handleProcessMessage(String jobId) {
+  void handleProcessMessage(String sqlJobStatementId) {
     SparkStatusTracker sparkStatusTracker;
     synchronized (jcLock) {
       if (jc == null) {
@@ -227,20 +225,26 @@ public class RSCDriver extends BaseProtocol {
       }
       sparkStatusTracker = jc.sc().sc().statusTracker();
     }
-    int[] activeStageIds = sparkStatusTracker.getActiveStageIds();
-    for (int stageId: activeStageIds) {
-      SparkStageInfo stageInfo = sparkStatusTracker.getStageInfo(stageId).get();
-      if (stageInfo != null) {
-        int all = stageInfo.numTasks();
-        int completed = stageInfo.numCompletedTasks();
-        int active = stageInfo.numActiveTasks();
-        int failed = stageInfo.numFailedTasks();
-        if (all == 0) {
-          continue;
+    int[] jobIdsForGroup = sparkStatusTracker.getJobIdsForGroup(sqlJobStatementId);
+    int all = 0;
+    int completed = 0;
+    int active = 0;
+    int failed = 0;
+    for (int sparkJobId : jobIdsForGroup) {
+      SparkJobInfo jobInfo = sparkStatusTracker.getJobInfo(sparkJobId).get();
+      if (jobInfo != null) {
+        for (int stageId : jobInfo.stageIds()) {
+          SparkStageInfo sparkStageInfo = sparkStatusTracker.getStageInfo(stageId).get();
+          if (sparkStageInfo != null) {
+            all += sparkStageInfo.numTasks();
+            completed += sparkStageInfo.numCompletedTasks();
+            active += sparkStageInfo.numActiveTasks();
+            failed += sparkStageInfo.numFailedTasks();
+          }
         }
-        broadcast(new JobProcessMessage(jobId, stageId, completed, active, failed, all));
       }
     }
+    broadcast(new JobProcessMessage(sqlJobStatementId, completed, active, failed, all));
   }
 
   private void registerClient(final Rpc client) {
