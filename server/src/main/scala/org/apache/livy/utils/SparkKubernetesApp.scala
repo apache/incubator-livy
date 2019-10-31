@@ -170,19 +170,24 @@ class SparkKubernetesApp private[utils](
         Thread.currentThread().setName(s"kubernetesAppMonitorThread-$appTag")
         listener.foreach(_.appIdKnown(appId))
 
+        var appInfo = AppInfo()
         while (isRunning) {
           val appReport = withRetry(kubernetesClient.getApplicationReport(app, cacheLogSize))
           kubernetesAppLog = appReport.getApplicationLog
           kubernetesDiagnostics = appReport.getApplicationDiagnostics
           changeState(mapKubernetesState(appReport.getApplicationState, appTag))
-
+          val latestAppInfo = AppInfo(sparkUiUrl = appReport.getTrackingUrl)
+          if (appInfo != latestAppInfo) {
+            listener.foreach(_.infoChanged(latestAppInfo))
+            appInfo = latestAppInfo
+          }
           Clock.sleep(pollInterval.toMillis)
         }
         debug(s"Application $appId is in state $state\nDiagnostics:" +
           s"\n${kubernetesDiagnostics.mkString("\n")}")
       } catch {
         case _: InterruptedException =>
-          kubernetesDiagnostics = ArrayBuffer("Application stopped by user.")
+          kubernetesDiagnostics = ArrayBuffer("Application stopped by user")
           changeState(SparkApp.State.KILLED)
         case NonFatal(e) =>
           error("Couldn't refresh Kubernetes state", e)
@@ -210,7 +215,7 @@ class SparkKubernetesApp private[utils](
       // There's a chance the Kubernetes app hasn't been submitted during a livy-server failure.
       // We don't want a stuck session that can't be deleted. Emit a warning and move on.
       case _: TimeoutException | _: InterruptedException =>
-        warn("Attempted to delete a session while its Kubernetes application is not found.")
+        warn("Attempted to delete a session while its Kubernetes application is not found")
         kubernetesAppMonitorThread.interrupt()
     } finally {
       process.foreach(_.destroy())
@@ -253,7 +258,7 @@ class SparkKubernetesApp private[utils](
             s" $appTag in ${livyConf.getTimeAsMs(LivyConf.KUBERNETES_APP_LOOKUP_TIMEOUT) / 1000}" +
             " seconds. This may be because 1) spark-submit fail to submit application to " +
             "Kubernetes; or 2) Kubernetes cluster doesn't have enough resources to start the " +
-            "application in time. Please check Livy log and Kubernetes log to know the details.")
+            "application in time. Please check Livy log and Kubernetes log to know the details")
         } else {
           Clock.sleep(pollInterval.toMillis)
           getAppFromTag(appTag, pollInterval, deadline)
@@ -278,47 +283,66 @@ class KubernetesApplication(driverPod: Pod) {
 
   import KubernetesConstants._
 
-  private val appTag = driverPod.getMetadata.getLabels.get(SPARK_APP_TAG_LABEL)
-  private val appId = driverPod.getMetadata.getLabels.get(SPARK_APP_ID_LABEL)
-  private val namespace = driverPod.getMetadata.getNamespace
+  def getApplicationTag: String = driverPod.getMetadata.getLabels.get(SPARK_APP_TAG_LABEL)
 
-  def getApplicationTag: String = appTag
+  def getApplicationId: String = driverPod.getMetadata.getLabels.get(SPARK_APP_ID_LABEL)
 
-  def getApplicationId: String = appId
+  def getApplicationNamespace: String = driverPod.getMetadata.getNamespace
 
-  def getApplicationNamespace: String = namespace
+  def getApplicationState: String = driverPod.getStatus.getPhase.toLowerCase
 
   def getApplicationPod: Pod = driverPod
 }
 
 private[utils] case class KubernetesAppReport(
     driver: Option[Pod],
-    executors: Seq[Pod],
-    appLog: IndexedSeq[String]) {
+    executors: Set[Pod],
+    appLog: IndexedSeq[String],
+  livyConf: LivyConf) {
 
-  def getApplicationState: String = {
-    driver.map(_.getStatus.getPhase.toLowerCase).getOrElse("unknown")
+  import SparkKubernetesApp._
+
+  private val UNKNOWN = "unknown"
+  private val APP = driver.map(new KubernetesApplication(_))
+
+  def getTrackingUrl: Option[String] = {
+    if (livyConf.getBoolean(LivyConf.UI_KUBERNETES_SPARK_UI_ENABLED) && isRunning) {
+      val format = livyConf.get(LivyConf.UI_KUBERNETES_SPARK_UI_LINK_FORMAT)
+      Some(String.format(format, getApplicationId))
+    } else {
+      None
+    }
   }
+
+  def getApplicationState: String = getOrDefault(_.getApplicationState)
+
+  def getApplicationTag: String = getOrDefault(_.getApplicationTag)
+
+  def getApplicationId: String = getOrDefault(_.getApplicationId)
 
   def getApplicationLog: IndexedSeq[String] = appLog
 
   def getApplicationDiagnostics: IndexedSeq[String] = {
-    (Seq(driver) ++ executors.sortBy(_.getMetadata.getName).map(Some(_)))
-      .filter(_.nonEmpty)
+    (Seq(driver) ++ executors.toSeq.sortBy(_.getMetadata.getName).map(Some(_)))
+      .flatten
       .map(buildSparkPodDiagnosticsPrettyString)
-      .flatMap(_.split("\n")).toIndexedSeq
+      .flatMap(_.split("\n"))
+      .toIndexedSeq
   }
 
-  private def buildSparkPodDiagnosticsPrettyString(podOption: Option[Pod]): String = {
+  private def isRunning: Boolean =
+    SparkApp.State.RUNNING == mapKubernetesState(getApplicationState, getApplicationTag)
+
+  private def getOrDefault(extractor: KubernetesApplication => String): String =
+    APP.map(extractor).flatMap(Option(_)).getOrElse(UNKNOWN)
+
+  private def buildSparkPodDiagnosticsPrettyString(pod: Pod): String = {
     import scala.collection.JavaConverters._
     def printMap(map: Map[_, _]): String = {
       map.map {
         case (key, value) => s"$key=$value"
       }.mkString(", ")
     }
-
-    if (podOption.isEmpty) return "unknown"
-    val pod = podOption.get
 
     s"${pod.getMetadata.getName}.${pod.getMetadata.getNamespace}:" +
       s"\n\tnode: ${pod.getSpec.getNodeName}" +
@@ -345,16 +369,17 @@ private[utils] case class KubernetesAppReport(
 }
 
 private[utils] class LivyKubernetesClient(
-    client: DefaultKubernetesClient, namespaces: Set[String] = Set.empty) {
+    client: DefaultKubernetesClient, livyConf: LivyConf) {
+
+  import scala.collection.JavaConverters._
 
   import KubernetesConstants._
-  import scala.collection.JavaConverters._
 
   def getApplications(
       labels: Map[String, String] = Map(SPARK_ROLE_LABEL -> SPARK_ROLE_DRIVER),
       appTagLabel: String = SPARK_APP_TAG_LABEL,
       appIdLabel: String = SPARK_APP_ID_LABEL): Seq[KubernetesApplication] = {
-    Option(namespaces).filter(_.nonEmpty)
+    Option(livyConf.getKubernetesNamespaces()).filter(_.nonEmpty)
       .map(_.map(client.inNamespace))
       .getOrElse(Seq(client.inAnyNamespace()))
       .map(_.pods
@@ -375,11 +400,11 @@ private[utils] class LivyKubernetesClient(
       appTagLabel: String = SPARK_APP_TAG_LABEL): KubernetesAppReport = {
     val pods = client.inNamespace(app.getApplicationNamespace).pods
       .withLabels(Map(appTagLabel -> app.getApplicationTag).asJava)
-      .list.getItems.asScala
+      .list.getItems.asScala.toSet
     val driver = pods.find(isDriver)
     val executors = pods.filter(isExecutor)
     val appLog = getApplicationLog(app, cacheLogSize)
-    KubernetesAppReport(driver, executors, appLog)
+    KubernetesAppReport(driver, executors, appLog, livyConf)
   }
 
   private def getApplicationLog(
@@ -417,7 +442,7 @@ private[utils] object KubernetesClientFactory {
     val oauthTokenValue = livyConf.get(LivyConf.KUBERNETES_OAUTH_TOKEN_VALUE).toOption
     require(oauthTokenFile.isEmpty || oauthTokenValue.isEmpty,
       "Cannot specify OAuth token through both " +
-        s"a file $oauthTokenFile and a value $oauthTokenValue.")
+        s"a file $oauthTokenFile and a value $oauthTokenValue")
 
     val caCertFile = livyConf.get(LivyConf.KUBERNETES_CA_CERT_FILE).toOption
     val clientKeyFile = livyConf.get(LivyConf.KUBERNETES_CLIENT_KEY_FILE).toOption
@@ -447,7 +472,7 @@ private[utils] object KubernetesClientFactory {
       }
       .build()
     new LivyKubernetesClient(
-      new DefaultKubernetesClient(config), livyConf.getKubernetesNamespaces())
+      new DefaultKubernetesClient(config), livyConf)
   }
 
   private[utils] def sparkMasterToKubernetesApi(sparkMaster: String): String = {

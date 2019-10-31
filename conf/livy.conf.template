@@ -179,6 +179,11 @@
 
 # If the Livy Web UI should be included in the Livy Server. Enabled by default.
 # livy.ui.enabled = true
+# Wether to display on Livy UI links to Spark UI when running on Kubernetes
+# livy.ui.kubernetes.sparkui.enabled = false
+# String format to use to build links to Spark UI to be displayed on Livy UI when running on
+# Kubernetes. Use '%s' placeholder for the link url part to be replaced by Spark application ID
+# livy.ui.kubernetes.sparkui.link-format = http://localhost/%s
 
 # Whether to enable Livy server access control, if it is true then all the income requests will
 # be checked if the requested user has permission.
