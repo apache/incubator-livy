@@ -43,24 +43,6 @@ object LdapAuthenticationHandlerImpl {
   val BASE_DN = "ldap.basedn"
   val LDAP_BIND_DOMAIN = "ldap.binddomain"
   val ENABLE_START_TLS = "ldap.enablestarttls"
-
-  private def hasDomain(userName: String): Boolean = {
-    indexOfDomainMatch(userName) > 0
-  }
-
-  /**
-    * Get the index separating the user name from domain name (the user's name up
-    * to the first '/' or '@').
-    */
-  private def indexOfDomainMatch(userName: String): Int = {
-    val idx = userName.indexOf('/')
-    val idx2 = userName.indexOf('@')
-    // Use the earlier match.
-    val endIdx = Math.min(idx, idx2)
-
-    // If neither '/' nor '@' was found, using the latter
-    if (endIdx == -1) Math.max(idx, idx2) else endIdx
-  }
 }
 
 class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
@@ -142,7 +124,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
     }
 
     var principle = userName
-    if (!LdapAuthenticationHandlerImpl.hasDomain(userName) && ldapDomain != null) {
+    if (!LdapUtils.hasDomain(userName) && ldapDomain != null) {
       principle = userName + "@" + ldapDomain
     }
     val bindDN = if (baseDN != null) {
