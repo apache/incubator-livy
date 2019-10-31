@@ -63,6 +63,12 @@ object LivyConf {
   val SERVER_BASE_PATH = Entry("livy.ui.basePath", "")
 
   val UI_ENABLED = Entry("livy.ui.enabled", true)
+  // Wether to display on Livy UI links to Spark UI when running on Kubernetes
+  val UI_KUBERNETES_SPARK_UI_ENABLED = Entry("livy.ui.kubernetes.sparkui.enabled", false)
+  // String format to use to build links to Spark UI to be displayed on Livy UI when running on
+  // Kubernetes. Use '%s' placeholder for the link url part to be replaced by Spark application ID
+  val UI_KUBERNETES_SPARK_UI_LINK_FORMAT =
+    Entry("livy.ui.kubernetes.sparkui.link-format", "http://localhost/%s")
 
   val REQUEST_HEADER_SIZE = Entry("livy.server.request-header.size", 131072)
   val RESPONSE_HEADER_SIZE = Entry("livy.server.response-header.size", 131072)
