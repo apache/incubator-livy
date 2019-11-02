@@ -93,6 +93,33 @@ object SparkKubernetesApp extends Logging {
         withRetry(fn, retries - 1)
       case Failure(e) => throw e
     }
+
+  private[utils] object KubernetesApplicationState {
+    val PENDING = "pending"
+    val RUNNING = "running"
+    val SUCCEEDED = "succeeded"
+    val FAILED = "failed"
+  }
+
+  private[utils] def mapKubernetesState(
+    kubernetesAppState: String,
+    appTag: String): SparkApp.State.Value = {
+    import KubernetesApplicationState._
+    kubernetesAppState.toLowerCase match {
+      case PENDING =>
+        SparkApp.State.STARTING
+      case RUNNING =>
+        SparkApp.State.RUNNING
+      case SUCCEEDED =>
+        SparkApp.State.FINISHED
+      case FAILED =>
+        SparkApp.State.FAILED
+      case other => // any other combination is invalid, so FAIL the application.
+        error(s"Unknown Kubernetes state $other for app with tag $appTag")
+        SparkApp.State.FAILED
+    }
+  }
+
 }
 
 class SparkKubernetesApp private[utils](
@@ -130,7 +157,7 @@ class SparkKubernetesApp private[utils](
         appPromise.success(app)
         val appId = app.getApplicationId
 
-        Thread.currentThread().setName(s"kubernetesAppMonitorThread-$appId")
+        Thread.currentThread().setName(s"kubernetesAppMonitorThread-$appTag")
         listener.foreach(_.appIdKnown(appId))
 
         while (isRunning) {
@@ -153,6 +180,7 @@ class SparkKubernetesApp private[utils](
           changeState(SparkApp.State.FAILED)
       } finally {
         listener.foreach(_.infoChanged(AppInfo(sparkUiUrl = None)))
+        info(s"Finished monitoring application $appTag with state $state")
       }
     }
 
@@ -222,34 +250,6 @@ class SparkKubernetesApp private[utils](
     }
   }
 
-  private def mapKubernetesState(
-    kubernetesAppState: String,
-    appTag: String): SparkApp.State.Value = {
-    import KubernetesApplicationState._
-    kubernetesAppState.toLowerCase match {
-      case PENDING | CONTAINER_CREATING =>
-        SparkApp.State.STARTING
-      case RUNNING =>
-        SparkApp.State.RUNNING
-      case COMPLETED | SUCCEEDED =>
-        SparkApp.State.FINISHED
-      case FAILED | ERROR =>
-        SparkApp.State.FAILED
-      case other => // any other combination is invalid, so FAIL the application.
-        error(s"Unknown Kubernetes state $other for app with tag $appTag.")
-        SparkApp.State.FAILED
-    }
-  }
-}
-
-object KubernetesApplicationState {
-  val PENDING = "pending"
-  val CONTAINER_CREATING = "containercreating"
-  val RUNNING = "running"
-  val COMPLETED = "completed"
-  val SUCCEEDED = "succeeded"
-  val FAILED = "failed"
-  val ERROR = "error"
 }
 
 object KubernetesConstants {
