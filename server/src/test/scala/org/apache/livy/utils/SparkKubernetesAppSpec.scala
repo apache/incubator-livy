@@ -95,7 +95,6 @@ class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
           verify(mockClient, atLeast(1))
             .getApplicationReport(eqs(mockApp), anyInt(), anyString())
           verify(mockListener).appIdKnown(appId)
-          verify(mockListener).infoChanged(eqs(AppInfo()))
           verify(mockListener).stateChanged(State.STARTING, State.RUNNING)
           verify(mockListener).stateChanged(State.RUNNING, State.FINISHED)
         }
