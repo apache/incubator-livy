@@ -90,7 +90,7 @@ class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         cleanupThread(app.kubernetesAppMonitorThread) {
           app.kubernetesAppMonitorThread.join(TEST_TIMEOUT.toMillis)
           assert(!app.kubernetesAppMonitorThread.isAlive,
-            "KubernetesAppMonitorThread should terminate after Kubernetes app is finished.")
+            "KubernetesAppMonitorThread should terminate after Kubernetes app is finished")
           verify(mockClient, atLeast(1)).getApplications(any(), anyString(), anyString())
           verify(mockClient, atLeast(1))
             .getApplicationReport(eqs(mockApp), anyInt(), anyString())
