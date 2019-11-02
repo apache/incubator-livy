@@ -179,7 +179,6 @@ class SparkKubernetesApp private[utils](
           kubernetesDiagnostics = ArrayBuffer(e.getMessage)
           changeState(SparkApp.State.FAILED)
       } finally {
-        listener.foreach(_.infoChanged(AppInfo(sparkUiUrl = None)))
         info(s"Finished monitoring application $appTag with state $state")
       }
     }
