@@ -31,7 +31,6 @@ import org.scalatest.FunSpec
 import org.scalatest.mock.MockitoSugar.mock
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
-import org.apache.livy.utils.KubernetesApplicationState._
 import org.apache.livy.utils.SparkApp.State
 
 class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
@@ -65,11 +64,11 @@ class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         val mockListener = mock[SparkAppListener]
 
         // Simulate Kubernetes app state progression.
+        import SparkKubernetesApp.KubernetesApplicationState._
         val applicationStateList = List(
           PENDING,
-          CONTAINER_CREATING,
           RUNNING,
-          COMPLETED
+          SUCCEEDED
         )
         val stateIndex = new AtomicInteger(0)
         when(mockAppReport.getApplicationState).thenAnswer(
