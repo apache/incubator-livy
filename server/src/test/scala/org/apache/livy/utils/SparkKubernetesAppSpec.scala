@@ -105,6 +105,7 @@ class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
           verify(mockClient, atLeast(1))
             .getApplicationReport(eqs(mockApp), anyInt(), anyString())
           verify(mockListener).appIdKnown(appId)
+          verify(mockListener).infoChanged(AppInfo())
           verify(mockListener).stateChanged(State.STARTING, State.RUNNING)
           verify(mockListener).stateChanged(State.RUNNING, State.FINISHED)
         }
@@ -125,8 +126,8 @@ class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
           assert(!app.kubernetesAppMonitorThread.isAlive,
             "KubernetesAppMonitorThread should terminate after Kubernetes app is finished.")
           verify(mockListener)
-            .infoChanged(eqs(AppInfo(sparkUiUrl = Some(trackingUrl))))
-          verify(mockListener).infoChanged(eqs(AppInfo()))
+            .infoChanged(AppInfo(sparkUiUrl = Some(trackingUrl)))
+          verify(mockListener).infoChanged(AppInfo())
         }
       }
     }
