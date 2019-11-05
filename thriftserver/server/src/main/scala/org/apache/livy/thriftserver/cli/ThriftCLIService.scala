@@ -84,21 +84,18 @@ abstract class ThriftCLIService(val cliService: LivyCLIService, val serviceName:
     super.init(livyConf)
   }
 
-  protected def getKeyStorePassword(): String = {
-    val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
-    val hadoopConf = new Configuration()
-    if (credentialProviderPath != null) {
-      hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
+  protected def getKeyStorePassword(): String =
+    Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD)).orElse {
+      val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
+      val hadoopConf = new Configuration()
+      if (credentialProviderPath != null) {
+        hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
+      }
+      Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)).map(_.mkString)
+    }.getOrElse {
+      throw new IllegalArgumentException(
+        "Livy keystore password not configured for SSL connection")
     }
-    Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD))
-      .orElse {
-        Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)).map(_.mkString)
-      }
-      .getOrElse {
-        throw new IllegalArgumentException(
-          "Livy keystore password not configured for SSL connection")
-      }
-  }
 
   protected def initServer(): Unit
 
