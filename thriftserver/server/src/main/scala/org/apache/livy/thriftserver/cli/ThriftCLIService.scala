@@ -26,6 +26,7 @@ import javax.security.auth.login.LoginException
 import scala.collection.JavaConverters._
 
 import com.google.common.base.Preconditions.checkArgument
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.security.authentication.util.KerberosName
 import org.apache.hadoop.security.authorize.ProxyUsers
@@ -81,6 +82,22 @@ abstract class ThriftCLIService(val cliService: LivyCLIService, val serviceName:
     minWorkerThreads = livyConf.getInt(LivyConf.THRIFT_MIN_WORKER_THREADS)
     maxWorkerThreads = livyConf.getInt(LivyConf.THRIFT_MAX_WORKER_THREADS)
     super.init(livyConf)
+  }
+
+  protected def getKeyStorePassword(): String = {
+    val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
+    val hadoopConf = new Configuration()
+    if (credentialProviderPath != null) {
+      hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
+    }
+    Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD))
+      .orElse {
+        Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)).map(_.mkString)
+      }
+      .getOrElse {
+        throw new IllegalArgumentException(
+          "Livy keystore password not configured for SSL connection")
+      }
   }
 
   protected def initServer(): Unit

@@ -21,7 +21,6 @@ import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.TimeUnit
 import javax.ws.rs.HttpMethod
 
-import org.apache.hadoop.conf.Configuration
 import org.apache.hive.service.rpc.thrift.TCLIService
 import org.apache.hive.service.server.ThreadFactoryWithGarbageCleanup
 import org.apache.thrift.protocol.TBinaryProtocol
@@ -83,24 +82,12 @@ class ThriftHttpCLIService(
       val schemeName = if (useSsl) "https" else "http"
       // Change connector if SSL is used
       val connector = if (useSsl) {
-          val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
-          val hadoopConf = new Configuration()
-          if (credentialProviderPath != null) {
-            hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
-          }
           val keyStorePath = livyConf.get(LivyConf.SSL_KEYSTORE).trim
-          val keyStorePassword = Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD))
-            .orElse {
-              Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)).map(_.mkString)
-            }
           if (keyStorePath.isEmpty) {
             throw new IllegalArgumentException(
               s"${LivyConf.SSL_KEYSTORE.key} Not configured for SSL connection")
           }
-          if (keyStorePassword.isEmpty) {
-            throw new IllegalArgumentException(
-              "Livy keystore password not configured for SSL connection")
-          }
+          val keyStorePassword = getKeyStorePassword()
           val sslContextFactory = new SslContextFactory
           val excludedProtocols = livyConf.get(LivyConf.THRIFT_SSL_PROTOCOL_BLACKLIST).split(",")
           info(s"HTTP Server SSL: adding excluded protocols: $excludedProtocols")
@@ -108,7 +95,7 @@ class ThriftHttpCLIService(
           info("HTTP Server SSL: SslContextFactory.getExcludeProtocols = " +
             sslContextFactory.getExcludeProtocols)
           sslContextFactory.setKeyStorePath(keyStorePath)
-          sslContextFactory.setKeyStorePassword(keyStorePassword.get)
+          sslContextFactory.setKeyStorePassword(keyStorePassword)
           new ServerConnector(server, sslContextFactory, http)
         } else {
           new ServerConnector(server, http)

@@ -22,7 +22,6 @@ import java.util
 import java.util.concurrent._
 import javax.net.ssl.SSLServerSocket
 
-import org.apache.hadoop.conf.Configuration
 import org.apache.hive.service.cli.HiveSQLException
 import org.apache.hive.service.server.ThreadFactoryWithGarbageCleanup
 import org.apache.thrift.TProcessorFactory
@@ -77,21 +76,9 @@ class ThriftBinaryCLIService(override val cliService: LivyCLIService, val oomHoo
           throw new IllegalArgumentException(
             s"${LivyConf.SSL_KEYSTORE.key} Not configured for SSL connection")
         }
-        val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
-        val hadoopConf = new Configuration()
-        if (credentialProviderPath != null) {
-          hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
-        }
-        val keyStorePassword = Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD))
-          .orElse {
-            Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)).map(_.mkString)
-          }
-        if (keyStorePassword.isEmpty) {
-          throw new IllegalArgumentException(
-            "Livy keystore password not configured for SSL connection")
-        }
+        val keyStorePassword = getKeyStorePassword()
         val params = new TSSLTransportFactory.TSSLTransportParameters
-        params.setKeyStore(keyStorePath, keyStorePassword.get)
+        params.setKeyStore(keyStorePath, keyStorePassword)
         serverSocket =
           TSSLTransportFactory.getServerSocket(portNum, 0, serverAddress.getAddress, params)
         if (serverSocket.getServerSocket.isInstanceOf[SSLServerSocket]) {
