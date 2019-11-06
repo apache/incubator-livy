@@ -142,6 +142,13 @@ class LivyExecuteStatementOperation(
     } catch {
       case e: Throwable =>
         val currentState = getStatus.state
+        if ((currentState == OperationState.CANCELED)
+          || (currentState == OperationState.TIMEDOUT)
+          || (currentState == OperationState.CLOSED)
+          || (currentState == OperationState.FINISHED)) {
+          warn("Ignore exception in terminal state", e)
+          return
+        }
         info(s"Error executing query, currentState $currentState, ", e)
         setState(OperationState.ERROR)
         throw new HiveSQLException(e)
@@ -177,7 +184,7 @@ class LivyExecuteStatementOperation(
       val cleaned = rpcClient.cleanupStatement(sessionHandle, statementId).get()
       if (!cleaned) {
         warn(s"Fail to cleanup query $statementId (session = ${sessionHandle.getSessionId}), " +
-          "this message can be ignored if the query failed.")
+          "this message can be ignored if the query failed or canceled.")
       }
     }
     setState(state)
