@@ -26,6 +26,21 @@ import org.apache.livy.test.framework.BaseThriftIntegrationTestSuite
 
 class SchemaIT extends BaseThriftIntegrationTestSuite {
   test("basic Schema test") {
+    val tinyintVal = 1
+    val smallintVal = 2
+    val intVal = 3
+    val bigintVal = 4
+    val floatVal = 5.5F
+    val doubleVal = 6.6
+    val decimalVal = 7.7
+    val booleanVal = true
+    val binaryVal = "0101010000101"
+    val stringVal = "string_col"
+    val varcharVal = "varchar_col"
+    val charVal = "char_col"
+    val timestampVal = Timestamp.valueOf("2019-10-22 11:49:45")
+    val dateVal = "2019-10-22"
+
     val createTableSql = "create table primary_type (" +
       "tinyint_col tinyint," +
       "smallint_col smallint," +
@@ -42,8 +57,25 @@ class SchemaIT extends BaseThriftIntegrationTestSuite {
       "timestamp_col timestamp, " +
       "date_col date) using json"
 
+    val insertSql = "insert into primary_type select " +
+      tinyintVal + "," +
+      smallintVal + "," +
+      intVal + "," +
+      bigintVal + "," +
+      floatVal + "," +
+      doubleVal + "," +
+      decimalVal + "," +
+      booleanVal + "," +
+      "'" + binaryVal + "'," +
+      "'" + stringVal + "'," +
+      "'" + varcharVal + "'," +
+      "'" + charVal + "'," +
+      "'" + timestampVal + "'," +
+      "'" + dateVal + "'"
+
     withConnection { c =>
       executeQuery(c, createTableSql)
+      executeQuery(c, insertSql)
       checkQuery(
         c, "select * from primary_type") { resultSet =>
         val rsMetaData = resultSet.getMetaData()
@@ -91,6 +123,26 @@ class SchemaIT extends BaseThriftIntegrationTestSuite {
 
         assert(rsMetaData.getColumnName(14) == "date_col")
         assert(rsMetaData.getColumnTypeName(14) == "date")
+
+        resultSet.next()
+        assert(resultSet.getByte(1) == tinyintVal)
+        assert(resultSet.getShort(2) == smallintVal)
+        assert(resultSet.getInt(3) == intVal)
+        assert(resultSet.getLong(4) == bigintVal)
+        assert(resultSet.getFloat(5) == floatVal)
+        assert(resultSet.getDouble(6) == doubleVal)
+        assert(resultSet.getBigDecimal(7).doubleValue() == decimalVal)
+        assert(resultSet.getBoolean(8) == booleanVal)
+        // getBytes throw SQLFeatureNotSupportedException: Method not supported,
+        // which was threw by HiveBaseResultSet.scala in hive jdbc.
+        // So getString instead of getBytes.
+        assert(resultSet.getString(9) == binaryVal)
+        assert(resultSet.getString(10) == stringVal)
+        assert(resultSet.getString(11) == varcharVal)
+        assert(resultSet.getString(12) == charVal)
+        assert(resultSet.getTimestamp(13).compareTo(timestampVal) == 0)
+        assert(resultSet.getDate(14).toString == dateVal)
+        assert(!resultSet.next())
       }
 
       executeQuery(c, "drop table primary_type")
