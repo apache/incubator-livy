@@ -19,7 +19,7 @@ package org.apache.livy.thriftserver
 
 import org.apache.livy.Logging
 
-object ThriftServerAudit extends Logging{
+object ThriftServerAudit extends Logging {
 
   def audit(
       user: String,
