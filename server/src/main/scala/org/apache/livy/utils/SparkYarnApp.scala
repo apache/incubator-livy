@@ -132,22 +132,24 @@ object SparkYarnApp extends Logging {
       while (true) {
         for ((app, appTag) <- appMap) {
           Future {
-            val handler = executor.submit(new Runnable {
-              override def run(): Unit = {
-                app.monitorSparkYarnApp()
+            app.monitorLock.synchronized {
+              val handler = executor.submit(new Runnable {
+                override def run(): Unit = {
+                  app.monitorSparkYarnApp()
+                }
+              })
+              try {
+                // prevent the rpc block of one app from blocking all apps
+                handler.get(yarnAppMonitorTimeout, MILLISECONDS)
+              } catch {
+                case e: Exception => {
+                  handler.cancel(true)
+                  error(s"monitor app: ${appTag} exception:", e)
+                }
               }
-            })
-            try {
-              // prevent the rpc block of one app from blocking all apps
-              handler.get(yarnAppMonitorTimeout, MILLISECONDS)
-            } catch {
-              case e: Exception => {
-                handler.cancel(true)
-                error(s"monitor app: ${appTag} exception:", e)
+              if (!app.isRunning) {
+                appMap -= app
               }
-            }
-            if (!app.isRunning) {
-              appMap -= app
             }
           }
         }
@@ -200,9 +202,8 @@ class SparkYarnApp private[utils] (
 
     process.foreach(_.destroy())
 
-    if (!appId.isEmpty) {
+    if (appId.isDefined) {
       yarnClient.killApplication(appId.get)
-      return
     } else {
       Future {
         val deadline = getYarnTagToAppIdTimeout(livyConf).fromNow
@@ -302,6 +303,7 @@ class SparkYarnApp private[utils] (
   }
 
   private var yarnAppMonitorFailedTimes: Int = _
+  private var yarnTagToAppIdFailedTimes: Int = _
 
   private def failToMonitor(): Unit = {
     changeState(SparkApp.State.FAILED)
@@ -309,6 +311,7 @@ class SparkYarnApp private[utils] (
     leakedAppTags.put(appTag, System.currentTimeMillis())
   }
 
+  private val monitorLock: Int = 0
   private def monitorSparkYarnApp(): Unit = {
     try {
       if (killed) {
@@ -317,12 +320,12 @@ class SparkYarnApp private[utils] (
         changeState(SparkApp.State.FAILED)
       }
       // If appId is not known, query YARN by appTag to get it.
-      if(appId .isEmpty) {
+      if (appId.isEmpty) {
         appId = Some(getAppId())
         listener.foreach(_.appIdKnown(appId.get.toString))
       }
 
-      if(isRunning) {
+      if (isRunning) {
         try {
           // Refresh application state
           val appReport = yarnClient.getApplicationReport(appId.get)
@@ -358,13 +361,23 @@ class SparkYarnApp private[utils] (
         }
       }
 
+      yarnAppMonitorFailedTimes = 0
+      yarnTagToAppIdFailedTimes = 0
+
       debug(s"$appId $state ${yarnDiagnostics.mkString(" ")}")
     } catch {
       // throw InterruptedException when monitor timeout
-      // throw IllegalStateException when getAppId failed
-      case e @ (_: InterruptedException | _: IllegalStateException) =>
+      case e: InterruptedException =>
         yarnAppMonitorFailedTimes += 1
         if (yarnAppMonitorFailedTimes > yarnAppMonitorMaxFailedTimes) {
+          error(s"Exception whiling monitor $appTag", e)
+          yarnDiagnostics = ArrayBuffer(e.getMessage)
+          failToMonitor()
+        }
+      // throw IllegalStateException when getAppId failed
+      case e: IllegalStateException =>
+        yarnTagToAppIdFailedTimes += 1
+        if (yarnTagToAppIdFailedTimes > getYarnTagToAppIdMaxFailedTimes(livyConf)) {
           error(s"Exception whiling monitor $appTag", e)
           yarnDiagnostics = ArrayBuffer(e.getMessage)
           failToMonitor()
