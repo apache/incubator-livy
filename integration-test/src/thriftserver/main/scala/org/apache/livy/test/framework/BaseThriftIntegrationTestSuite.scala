@@ -43,16 +43,6 @@ class BaseThriftIntegrationTestSuite extends BaseIntegrationTestSuite {
     }
   }
 
-  def executeQuery(connection: Connection, query: String): Unit = {
-    val ps = connection.prepareStatement(query)
-    try {
-      val rs = ps.executeQuery()
-      rs.close()
-    } finally {
-      ps.close()
-    }
-  }
-
   def withConnection[T](f: Connection => T): T = {
     val connection = DriverManager.getConnection(jdbcUri)
     try {
