@@ -18,7 +18,7 @@
 package org.apache.livy.thriftserver
 
 import java.security.PrivilegedExceptionAction
-import java.util.concurrent.{ConcurrentLinkedQueue, RejectedExecutionException}
+import java.util.concurrent.RejectedExecutionException
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
@@ -44,8 +44,8 @@ class LivyExecuteStatementOperation(
   /**
    * Contains the messages which have to be sent to the client.
    */
-  private val operationMessages = new ConcurrentLinkedQueue[String]
-
+  private val operationMessages =
+    sessionManager.getSessionInfo(sessionHandle).operationMessages
   // The initialization need to be lazy in order not to block when the instance is created
   private lazy val rpcClient = {
     val sessionState = sessionManager.livySessionState(sessionHandle)
@@ -137,9 +137,9 @@ class LivyExecuteStatementOperation(
     }
     setState(OperationState.RUNNING)
 
-    val before = zSystem.currentTimeMillis()
-
     try {
+      operationMessages.offer(s"RSC client is executing SQL query: $statement, " +
+        s"statementId = $statementId, session = " + sessionHandle)
       rpcClient.executeSql(sessionHandle, statementId, statement).get()
     } catch {
       case e: Throwable =>
@@ -149,10 +149,6 @@ class LivyExecuteStatementOperation(
         throw new HiveSQLException(e)
     }
     setState(OperationState.FINISHED)
-
-    val sessionInfo = sessionManager.getSessionInfo(sessionHandle)
-    val after = System.currentTimeMillis()
-    ThriftServerAudit.audit(sessionInfo.username, sessionInfo.ipAddress, statement, before, after)
   }
 
   def close(): Unit = {
