@@ -101,21 +101,66 @@ trait CommonThriftTests {
 
     assert(!resultSet.next())
 
-    val resultSetWithNulls = statement.executeQuery("select cast(null as string), " +
-      "cast(null as decimal), cast(null as double), cast(null as date), null, cast(null as int)")
+    val resultSetWithNulls = statement.executeQuery(
+      "select cast(null as tinyint), " +
+        "cast(null as smallint)," +
+        "cast(null as int)," +
+        "cast(null as bigint)," +
+        "cast(null as float)," +
+        "cast(null as double)," +
+        "cast(null as decimal)," +
+        "cast(null as boolean)," +
+        "cast(null as binary)," +
+        "cast(null as string)," +
+        "cast(null as varchar(20))," +
+        "cast(null as char(20))," +
+        "cast(null as timestamp)," +
+        "cast(null as date)")
+
     resultSetWithNulls.next()
-    assert(resultSetWithNulls.getString(1) == null)
+
+    assert(resultSetWithNulls.getByte(1) == 0)
     assert(resultSetWithNulls.wasNull())
-    assert(resultSetWithNulls.getBigDecimal(2) == null)
+
+    assert(resultSetWithNulls.getShort(2) == 0)
     assert(resultSetWithNulls.wasNull())
-    assert(resultSetWithNulls.getDouble(3) == 0.0)
+
+    assert(resultSetWithNulls.getInt(3) == 0)
     assert(resultSetWithNulls.wasNull())
-    assert(resultSetWithNulls.getDate(4) == null)
+
+    assert(resultSetWithNulls.getLong(4) == 0)
     assert(resultSetWithNulls.wasNull())
-    assert(resultSetWithNulls.getString(5) == null)
+
+    assert(resultSetWithNulls.getFloat(5) == 0.0)
     assert(resultSetWithNulls.wasNull())
-    assert(resultSetWithNulls.getInt(6) == 0)
+
+    assert(resultSetWithNulls.getDouble(6) == 0.0)
     assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getBigDecimal(7) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getBoolean(8) == false)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getBinaryStream(9) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getString(10) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getString(11) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getString(12) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getTimestamp(13) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getDate(14) == null)
+    assert(resultSetWithNulls.wasNull())
+
     assert(!resultSetWithNulls.next())
 
     val complexTypesQuery = if (mapSupported) {
