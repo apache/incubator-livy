@@ -137,7 +137,7 @@ class LivyExecuteStatementOperation(
     }
     setState(OperationState.RUNNING)
 
-    val before = zSystem.currentTimeMillis()
+    val before = System.currentTimeMillis()
 
     try {
       rpcClient.executeSql(sessionHandle, statementId, statement).get()
