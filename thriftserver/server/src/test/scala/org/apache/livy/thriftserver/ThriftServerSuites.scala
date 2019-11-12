@@ -17,7 +17,7 @@
 
 package org.apache.livy.thriftserver
 
-import java.sql.{Connection, Date, SQLException, Statement, Types}
+import java.sql.{Connection, Date, SQLException, Statement, Timestamp, Types}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
@@ -34,33 +34,133 @@ trait CommonThriftTests {
 
   def dataTypesTest(statement: Statement, mapSupported: Boolean): Unit = {
     val resultSet = statement.executeQuery(
-      "select 1, 'a', cast(null as int), 1.2345, CAST('2018-08-06' as date), " +
-        "CAST('123' as BINARY)")
+      "select cast(1 as tinyint)," +
+        "cast(2 as smallint)," +
+        "cast(3 as int)," +
+        "cast(4 as bigint)," +
+        "cast(5.5 as float)," +
+        "cast(6.6 as double)," +
+        "cast(7.7 as decimal(10, 1))," +
+        "cast(true as boolean)," +
+        "cast('123' as binary)," +
+        "cast('string_val' as string)," +
+        "cast('varchar_val' as varchar(20))," +
+        "cast('char_val' as char(20))," +
+        "cast('2018-08-06 09:11:15' as timestamp)," +
+        "cast('2018-08-06' as date)")
+
+    val rsMetaData = resultSet.getMetaData()
+
     resultSet.next()
-    assert(resultSet.getInt(1) == 1)
-    assert(resultSet.getString(2) == "a")
-    assert(resultSet.getInt(3) == 0)
-    assert(resultSet.wasNull())
-    assert(resultSet.getDouble(4) == 1.2345)
-    assert(resultSet.getDate(5) == Date.valueOf("2018-08-06"))
-    val resultBytes = Source.fromInputStream(resultSet.getBinaryStream(6))
+
+    assert(resultSet.getByte(1) == 1)
+    assert(rsMetaData.getColumnTypeName(1) == "tinyint")
+
+    assert(resultSet.getShort(2) == 2)
+    assert(rsMetaData.getColumnTypeName(2) == "smallint")
+
+    assert(resultSet.getInt(3) == 3)
+    assert(rsMetaData.getColumnTypeName(3) == "int")
+
+    assert(resultSet.getLong(4) == 4)
+    assert(rsMetaData.getColumnTypeName(4) == "bigint")
+
+    assert(resultSet.getFloat(5) == 5.5)
+    assert(rsMetaData.getColumnTypeName(5) == "float")
+
+    assert(resultSet.getDouble(6) == 6.6)
+    assert(rsMetaData.getColumnTypeName(6) == "double")
+
+    assert(resultSet.getBigDecimal(7).doubleValue() == 7.7)
+    assert(rsMetaData.getColumnTypeName(7) == "decimal")
+
+    assert(resultSet.getBoolean(8) == true)
+    assert(rsMetaData.getColumnTypeName(8) == "boolean")
+
+    val resultBytes = Source.fromInputStream(resultSet.getBinaryStream(9))
       .map(_.toByte).toArray
     assert("123".getBytes.sameElements(resultBytes))
+    assert(rsMetaData.getColumnTypeName(9) == "binary")
+
+    assert(resultSet.getString(10) == "string_val")
+    assert(rsMetaData.getColumnTypeName(10) == "string")
+
+    assert(resultSet.getString(11) == "varchar_val")
+    assert(rsMetaData.getColumnTypeName(11) == "string")
+
+    assert(resultSet.getString(12) == "char_val")
+    assert(rsMetaData.getColumnTypeName(12) == "string")
+
+    assert(resultSet.getTimestamp(13).
+      compareTo(Timestamp.valueOf("2018-08-06 09:11:15")) == 0)
+    assert(rsMetaData.getColumnTypeName(13) == "timestamp")
+
+    assert(resultSet.getDate(14).
+      compareTo(Date.valueOf("2018-08-06")) == 0)
+    assert(rsMetaData.getColumnTypeName(14) == "date")
+
     assert(!resultSet.next())
 
-    val resultSetWithNulls = statement.executeQuery("select cast(null as string), " +
-      "cast(null as decimal), cast(null as double), cast(null as date), null")
+    val resultSetWithNulls = statement.executeQuery(
+      "select cast(null as tinyint), " +
+        "cast(null as smallint)," +
+        "cast(null as int)," +
+        "cast(null as bigint)," +
+        "cast(null as float)," +
+        "cast(null as double)," +
+        "cast(null as decimal)," +
+        "cast(null as boolean)," +
+        "cast(null as binary)," +
+        "cast(null as string)," +
+        "cast(null as varchar(20))," +
+        "cast(null as char(20))," +
+        "cast(null as timestamp)," +
+        "cast(null as date)")
+
     resultSetWithNulls.next()
-    assert(resultSetWithNulls.getString(1) == null)
+
+    assert(resultSetWithNulls.getByte(1) == 0)
     assert(resultSetWithNulls.wasNull())
-    assert(resultSetWithNulls.getBigDecimal(2) == null)
+
+    assert(resultSetWithNulls.getShort(2) == 0)
     assert(resultSetWithNulls.wasNull())
-    assert(resultSetWithNulls.getDouble(3) == 0.0)
+
+    assert(resultSetWithNulls.getInt(3) == 0)
     assert(resultSetWithNulls.wasNull())
-    assert(resultSetWithNulls.getDate(4) == null)
+
+    assert(resultSetWithNulls.getLong(4) == 0)
     assert(resultSetWithNulls.wasNull())
-    assert(resultSetWithNulls.getString(5) == null)
+
+    assert(resultSetWithNulls.getFloat(5) == 0.0)
     assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getDouble(6) == 0.0)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getBigDecimal(7) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getBoolean(8) == false)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getBinaryStream(9) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getString(10) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getString(11) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getString(12) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getTimestamp(13) == null)
+    assert(resultSetWithNulls.wasNull())
+
+    assert(resultSetWithNulls.getDate(14) == null)
+    assert(resultSetWithNulls.wasNull())
+
     assert(!resultSetWithNulls.next())
 
     val complexTypesQuery = if (mapSupported) {
