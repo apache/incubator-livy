@@ -16,7 +16,7 @@
 #
 
 sudo: required
-dist: xenial
+dist: trusty
 language: scala
   - 2.11.12
 
