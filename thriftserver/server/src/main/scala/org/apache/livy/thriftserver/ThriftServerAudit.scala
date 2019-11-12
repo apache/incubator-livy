@@ -25,12 +25,12 @@ object ThriftServerAudit extends Logging {
       user: String,
       ipAddress: String,
       query: String,
-      beforeExecute: Long,
-      afterExecute: Long): Unit = {
+      startTime: Long,
+      endTime: Long): Unit = {
     info(
       s"user: $user ipAddress: $ipAddress query: ${query.replace('\n', ' ')} " +
-        s"beforeExecute: ${beforeExecute} afterExecute: ${afterExecute} " +
-        s"time spent: ${Math.round((afterExecute - beforeExecute) / 1000)}s")
+        s"start time: ${startTime} end time: ${endTime} " +
+        s"time spent: ${Math.round((endTime - startTime) / 1000)}s")
   }
 
 }
