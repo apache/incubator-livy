@@ -80,7 +80,7 @@ object SparkApp {
       if (kubernetesNamespaces.nonEmpty && !kubernetesNamespaces.contains(targetNamespace)) {
         throw new IllegalArgumentException(
           s"Requested namespace $targetNamespace doesn't match the configured: " +
-            s"${kubernetesNamespaces.mkString(", ")}")
+            kubernetesNamespaces.mkString(", "))
       }
 
       import KubernetesConstants._
