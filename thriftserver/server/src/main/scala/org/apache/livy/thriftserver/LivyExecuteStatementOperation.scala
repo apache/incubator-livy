@@ -137,6 +137,8 @@ class LivyExecuteStatementOperation(
     }
     setState(OperationState.RUNNING)
 
+    val before = System.currentTimeMillis()
+
     try {
       rpcClient.executeSql(sessionHandle, statementId, statement).get()
     } catch {
@@ -147,6 +149,10 @@ class LivyExecuteStatementOperation(
         throw new HiveSQLException(e)
     }
     setState(OperationState.FINISHED)
+
+    val sessionInfo = sessionManager.getSessionInfo(sessionHandle)
+    val after = System.currentTimeMillis()
+    ThriftServerAudit.audit(sessionInfo.username, sessionInfo.ipAddress, statement, before, after)
   }
 
   def close(): Unit = {
