@@ -128,32 +128,37 @@ object SparkYarnApp extends Logging {
 
   private val yarnAppMonitorThread = new Thread() {
     override def run() : Unit = {
-      val executor = Executors.newSingleThreadExecutor
-      while (true) {
-        for ((app, appTag) <- appMap) {
-          Future {
-            app.monitorLock.synchronized {
-              val handler = executor.submit(new Runnable {
-                override def run(): Unit = {
-                  app.monitorSparkYarnApp()
+      var loop = true
+      while (loop) {
+        try {
+          for ((app, appTag) <- appMap) {
+            Future {
+              app.monitorLock.synchronized {
+                val executor = Executors.newSingleThreadExecutor
+                val handler = executor.submit(new Runnable {
+                  override def run(): Unit = {
+                    app.monitorSparkYarnApp()
+                  }
+                })
+                try {
+                  // prevent the rpc block of one app from blocking all apps
+                  handler.get(yarnAppMonitorTimeout, MILLISECONDS)
+                } catch {
+                  case e: Exception => {
+                    handler.cancel(true)
+                    error(s"monitor app: ${appTag} exception:", e)
+                  }
                 }
-              })
-              try {
-                // prevent the rpc block of one app from blocking all apps
-                handler.get(yarnAppMonitorTimeout, MILLISECONDS)
-              } catch {
-                case e: Exception => {
-                  handler.cancel(true)
-                  error(s"monitor app: ${appTag} exception:", e)
+                if (!app.isRunning) {
+                  appMap -= app
                 }
-              }
-              if (!app.isRunning) {
-                appMap -= app
               }
             }
           }
+          Thread.sleep(yarnPollInterval)
+        } catch {
+          case _: InterruptedException => loop = false
         }
-        Thread.sleep(yarnPollInterval)
       }
     }
   }
