@@ -52,12 +52,12 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
     val livyConf = new LivyConf()
     livyConf.set("livy.server.yarn.poll-interval", "500ms")
     SparkYarnApp.init(livyConf)
-    SparkYarnApp.appMap.clear()
+    SparkYarnApp.appQueue.clear()
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
-    assertEquals(SparkYarnApp.appMap.size, 0)
+    assertEquals(SparkYarnApp.getAppSize, 0)
   }
 
   describe("SparkYarnApp") {
@@ -127,7 +127,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
 
         Eventually.eventually(Eventually.timeout(TEST_TIMEOUT), Eventually.interval(100 millis)) {
           assertFalse(app.isRunning)
-          assertEquals(SparkYarnApp.appMap.size, 0)
+          assertEquals(SparkYarnApp.getAppSize, 0)
           verify(mockYarnClient, atLeast(1)).getApplicationReport(appId)
           verify(mockAppListener).stateChanged(State.STARTING, State.RUNNING)
           verify(mockAppListener).stateChanged(State.RUNNING, State.FINISHED)
@@ -162,7 +162,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
 
         Eventually.eventually(Eventually.timeout(TEST_TIMEOUT), Eventually.interval(100 millis)) {
           assertFalse(app.isRunning)
-          assertEquals(SparkYarnApp.appMap.size, 0)
+          assertEquals(SparkYarnApp.getAppSize, 0)
           verify(mockYarnClient).killApplication(appId)
         }
       }
@@ -207,7 +207,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
 
         Eventually.eventually(Eventually.timeout(TEST_TIMEOUT), Eventually.interval(100 millis)) {
           assertFalse(app.isRunning)
-          assertEquals(SparkYarnApp.appMap.size, 0)
+          assertEquals(SparkYarnApp.getAppSize, 0)
         }
       }
     }
@@ -256,7 +256,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
           verify(mockSparkSubmit, times(1)).destroy()
           sparkSubmitRunningLatch.countDown()
           assertFalse(app.isRunning)
-          assertEquals(SparkYarnApp.appMap.size, 0)
+          assertEquals(SparkYarnApp.getAppSize, 0)
         }
       }
     }
@@ -291,7 +291,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
           assert(app.state == SparkApp.State.FAILED,
             "SparkYarnApp should end with state failed when spark submit start failed")
           assertFalse(app.isRunning)
-          assertEquals(SparkYarnApp.appMap.size, 0)
+          assertEquals(SparkYarnApp.getAppSize, 0)
         }
       }
     }
@@ -333,7 +333,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
 
       Eventually.eventually(Eventually.timeout(TEST_TIMEOUT), Eventually.interval(100 millis)) {
         assertFalse(app.isRunning)
-        assertEquals(SparkYarnApp.appMap.size, 0)
+        assertEquals(SparkYarnApp.getAppSize, 0)
       }
     }
 
@@ -357,7 +357,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
 
         Eventually.eventually(Eventually.timeout(TEST_TIMEOUT), Eventually.interval(100 millis)) {
           assertFalse(app.isRunning)
-          assertEquals(SparkYarnApp.appMap.size, 0)
+          assertEquals(SparkYarnApp.getAppSize, 0)
           verify(mockYarnClient, atLeast(1)).getApplicationReport(appId)
           verify(mockListener).appIdKnown(appId.toString)
         }
@@ -416,7 +416,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
 
         Eventually.eventually(Eventually.timeout(TEST_TIMEOUT), Eventually.interval(100 millis)) {
           assertFalse(app.isRunning)
-          assertEquals(SparkYarnApp.appMap.size, 0)
+          assertEquals(SparkYarnApp.getAppSize, 0)
           verify(mockYarnClient, atLeast(1)).getApplicationReport(appId)
           verify(mockAppReport, atLeast(1)).getTrackingUrl()
           verify(mockContainerReport, atLeast(1)).getLogUrl()
@@ -449,7 +449,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
 
         Eventually.eventually(Eventually.timeout(TEST_TIMEOUT), Eventually.interval(100 millis)) {
           assertFalse(app.isRunning)
-          assertEquals(SparkYarnApp.appMap.size, 0)
+          assertEquals(SparkYarnApp.getAppSize, 0)
         }
       }
     }
@@ -505,7 +505,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
 
         Eventually.eventually(Eventually.timeout(TEST_TIMEOUT), Eventually.interval(100 millis)) {
           assertFalse(app.isRunning)
-          assertEquals(SparkYarnApp.appMap.size, 0)
+          assertEquals(SparkYarnApp.getAppSize, 0)
         }
       }
     }

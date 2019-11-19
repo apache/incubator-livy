@@ -227,6 +227,8 @@ object LivyConf {
   // If Livy can't monitor the yarn app successfully within this max times, consider the app failed.
   val YARN_APP_MONITOR_MAX_FAILED_TIMES =
     Entry("livy.server.yarn.app-monitor.max-failed.times", "12")
+  // The size of thread pool to monitor all yarn apps.
+  val YARN_APP_MONITOR_THREAD_POOL_SIZE = Entry("livy.server.yarn.app-monitor.thread-pool.size", "4")
 
   // Whether session timeout should be checked, by default it will be checked, which means inactive
   // session will be stopped after "livy.server.session.timeout"

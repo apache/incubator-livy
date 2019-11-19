@@ -133,6 +133,8 @@
 # livy.server.yarn.app-monitor.timeout = 10s
 # If Livy can't monitor the yarn app successfully within this max times, consider the app failed.
 # livy.server.yarn.app-monitor.max-failed.times = 12
+# The size of thread pool to monitor all yarn apps.
+# livy.server.yarn.app-monitor.thread-pool.size = 4
 
 # How often Livy polls YARN to refresh YARN app state.
 # livy.server.yarn.poll-interval = 5s
