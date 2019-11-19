@@ -48,7 +48,9 @@ class LivyExecuteStatementOperation(
   private val operationMessages =
     sessionManager.getSessionInfo(sessionHandle).operationMessages
   private val processTimer = if (operationMessages.isDefined) {
-    Some(new Timer("Job process updater", true))
+    Some(new Timer(
+      s"Job-Process-Updater-${sessionManager.livySessionId(sessionHandle).getOrElse("Unknown")}",
+      true))
   } else None
   // The initialization need to be lazy in order not to block when the instance is created
   private lazy val rpcClient = {
@@ -135,7 +137,9 @@ class LivyExecuteStatementOperation(
   }
 
   private def handleProcessMessage(statementId: String): Unit = {
-    operationMessages.foreach(_.offer(rpcClient.fetchProcess(statementId).get().toString))
+    if (rpcClientValid) {
+      operationMessages.foreach(_.offer(rpcClient.fetchProcess(statementId).get().toString))
+    }
   }
   protected def execute(): Unit = {
     if (logger.isDebugEnabled) {
