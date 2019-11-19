@@ -16,7 +16,7 @@
  */
 package org.apache.livy.utils
 
-import java.util.concurrent.{ConcurrentLinkedQueue, ExecutorService, Executors}
+import java.util.concurrent.{ConcurrentLinkedQueue, Executors, ExecutorService}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -125,7 +125,8 @@ object SparkYarnApp extends Logging {
     }
   }
 
-  val yarnAppMonitorThreadPool: ExecutorService = Executors.newFixedThreadPool(yarnAppMonitorThreadPoolSize)
+  val yarnAppMonitorThreadPool: ExecutorService =
+    Executors.newFixedThreadPool(yarnAppMonitorThreadPoolSize)
 
   for (i <- 0 until yarnAppMonitorThreadPoolSize) {
     yarnAppMonitorThreadPool.execute(new Runnable {
@@ -152,6 +153,8 @@ object SparkYarnApp extends Logging {
   }
 
   def getAppSize: Int = appQueue.size()
+
+  def clearApps: Unit = appQueue.clear()
 }
 
 /**

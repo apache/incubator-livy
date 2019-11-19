@@ -52,7 +52,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
     val livyConf = new LivyConf()
     livyConf.set("livy.server.yarn.poll-interval", "500ms")
     SparkYarnApp.init(livyConf)
-    SparkYarnApp.appQueue.clear()
+    SparkYarnApp.clearApps
   }
 
   override def afterAll(): Unit = {
