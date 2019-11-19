@@ -122,6 +122,8 @@ object LivyConf {
     Entry("livy.server.thrift.idle.session.check.operation", true)
   val THRIFT_LOG_OPERATION_ENABLED = Entry("livy.server.thrift.logging.operation.enabled", true)
   val THRIFT_OPERATION_LOG_MAX_SIZE = Entry("livy.server.thrift.operation.log.max.size", 100L)
+  val THRIFT_OPERATION_PROCESS_UPDATE_INTERVAL =
+    Entry("livy.server.thrift.process.update.interval", "2000ms")
   val THRIFT_ASYNC_EXEC_THREADS = Entry("livy.server.thrift.async.exec.threads", 100)
   val THRIFT_ASYNC_EXEC_SHUTDOWN_TIMEOUT =
     Entry("livy.server.thrift.async.exec.shutdown.timeout", "10s")

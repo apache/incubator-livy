@@ -78,8 +78,6 @@ public class RSCConf extends ClientConf<RSCConf> {
     JOB_CANCEL_TRIGGER_INTERVAL("job-cancel.trigger-interval", "100ms"),
     JOB_CANCEL_TIMEOUT("job-cancel.timeout", "30s"),
 
-    JOB_PROCESS_MSG_UPDATE_INTERVAL("job.process.msg.update.interval", "2000ms"),
-
     RETAINED_STATEMENTS("retained-statements", 100),
     RETAINED_SHARE_VARIABLES("retained.share-variables", 100),
 

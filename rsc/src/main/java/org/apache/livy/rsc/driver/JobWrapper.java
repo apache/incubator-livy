@@ -17,8 +17,6 @@
 
 package org.apache.livy.rsc.driver;
 
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -29,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.livy.Job;
-import org.apache.livy.SqlJobStatement;
-import org.apache.livy.rsc.RSCConf;
 
 public class JobWrapper<T> implements Callable<Void> {
 
@@ -46,17 +42,10 @@ public class JobWrapper<T> implements Callable<Void> {
 
   private Future<?> future;
 
-  private final long firstDelayMSec = 500L;
-  private final long updatePeriodMSec;
-
-  private Timer timer = new Timer("Job process updater", true);
-
   public JobWrapper(RSCDriver driver, String jobId, Job<T> job) {
     this.driver = driver;
     this.jobId = jobId;
     this.job = job;
-    this.updatePeriodMSec =
-            driver.livyConf.getTimeAsMs(RSCConf.Entry.JOB_PROCESS_MSG_UPDATE_INTERVAL);
   }
 
   @Override
@@ -70,17 +59,6 @@ public class JobWrapper<T> implements Callable<Void> {
           driver.jobContext().sc().setJobGroup(jobId, "", true);
         }
       }
-      if (job instanceof SqlJobStatement) {
-        SqlJobStatement sqlJob = (SqlJobStatement) this.job;
-        timer.schedule(new TimerTask() {
-          @Override
-          public void run() {
-            driver.handleProcessMessage(sqlJob.getStatementId());
-          }
-        }, firstDelayMSec, updatePeriodMSec);
-        LOG.debug("refreshing process timer is started!");
-      }
-
 
       jobStarted();
       T result = job.call(driver.jobContext());
@@ -109,8 +87,6 @@ public class JobWrapper<T> implements Callable<Void> {
       return false;
     } else {
       isCancelled = true;
-      timer.cancel();
-      LOG.debug("refreshing process timer is canceled by cancel method!");
       driver.jobContext().sc().cancelJobGroup(jobId);
       return future != null ? future.cancel(true) : true;
     }
@@ -122,8 +98,6 @@ public class JobWrapper<T> implements Callable<Void> {
     } else {
       driver.jobFinished(jobId, null, error);
     }
-    timer.cancel();
-    LOG.debug("refreshing process timer is canceled by finished method!");
   }
 
   protected void jobStarted() {

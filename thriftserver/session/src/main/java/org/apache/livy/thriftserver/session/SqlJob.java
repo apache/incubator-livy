@@ -26,12 +26,11 @@ import org.apache.spark.sql.types.StructType;
 
 import org.apache.livy.Job;
 import org.apache.livy.JobContext;
-import org.apache.livy.SqlJobStatement;
 
 /**
  * A Job implementation for executing SQL queries in a Livy session.
  */
-public class SqlJob extends SqlJobStatement implements Job<Void>  {
+public class SqlJob implements Job<Void> {
 
   private final String sessionId;
   private final String statementId;
@@ -86,10 +85,5 @@ public class SqlJob extends SqlJobStatement implements Job<Void>  {
     // Register both the schema and the iterator with the session state after the statement
     // has been executed.
     session.registerStatement(statementId, schema, iter);
-  }
-
-  @Override
-  public String getStatementId() {
-    return statementId;
   }
 }

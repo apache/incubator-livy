@@ -18,15 +18,14 @@
 package org.apache.livy.thriftserver
 
 import java.security.PrivilegedExceptionAction
+import java.util.{Timer, TimerTask}
 import java.util.concurrent.RejectedExecutionException
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
-
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hive.service.cli._
-
-import org.apache.livy.Logging
+import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.thriftserver.SessionStates._
 import org.apache.livy.thriftserver.operation.Operation
 import org.apache.livy.thriftserver.rpc.RpcClient
@@ -46,6 +45,8 @@ class LivyExecuteStatementOperation(
    */
   private val operationMessages =
     sessionManager.getSessionInfo(sessionHandle).operationMessages
+  operationMessages.foreach(_.clear())
+  private val processTimer = new Timer("Job process updater", true)
   // The initialization need to be lazy in order not to block when the instance is created
   private lazy val rpcClient = {
     val sessionState = sessionManager.livySessionState(sessionHandle)
@@ -130,6 +131,9 @@ class LivyExecuteStatementOperation(
     }
   }
 
+  private def handleProcessMessage(statementId: String): Unit = {
+    operationMessages.foreach(_.offer(rpcClient.fetchProcess(statementId).get().toString))
+  }
   protected def execute(): Unit = {
     if (logger.isDebugEnabled) {
       debug(s"Running query '$statement' with id $statementId (session = " +
@@ -140,6 +144,12 @@ class LivyExecuteStatementOperation(
     try {
       operationMessages.foreach(_.offer(s"RSC client is executing SQL query: $statement, " +
         s"statementId = $statementId, session = " + sessionHandle))
+
+      processTimer.schedule(new TimerTask {
+        override def run() = handleProcessMessage(statementId)
+      }, 500L, sessionManager.livyConf.getTimeAsMs(
+        LivyConf.THRIFT_OPERATION_PROCESS_UPDATE_INTERVAL))
+
       rpcClient.executeSql(sessionHandle, statementId, statement).get()
     } catch {
       case e: Throwable =>
@@ -158,6 +168,7 @@ class LivyExecuteStatementOperation(
 
   override def cancel(state: OperationState): Unit = {
     info(s"Cancel $statementId with state $state")
+    processTimer.cancel()
     cleanup(state)
   }
 
@@ -180,6 +191,7 @@ class LivyExecuteStatementOperation(
     if (statementId != null && rpcClientValid) {
       operationMessages.foreach(
         _.offer(s"Cleaning up remote session for statementId = $statementId"))
+      processTimer.cancel()
       val cleaned = rpcClient.cleanupStatement(sessionHandle, statementId).get()
       if (!cleaned) {
         warn(s"Fail to cleanup query $statementId (session = ${sessionHandle.getSessionId}), " +

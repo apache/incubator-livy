@@ -54,6 +54,13 @@ class RpcClient(livySession: InteractiveSession) extends Logging {
   }
 
   @throws[Exception]
+  def fetchProcess(statementId: String): JobHandle[JobProcess] = {
+    require(null != statementId, s"Invalid statementId specified. StatementId = $statementId")
+    livySession.recordActivity()
+    rscClient.submit(new FetchProcessJob(statementId))
+  }
+
+  @throws[Exception]
   def fetchResult(
       sessionHandle: SessionHandle,
       statementId: String,
