@@ -19,6 +19,9 @@ package org.apache.livy.thriftserver.session;
 
 import java.sql.Timestamp;
 
+/**
+ * Utility class used for transferring process status to the Livy server.
+ */
 public class JobProcess {
     private final int allTask;
     private final int completedTask;

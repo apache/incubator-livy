@@ -47,7 +47,6 @@ class LivyExecuteStatementOperation(
    */
   private val operationMessages =
     sessionManager.getSessionInfo(sessionHandle).operationMessages
-  operationMessages.foreach(_.clear())
   private val processTimer = new Timer("Job process updater", true)
   // The initialization need to be lazy in order not to block when the instance is created
   private lazy val rpcClient = {
@@ -191,8 +190,6 @@ class LivyExecuteStatementOperation(
 
   private def cleanup(state: OperationState) {
     if (statementId != null && rpcClientValid) {
-      operationMessages.foreach(
-        _.offer(s"Cleaning up remote session for statementId = $statementId"))
       processTimer.cancel()
       val cleaned = rpcClient.cleanupStatement(sessionHandle, statementId).get()
       if (!cleaned) {

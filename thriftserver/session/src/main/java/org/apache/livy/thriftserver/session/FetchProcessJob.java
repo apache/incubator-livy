@@ -24,6 +24,9 @@ import org.apache.spark.SparkStatusTracker;
 import org.apache.livy.Job;
 import org.apache.livy.JobContext;
 
+/**
+ * A Job implementation for getting task process in a Livy session.
+ */
 public class FetchProcessJob implements Job<JobProcess> {
 
     private final String statementId;
@@ -33,13 +36,14 @@ public class FetchProcessJob implements Job<JobProcess> {
     }
 
     @Override
-    public JobProcess call(JobContext jc) throws Exception {
-        SparkStatusTracker sparkStatusTracker = jc.sc().sc().statusTracker();
+    public JobProcess call(JobContext ctx) throws Exception {
+        SparkStatusTracker sparkStatusTracker = ctx.sc().sc().statusTracker();
         int[] jobIdsForGroup = sparkStatusTracker.getJobIdsForGroup(statementId);
         int allTask = 0;
         int completedTask = 0;
         int activeTask = 0;
         int failedTask = 0;
+
         for (int sparkJobId : jobIdsForGroup) {
             SparkJobInfo jobInfo = sparkStatusTracker.getJobInfo(sparkJobId).get();
             if (jobInfo != null) {
@@ -54,6 +58,7 @@ public class FetchProcessJob implements Job<JobProcess> {
                 }
             }
         }
+
         return new JobProcess(allTask, completedTask, activeTask, failedTask);
     }
 }
