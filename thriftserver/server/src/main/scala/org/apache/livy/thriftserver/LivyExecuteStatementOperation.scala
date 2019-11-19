@@ -47,7 +47,9 @@ class LivyExecuteStatementOperation(
    */
   private val operationMessages =
     sessionManager.getSessionInfo(sessionHandle).operationMessages
-  private val processTimer = new Timer("Job process updater", true)
+  private val processTimer = if (operationMessages.isDefined) {
+    Some(new Timer("Job process updater", true))
+  } else None
   // The initialization need to be lazy in order not to block when the instance is created
   private lazy val rpcClient = {
     val sessionState = sessionManager.livySessionState(sessionHandle)
@@ -146,10 +148,10 @@ class LivyExecuteStatementOperation(
       operationMessages.foreach(_.offer(s"RSC client is executing SQL query: $statement, " +
         s"statementId = $statementId, session = " + sessionHandle))
 
-      processTimer.schedule(new TimerTask {
+      processTimer.foreach(_.schedule(new TimerTask {
         override def run() = handleProcessMessage(statementId)
       }, 500L, sessionManager.livyConf.getTimeAsMs(
-        LivyConf.THRIFT_OPERATION_PROCESS_UPDATE_INTERVAL))
+        LivyConf.THRIFT_OPERATION_PROCESS_UPDATE_INTERVAL)))
 
       rpcClient.executeSql(sessionHandle, statementId, statement).get()
     } catch {
@@ -178,7 +180,7 @@ class LivyExecuteStatementOperation(
     operationMessages.foreach(
       _.offer(s"RSC client is fetching result schema for statementId = $statementId"))
 
-    processTimer.cancel()
+    processTimer.foreach(_.cancel())
 
     val tableSchema = DataTypeUtils.schemaFromSparkJson(
       rpcClient.fetchResultSchema(sessionHandle, statementId).get())
@@ -191,8 +193,8 @@ class LivyExecuteStatementOperation(
   }
 
   private def cleanup(state: OperationState) {
-    //in case it is not canceled
-    processTimer.cancel()
+    // in case it is not canceled
+    processTimer.foreach(_.cancel())
     if (statementId != null && rpcClientValid) {
       val cleaned = rpcClient.cleanupStatement(sessionHandle, statementId).get()
       if (!cleaned) {
