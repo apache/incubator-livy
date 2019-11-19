@@ -23,8 +23,10 @@ import java.util.concurrent.RejectedExecutionException
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
+
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hive.service.cli._
+
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.thriftserver.SessionStates._
 import org.apache.livy.thriftserver.operation.Operation

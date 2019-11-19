@@ -256,9 +256,6 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
                 managedLivySessionActiveUsers(livySession.id) = numUsers + 1
               }
             }
-            if (livySession.client.isDefined) {
-              livySession.client.get.setOperationMessage(operationMessages.orNull)
-            }
             initSession(sessionHandle, livySession, initStatements)
             operationMessages.foreach(
               _.offer(s"tracking URL: ${livySession.appInfo.sparkUiUrl.orNull}"))
