@@ -124,11 +124,7 @@ public class RSCDriver extends BaseProtocol {
 
     // Cancel any pending jobs.
     for (JobWrapper<?> job : activeJobs.values()) {
-      try {
-        job.cancel();
-      } catch (Exception e) {
-        LOG.warn("Error during cancel job.", e);
-      }
+      job.cancel();
     }
 
     try {

@@ -169,7 +169,6 @@ class LivyExecuteStatementOperation(
 
   override def cancel(state: OperationState): Unit = {
     info(s"Cancel $statementId with state $state")
-    processTimer.cancel()
     cleanup(state)
   }
 
@@ -178,6 +177,9 @@ class LivyExecuteStatementOperation(
   override def getResultSetSchema: Schema = {
     operationMessages.foreach(
       _.offer(s"RSC client is fetching result schema for statementId = $statementId"))
+
+    processTimer.cancel()
+
     val tableSchema = DataTypeUtils.schemaFromSparkJson(
       rpcClient.fetchResultSchema(sessionHandle, statementId).get())
     // Workaround for operations returning an empty schema (eg. CREATE, INSERT, ...)
@@ -189,8 +191,9 @@ class LivyExecuteStatementOperation(
   }
 
   private def cleanup(state: OperationState) {
+    //in case it is not canceled
+    processTimer.cancel()
     if (statementId != null && rpcClientValid) {
-      processTimer.cancel()
       val cleaned = rpcClient.cleanupStatement(sessionHandle, statementId).get()
       if (!cleaned) {
         warn(s"Fail to cleanup query $statementId (session = ${sessionHandle.getSessionId}), " +
