@@ -73,11 +73,13 @@ object SparkYarnApp extends Logging {
         if (!leakedAppTags.isEmpty) {
           // kill the app if found it and remove it if exceeding a threshold
           val iter = leakedAppTags.entrySet().iterator()
-          var isRemoved = false
           val now = System.currentTimeMillis()
           val apps = yarnClient.getApplications(appType).asScala
+
           while(iter.hasNext) {
+            var isRemoved = false
             val entry = iter.next()
+
             apps.find(_.getApplicationTags.contains(entry.getKey))
               .foreach({ e =>
                 info(s"Kill leaked app ${e.getApplicationId}")
@@ -85,8 +87,9 @@ object SparkYarnApp extends Logging {
                 iter.remove()
                 isRemoved = true
               })
+
             if (!isRemoved) {
-              if ((entry.getValue - now) > sessionLeakageCheckTimeout) {
+              if ((now - entry.getValue) > sessionLeakageCheckTimeout) {
                 iter.remove()
                 info(s"Remove leaked yarn app tag ${entry.getKey}")
               }
