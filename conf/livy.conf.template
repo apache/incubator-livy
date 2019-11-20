@@ -119,8 +119,8 @@
 # For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
 # livy.server.recovery.state-store.url =
 
-# If Livy can't find the yarn app within this time, consider it lost.
-# livy.server.yarn.app-lookup-timeout = 120s
+# If Livy can't find the yarn app within this max times, consider it lost.
+# livy.server.yarn.app-lookup.max-failed.times = 120
 # How often to poll yarn for the app id.
 # livy.server.yarn.app-lookup-interval = 1s
 # When the cluster is busy, we may fail to launch yarn app in app-lookup-timeout, then it would
@@ -129,10 +129,6 @@
 # livy.server.yarn.app-leakage.check-timeout = 600s
 # How often to check livy session leakage.
 # livy.server.yarn.app-leakage.check-interval = 60s
-# If Livy can't monitor yarn app successfully within this time, consider the monitoring failed.
-# livy.server.yarn.app-monitor.timeout = 10s
-# If Livy can't monitor the yarn app successfully within this max times, consider the app failed.
-# livy.server.yarn.app-monitor.max-failed.times = 12
 # The size of thread pool to monitor all yarn apps.
 # livy.server.yarn.app-monitor.thread-pool.size = 4
 

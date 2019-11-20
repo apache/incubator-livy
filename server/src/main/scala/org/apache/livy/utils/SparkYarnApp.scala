@@ -20,9 +20,6 @@ import java.util.concurrent.{ConcurrentLinkedQueue, Executors, ExecutorService}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -43,15 +40,12 @@ object SparkYarnApp extends Logging {
     sessionLeakageCheckTimeout = livyConf.getTimeAsMs(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT)
 
     yarnPollInterval = livyConf.getTimeAsMs(LivyConf.YARN_POLL_INTERVAL)
-    yarnAppMonitorTimeout = livyConf.getTimeAsMs(LivyConf.YARN_APP_MONITOR_TIMEOUT)
-    yarnAppMonitorMaxFailedTimes = livyConf.getTimeAsMs(LivyConf.YARN_APP_MONITOR_MAX_FAILED_TIMES)
-    yarnAppMonitorThreadPoolSize = livyConf.getInt(LivyConf.YARN_APP_MONITOR_THREAD_POOL_SIZE)
-
-    yarnAppLookUpInterval = livyConf.getTimeAsMs(LivyConf.YARN_APP_LOOKUP_INTERVAL)
 
     leakedAppsGCThread.setDaemon(true)
     leakedAppsGCThread.setName("LeakedAppsGCThread")
     leakedAppsGCThread.start()
+
+    initYarnAppMonitorThreadPool(livyConf)
   }
 
   private var mockYarnClient: Option[YarnClient] = None
@@ -68,21 +62,13 @@ object SparkYarnApp extends Logging {
 
   private[utils] val leakedAppTags = new java.util.concurrent.ConcurrentHashMap[String, Long]()
 
-  private[utils] val appQueue = new ConcurrentLinkedQueue[SparkYarnApp]()
+  private val appQueue = new ConcurrentLinkedQueue[SparkYarnApp]()
 
   private var sessionLeakageCheckTimeout: Long = _
 
   private var sessionLeakageCheckInterval: Long = _
 
   private var yarnPollInterval: Long = _
-
-  private var yarnAppMonitorTimeout: Long = _
-
-  private var yarnAppMonitorMaxFailedTimes: Long = _
-
-  private var yarnAppMonitorThreadPoolSize: Int = _
-
-  private var yarnAppLookUpInterval: Long = _
 
   private val leakedAppsGCThread = new Thread() {
     override def run(): Unit = {
@@ -125,31 +111,39 @@ object SparkYarnApp extends Logging {
     }
   }
 
-  val yarnAppMonitorThreadPool: ExecutorService =
-    Executors.newFixedThreadPool(yarnAppMonitorThreadPoolSize)
+  class YarnAppMonitorRunnable extends Runnable {
+    override def run(): Unit = {
+      var loop = true
 
-  for (i <- 0 until yarnAppMonitorThreadPoolSize) {
-    yarnAppMonitorThreadPool.execute(new Runnable {
-      override def run(): Unit = {
-        var loop = true
+      while (loop) {
         try {
-          while (loop) {
-            val app = appQueue.poll()
-            if (app != null) {
-              app.monitorSparkYarnApp()
-            }
+          val app = appQueue.poll()
+
+          if (app != null) {
+            app.monitorSparkYarnApp()
 
             if (app.isRunning) {
               appQueue.add(app)
             }
-
-            Thread.sleep(yarnPollInterval)
           }
+
+          Thread.sleep(yarnPollInterval)
         } catch {
           case _: InterruptedException => loop = false
         }
       }
-    })
+    }
+  }
+
+  private def initYarnAppMonitorThreadPool(livyConf: LivyConf): Unit = {
+    val poolSize = livyConf.getInt(LivyConf.YARN_APP_MONITOR_THREAD_POOL_SIZE)
+    val yarnAppMonitorThreadPool: ExecutorService =
+      Executors.newFixedThreadPool(poolSize)
+
+    val runnable = new YarnAppMonitorRunnable()
+    for (i <- 0 until poolSize) {
+      yarnAppMonitorThreadPool.execute(runnable)
+    }
   }
 
   def getAppSize: Int = appQueue.size()
@@ -203,26 +197,7 @@ class SparkYarnApp private[utils] (
     if (appId.isDefined) {
       yarnClient.killApplication(appId.get)
     } else {
-      Future {
-        val deadline = getYarnTagToAppIdTimeout(livyConf).fromNow
-        while (!deadline.isOverdue()) {
-          try {
-            appId = Some(getAppId())
-            yarnClient.killApplication(appId.get)
-            return
-          } catch {
-            case e: Exception =>
-              if (!deadline.isOverdue()) {
-                Thread.sleep(yarnAppLookUpInterval)
-              } else {
-                // We cannot kill the YARN app without the app id.
-                // There's a chance the YARN app hasn't been submitted during a livy-server failure.
-                // We don't want a stuck session that can't be deleted. Emit a warning and move on.
-                warn("Deleting a session while its YARN application is not found.")
-              }
-          }
-        }
-      }
+      leakedAppTags.put(appTag, System.currentTimeMillis())
     }
   }
 
@@ -252,9 +227,9 @@ class SparkYarnApp private[utils] (
       match {
         case Some(app) => app.getApplicationId
         case None =>
-          throw new IllegalStateException(s"No YARN application is found with tag" +
-            s" $appTagLowerCase in ${livyConf.getTimeAsMs(LivyConf.YARN_APP_LOOKUP_TIMEOUT)/1000}" +
-            " seconds. This may be because 1) spark-submit fail to submit application to YARN; " +
+          throw new IllegalStateException(s"No YARN application is found with tag " +
+            "$appTagLowerCase. This may be because " +
+            "1) spark-submit fail to submit application to YARN; " +
             "or 2) YARN cluster doesn't have enough resources to start the application in time. " +
             "Please check Livy log and YARN log to know the details.")
       }
@@ -300,7 +275,6 @@ class SparkYarnApp private[utils] (
     }
   }
 
-  private var yarnAppMonitorFailedTimes: Int = _
   private var yarnTagToAppIdFailedTimes: Int = _
 
   private def failToMonitor(): Unit = {
@@ -309,7 +283,6 @@ class SparkYarnApp private[utils] (
     leakedAppTags.put(appTag, System.currentTimeMillis())
   }
 
-  private val monitorLock: Int = 0
   private def monitorSparkYarnApp(): Unit = {
     try {
       if (killed) {
@@ -359,19 +332,10 @@ class SparkYarnApp private[utils] (
         }
       }
 
-      yarnAppMonitorFailedTimes = 0
       yarnTagToAppIdFailedTimes = 0
 
       debug(s"$appId $state ${yarnDiagnostics.mkString(" ")}")
     } catch {
-      // throw InterruptedException when monitor timeout
-      case e: InterruptedException =>
-        yarnAppMonitorFailedTimes += 1
-        if (yarnAppMonitorFailedTimes > yarnAppMonitorMaxFailedTimes) {
-          error(s"Exception whiling monitor $appTag", e)
-          yarnDiagnostics = ArrayBuffer(e.getMessage)
-          failToMonitor()
-        }
       // throw IllegalStateException when getAppId failed
       case e: IllegalStateException =>
         yarnTagToAppIdFailedTimes += 1

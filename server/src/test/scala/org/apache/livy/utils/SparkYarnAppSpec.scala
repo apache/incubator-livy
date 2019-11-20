@@ -66,7 +66,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
     val appIdOption = Some(appId.toString)
     val appTag = "fakeTag"
     val livyConf = new LivyConf()
-    livyConf.set(LivyConf.YARN_APP_LOOKUP_TIMEOUT, "30s")
+    livyConf.set(LivyConf.YARN_APP_LOOKUP_MAX_FAILED_TIMES, 30)
 
     it("should poll YARN state and terminate") {
       Clock.withSleepMethod(mockSleep) {
@@ -216,7 +216,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
       Clock.withSleepMethod(mockSleep) {
         val diag = "DIAG"
         val livyConf = new LivyConf()
-        livyConf.set(LivyConf.YARN_APP_LOOKUP_TIMEOUT, "0")
+        livyConf.set(LivyConf.YARN_APP_LOOKUP_MAX_FAILED_TIMES, 0)
 
         val mockAppReport = mock[ApplicationReport]
         when(mockAppReport.getApplicationId).thenReturn(appId)
