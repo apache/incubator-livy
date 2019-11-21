@@ -290,8 +290,7 @@ object InteractiveSession extends Logging {
                           .map(_.split(",")).getOrElse(Array.empty[String])
       val sparkFiles = conf.get(LivyConf.SPARK_FILES)
                            .map(_.split(",")).getOrElse(Array.empty[String])
-      var files = Array.empty[String]
-      if (!sparkFiles.isEmpty || yarnFiles.isEmpty) files = sparkFiles else files = yarnFiles
+      val files = if (!sparkFiles.isEmpty || yarnFiles.isEmpty) sparkFiles else yarnFiles
       hiveSiteFile(files, livyConf) match {
         case (_, true) =>
           debug("Enable HiveContext because hive-site.xml is found in user request.")
