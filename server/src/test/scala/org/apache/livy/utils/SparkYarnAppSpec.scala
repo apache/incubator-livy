@@ -463,7 +463,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
       }
     }
 
-    it("should not delete leak app when timeout") {
+    it("should delete leak app when timeout") {
       Clock.withSleepMethod(mockSleep) {
         livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL, "100ms")
         livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT, "1000ms")
