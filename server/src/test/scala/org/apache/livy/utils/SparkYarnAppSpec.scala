@@ -16,6 +16,7 @@
  */
 package org.apache.livy.utils
 
+import java.util.ArrayList
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
@@ -458,6 +459,26 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
           done.set(true)
 
           app.yarnAppMonitorThread.join(TEST_TIMEOUT.toMillis)
+        }
+      }
+    }
+
+    it("should delete leak app when timeout") {
+      Clock.withSleepMethod(mockSleep) {
+        livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL, "100ms")
+        livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT, "1000ms")
+
+        val client = mock[YarnClient]
+        when(client.getApplications(SparkYarnApp.appType)).
+          thenReturn(new ArrayList[ApplicationReport]())
+
+        SparkYarnApp.init(livyConf, Some(client))
+
+        SparkYarnApp.leakedAppTags.clear()
+        SparkYarnApp.leakedAppTags.put("leakApp", System.currentTimeMillis())
+
+        Eventually.eventually(Eventually.timeout(TEST_TIMEOUT), Eventually.interval(100 millis)) {
+          assert(SparkYarnApp.leakedAppTags.size() == 0)
         }
       }
     }

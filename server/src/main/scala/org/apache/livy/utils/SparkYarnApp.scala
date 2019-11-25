@@ -37,13 +37,16 @@ import org.apache.livy.{LivyConf, Logging, Utils}
 
 object SparkYarnApp extends Logging {
 
-  def init(livyConf: LivyConf): Unit = {
+  def init(livyConf: LivyConf, client: Option[YarnClient] = None): Unit = {
+    mockYarnClient = client
     sessionLeakageCheckInterval = livyConf.getTimeAsMs(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL)
     sessionLeakageCheckTimeout = livyConf.getTimeAsMs(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT)
     leakedAppsGCThread.setDaemon(true)
     leakedAppsGCThread.setName("LeakedAppsGCThread")
     leakedAppsGCThread.start()
   }
+
+  private var mockYarnClient: Option[YarnClient] = None
 
   // YarnClient is thread safe. Create once, share it across threads.
   lazy val yarnClient = {
@@ -59,9 +62,9 @@ object SparkYarnApp extends Logging {
   private def getYarnPollInterval(livyConf: LivyConf): FiniteDuration =
     livyConf.getTimeAsMs(LivyConf.YARN_POLL_INTERVAL) milliseconds
 
-  private val appType = Set("SPARK").asJava
+  private[utils] val appType = Set("SPARK").asJava
 
-  private val leakedAppTags = new java.util.concurrent.ConcurrentHashMap[String, Long]()
+  private[utils] val leakedAppTags = new java.util.concurrent.ConcurrentHashMap[String, Long]()
 
   private var sessionLeakageCheckTimeout: Long = _
 
@@ -69,24 +72,34 @@ object SparkYarnApp extends Logging {
 
   private val leakedAppsGCThread = new Thread() {
     override def run(): Unit = {
+      val client = {
+        mockYarnClient match {
+          case Some(client) => client
+          case None => yarnClient
+        }
+      }
+
       while (true) {
         if (!leakedAppTags.isEmpty) {
           // kill the app if found it and remove it if exceeding a threshold
           val iter = leakedAppTags.entrySet().iterator()
-          var isRemoved = false
           val now = System.currentTimeMillis()
-          val apps = yarnClient.getApplications(appType).asScala
+          val apps = client.getApplications(appType).asScala
+
           while(iter.hasNext) {
+            var isRemoved = false
             val entry = iter.next()
+
             apps.find(_.getApplicationTags.contains(entry.getKey))
               .foreach({ e =>
                 info(s"Kill leaked app ${e.getApplicationId}")
-                yarnClient.killApplication(e.getApplicationId)
+                client.killApplication(e.getApplicationId)
                 iter.remove()
                 isRemoved = true
               })
+
             if (!isRemoved) {
-              if ((entry.getValue - now) > sessionLeakageCheckTimeout) {
+              if ((now - entry.getValue) > sessionLeakageCheckTimeout) {
                 iter.remove()
                 info(s"Remove leaked yarn app tag ${entry.getKey}")
               }
