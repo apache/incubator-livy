@@ -179,6 +179,8 @@ class SparkYarnApp private[utils] (
   private var yarnDiagnostics: IndexedSeq[String] = IndexedSeq.empty[String]
   private var appInfo = AppInfo()
   private var appId: Option[ApplicationId] = None
+  private val yarnTagToAppIdMaxFailedTimes =
+    livyConf.getInt(LivyConf.YARN_APP_LOOKUP_MAX_FAILED_TIMES)
 
   override def log(): IndexedSeq[String] =
     ("stdout: " +: process.map(_.inputLines).getOrElse(ArrayBuffer.empty[String])) ++
@@ -217,22 +219,13 @@ class SparkYarnApp private[utils] (
    *
    * @return ApplicationId or the failure.
    */
-  private def getAppId(): ApplicationId = {
-    appIdOption.map(ConverterUtils.toApplicationId).getOrElse {
-      val appTagLowerCase = appTag.toLowerCase()
+  private def getAppId(): Option[ApplicationId] = {
+    appIdOption.map(ConverterUtils.toApplicationId).orElse {
       // FIXME Should not loop thru all YARN applications but YarnClient doesn't offer an API.
       // Consider calling rmClient in YarnClient directly.
-      yarnClient.getApplications(appType).asScala.
-        find(_.getApplicationTags.contains(appTagLowerCase))
-      match {
-        case Some(app) => app.getApplicationId
-        case None =>
-          throw new IllegalStateException(s"No YARN application is found with tag " +
-            "$appTagLowerCase. This may be because " +
-            "1) spark-submit fail to submit application to YARN; " +
-            "or 2) YARN cluster doesn't have enough resources to start the application in time. " +
-            "Please check Livy log and YARN log to know the details.")
-      }
+      yarnClient.getApplications(appType).asScala
+        .find(_.getApplicationTags.contains(appTag.toLowerCase()))
+        .map(_.getApplicationId)
     }
   }
 
@@ -292,7 +285,15 @@ class SparkYarnApp private[utils] (
       }
       // If appId is not known, query YARN by appTag to get it.
       if (appId.isEmpty) {
-        appId = Some(getAppId())
+        appId = getAppId()
+        if (appId.isEmpty) {
+          throw new IllegalStateException(s"No YARN application is found with tag " +
+            "$appTagLowerCase. This may be because " +
+            "1) spark-submit fail to submit application to YARN; " +
+            "or 2) YARN cluster doesn't have enough resource to start the application in time. " +
+            "Please check Livy log and YARN log to know the details.")
+        }
+
         listener.foreach(_.appIdKnown(appId.get.toString))
       }
 
@@ -339,7 +340,7 @@ class SparkYarnApp private[utils] (
       // throw IllegalStateException when getAppId failed
       case e: IllegalStateException =>
         yarnTagToAppIdFailedTimes += 1
-        if (yarnTagToAppIdFailedTimes > getYarnTagToAppIdMaxFailedTimes(livyConf)) {
+        if (yarnTagToAppIdFailedTimes > yarnTagToAppIdMaxFailedTimes) {
           error(s"Exception whiling monitor $appTag", e)
           yarnDiagnostics = ArrayBuffer(e.getMessage)
           failToMonitor()
