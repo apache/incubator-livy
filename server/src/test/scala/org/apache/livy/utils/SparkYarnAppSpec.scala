@@ -50,8 +50,15 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
   override def beforeAll(): Unit = {
     super.beforeAll()
     val livyConf = new LivyConf()
-    livyConf.set("livy.server.yarn.poll-interval", "500ms")
-    SparkYarnApp.init(livyConf)
+    livyConf.set(LivyConf.YARN_APP_MONITOR_THREAD_INTERVAL, "500ms")
+    livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL, "100ms")
+    livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT, "1000ms")
+
+    val client = mock[YarnClient]
+    when(client.getApplications(SparkYarnApp.appType)).
+      thenReturn(new ArrayList[ApplicationReport]())
+
+    SparkYarnApp.init(livyConf, Some(client))
     SparkYarnApp.clearApps
   }
 
@@ -512,15 +519,6 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
 
     it("should delete leak app when timeout") {
       Clock.withSleepMethod(mockSleep) {
-        livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL, "100ms")
-        livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT, "1000ms")
-
-        val client = mock[YarnClient]
-        when(client.getApplications(SparkYarnApp.appType)).
-          thenReturn(new ArrayList[ApplicationReport]())
-
-        SparkYarnApp.init(livyConf, Some(client))
-
         SparkYarnApp.leakedAppTags.clear()
         SparkYarnApp.leakedAppTags.put("leakApp", System.currentTimeMillis())
 
