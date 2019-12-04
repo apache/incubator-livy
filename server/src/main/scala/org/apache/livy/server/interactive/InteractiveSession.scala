@@ -285,8 +285,10 @@ object InteractiveSession extends Logging {
       }
     }
 
-    def mergeHiveSiteAndHiveDeps(sparkMajorVersion: Int, files: Array[String],
-                                 mergeJarsConf: String, mergeFilesConf: String): Unit = {
+    def mergeHiveSiteAndHiveDeps(sparkMajorVersion: Int,
+                                 files: Array[String],
+                                 mergeJarsConf: String,
+                                 mergeFilesConf: String): Unit = {
       hiveSiteFile(files, livyConf) match {
         case (_, true) =>
           debug("Enable HiveContext because hive-site.xml is found in user request.")
@@ -339,8 +341,8 @@ object InteractiveSession extends Logging {
       .map(_.split(",")).getOrElse(Array.empty[String])
     val sparkFiles = conf.get(LivyConf.SPARK_FILES)
       .map(_.split(",")).getOrElse(Array.empty[String])
-    val mergeJarsConf = if (conf.get(LivyConf.SPARK_JARS) != None ||
-      conf.get(LivyConf. SPARK_YARN_JARS) == None) {
+    val mergeJarsConf = if (conf.get(LivyConf.SPARK_JARS).isDefined ||
+      conf.get(LivyConf. SPARK_YARN_JARS).isEmpty) {
       LivyConf.SPARK_JARS
     } else {
       LivyConf.SPARK_YARN_JARS
