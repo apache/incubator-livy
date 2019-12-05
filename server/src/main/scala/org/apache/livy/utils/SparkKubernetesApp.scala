@@ -249,7 +249,7 @@ class SparkKubernetesApp private[utils](
         if (deadline.isOverdue) {
           process.foreach(_.destroy())
           leakedAppTags.put(appTag, System.currentTimeMillis())
-          throw new IllegalStateException(s"No Kubernetes application is found with tag" +
+          throw new IllegalStateException("No Kubernetes application is found with tag" +
             s" $appTag in ${livyConf.getTimeAsMs(LivyConf.KUBERNETES_APP_LOOKUP_TIMEOUT) / 1000}" +
             " seconds. This may be because 1) spark-submit fail to submit application to " +
             "Kubernetes; or 2) Kubernetes cluster doesn't have enough resources to start the " +
@@ -260,7 +260,6 @@ class SparkKubernetesApp private[utils](
         }
     }
   }
-
 }
 
 object KubernetesConstants {
