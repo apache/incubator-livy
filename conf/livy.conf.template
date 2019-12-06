@@ -122,7 +122,7 @@
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s
 # If Livy can't find the yarn app within this max times, consider it lost.
-# livy.server.yarn.app-lookup.max-failed.times = 30
+# livy.server.yarn.app-lookup.max-failed.times = 120
 # The size of thread pool to monitor all yarn apps.
 # livy.server.yarn.app-lookup.thread-pool.size = 4
 
