@@ -50,7 +50,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAnd
   override def beforeAll(): Unit = {
     super.beforeAll()
     val livyConf = new LivyConf()
-    livyConf.set(LivyConf.YARN_APP_MONITOR_THREAD_INTERVAL, "500ms")
+    livyConf.set(LivyConf.YARN_POLL_INTERVAL, "500ms")
     livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL, "100ms")
     livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT, "1000ms")
 

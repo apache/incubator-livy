@@ -202,8 +202,18 @@ object LivyConf {
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)
 
+  // If Livy can't find the yarn app within this time, consider it lost.
+  val YARN_APP_LOOKUP_TIMEOUT = Entry("livy.server.yarn.app-lookup-timeout", "120s")
+
   // If Livy can't find the yarn app within this max times, consider it lost.
   val YARN_APP_LOOKUP_MAX_FAILED_TIMES = Entry("livy.server.yarn.app-lookup.max-failed.times", 120)
+
+  // The size of thread pool to monitor all yarn apps.
+  val YARN_APP_LOOKUP_THREAD_POOL_SIZE =
+    Entry("livy.server.yarn.app-lookup.thread-pool.size", 4)
+
+  // How often Livy polls YARN to refresh YARN app state.
+  val YARN_POLL_INTERVAL = Entry("livy.server.yarn.poll-interval", "5s")
 
   // Days to keep Livy server request logs.
   val REQUEST_LOG_RETAIN_DAYS = Entry("livy.server.request-log-retain.days", 5)
@@ -217,22 +227,6 @@ object LivyConf {
   val YARN_APP_LEAKAGE_CHECK_TIMEOUT = Entry("livy.server.yarn.app-leakage.check-timeout", "600s")
   // How often to check livy session leakage.
   val YARN_APP_LEAKAGE_CHECK_INTERVAL = Entry("livy.server.yarn.app-leakage.check-interval", "60s")
-
-  // The size of thread pool to monitor all yarn apps.
-  val YARN_APP_MONITOR_THREAD_POOL_SIZE =
-    Entry("livy.server.yarn.app-monitor.thread-pool.size", 4)
-  // How often thread monitor the YARN app.
-  val YARN_APP_MONITOR_THREAD_INTERVAL = Entry("livy.server.yarn.app-monitor.thread-interval", "5s")
-  // How often to check monitor thread block
-  val YARN_APP_MONITOR_THREAD_BLOCK_CHECK_INTERVAL =
-    Entry("livy.server.yarn.app-monitor.thread-block.check-interval", "10s")
-  // If some thread cost more than this config to monitor one app,
-  // stop the monitor of the app which considered blocked.
-  val YARN_APP_MONITOR_THREAD_BLOCK_TIMEOUT =
-    Entry("livy.server.yarn.app-monitor.thread-block-timeout", "60s")
-  // If Livy can't monitor the yarn app successfully within this max times, consider the app failed.
-  val YARN_APP_MONITOR_MAX_FAILED_TIMES =
-    Entry("livy.server.yarn.app-monitor.max-failed.times", 12)
 
   // Whether session timeout should be checked, by default it will be checked, which means inactive
   // session will be stopped after "livy.server.session.timeout"
