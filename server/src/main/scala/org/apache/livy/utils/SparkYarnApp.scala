@@ -105,7 +105,7 @@ object SparkYarnApp extends Logging {
         } catch {
           case e: InterruptedException =>
             loop = false
-            error(s"checkMonitorAppTimeoutThread Interrupt whiling monitor", e)
+            error("Apps timeout monitoring thread was interrupted.", e)
         }
       }
     }
@@ -174,7 +174,7 @@ object SparkYarnApp extends Logging {
         } catch {
           case e: InterruptedException =>
             loop = false
-            error(s"YarnAppMonitorRunnable Exception whiling monitor", e)
+            error(s"Yarn app monitoring was interrupted.", e)
         }
       }
     }
@@ -186,14 +186,14 @@ object SparkYarnApp extends Logging {
       Executors.newFixedThreadPool(poolSize)
 
     val runnable = new YarnAppMonitorRunnable()
-    for (i <- 0 until poolSize) {
+    for (_ <- 0 until poolSize) {
       yarnAppMonitorThreadPool.execute(runnable)
     }
   }
 
   def getAppSize: Int = appQueue.size()
 
-  def clearApps: Unit = appQueue.clear()
+  def clearApps(): Unit = appQueue.clear()
 }
 
 /**
@@ -324,12 +324,12 @@ class SparkYarnApp private[utils] (
     yarnTagToAppIdFailedTimes += 1
     if (yarnTagToAppIdFailedTimes > yarnAppLookupMaxFailedTimes) {
       val msg = "No YARN application is found with tag " +
-        "$appTagLowerCase. This may be because " +
+        s"${appTag.toLowerCase}. This may be because " +
         "1) spark-submit fail to submit application to YARN; " +
         "or 2) YARN cluster doesn't have enough resource to start the application in time. " +
         "Please check Livy log and YARN log to know the details."
 
-      error(s"Exception whiling monitor $appTag " + msg)
+      error(s"Failed monitoring the app $appTag: $msg")
       yarnDiagnostics = ArrayBuffer(msg)
       failToMonitor()
     }
@@ -397,12 +397,12 @@ class SparkYarnApp private[utils] (
       case e: InterruptedException =>
         yarnAppMonitorFailedTimes += 1
         if (yarnAppMonitorFailedTimes > yarnAppLookupMaxFailedTimes) {
-          error(s"Exception whiling monitor $appTag", e)
+          error(s"Monitoring of the app $appTag was interrupted.", e)
           yarnDiagnostics = ArrayBuffer(e.getMessage)
           failToMonitor()
         }
       case NonFatal(e) =>
-        error(s"Error whiling monitor $appTag", e)
+        error(s"Failed monitoring the app $appTag.", e)
         yarnDiagnostics = ArrayBuffer(e.getMessage)
         failToMonitor()
     }
