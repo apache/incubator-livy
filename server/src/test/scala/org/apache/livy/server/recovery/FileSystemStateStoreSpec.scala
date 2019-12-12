@@ -141,7 +141,7 @@ class FileSystemStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       stateStore.get[String]("key") shouldBe None
     }
 
-    it("getChildren should list file") {
+    it("getChildrenNodes should list file") {
       val parentPath = "path"
       def makeFileStatus(name: String): FileStatus = {
         val fs = new FileStatus()
@@ -157,7 +157,7 @@ class FileSystemStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       when(fileContext.util()).thenReturn(util)
 
       val stateStore = new FileSystemStateStore(makeConf(), Some(fileContext))
-      stateStore.getChildren(parentPath) should contain theSameElementsAs children
+      stateStore.getChildrenNodes(parentPath) should contain theSameElementsAs children
     }
 
     def getChildrenErrorTest(error: Exception): Unit = {
@@ -169,14 +169,14 @@ class FileSystemStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       when(fileContext.util()).thenReturn(util)
 
       val stateStore = new FileSystemStateStore(makeConf(), Some(fileContext))
-      stateStore.getChildren(parentPath) shouldBe empty
+      stateStore.getChildrenNodes(parentPath) shouldBe empty
     }
 
-    it("getChildren should return empty list if the key doesn't exist") {
+    it("getChildrenNodes should return empty list if the key doesn't exist") {
       getChildrenErrorTest(new IOException("Unit test"))
     }
 
-    it("getChildren should return empty list if key doesn't exist") {
+    it("getChildrenNodes should return empty list if key doesn't exist") {
       getChildrenErrorTest(new FileNotFoundException("Unit test"))
     }
 

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.livy.server.recovery
 
 import scala.collection.JavaConverters._
@@ -34,7 +33,7 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
   describe("ZooKeeperStateStore") {
     case class TestFixture(stateStore: ZooKeeperStateStore, curatorClient: CuratorFramework)
     val conf = new LivyConf()
-    conf.set(LivyConf.RECOVERY_STATE_STORE_URL, "host")
+    conf.set(LivyConf.LIVY_ZOOKEEPER_URL, "host")
     val key = "key"
     val prefixedKey = s"/livy/$key"
 
@@ -51,17 +50,6 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       when(curatorClient.checkExists()).thenReturn(existsBuilder)
       if (exists) {
         when(existsBuilder.forPath(prefixedKey)).thenReturn(mock[Stat])
-      }
-    }
-
-    it("should throw on bad config") {
-      withMock { f =>
-        val conf = new LivyConf()
-        intercept[IllegalArgumentException] { new ZooKeeperStateStore(conf) }
-
-        conf.set(LivyConf.RECOVERY_STATE_STORE_URL, "host")
-        conf.set(ZooKeeperStateStore.ZK_RETRY_CONF, "bad")
-        intercept[IllegalArgumentException] { new ZooKeeperStateStore(conf) }
       }
     }
 
@@ -95,16 +83,6 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       }
     }
 
-    it("get should retrieve retry policy configs") {
-      conf.set(org.apache.livy.server.recovery.ZooKeeperStateStore.ZK_RETRY_CONF, "11,77")
-        withMock { f =>
-        mockExistsBuilder(f.curatorClient, true)
-
-        f.stateStore.retryPolicy should not be null
-        f.stateStore.retryPolicy.getN shouldBe 11
-      }
-    }
-
     it("get should retrieve data from curatorClient") {
       withMock { f =>
         mockExistsBuilder(f.curatorClient, true)
@@ -131,7 +109,7 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       }
     }
 
-    it("getChildren should use curatorClient") {
+    it("getChildrenNodes should use curatorClient") {
       withMock { f =>
         mockExistsBuilder(f.curatorClient, true)
 
@@ -140,18 +118,18 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
         val children = List("abc", "def")
         when(getChildrenBuilder.forPath(prefixedKey)).thenReturn(children.asJava)
 
-        val c = f.stateStore.getChildren("key")
+        val c = f.stateStore.getChildrenNodes("key")
 
         verify(f.curatorClient).start()
         c shouldBe children
       }
     }
 
-    it("getChildren should return empty list if key doesn't exist") {
+    it("getChildrenNodes should return empty list if key doesn't exist") {
       withMock { f =>
         mockExistsBuilder(f.curatorClient, false)
 
-        val c = f.stateStore.getChildren("key")
+        val c = f.stateStore.getChildrenNodes("key")
 
         verify(f.curatorClient).start()
         c shouldBe empty

@@ -18,15 +18,16 @@
 package org.apache.livy.server
 
 import java.io.{BufferedInputStream, InputStream}
-import java.net.InetAddress
-import java.util.concurrent._
+import java.net.{InetAddress, URI}
 import java.util.EnumSet
+import java.util.concurrent._
 import javax.servlet._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+import org.apache.curator.framework.CuratorFramework
 import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hadoop.security.authentication.server._
 import org.eclipse.jetty.servlet.FilterHolder
@@ -38,6 +39,7 @@ import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
 import org.apache.livy._
 import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
 import org.apache.livy.server.batch.BatchSessionServlet
+import org.apache.livy.server.discovery.LivyDiscoveryManager
 import org.apache.livy.server.interactive.InteractiveSessionServlet
 import org.apache.livy.server.recovery.{SessionStore, StateStore}
 import org.apache.livy.server.ui.UIServlet
@@ -72,6 +74,8 @@ class LivyServer extends Logging {
     val multipartConfig = MultipartConfig(
         maxFileSize = Some(livyConf.getLong(LivyConf.FILE_UPLOAD_MAX_SIZE))
       ).toMultipartConfigElement
+
+    setServerUri(livyConf)
 
     // Make sure the `spark-submit` program exists, otherwise much of livy won't work.
     testSparkHome(livyConf)
@@ -403,6 +407,25 @@ class LivyServer extends Logging {
         InetAddress.getLocalHost.getHostAddress)
       val port = livyConf.getInt(THRIFT_SERVER_PORT)
       s"jdbc:hive2://$host:$port$additionalUrlParams"
+    }
+  }
+
+  private[livy] def setServerUri(livyConf: LivyConf,
+                                 mockCuratorClient: Option[CuratorFramework] = None): Unit = {
+    if (Option(livyConf.get(LIVY_ZOOKEEPER_URL)).isDefined) {
+      val discoveryManager = LivyDiscoveryManager(livyConf, mockCuratorClient)
+      val host = resolvedSeverHost(livyConf)
+      val uri = new URI(s"http://$host:${livyConf.getInt(LivyConf.SERVER_PORT)}")
+      discoveryManager.setServerUri(uri)
+    }
+  }
+
+  private def resolvedSeverHost(livyConf: LivyConf) = {
+    val host = livyConf.get(LivyConf.SERVER_HOST)
+    if (host.equals(LivyConf.SERVER_HOST.dflt.toString)) {
+      InetAddress.getLocalHost.getHostAddress
+    } else {
+      host
     }
   }
 

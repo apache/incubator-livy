@@ -181,7 +181,9 @@ object LivyConf {
    * off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
    * recovery: Livy persists session info to the state store. When Livy restarts, it recovers
    *   previous sessions from the state store.
-   * Must set livy.server.recovery.state-store and livy.server.recovery.state-store.url to
+   * Must set livy.server.recovery.state-store to needed state store (filesystem or zookeeper)
+   * Set livy.server.recovery.state-store.url for filesystem state store
+   * or livy.zookeeper.url for zookeeper state store.
    * configure the state store.
    */
   val RECOVERY_MODE = Entry("livy.server.recovery.mode", "off")
@@ -195,9 +197,30 @@ object LivyConf {
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
-   * For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+   * For zookeeper, use livy.zookeeper.url.
    */
   val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
+
+  /**
+    * ZooKeeper address witch will be used for Livy Server discovery
+    * and Zookeeper state store. e.g. host1:port1,host2:port2
+    */
+  val LIVY_ZOOKEEPER_URL = Entry("livy.zookeeper.url", null)
+
+  // Name of base Livy znode.
+  val LIVY_ZOOKEEPER_NAMESPACE = Entry("livy.zookeeper.namespace", "livy")
+
+  // Number of trials to establish the connection to ZooKeeper quorum.
+  val LIVY_ZOOKEEPER_CONNECTION_MAX_RETRIES =
+    Entry("livy.server.zookeeper.connection.max.retries", 3)
+
+  // Sleep time between connection retries to ZooKeeper quorum.
+  val LIVY_ZOOKEEPER_CONNECTION_RETRY_INTERVAL =
+    Entry("livy.server.zookeeper.connection.retry.interval.ms", 500)
+
+  // Name of Livy Server znode. Uses LIVY_ZOOKEEPER_NAMESPACE as parent.
+  // By default, the full path to znode is /livy/server.uri
+  val LIVY_SERVER_ZOOKEEPER_NAMESPACE = Entry("livy.server.zookeeper.namespace", "server.uri")
 
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)

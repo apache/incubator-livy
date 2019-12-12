@@ -16,25 +16,11 @@
  */
 package org.apache.livy.server.recovery
 
-import scala.reflect.{classTag, ClassTag}
-
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import scala.reflect.ClassTag
 
 import org.apache.livy.{LivyConf, Logging}
-import org.apache.livy.sessions.SessionKindModule
+import org.apache.livy.server.discovery.JsonMapper
 import org.apache.livy.sessions.SessionManager._
-
-protected trait JsonMapper {
-  protected val mapper = new ObjectMapper()
-    .registerModule(DefaultScalaModule)
-    .registerModule(new SessionKindModule())
-
-  def serializeToBytes(value: Object): Array[Byte] = mapper.writeValueAsBytes(value)
-
-  def deserialize[T: ClassTag](json: Array[Byte]): T =
-    mapper.readValue(json, classTag[T].runtimeClass.asInstanceOf[Class[T]])
-}
 
 /**
  * Interface of a key-value pair storage for state storage.
@@ -63,7 +49,7 @@ abstract class StateStore(livyConf: LivyConf) extends JsonMapper {
    * @return List of names of the direct children of the key.
    *         Empty list if the key doesn't exist or have no child.
    */
-  def getChildren(key: String): Seq[String]
+  def getChildrenNodes(key: String): Seq[String]
 
   /**
    * Remove the key from this state store. Does not throw if the key doesn't exist.

@@ -14,23 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.livy.server.discovery
 
-package org.apache.livy.server.recovery
+import scala.reflect.{classTag, ClassTag}
 
-import scala.reflect.ClassTag
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
-import org.apache.livy.LivyConf
+import org.apache.livy.sessions.SessionKindModule
 
-/**
- * This is a blackhole implementation of StateStore.
- * Livy will use this when session recovery is disabled.
- */
-class BlackholeStateStore(livyConf: LivyConf) extends StateStore(livyConf) {
-  def set(key: String, value: Object): Unit = {}
+protected[server] trait JsonMapper {
+  protected val mapper = new ObjectMapper()
+    .registerModule(DefaultScalaModule)
+    .registerModule(new SessionKindModule())
 
-  def get[T: ClassTag](key: String): Option[T] = None
+  def serializeToBytes(value: Object): Array[Byte] = mapper.writeValueAsBytes(value)
 
-  def getChildrenNodes(key: String): Seq[String] = List.empty[String]
-
-  def remove(key: String): Unit = {}
+  def deserialize[T: ClassTag](json: Array[Byte]): T =
+    mapper.readValue(json, classTag[T].runtimeClass.asInstanceOf[Class[T]])
 }

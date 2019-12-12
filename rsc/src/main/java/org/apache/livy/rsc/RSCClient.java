@@ -195,6 +195,7 @@ public class RSCClient implements LivyClient {
     return promise;
   }
 
+  @Override
   public Future<URI> getServerUri() {
     return serverUriPromise;
   }

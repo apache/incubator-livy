@@ -142,6 +142,13 @@ class LivyScalaClient(livyJavaClient: LivyClient) {
    */
   def addFile(uri: URI): Future[_] = new PollingContainer(livyJavaClient.addFile(uri)).poll()
 
+  /**
+    * Get Livy Server URI.
+    *
+    * @return A future with Livy Server URI
+    */
+  def getServerUri: Future[URI] = new PollingContainer(livyJavaClient.getServerUri).poll()
+
   private class PollingContainer[T] private[livy] (jFuture: JFuture[T]) extends Runnable {
 
     private val initialDelay = 1

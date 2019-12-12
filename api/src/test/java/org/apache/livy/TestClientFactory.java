@@ -81,6 +81,11 @@ public class TestClientFactory implements LivyClientFactory {
       throw new UnsupportedOperationException();
     }
 
+    @Override
+    public Future<URI> getServerUri() {
+      throw new UnsupportedOperationException();
+    }
+
 }
 
 }

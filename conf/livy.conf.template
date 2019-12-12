@@ -104,8 +104,9 @@
 # off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
 # recovery: Livy persists session info to the state store. When Livy restarts, it recovers
 #           previous sessions from the state store.
-# Must set livy.server.recovery.state-store and livy.server.recovery.state-store.url to
-# configure the state store.
+# Must set livy.server.recovery.state-store to needed state store (filesystem or zookeeper)
+# Set livy.server.recovery.state-store.url for filesystem state store
+# or livy.zookeeper.url for zookeeper state store.
 # livy.server.recovery.mode = off
 
 # Where Livy should store state to for recovery. Possible values:
@@ -116,8 +117,22 @@
 
 # For filesystem state store, the path of the state store directory. Please don't use a filesystem
 # that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
-# For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
 # livy.server.recovery.state-store.url =
+# For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+# livy.zookeeper.url =
+
+# Livy Server discovery
+# ZooKeeper quorum URLs, e.g. host1:port1,host2:port2
+# livy.zookeeper.url =
+# Name of base Livy znode. Default livy
+# livy.zookeeper.namespace = livy
+# Name of Livy Server znode. Uses livy.zookeeper.namespace as parent.
+# By default, the full path to znode is /livy/server.uri
+# livy.server.zookeeper.namespace = server.uri
+# Number of trials to establish the connection to ZooKeeper quorum
+# livy.server.zookeeper.connection.max.retries = 3
+# Sleep time between connection retries to ZooKeeper quorum
+# livy.server.zookeeper.connection.retry.interval.ms = 500
 
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s
