@@ -577,6 +577,17 @@ class InteractiveSession(
     // Since these 2 transitions are triggered by different threads, there's a race condition.
     // Make sure we won't transit from dead to error state.
     val areSameStates = serverSideState.getClass() == newState.getClass()
+
+    if (!areSameStates) {
+      newState match {
+        case _: SessionState.Killed | _: SessionState.Dead =>
+          sessionStore.remove(RECOVERY_SESSION_TYPE, id)
+        case SessionState.ShuttingDown =>
+          sessionStore.remove(RECOVERY_SESSION_TYPE, id)
+        case _ =>
+      }
+    }
+
     val transitFromInactiveToActive = !serverSideState.isActive && newState.isActive
     if (!areSameStates && !transitFromInactiveToActive) {
       debug(s"$this session state change from ${serverSideState} to $newState")

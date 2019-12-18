@@ -110,7 +110,7 @@ class ZooKeeperStateStore(
     try {
       curatorClient.delete().guaranteed().forPath(prefixKey(key))
     } catch {
-      case _: NoNodeException =>
+      case _: NoNodeException => warn(s"Fail to remove non-existed zookeeper node: ${key}")
     }
   }
 
