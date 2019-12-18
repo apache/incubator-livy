@@ -122,8 +122,8 @@ if [[ "$1" == "package" ]]; then
   echo "Packaging release tarballs"
   cp -r incubator-livy $ARCHIVE_NAME_PREFIX
   zip -r $SRC_ARCHIVE $ARCHIVE_NAME_PREFIX
-  echo "" | $GPG --passphrase-fd 0 --armour --output $SRC_ARCHIVE.asc --detach-sig $SRC_ARCHIVE
-  echo "" | $GPG --passphrase-fd 0 --print-md SHA512 $SRC_ARCHIVE > $SRC_ARCHIVE.sha512
+  echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --armour --output $SRC_ARCHIVE.asc --detach-sig $SRC_ARCHIVE
+  echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --print-md SHA512 $SRC_ARCHIVE > $SRC_ARCHIVE.sha512
   rm -rf $ARCHIVE_NAME_PREFIX
 
   # Updated for binary build
@@ -135,8 +135,8 @@ if [[ "$1" == "package" ]]; then
 
     echo "Copying and signing regular binary distribution"
     cp assembly/target/$BIN_ARCHIVE .
-    echo "" | $GPG --passphrase-fd 0 --armour --output $BIN_ARCHIVE.asc --detach-sig $BIN_ARCHIVE
-    echo "" | $GPG --passphrase-fd 0 --print-md SHA512 $BIN_ARCHIVE > $BIN_ARCHIVE.sha512
+    echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --armour --output $BIN_ARCHIVE.asc --detach-sig $BIN_ARCHIVE
+    echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --print-md SHA512 $BIN_ARCHIVE > $BIN_ARCHIVE.sha512
 
     cp $BIN_ARCHIVE* ../
     cd ..
@@ -192,7 +192,7 @@ if [[ "$1" == "publish-release" ]]; then
   echo "Creating hash and signature files"
   for file in $(find . -type f)
   do
-    echo "" | $GPG --passphrase-fd 0 --output $file.asc \
+    echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --output $file.asc \
       --detach-sig --armour $file;
     if [ $(command -v md5) ]; then
       # Available on OS X; -q to keep only hash
