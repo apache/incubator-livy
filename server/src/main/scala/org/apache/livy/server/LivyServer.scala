@@ -39,7 +39,7 @@ import org.apache.livy._
 import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.interactive.InteractiveSessionServlet
-import org.apache.livy.server.recovery.{SessionStore, StateStore}
+import org.apache.livy.server.recovery.{SessionStore, StateStore, ZooKeeperManager}
 import org.apache.livy.server.ui.UIServlet
 import org.apache.livy.sessions.{BatchSessionManager, InteractiveSessionManager}
 import org.apache.livy.sessions.SessionManager.SESSION_RECOVERY_MODE_OFF
@@ -144,6 +144,10 @@ class LivyServer extends Logging {
     if (livyConf.isRunningOnYarn()) {
       SparkYarnApp.init(livyConf)
       Future { SparkYarnApp.yarnClient }
+    }
+
+    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
+      ZooKeeperManager(livyConf)
     }
 
     StateStore.init(livyConf)
