@@ -224,6 +224,7 @@ public class RSCDriver extends BaseProtocol {
       @Override
       public void onSuccess(Void unused) {
         clients.remove(client);
+        client.unRegisterRpc();
         if (!inShutdown.get()) {
           setupIdleTimeout();
         }
