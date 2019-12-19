@@ -399,7 +399,12 @@ class InteractiveSession(
     app = mockApp.orElse {
       val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
         .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
-      driverProcess.map { _ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)) }
+
+      if (livyConf.isRunningOnYarn() || driverProcess.isDefined) {
+        Some(SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)))
+      } else {
+        None
+      }
     }
 
     if (client.isEmpty) {
