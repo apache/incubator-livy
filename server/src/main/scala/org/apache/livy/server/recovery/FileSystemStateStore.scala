@@ -125,7 +125,11 @@ class FileSystemStateStore(
   }
 
   override def remove(key: String): Unit = {
-    fileContext.delete(absPath(key), false)
+    try {
+      fileContext.delete(absPath(key), false)
+    } catch {
+      case _: FileNotFoundException => warn(s"Failed to remove non-existed file: ${key}")
+    }
   }
 
   private def absPath(key: String): Path = new Path(fsUri.getPath(), key)
