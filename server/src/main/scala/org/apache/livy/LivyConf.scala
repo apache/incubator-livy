@@ -200,6 +200,9 @@ object LivyConf {
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
    * For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+   * If livy.server.recovery.state-store is zookeeper, this config is for back-compatibility,
+   * so if both this config and livy.server.zookeeper.url exist,
+   * livy uses livy.server.zookeeper.url first.
    */
   val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
 
@@ -207,7 +210,9 @@ object LivyConf {
     * The policy of curator connecting to zookeeper.
     * For example, m, n means retry m times and the interval of retry is n milliseconds.
     * Please use the new config: livy.server.zk.retry-policy.
-    * Keep this config is just for  back-compatibility.
+    * Keep this config for back-compatibility.
+    * If both this config and livy.server.zk.retry-policy exist,
+    * livy uses livy.server.zk.retry-policy first.
     */
   val RECOVERY_ZK_STATE_STORE_RETRY_POLICY =
     Entry("livy.server.recovery.zk-state-store.retry-policy", "5,100")
