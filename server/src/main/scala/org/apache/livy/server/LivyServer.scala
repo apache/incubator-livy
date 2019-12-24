@@ -60,6 +60,8 @@ class LivyServer extends Logging {
   private var accessManager: AccessManager = _
   private var _thriftServerFactory: Option[ThriftServerFactory] = None
 
+  private var zkManager: Option[ZooKeeperManager] = None
+
   private var ugi: UserGroupInformation = _
 
   def start(): Unit = {
@@ -147,10 +149,10 @@ class LivyServer extends Logging {
     }
 
     if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
-      ZooKeeperManager(livyConf)
+      zkManager = Some(new ZooKeeperManager(livyConf))
     }
 
-    StateStore.init(livyConf)
+    StateStore.init(livyConf, zkManager)
     val sessionStore = new SessionStore(livyConf)
     val batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
     val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)

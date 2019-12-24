@@ -34,7 +34,8 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
   describe("ZooKeeperStateStore") {
     case class TestFixture(stateStore: ZooKeeperStateStore, curatorClient: CuratorFramework)
     val conf = new LivyConf()
-    conf.set(LivyConf.ZOOKEEPER_URL, "host")
+    conf.set(LivyConf.RECOVERY_STATE_STORE, "zookeeper")
+    conf.set(LivyConf.RECOVERY_STATE_STORE_URL, "host")
     val key = "key"
     val prefixedKey = s"/livy/$key"
 
@@ -42,9 +43,8 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       val curatorClient = mock[CuratorFramework]
       when(curatorClient.getUnhandledErrorListenable())
         .thenReturn(mock[Listenable[UnhandledErrorListener]])
-      ZooKeeperManager.reset()
-      ZooKeeperManager(conf, Some(curatorClient))
-      val stateStore = new ZooKeeperStateStore(conf)
+      val zkManager = new ZooKeeperManager(conf, Some(curatorClient))
+      val stateStore = new ZooKeeperStateStore(conf, zkManager)
       testBody(TestFixture(stateStore, curatorClient))
     }
 
@@ -59,17 +59,11 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
     it("should throw on bad config") {
       withMock { f =>
         val conf = new LivyConf()
-        intercept[IllegalArgumentException] {
-          ZooKeeperManager.reset()
-          ZooKeeperManager(conf)
-        }
+        intercept[IllegalArgumentException] { new ZooKeeperManager(conf) }
 
-        conf.set(LivyConf.ZOOKEEPER_URL, "host")
+        conf.set(LivyConf.RECOVERY_STATE_STORE_URL, "host")
         conf.set(ZooKeeperManager.ZK_RETRY_CONF, "bad")
-        intercept[IllegalArgumentException] {
-          ZooKeeperManager.reset()
-          ZooKeeperManager(conf)
-        }
+        intercept[IllegalArgumentException] { new ZooKeeperManager(conf) }
       }
     }
 
@@ -108,8 +102,8 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
         withMock { f =>
         mockExistsBuilder(f.curatorClient, true)
 
-        ZooKeeperManager.get.retryPolicy should not be null
-        ZooKeeperManager.get.retryPolicy.getN shouldBe 11
+        f.stateStore.getZooKeeperManager().retryPolicy should not be null
+        f.stateStore.getZooKeeperManager().retryPolicy.getN shouldBe 11
       }
     }
 

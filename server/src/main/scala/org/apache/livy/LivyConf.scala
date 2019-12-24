@@ -199,7 +199,7 @@ object LivyConf {
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
-   * For zookeeper, please set livy.server.zookeeper.url
+   * For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
    */
   val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
 

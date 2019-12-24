@@ -18,24 +18,35 @@ package org.apache.livy.server.recovery
 
 import scala.reflect.ClassTag
 
-import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.LivyConf
+import org.apache.livy.LivyConf.Entry
 
-class ZooKeeperStateStore(livyConf: LivyConf) extends StateStore(livyConf) {
-  require(ZooKeeperManager.get != null)
+class ZooKeeperStateStore(
+    livyConf: LivyConf,
+    zkManager: ZooKeeperManager)
+  extends StateStore(livyConf) {
+
+  val ZK_KEY_PREFIX_CONF = Entry("livy.server.recovery.zk-state-store.key-prefix", "livy")
+  private val zkKeyPrefix = livyConf.get(ZK_KEY_PREFIX_CONF)
+  private def prefixKey(key: String) = s"/$zkKeyPrefix/$key"
 
   override def set(key: String, value: Object): Unit = {
-    ZooKeeperManager.get.set(key, value)
+    zkManager.set(prefixKey(key), value)
   }
 
   override def get[T: ClassTag](key: String): Option[T] = {
-    ZooKeeperManager.get.get(key)
+    zkManager.get(prefixKey(key))
   }
 
   override def getChildren(key: String): Seq[String] = {
-    ZooKeeperManager.get.getChildren(key)
+    zkManager.getChildren(prefixKey(key))
   }
 
   override def remove(key: String): Unit = {
-    ZooKeeperManager.get.remove(key)
+    zkManager.remove(prefixKey(key))
+  }
+
+  def getZooKeeperManager(): ZooKeeperManager = {
+    zkManager
   }
 }

@@ -31,49 +31,37 @@ import org.apache.livy.LivyConf.Entry
 import org.apache.livy.Logging
 
 object ZooKeeperManager {
-  val ZK_KEY_PREFIX_CONF = Entry("livy.server.recovery.zk-state-store.key-prefix", "livy")
   val ZK_RETRY_CONF = Entry("livy.server.recovery.zk-state-store.retry-policy", "5,100")
-  val DUPLICATE_CREATE_EXCEPTION = "ZooKeeperManager single instance has already been created"
-
-  @volatile private var zkManager: ZooKeeperManager = _
-
-  def apply(livyConf: LivyConf,
-    mockCuratorClient: Option[CuratorFramework] = None):
-  ZooKeeperManager = synchronized {
-    if (zkManager == null) {
-      zkManager = new ZooKeeperManager(livyConf, mockCuratorClient)
-    } else {
-      throw new IllegalAccessException(DUPLICATE_CREATE_EXCEPTION)
-    }
-
-    zkManager
-  }
-
-  def get(): ZooKeeperManager = zkManager
-
-  // for test
-  private[recovery] def reset(): Unit = {
-    zkManager = null
-  }
 }
 
-class ZooKeeperManager private(
+class ZooKeeperManager(
     livyConf: LivyConf,
     mockCuratorClient: Option[CuratorFramework] = None)
   extends JsonMapper with Logging {
 
   import ZooKeeperManager._
 
-  private val zkAddress = livyConf.get(LivyConf.ZOOKEEPER_URL)
-  require(!zkAddress.isEmpty, s"Please config ${LivyConf.RECOVERY_STATE_STORE_URL.key}.")
-  private val zkKeyPrefix = livyConf.get(ZK_KEY_PREFIX_CONF)
+  def this(livyConf: LivyConf) {
+    this(livyConf, None)
+  }
+
+  private val zkAddress = {
+    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
+      livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
+    } else {
+      livyConf.get(LivyConf.ZOOKEEPER_URL)
+    }
+  }
+
+  require(!zkAddress.isEmpty, s"Please config ${LivyConf.ZOOKEEPER_URL.key}.")
+
   private val retryValue = livyConf.get(ZK_RETRY_CONF)
   // a regex to match patterns like "m, n" where m and n both are integer values
   private val retryPattern = """\s*(\d+)\s*,\s*(\d+)\s*""".r
   private[recovery] val retryPolicy = retryValue match {
     case retryPattern(n, sleepMs) => new RetryNTimes(n.toInt, sleepMs.toInt)
     case _ => throw new IllegalArgumentException(
-      s"$ZK_KEY_PREFIX_CONF contains bad value: $retryValue. " +
+      s"contains bad value: $retryValue. " +
         "Correct format is <max retry count>,<sleep ms between retry>. e.g. 5,100")
   }
 
@@ -98,40 +86,36 @@ class ZooKeeperManager private(
   // contents.
 
   def set(key: String, value: Object): Unit = {
-    val prefixedKey = prefixKey(key)
     val data = serializeToBytes(value)
-    if (curatorClient.checkExists().forPath(prefixedKey) == null) {
-      curatorClient.create().creatingParentsIfNeeded().forPath(prefixedKey, data)
+    if (curatorClient.checkExists().forPath(key) == null) {
+      curatorClient.create().creatingParentsIfNeeded().forPath(key, data)
     } else {
-      curatorClient.setData().forPath(prefixedKey, data)
+      curatorClient.setData().forPath(key, data)
     }
   }
 
   def get[T: ClassTag](key: String): Option[T] = {
-    val prefixedKey = prefixKey(key)
-    if (curatorClient.checkExists().forPath(prefixedKey) == null) {
+    if (curatorClient.checkExists().forPath(key) == null) {
       None
     } else {
-      Option(deserialize[T](curatorClient.getData().forPath(prefixedKey)))
+      Option(deserialize[T](curatorClient.getData().forPath(key)))
     }
   }
 
   def getChildren(key: String): Seq[String] = {
-    val prefixedKey = prefixKey(key)
-    if (curatorClient.checkExists().forPath(prefixedKey) == null) {
+    if (curatorClient.checkExists().forPath(key) == null) {
       Seq.empty[String]
     } else {
-      curatorClient.getChildren.forPath(prefixedKey).asScala
+      curatorClient.getChildren.forPath(key).asScala
     }
   }
 
   def remove(key: String): Unit = {
     try {
-      curatorClient.delete().guaranteed().forPath(prefixKey(key))
+      curatorClient.delete().guaranteed().forPath(key)
     } catch {
       case _: NoNodeException => warn(s"Fail to remove non-existed zookeeper node: ${key}")
     }
   }
 
-  private def prefixKey(key: String) = s"/$zkKeyPrefix/$key"
 }
