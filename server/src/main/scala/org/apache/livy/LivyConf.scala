@@ -203,6 +203,25 @@ object LivyConf {
    */
   val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
 
+  /**
+    * The policy of curator connecting to zookeeper.
+    * For example, m, n means retry m times and the interval of retry is n milliseconds.
+    * Please use the new config: livy.server.zk.retry-policy.
+    * Keep this config is just for  back-compatibility.
+    */
+  val RECOVERY_ZK_STATE_STORE_RETRY_POLICY =
+    Entry("livy.server.recovery.zk-state-store.retry-policy", "5,100")
+
+  /**
+    * The policy of curator connecting to zookeeper.
+    * For example, m, n means retry m times and the interval of retry is n milliseconds
+   */
+  val ZK_RETRY_POLICY = Entry("livy.server.zk.retry-policy", "5,100")
+
+  // The dir in zookeeper to store the data about session.
+  val RECOVERY_ZK_STATE_STORE_KEY_PREFIX =
+    Entry("livy.server.recovery.zk-state-store.key-prefix", "livy")
+
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)
 

@@ -62,7 +62,7 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
         intercept[IllegalArgumentException] { new ZooKeeperManager(conf) }
 
         conf.set(LivyConf.RECOVERY_STATE_STORE_URL, "host")
-        conf.set(ZooKeeperManager.ZK_RETRY_CONF, "bad")
+        conf.set(LivyConf.RECOVERY_ZK_STATE_STORE_RETRY_POLICY, "bad")
         intercept[IllegalArgumentException] { new ZooKeeperManager(conf) }
       }
     }
@@ -98,7 +98,7 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
     }
 
     it("get should retrieve retry policy configs") {
-      conf.set(org.apache.livy.server.recovery.ZooKeeperManager.ZK_RETRY_CONF, "11,77")
+      conf.set(LivyConf.RECOVERY_ZK_STATE_STORE_RETRY_POLICY, "11,77")
         withMock { f =>
         mockExistsBuilder(f.curatorClient, true)
 

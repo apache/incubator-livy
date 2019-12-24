@@ -27,27 +27,22 @@ import org.apache.curator.retry.RetryNTimes
 import org.apache.zookeeper.KeeperException.NoNodeException
 
 import org.apache.livy.LivyConf
-import org.apache.livy.LivyConf.Entry
 import org.apache.livy.Logging
-
-object ZooKeeperManager {
-  val ZK_RETRY_CONF = Entry("livy.server.recovery.zk-state-store.retry-policy", "5,100")
-}
 
 class ZooKeeperManager(
     livyConf: LivyConf,
     mockCuratorClient: Option[CuratorFramework] = None)
   extends JsonMapper with Logging {
 
-  import ZooKeeperManager._
-
   def this(livyConf: LivyConf) {
     this(livyConf, None)
   }
 
   private val zkAddress = {
-    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
-      livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
+    val zkUrl = livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
+    if (!zkUrl.isEmpty) {
+      // for back-compatibility
+      zkUrl
     } else {
       livyConf.get(LivyConf.ZOOKEEPER_URL)
     }
@@ -55,7 +50,16 @@ class ZooKeeperManager(
 
   require(!zkAddress.isEmpty, s"Please config ${LivyConf.ZOOKEEPER_URL.key}.")
 
-  private val retryValue = livyConf.get(ZK_RETRY_CONF)
+  private val retryValue = {
+    val retryConf = livyConf.get(LivyConf.RECOVERY_ZK_STATE_STORE_RETRY_POLICY)
+    if (!retryConf.isEmpty) {
+      // for back-compatibility
+      retryConf
+    } else {
+      livyConf.get(LivyConf.ZK_RETRY_POLICY)
+    }
+  }
+
   // a regex to match patterns like "m, n" where m and n both are integer values
   private val retryPattern = """\s*(\d+)\s*,\s*(\d+)\s*""".r
   private[recovery] val retryPolicy = retryValue match {

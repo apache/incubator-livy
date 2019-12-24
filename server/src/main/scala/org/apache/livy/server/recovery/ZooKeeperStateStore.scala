@@ -19,15 +19,13 @@ package org.apache.livy.server.recovery
 import scala.reflect.ClassTag
 
 import org.apache.livy.LivyConf
-import org.apache.livy.LivyConf.Entry
 
 class ZooKeeperStateStore(
     livyConf: LivyConf,
     zkManager: ZooKeeperManager)
   extends StateStore(livyConf) {
 
-  val ZK_KEY_PREFIX_CONF = Entry("livy.server.recovery.zk-state-store.key-prefix", "livy")
-  private val zkKeyPrefix = livyConf.get(ZK_KEY_PREFIX_CONF)
+  private val zkKeyPrefix = livyConf.get(LivyConf.RECOVERY_ZK_STATE_STORE_KEY_PREFIX)
   private def prefixKey(key: String) = s"/$zkKeyPrefix/$key"
 
   override def set(key: String, value: Object): Unit = {

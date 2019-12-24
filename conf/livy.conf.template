@@ -121,6 +121,19 @@
 # For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
 # livy.server.recovery.state-store.url =
 
+# The policy of curator connecting to zookeeper.
+# For example, m, n means retry m times and the interval of retry is n milliseconds.
+# Please use the new config: livy.server.zk.retry-policy.
+# Keep this config is just for back-compatibility
+# livy.server.recovery.zk-state-store.retry-policy = 5,100
+
+# The policy of curator connecting to zookeeper.
+# For example, m, n means retry m times and the interval of retry is n milliseconds
+# livy.server.zk.retry-policy = 5,100
+
+# The dir in zk to store the data about session.
+# livy.server.recovery.zk-state-store.key-prefix = livy
+
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s
 # When the cluster is busy, we may fail to launch yarn app in app-lookup-timeout, then it would
