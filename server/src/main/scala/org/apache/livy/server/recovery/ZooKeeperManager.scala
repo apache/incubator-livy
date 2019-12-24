@@ -39,24 +39,24 @@ class ZooKeeperManager(
   }
 
   private val zkAddress = {
-    val zkUrl = livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
+    val zkUrl = livyConf.get(LivyConf.ZOOKEEPER_URL)
     if (!zkUrl.isEmpty) {
-      // for back-compatibility
       zkUrl
     } else {
-      livyConf.get(LivyConf.ZOOKEEPER_URL)
+      // for back-compatibility
+      livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
     }
   }
 
   require(!zkAddress.isEmpty, s"Please config ${LivyConf.ZOOKEEPER_URL.key}.")
 
   private val retryValue = {
-    val retryConf = livyConf.get(LivyConf.RECOVERY_ZK_STATE_STORE_RETRY_POLICY)
+    val retryConf = livyConf.get(LivyConf.ZK_RETRY_POLICY)
     if (!retryConf.isEmpty) {
-      // for back-compatibility
       retryConf
     } else {
-      livyConf.get(LivyConf.ZK_RETRY_POLICY)
+      // for back-compatibility
+      livyConf.get(LivyConf.RECOVERY_ZK_STATE_STORE_RETRY_POLICY)
     }
   }
 
