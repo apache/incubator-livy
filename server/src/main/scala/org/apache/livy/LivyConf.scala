@@ -187,7 +187,7 @@ object LivyConf {
   val RECOVERY_MODE = Entry("livy.server.recovery.mode", "off")
 
   // Zookeeper address used for HA and state store. e.g. host1:port1, host2:port2
-  val ZOOKEEPER_URL = Entry("livy.server.zookeeper.url", "")
+  val ZOOKEEPER_URL = Entry("livy.server.zookeeper.url", null)
 
   /**
    * Where Livy should store state to for recovery. Possible values:
@@ -204,7 +204,7 @@ object LivyConf {
    * so if both this config and livy.server.zookeeper.url exist,
    * livy uses livy.server.zookeeper.url first.
    */
-  val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
+  val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", null)
 
   /**
     * The policy of curator connecting to zookeeper.
@@ -221,7 +221,7 @@ object LivyConf {
     * The policy of curator connecting to zookeeper.
     * For example, m, n means retry m times and the interval of retry is n milliseconds
    */
-  val ZK_RETRY_POLICY = Entry("livy.server.zk.retry-policy", "5,100")
+  val ZK_RETRY_POLICY = Entry("livy.server.zk.retry-policy", null)
 
   // The dir in zookeeper to store the data about session.
   val RECOVERY_ZK_STATE_STORE_KEY_PREFIX =

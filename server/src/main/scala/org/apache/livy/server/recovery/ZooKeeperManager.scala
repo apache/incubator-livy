@@ -38,27 +38,19 @@ class ZooKeeperManager(
     this(livyConf, None)
   }
 
-  private val zkAddress = {
-    val zkUrl = livyConf.get(LivyConf.ZOOKEEPER_URL)
-    if (!zkUrl.isEmpty) {
-      zkUrl
-    } else {
-      // for back-compatibility
-      livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
-    }
-  }
+  private val zkAddress = Option(livyConf.get(LivyConf.ZOOKEEPER_URL)).getOrElse {
+    // for back-compatibility
+    val url = livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
+    require(url != null, s"Please config ${LivyConf.ZOOKEEPER_URL.key}.")
+    url
+  }.trim
 
-  require(!zkAddress.isEmpty, s"Please config ${LivyConf.ZOOKEEPER_URL.key}.")
-
-  private val retryValue = {
-    val retryConf = livyConf.get(LivyConf.ZK_RETRY_POLICY)
-    if (!retryConf.isEmpty) {
-      retryConf
-    } else {
-      // for back-compatibility
-      livyConf.get(LivyConf.RECOVERY_ZK_STATE_STORE_RETRY_POLICY)
-    }
-  }
+  private val retryValue = Option(livyConf.get(LivyConf.ZK_RETRY_POLICY)).getOrElse {
+    // for back-compatibility
+    val policy = livyConf.get(LivyConf.RECOVERY_ZK_STATE_STORE_RETRY_POLICY)
+    require(policy != null, s"Please config ${LivyConf.ZK_RETRY_POLICY.key}.")
+    policy
+  }.trim
 
   // a regex to match patterns like "m, n" where m and n both are integer values
   private val retryPattern = """\s*(\d+)\s*,\s*(\d+)\s*""".r
