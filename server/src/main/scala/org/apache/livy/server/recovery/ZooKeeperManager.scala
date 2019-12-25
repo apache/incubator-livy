@@ -65,19 +65,21 @@ class ZooKeeperManager(
     CuratorFrameworkFactory.newClient(zkAddress, retryPolicy)
   }
 
-  Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
-    override def run(): Unit = {
-      curatorClient.close()
-    }
-  }))
-
   curatorClient.getUnhandledErrorListenable().addListener(new UnhandledErrorListener {
     def unhandledError(message: String, e: Throwable): Unit = {
       error(s"Fatal Zookeeper error. Shutting down Livy server.")
       System.exit(1)
     }
   })
-  curatorClient.start()
+
+  def startCuratorClient(): Unit = {
+    curatorClient.start()
+  }
+
+  def stopCuratorClient(): Unit = {
+    curatorClient.close()
+  }
+
   // TODO Make sure ZK path has proper secure permissions so that other users cannot read its
   // contents.
 
