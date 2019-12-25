@@ -38,19 +38,19 @@ class ZooKeeperManager(
     this(livyConf, None)
   }
 
-  private val zkAddress = Option(livyConf.get(LivyConf.ZOOKEEPER_URL)).getOrElse {
-    // for back-compatibility
-    val url = livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
-    require(url != null, s"Please config ${LivyConf.ZOOKEEPER_URL.key}.")
-    url
-  }.trim
+  private val zkAddress = Option(livyConf.get(LivyConf.ZOOKEEPER_URL)).
+    orElse(Option(livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL))).
+    map(_.trim).orNull
 
-  private val retryValue = Option(livyConf.get(LivyConf.ZK_RETRY_POLICY)).getOrElse {
-    // for back-compatibility
-    val policy = livyConf.get(LivyConf.RECOVERY_ZK_STATE_STORE_RETRY_POLICY)
-    require(policy != null, s"Please config ${LivyConf.ZK_RETRY_POLICY.key}.")
-    policy
-  }.trim
+  require(zkAddress != null && !zkAddress.isEmpty,
+    s"Please config ${LivyConf.ZOOKEEPER_URL.key}.")
+
+  private val retryValue = Option(livyConf.get(LivyConf.ZK_RETRY_POLICY)).
+    orElse(Option(livyConf.get(LivyConf.RECOVERY_ZK_STATE_STORE_RETRY_POLICY))).
+    map(_.trim).orNull
+
+  require(retryValue != null && !retryValue.isEmpty,
+    s"Please config ${LivyConf.ZK_RETRY_POLICY.key}.")
 
   // a regex to match patterns like "m, n" where m and n both are integer values
   private val retryPattern = """\s*(\d+)\s*,\s*(\d+)\s*""".r
@@ -67,16 +67,15 @@ class ZooKeeperManager(
 
   curatorClient.getUnhandledErrorListenable().addListener(new UnhandledErrorListener {
     def unhandledError(message: String, e: Throwable): Unit = {
-      error(s"Fatal Zookeeper error. Shutting down Livy server.")
-      System.exit(1)
+      error(s"Fatal Zookeeper error: ${message}.", e)
     }
   })
 
-  def startCuratorClient(): Unit = {
+  def start(): Unit = {
     curatorClient.start()
   }
 
-  def stopCuratorClient(): Unit = {
+  def stop(): Unit = {
     curatorClient.close()
   }
 

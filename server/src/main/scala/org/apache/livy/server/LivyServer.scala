@@ -150,7 +150,7 @@ class LivyServer extends Logging {
 
     if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
       zkManager = Some(new ZooKeeperManager(livyConf))
-      zkManager.foreach(_.startCuratorClient())
+      zkManager.foreach(_.start())
     }
 
     StateStore.init(livyConf, zkManager)
@@ -330,7 +330,7 @@ class LivyServer extends Logging {
     Runtime.getRuntime().addShutdownHook(new Thread("Livy Server Shutdown") {
       override def run(): Unit = {
         info("Shutting down Livy server.")
-        zkManager.foreach(_.stopCuratorClient())
+        zkManager.foreach(_.stop())
         server.stop()
         _thriftServerFactory.foreach(_.stop())
       }

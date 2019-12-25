@@ -44,7 +44,7 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       when(curatorClient.getUnhandledErrorListenable())
         .thenReturn(mock[Listenable[UnhandledErrorListener]])
       val zkManager = new ZooKeeperManager(conf, Some(curatorClient))
-      zkManager.startCuratorClient()
+      zkManager.start()
       val stateStore = new ZooKeeperStateStore(conf, zkManager)
       testBody(TestFixture(stateStore, curatorClient))
     }
