@@ -53,6 +53,10 @@ class FileSystemStateStore(
   }
 
   {
+    if(livyConf.getBoolean(LivyConf.USE_HADOOP_NATIVE_ENABLED)) {
+      RawLocalFileSystem.useStatIfAvailable()
+    }
+
     // Only Livy user should have access to state files.
     fileContext.setUMask(new FsPermission("077"))
 

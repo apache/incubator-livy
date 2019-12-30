@@ -199,6 +199,9 @@ object LivyConf {
    */
   val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
 
+  // Whether use hadoop native methods in local file system
+  val USE_HADOOP_NATIVE_ENABLED = Entry("livy.server.use.hadoop.native.enabled", false)
+
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)
 
