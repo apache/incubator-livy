@@ -372,12 +372,12 @@ Returns all the active batch sessions.
   <tr><th>Name</th><th>Description</th><th>Type</th></tr>
   <tr>
     <td>from</td>
-    <td>The start index of fetched sessions</td>
+    <td>The start index of fetched batch sessions</td>
     <td>int</td>
   </tr>
   <tr>
     <td>total</td>
-    <td>Number of sessions fetched</td>
+    <td>Number of batch sessions fetched</td>
     <td>int</td>
   </tr>
   <tr>
@@ -801,7 +801,7 @@ A statement represents the result of an execution statement.
   <tr><th>Name</th><th>Description</th><th>Type</th></tr>
   <tr>
     <td>id</td>
-    <td>The session id</td>
+    <td>The batch id</td>
     <td>int</td>
   </tr>
   <tr>
