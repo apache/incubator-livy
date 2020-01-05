@@ -45,6 +45,12 @@ class BlackholeStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       stateStore.remove("")
     }
 
+    it("nextValue should return consecutive numbers starting from 0") {
+      stateStore.nextValue("") shouldBe 0
+      stateStore.nextValue("") shouldBe 1
+      stateStore.nextValue("") shouldBe 2
+    }
+
     it("should deserialize sessions without name") {
       val jsonbytes =
         """

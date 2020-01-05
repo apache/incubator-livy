@@ -71,7 +71,6 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
 
   protected implicit def executor: ExecutionContext = ExecutionContext.global
 
-  protected[this] final val idCounter = new AtomicInteger(0)
   protected[this] final val sessions = mutable.LinkedHashMap[Int, S]()
   private[this] final val sessionsByName = mutable.HashMap[String, S]()
 
@@ -87,11 +86,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   mockSessions.getOrElse(recover()).foreach(register)
   new GarbageCollector().start()
 
-  def nextId(): Int = synchronized {
-    val id = idCounter.getAndIncrement()
-    sessionStore.saveNextSessionId(sessionType, idCounter.get())
-    id
-  }
+  def nextId(): Int = sessionStore.getNextSessionId(sessionType)
 
   def register(session: S): S = {
     info(s"Registering new session ${session.id}")
@@ -180,17 +175,11 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   private def recover(): Seq[S] = {
-    // Recover next session id from state store and create SessionManager.
-    idCounter.set(sessionStore.getNextSessionId(sessionType))
-
     // Retrieve session recovery metadata from state store.
     val sessionMetadata = sessionStore.getAllSessions[R](sessionType)
 
     // Recover session from session recovery metadata.
     val recoveredSessions = sessionMetadata.flatMap(_.toOption).map(sessionRecovery)
-
-    info(s"Recovered ${recoveredSessions.length} $sessionType sessions." +
-      s" Next session id: $idCounter")
 
     // Print recovery error.
     val recoveryFailure = sessionMetadata.filter(_.isFailure).map(_.failed.get)
