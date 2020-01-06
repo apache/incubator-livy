@@ -28,6 +28,7 @@ import org.apache.zookeeper.KeeperException.NoNodeException
 
 import org.apache.livy.LivyConf
 import org.apache.livy.Logging
+import org.apache.livy.utils.LivyUncaughtException
 
 class ZooKeeperManager(
     livyConf: LivyConf,
@@ -68,6 +69,7 @@ class ZooKeeperManager(
   curatorClient.getUnhandledErrorListenable().addListener(new UnhandledErrorListener {
     def unhandledError(message: String, e: Throwable): Unit = {
       error(s"Fatal Zookeeper error: ${message}.", e)
+      throw new LivyUncaughtException(e.getMessage)
     }
   })
 
@@ -81,7 +83,6 @@ class ZooKeeperManager(
 
   // TODO Make sure ZK path has proper secure permissions so that other users cannot read its
   // contents.
-
   def set(key: String, value: Object): Unit = {
     val data = serializeToBytes(value)
     if (curatorClient.checkExists().forPath(key) == null) {
@@ -114,5 +115,4 @@ class ZooKeeperManager(
       case _: NoNodeException => warn(s"Fail to remove non-existed zookeeper node: ${key}")
     }
   }
-
 }
