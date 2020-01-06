@@ -18,7 +18,7 @@
 package org.apache.livy.utils;
 
 public class LivyUncaughtException extends Exception {
-    LivyUncaughtException(String remoteStackTrace) {
-        super(remoteStackTrace);
-    }
+  public LivyUncaughtException(String remoteStackTrace) {
+    super(remoteStackTrace);
+  }
 }
