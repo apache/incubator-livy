@@ -1100,6 +1100,8 @@
               <thirdPartyFilename>THIRD-PARTY</thirdPartyFilename>
               <sortArtifactByName>true</sortArtifactByName>
               <fileTemplate>${execution.root}/dev/third-party-file.ftl</fileTemplate>
+              <useMissingFile>true</useMissingFile>
+              <missingFile>${execution.root}/dev/third-party-missing-license.properties</missingFile>
             </configuration>
             <executions>
               <execution>
