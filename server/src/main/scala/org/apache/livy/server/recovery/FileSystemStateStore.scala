@@ -44,7 +44,8 @@ class FileSystemStateStore(
 
   private val fsUri = {
     val fsPath = livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
-    require(!fsPath.isEmpty, s"Please config ${LivyConf.RECOVERY_STATE_STORE_URL.key}.")
+    require(fsPath != null && !fsPath.isEmpty,
+      s"Please config ${LivyConf.RECOVERY_STATE_STORE_URL.key}.")
     new URI(fsPath)
   }
 
