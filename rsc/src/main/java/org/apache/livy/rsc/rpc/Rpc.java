@@ -245,25 +245,25 @@ public class Rpc implements Closeable {
   }
 
   /**
-   * Override this to add a name to the dispatcher, for debugging purposes.
-   * @return The name of this dispatcher.
+   * For debugging purposes.
+   * @return The name of this Class.
    */
   protected String name() {
     return getClass().getSimpleName();
   }
 
   public void handleMsg(ChannelHandlerContext ctx, Object msg, Class<?> handleClass, Object obj)
-          throws Exception {
+      throws Exception {
     if (lastHeader == null) {
       if (!(msg instanceof MessageHeader)) {
         LOG.warn("[{}] Expected RPC header, got {} instead.", name(),
-                msg != null ? msg.getClass().getName() : null);
+          msg != null ? msg.getClass().getName() : null);
         throw new IllegalArgumentException();
       }
       lastHeader = (MessageHeader) msg;
     } else {
       LOG.debug("[{}] Received RPC message: type={} id={} payload={}", name(),
-              lastHeader.type, lastHeader.id, msg != null ? msg.getClass().getName() : null);
+        lastHeader.type, lastHeader.id, msg != null ? msg.getClass().getName() : null);
       try {
         switch (lastHeader.type) {
           case CALL:
@@ -285,21 +285,21 @@ public class Rpc implements Closeable {
   }
 
   private void handleCall(ChannelHandlerContext ctx, Object msg, Class<?> handleClass, Object obj)
-          throws Exception {
+      throws Exception {
     Method handler = handlers.get(msg.getClass());
     if (handler == null) {
       // Try both getDeclaredMethod() and getMethod() so that we try both private methods
       // of the class, and public methods of parent classes.
       try {
         handler = handleClass.getDeclaredMethod("handle", ChannelHandlerContext.class,
-                msg.getClass());
+            msg.getClass());
       } catch (NoSuchMethodException e) {
         try {
           handler = handleClass.getMethod("handle", ChannelHandlerContext.class,
-                  msg.getClass());
+              msg.getClass());
         } catch (NoSuchMethodException e2) {
           LOG.warn(String.format("[%s] Failed to find handler for msg '%s'.", name(),
-                  msg.getClass().getName()));
+            msg.getClass().getName()));
           writeMessage(MessageType.ERROR, Utils.stackTraceAsString(e.getCause()));
           return;
         }
@@ -330,7 +330,7 @@ public class Rpc implements Closeable {
       rpc.future.setFailure(new RpcException((String) msg));
     } else {
       String error = String.format("Received error with unexpected payload (%s).",
-              msg != null ? msg.getClass().getName() : null);
+          msg != null ? msg.getClass().getName() : null);
       LOG.warn(String.format("[%s] %s", name(), error));
       rpc.future.setFailure(new IllegalArgumentException(error));
       ctx.close();
@@ -351,7 +351,7 @@ public class Rpc implements Closeable {
       }
     }
     throw new IllegalArgumentException(String.format(
-            "Received RPC reply for unknown RPC (%d).", id));
+        "Received RPC reply for unknown RPC (%d).", id));
   }
 
   private void registerRpcCall(long id, Promise<?> promise, String type) {
