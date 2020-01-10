@@ -109,6 +109,8 @@
 # livy.server.recovery.mode = off
 # Zookeeper address used for HA and state store. e.g. host1:port1, host2:port2
 # livy.server.zookeeper.url =
+# Whether to enable HA with multi-active mode, by default it is false.
+# livy.server.ha.multi-active.enabled = false
 
 # Where Livy should store state to for recovery. Possible values:
 # <empty>: Default. State store disabled.
@@ -138,6 +140,8 @@
 
 # The dir in zk to store the data about session.
 # livy.server.recovery.zk-state-store.key-prefix = livy
+# The dir related to zookeeper utility, such as: distributed lock, service discovery.
+# livy.server.zk.utility.dir-prefix = livy/zk-utility
 
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s

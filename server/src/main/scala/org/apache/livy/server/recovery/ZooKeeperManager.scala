@@ -23,6 +23,7 @@ import scala.reflect.ClassTag
 import org.apache.curator.framework.api.UnhandledErrorListener
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 import org.apache.curator.retry.RetryNTimes
 import org.apache.zookeeper.KeeperException.NoNodeException
 
@@ -32,7 +33,8 @@ import org.apache.livy.utils.LivyUncaughtException
 
 class ZooKeeperManager(
     livyConf: LivyConf,
-    mockCuratorClient: Option[CuratorFramework] = None)
+    mockCuratorClient: Option[CuratorFramework] = None,
+    mockDistributedLock: Option[InterProcessSemaphoreMutex] = None)
   extends JsonMapper with Logging {
 
   def this(livyConf: LivyConf) {
@@ -64,6 +66,14 @@ class ZooKeeperManager(
 
   private val curatorClient = mockCuratorClient.getOrElse {
     CuratorFrameworkFactory.newClient(zkAddress, retryPolicy)
+  }
+
+  private val zkUtilityDirPrefix = livyConf.get(LivyConf.ZK_UTILITY_DIR_PREFIX)
+  private def prefixKey(key: String) = s"/$zkUtilityDirPrefix/$key"
+
+  private val lockPath = prefixKey("distributedLock")
+  private[recovery] val distributedLock = mockDistributedLock.getOrElse {
+    new InterProcessSemaphoreMutex(curatorClient, lockPath)
   }
 
   curatorClient.getUnhandledErrorListenable().addListener(new UnhandledErrorListener {
@@ -114,5 +124,13 @@ class ZooKeeperManager(
     } catch {
       case _: NoNodeException => warn(s"Fail to remove non-existed zookeeper node: ${key}")
     }
+  }
+
+  def lock(): Unit = {
+    distributedLock.acquire()
+  }
+
+  def unlock(): Unit = {
+    distributedLock.release()
   }
 }

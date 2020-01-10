@@ -148,15 +148,16 @@ class LivyServer extends Logging {
       Future { SparkYarnApp.yarnClient }
     }
 
-    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
+    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper" ||
+      livyConf.getBoolean(LivyConf.HA_MULTI_ACTIVE_ENABLED)) {
       zkManager = Some(new ZooKeeperManager(livyConf))
       zkManager.foreach(_.start())
     }
 
     StateStore.init(livyConf, zkManager)
     val sessionStore = new SessionStore(livyConf)
-    val batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
-    val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)
+    val batchSessionManager = new BatchSessionManager(livyConf, sessionStore, zkManager)
+    val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore, zkManager)
 
     server = new WebServer(livyConf, host, port)
     server.context.setResourceBase("src/main/org/apache/livy/server")
