@@ -68,12 +68,10 @@ class ZooKeeperManager(
     CuratorFrameworkFactory.newClient(zkAddress, retryPolicy)
   }
 
-  private val zkUtilityDirPrefix = livyConf.get(LivyConf.ZK_UTILITY_DIR_PREFIX)
-  private def prefixKey(key: String) = s"/$zkUtilityDirPrefix/$key"
+  private val zkLockDir = livyConf.get(LivyConf.ZK_LOCK_DIR)
 
-  private val lockPath = prefixKey("distributedLock")
   private[recovery] val distributedLock = mockDistributedLock.getOrElse {
-    new InterProcessSemaphoreMutex(curatorClient, lockPath)
+    new InterProcessSemaphoreMutex(curatorClient, zkLockDir)
   }
 
   curatorClient.getUnhandledErrorListenable().addListener(new UnhandledErrorListener {

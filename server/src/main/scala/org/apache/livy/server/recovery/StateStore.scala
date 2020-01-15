@@ -22,9 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
 import org.apache.livy.{LivyConf, Logging}
-import org.apache.livy.server.recovery.ZooKeeperManager
+import org.apache.livy.server.LivyServer
 import org.apache.livy.sessions.SessionKindModule
-import org.apache.livy.sessions.SessionManager._
 
 protected trait JsonMapper {
   protected val mapper = new ObjectMapper()
@@ -71,6 +70,11 @@ abstract class StateStore(livyConf: LivyConf) extends JsonMapper {
    * @throws Exception Throw when persisting the state store fails.
    */
   def remove(key: String): Unit
+
+  /**
+    * @return `true` if store is distributed e.g. hdfs, zookeeper, `false` otherwise e.g. memory.
+    */
+  def isDistributed(): Boolean
 }
 
 /**
@@ -104,9 +108,13 @@ object StateStore extends Logging {
   }
 
   private[recovery] def pickStateStore(livyConf: LivyConf): Class[_] = {
-    livyConf.get(LivyConf.RECOVERY_MODE) match {
-      case SESSION_RECOVERY_MODE_OFF => classOf[BlackholeStateStore]
-      case SESSION_RECOVERY_MODE_RECOVERY =>
+    val haMode = Option(livyConf.get(LivyConf.HA_MODE)).
+      orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE))).
+      map(_.trim).orNull
+
+    haMode match {
+      case LivyServer.HA_MODE_OFF => classOf[BlackholeStateStore]
+      case LivyServer.HA_MODE_RECOVERY | LivyServer.HA_MODE_MULTI_ACTIVE =>
         livyConf.get(LivyConf.RECOVERY_STATE_STORE) match {
           case "filesystem" => classOf[FileSystemStateStore]
           case "zookeeper" => classOf[ZooKeeperStateStore]

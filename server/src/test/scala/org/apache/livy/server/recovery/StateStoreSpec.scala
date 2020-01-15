@@ -17,13 +17,11 @@
 
 package org.apache.livy.server.recovery
 
-import scala.reflect.classTag
-
 import org.scalatest.{BeforeAndAfter, FunSpec}
 import org.scalatest.Matchers._
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
-import org.apache.livy.sessions.SessionManager
+import org.apache.livy.server.LivyServer
 
 class StateStoreSpec extends FunSpec with BeforeAndAfter with LivyBaseUnitTestSuite {
   describe("StateStore") {
@@ -33,7 +31,7 @@ class StateStoreSpec extends FunSpec with BeforeAndAfter with LivyBaseUnitTestSu
 
     def createConf(stateStore: String): LivyConf = {
       val conf = new LivyConf()
-      conf.set(LivyConf.RECOVERY_MODE.key, SessionManager.SESSION_RECOVERY_MODE_RECOVERY)
+      conf.set(LivyConf.RECOVERY_MODE.key, LivyServer.HA_MODE_RECOVERY)
       conf.set(LivyConf.RECOVERY_STATE_STORE.key, stateStore)
       conf
     }

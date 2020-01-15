@@ -17,17 +17,64 @@
 
 package org.apache.livy.sessions
 
+import java.util.concurrent.atomic.AtomicInteger
+
+import org.apache.livy.server.recovery.{SessionStore, ZooKeeperManager}
+
 /**
   * Interface of session id generator.
   */
-abstract class SessionIdGenerator {
+abstract class SessionIdGenerator(
+    sessionType: String,
+    sessionStore: SessionStore) {
+
   /**
     * Get next session id, then increase next session id and save it in store.
     */
   def getNextSessionId(): Int
 
-  /**
-    * recover next session id from store.
-    */
-  def recover(): Unit
+  protected def getAndIncreaseId(): Int
+
+  protected def persist(id: Int): Unit = {
+    sessionStore.saveNextSessionId(sessionType, id)
+  }
+}
+
+class LocalSessionIdGenerator(
+    sessionType: String,
+    sessionStore: SessionStore) extends SessionIdGenerator(sessionType, sessionStore) {
+
+  private val idCounter = new AtomicInteger(0)
+  idCounter.set(sessionStore.getNextSessionId(sessionType))
+
+  override def getNextSessionId(): Int = {
+    val result = getAndIncreaseId()
+    persist(result + 1)
+    result
+  }
+
+  override def getAndIncreaseId(): Int = {
+    idCounter.getAndIncrement()
+  }
+}
+
+class DistributedSessionIdGenerator(
+    sessionType: String,
+    sessionStore: SessionStore,
+    zkManager: ZooKeeperManager) extends SessionIdGenerator(sessionType, sessionStore) {
+
+  require(sessionStore.getStore.isDistributed(),
+    "Choose a distributed store such as hdfs or zookeeper")
+
+  override def getNextSessionId(): Int = {
+    zkManager.lock()
+    val result = getAndIncreaseId()
+    persist(result + 1)
+    zkManager.unlock()
+    result
+  }
+
+  override def getAndIncreaseId(): Int = {
+    sessionStore.getNextSessionId(sessionType)
+  }
 }

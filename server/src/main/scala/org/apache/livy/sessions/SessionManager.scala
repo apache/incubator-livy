@@ -29,13 +29,9 @@ import scala.util.control.NonFatal
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.server.batch.{BatchRecoveryMetadata, BatchSession}
 import org.apache.livy.server.interactive.{InteractiveRecoveryMetadata, InteractiveSession, SessionHeartbeatWatchdog}
+import org.apache.livy.server.LivyServer
 import org.apache.livy.server.recovery.{SessionStore, ZooKeeperManager}
 import org.apache.livy.sessions.Session.RecoveryMetadata
-
-object SessionManager {
-  val SESSION_RECOVERY_MODE_OFF = "off"
-  val SESSION_RECOVERY_MODE_RECOVERY = "recovery"
-}
 
 class BatchSessionManager(
     livyConf: LivyConf,
@@ -76,8 +72,6 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     mockSessions: Option[Seq[S]] = None)
   extends Logging {
 
-  import SessionManager._
-
   protected implicit def executor: ExecutionContext = ExecutionContext.global
 
   protected[this] final val idCounter = new AtomicInteger(0)
@@ -94,7 +88,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_STATE_RETAIN_TIME))
 
   private final val sessionIdGenerator = {
-    if (livyConf.getBoolean(LivyConf.HA_MULTI_ACTIVE_ENABLED)) {
+    if (livyConf.get(LivyConf.HA_MODE) == LivyServer.HA_MODE_MULTI_ACTIVE) {
       new DistributedSessionIdGenerator(sessionType, sessionStore, zkManager.get)
     } else {
       new LocalSessionIdGenerator(sessionType, sessionStore)
@@ -160,7 +154,11 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   def shutdown(): Unit = {
-    val recoveryEnabled = livyConf.get(LivyConf.RECOVERY_MODE) != SESSION_RECOVERY_MODE_OFF
+    val haMode = Option(livyConf.get(LivyConf.HA_MODE)).
+      orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE))).
+      map(_.trim).orNull
+
+    val recoveryEnabled = haMode != LivyServer.HA_MODE_OFF
     if (!recoveryEnabled) {
       sessions.values.map(_.stop).foreach { future =>
         Await.ready(future, Duration.Inf)
@@ -195,9 +193,6 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   private def recover(): Seq[S] = {
-    // Recover next session id from state store and create SessionManager.
-    sessionIdGenerator.recover()
-
     // Retrieve session recovery metadata from state store.
     val sessionMetadata = sessionStore.getAllSessions[R](sessionType)
 

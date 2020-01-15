@@ -100,7 +100,10 @@
 # on user request and then livy server classpath automatically.
 # livy.repl.enable-hive-context =
 
-# Recovery mode of Livy. Possible values:
+# Recovery mode of Livy. Please use the new config: livy.server.ha.mode.
+# Keep this config for back-compatibility. If both this config and livy.server.ha.mode exist,
+# livy uses livy.server.ha.mode first.
+# Possible values:
 # off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
 # recovery: Livy persists session info to the state store. When Livy restarts, it recovers
 #           previous sessions from the state store.
@@ -109,8 +112,16 @@
 # livy.server.recovery.mode = off
 # Zookeeper address used for HA and state store. e.g. host1:port1, host2:port2
 # livy.server.zookeeper.url =
-# Whether to enable HA with multi-active mode, by default it is false.
-# livy.server.ha.multi-active.enabled = false
+
+# HA mode of Livy. Possible values:
+# 1. null: Default. livy will use the value of livy.server.recovery.mode.
+# 2. off: Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
+# 3. recovery: Livy persists session info to the state store. When Livy restarts, it recovers
+#              previous sessions from the state store.
+#              Must set livy.server.recovery.state-store and
+#              livy.server.recovery.state-store.url to configure the state store.
+# 4. multi-active: HA with multi-active mode.
+# livy.server.ha.mode=
 
 # Where Livy should store state to for recovery. Possible values:
 # <empty>: Default. State store disabled.
@@ -140,8 +151,8 @@
 
 # The dir in zk to store the data about session.
 # livy.server.recovery.zk-state-store.key-prefix = livy
-# The dir related to zookeeper utility, such as: distributed lock, service discovery.
-# livy.server.zk.utility.dir-prefix = livy/zk-utility
+# The dir in zk to store distributed lock.
+# livy.server.zk.lock = livy/zk/lock
 
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s

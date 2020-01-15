@@ -133,5 +133,7 @@ class FileSystemStateStore(
     }
   }
 
+  override def isDistributed(): Boolean = true
+
   private def absPath(key: String): Path = new Path(fsUri.getPath(), key)
 }

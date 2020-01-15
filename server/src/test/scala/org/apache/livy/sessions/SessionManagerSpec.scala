@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Try}
 
-import org.mockito.Mockito.{doReturn, never, verify, when}
+import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.mock.MockitoSugar.mock
@@ -30,6 +30,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.server.batch.{BatchRecoveryMetadata, BatchSession}
 import org.apache.livy.server.interactive.{InteractiveRecoveryMetadata, InteractiveSession}
+import org.apache.livy.server.LivyServer
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.Session.RecoveryMetadata
 
@@ -272,7 +273,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
 
     it("should not delete sessions on shutdown with recovery is on") {
       val conf = new LivyConf()
-      conf.set(LivyConf.RECOVERY_MODE, SessionManager.SESSION_RECOVERY_MODE_RECOVERY)
+      conf.set(LivyConf.RECOVERY_MODE, LivyServer.HA_MODE_RECOVERY)
 
       val sessionId = 24
       val sessionStore = mock[SessionStore]
