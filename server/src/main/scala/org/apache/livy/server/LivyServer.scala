@@ -21,12 +21,12 @@ import java.io.{BufferedInputStream, InputStream}
 import java.net.InetAddress
 import java.util.concurrent._
 import java.util.EnumSet
+
 import javax.servlet._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
 import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hadoop.security.authentication.server._
 import org.eclipse.jetty.servlet.FilterHolder
@@ -34,8 +34,8 @@ import org.scalatra.{NotFound, ScalatraServlet}
 import org.scalatra.metrics.MetricsBootstrap
 import org.scalatra.metrics.MetricsSupportExtensions._
 import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
-
 import org.apache.livy._
+import org.apache.livy.cluster.ClusterManager
 import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.interactive.InteractiveSessionServlet
@@ -61,6 +61,7 @@ class LivyServer extends Logging {
   private var _thriftServerFactory: Option[ThriftServerFactory] = None
 
   private var zkManager: Option[ZooKeeperManager] = None
+  private var clusterManager: Option[ClusterManager] = None
 
   private var ugi: UserGroupInformation = _
 
@@ -148,9 +149,14 @@ class LivyServer extends Logging {
       Future { SparkYarnApp.yarnClient }
     }
 
-    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
+    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper" ||
+      livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
       zkManager = Some(new ZooKeeperManager(livyConf))
       zkManager.foreach(_.start())
+    }
+
+    if (livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
+      clusterManager = Some(new ClusterManager(livyConf, zkManager.get))
     }
 
     StateStore.init(livyConf, zkManager)
