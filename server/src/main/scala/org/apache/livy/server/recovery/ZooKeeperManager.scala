@@ -131,6 +131,11 @@ class ZooKeeperManager(
     curatorClient.create.creatingParentsIfNeeded.withMode(CreateMode.EPHEMERAL).forPath(path, data)
   }
 
+  // For test
+  protected def getPathChildrenCache(path: String): PathChildrenCache = {
+    new PathChildrenCache(curatorClient, path, true)
+  }
+
 
   private def deleteNode(path: String): Unit = {
     if (curatorClient.checkExists().forPath(path) != null) {
@@ -142,7 +147,7 @@ class ZooKeeperManager(
       path: String,
       nodeEventHandler: (String, T) => Unit,
       eventType: PathChildrenCacheEvent.Type): Unit = {
-    val cache = new PathChildrenCache(curatorClient, path, true)
+    val cache = getPathChildrenCache(path)
     cache.start()
 
     val listener = new PathChildrenCacheListener() {

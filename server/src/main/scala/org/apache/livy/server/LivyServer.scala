@@ -35,7 +35,7 @@ import org.scalatra.metrics.MetricsBootstrap
 import org.scalatra.metrics.MetricsSupportExtensions._
 import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
 import org.apache.livy._
-import org.apache.livy.cluster.ClusterManager
+import org.apache.livy.cluster.{ClusterManager, ZKClusterManager}
 import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.interactive.InteractiveSessionServlet
@@ -156,7 +156,7 @@ class LivyServer extends Logging {
     }
 
     if (livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
-      clusterManager = Some(new ClusterManager(livyConf, zkManager.get))
+      clusterManager = Some(new ZKClusterManager(livyConf, zkManager.get))
     }
 
     StateStore.init(livyConf, zkManager)
@@ -344,6 +344,8 @@ class LivyServer extends Logging {
 
     _serverUrl = Some(s"${server.protocol}://${server.host}:${server.port}")
     sys.props("livy.server.server-url") = _serverUrl.get
+
+    clusterManager.foreach(_.register())
   }
 
   def runKinit(keytab: String, principal: String): Boolean = {

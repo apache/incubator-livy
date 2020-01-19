@@ -196,7 +196,7 @@ object LivyConf {
    *              livy.server.recovery.state-store.url to configure the state store.
    * 4. multi-active: HA with multi-active mode.
    */
-  val HA_MODE = Entry("livy.server.ha.mode", null)
+  val HA_MODE = Entry("livy.server.ha.mode", HA_MODE_OFF)
   val HA_MODE_OFF = "off"
   val HA_MODE_RECOVERY = "recovery"
   val HA_MODE_MULTI_ACTIVE = "multi-active"
@@ -243,7 +243,7 @@ object LivyConf {
   val RECOVERY_ZK_STATE_STORE_KEY_PREFIX =
     Entry("livy.server.recovery.zk-state-store.key-prefix", "livy")
 
-  val ZK_SERVICE_DIR = Entry("livy.server.zk.services", "livy/zk/services")
+  val ZK_SERVICE_DIR = Entry("livy.server.zk.services", "/livy/zk/services")
 
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)
