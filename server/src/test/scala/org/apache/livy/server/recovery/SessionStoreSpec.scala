@@ -104,5 +104,27 @@ class SessionStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       sessionStore.remove(sessionType, 1)
       verify(stateStore).remove(s"$sessionPath/$id")
     }
+
+    it("should return specific session") {
+      val stateStore = mock[StateStore]
+      val sessionStore = new SessionStore(conf, stateStore)
+      val id = 5
+
+      when(stateStore.get[TestRecoveryMetadata](s"$sessionPath/$id"))
+        .thenReturn(Some(TestRecoveryMetadata(id)))
+      var s = sessionStore.get[TestRecoveryMetadata](sessionType, id)
+      // Verify normal metadata are retrieved.
+      s.get.id shouldBe 5
+
+      when(stateStore.get[TestRecoveryMetadata](s"$sessionPath/$id"))
+        .thenReturn(None)
+      s = sessionStore.get[TestRecoveryMetadata](sessionType, id)
+      s.isEmpty shouldBe true
+
+      when(stateStore.get[TestRecoveryMetadata](s"$sessionPath/$id"))
+        .thenThrow(new RuntimeException("Test"))
+      s = sessionStore.get[TestRecoveryMetadata](sessionType, id)
+      s.isEmpty shouldBe true
+    }
   }
 }

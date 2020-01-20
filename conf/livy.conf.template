@@ -100,7 +100,10 @@
 # on user request and then livy server classpath automatically.
 # livy.repl.enable-hive-context =
 
-# Recovery mode of Livy. Possible values:
+# Recovery mode of Livy. Please use the new config: livy.server.ha.mode.
+# Keep this config for back-compatibility. If both this config and livy.server.ha.mode exist,
+# livy uses livy.server.ha.mode first.
+# Possible values:
 # off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
 # recovery: Livy persists session info to the state store. When Livy restarts, it recovers
 #           previous sessions from the state store.
@@ -123,6 +126,16 @@
 # so if both this config and livy.server.zookeeper.url exist,
 # livy uses livy.server.zookeeper.url first.
 # livy.server.recovery.state-store.url =
+
+# HA mode of Livy. Possible values:
+# 1. null: Default. livy will use the value of livy.server.recovery.mode.
+# 2. off: Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
+# 3. recovery: Livy persists session info to the state store. When Livy restarts, it recovers
+#              previous sessions from the state store.
+#              Must set livy.server.recovery.state-store and
+#              livy.server.recovery.state-store.url to configure the state store.
+# 4. multi-active: HA with multi-active mode.
+# livy.server.ha.mode=
 
 # The policy of curator connecting to zookeeper.
 # For example, m, n means retry m times and the interval of retry is n milliseconds.
