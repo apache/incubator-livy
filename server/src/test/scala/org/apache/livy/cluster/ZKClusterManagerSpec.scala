@@ -25,15 +25,16 @@ import org.apache.curator.framework.api.{ProtectACLCreateModePathAndBytesable, _
 import org.apache.curator.framework.listen.{Listenable, ListenerContainer}
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.cache.{ChildData, PathChildrenCache, PathChildrenCacheEvent, PathChildrenCacheListener}
-import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
-import org.apache.livy.server.recovery.ZooKeeperManager
 import org.apache.zookeeper.data.Stat
 import org.mockito.ArgumentCaptor
-import org.mockito.Mockito.{doNothing, times, verify, when}
 import org.mockito.Matchers.{anyObject, anyString}
+import org.mockito.Mockito.{doNothing, verify, when}
 import org.scalatest.FunSpec
 import org.scalatest.Matchers._
 import org.scalatest.mock.MockitoSugar.mock
+
+import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
+import org.apache.livy.server.recovery.ZooKeeperManager
 
 class ZKClusterManagerSpec extends FunSpec with LivyBaseUnitTestSuite {
   private val mapper = new ObjectMapper().registerModule(DefaultScalaModule)

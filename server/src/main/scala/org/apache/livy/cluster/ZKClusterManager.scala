@@ -18,13 +18,14 @@ package org.apache.livy.cluster
 
 import java.util.UUID
 
-import org.apache.livy.server.recovery.ZooKeeperManager
-import org.apache.livy.rsc.RSCConf.Entry.LAUNCHER_ADDRESS
-import org.apache.livy.LivyConf.{SERVER_PORT, ZK_SERVICE_DIR}
-import org.apache.livy.{LivyConf, Logging}
-
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, Set}
+
+import org.apache.livy.rsc.RSCConf.Entry.LAUNCHER_ADDRESS
+import org.apache.livy.LivyConf.{SERVER_PORT, ZK_SERVICE_DIR}
+import org.apache.livy.LivyConf
+import org.apache.livy.Logging
+import org.apache.livy.server.recovery.ZooKeeperManager
 
 class ZKClusterManager(livyConf: LivyConf, zkManager: ZooKeeperManager)
   extends ClusterManager with Logging {

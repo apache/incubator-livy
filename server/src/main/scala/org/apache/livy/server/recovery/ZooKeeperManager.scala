@@ -19,17 +19,19 @@ package org.apache.livy.server.recovery
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
+
 import org.apache.curator.framework.api.UnhandledErrorListener
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.framework.recipes.cache.{PathChildrenCache, PathChildrenCacheEvent, PathChildrenCacheListener}
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent.Type
 import org.apache.curator.retry.RetryNTimes
+import org.apache.zookeeper.CreateMode
 import org.apache.zookeeper.KeeperException.NoNodeException
+
 import org.apache.livy.LivyConf
 import org.apache.livy.Logging
 import org.apache.livy.utils.LivyUncaughtException
-import org.apache.zookeeper.CreateMode
 
 class ZooKeeperManager(
     livyConf: LivyConf,
