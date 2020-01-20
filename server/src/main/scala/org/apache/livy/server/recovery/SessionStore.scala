@@ -52,7 +52,7 @@ class SessionStore(
   def get[T <: RecoveryMetadata : ClassTag](sessionType: String, id: Int): Option[T] = {
     try {
       store.get[T](sessionPath(sessionType, id))
-    } catch  {
+    } catch {
       case NonFatal(e) =>
         error(e.getMessage, e.getCause)
         None
