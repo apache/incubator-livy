@@ -113,8 +113,8 @@ object StateStore extends Logging {
       map(_.trim).orNull
 
     haMode match {
-      case LivyServer.HA_MODE_OFF => classOf[BlackholeStateStore]
-      case LivyServer.HA_MODE_RECOVERY | LivyServer.HA_MODE_MULTI_ACTIVE =>
+      case LivyConf.HA_MODE_OFF => classOf[BlackholeStateStore]
+      case LivyConf.HA_MODE_RECOVERY | LivyConf.HA_MODE_MULTI_ACTIVE =>
         livyConf.get(LivyConf.RECOVERY_STATE_STORE) match {
           case "filesystem" => classOf[FileSystemStateStore]
           case "zookeeper" => classOf[ZooKeeperStateStore]

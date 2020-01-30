@@ -44,8 +44,7 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       val curatorClient = mock[CuratorFramework]
       when(curatorClient.getUnhandledErrorListenable())
         .thenReturn(mock[Listenable[UnhandledErrorListener]])
-      val distributedLock = mock[InterProcessSemaphoreMutex]
-      val zkManager = new ZooKeeperManager(conf, Some(curatorClient), Some(distributedLock))
+      val zkManager = new ZooKeeperManager(conf, Some(curatorClient))
       zkManager.start()
       val stateStore = new ZooKeeperStateStore(conf, zkManager)
       testBody(TestFixture(stateStore, curatorClient))

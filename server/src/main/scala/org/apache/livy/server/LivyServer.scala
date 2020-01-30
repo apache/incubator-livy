@@ -148,7 +148,7 @@ class LivyServer extends Logging {
     }
 
     if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper" ||
-      livyConf.get(LivyConf.HA_MODE) == LivyServer.HA_MODE_MULTI_ACTIVE) {
+      livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
       zkManager = Some(new ZooKeeperManager(livyConf))
       zkManager.foreach(_.start())
     }
@@ -417,21 +417,17 @@ class LivyServer extends Logging {
   private[livy] def testRecovery(livyConf: LivyConf): Unit = {
     if (!livyConf.isRunningOnYarn()) {
       // If recovery is turned on but we are not running on YARN, quit.
-      val haMode = Option(livyConf.get(LivyConf.HA_MODE)).
-        orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE))).
-        map(_.trim).orNull
+      val haMode = Option(livyConf.get(LivyConf.HA_MODE))
+        .orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE)))
+        .map(_.trim).orNull
 
-      require(haMode == LivyServer.HA_MODE_OFF,
+      require(haMode == LivyConf.HA_MODE_OFF,
         "Session recovery requires YARN.")
     }
   }
 }
 
 object LivyServer {
-  val HA_MODE_OFF = "off"
-  val HA_MODE_RECOVERY = "recovery"
-  val HA_MODE_MULTI_ACTIVE = "multi-active"
-
   def main(args: Array[String]): Unit = {
     val server = new LivyServer()
     try {

@@ -19,6 +19,8 @@ package org.apache.livy.sessions
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
+
 import org.apache.livy.server.recovery.{SessionStore, ZooKeeperManager}
 
 /**
@@ -66,11 +68,13 @@ class DistributedSessionIdGenerator(
   require(sessionStore.getStore.isDistributed(),
     "Choose a distributed store such as hdfs or zookeeper")
 
+  val distributedLock = zkManager.createLock(SessionStore.sessionIdLockPath(sessionType))
+
   override def getNextSessionId(): Int = {
-    zkManager.lock()
+    distributedLock.acquire()
     val result = getAndIncreaseId()
     persist(result + 1)
-    zkManager.unlock()
+    distributedLock.release()
     result
   }
 

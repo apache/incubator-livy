@@ -68,12 +68,6 @@ class ZooKeeperManager(
     CuratorFrameworkFactory.newClient(zkAddress, retryPolicy)
   }
 
-  private val zkLockDir = livyConf.get(LivyConf.ZK_LOCK_DIR)
-
-  private[recovery] val distributedLock = mockDistributedLock.getOrElse {
-    new InterProcessSemaphoreMutex(curatorClient, zkLockDir)
-  }
-
   curatorClient.getUnhandledErrorListenable().addListener(new UnhandledErrorListener {
     def unhandledError(message: String, e: Throwable): Unit = {
       error(s"Fatal Zookeeper error: ${message}.", e)
@@ -124,11 +118,7 @@ class ZooKeeperManager(
     }
   }
 
-  def lock(): Unit = {
-    distributedLock.acquire()
-  }
-
-  def unlock(): Unit = {
-    distributedLock.release()
+  def createLock(lockDir: String): InterProcessSemaphoreMutex = {
+    new InterProcessSemaphoreMutex(curatorClient, lockDir)
   }
 }

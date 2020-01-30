@@ -88,7 +88,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_STATE_RETAIN_TIME))
 
   private final val sessionIdGenerator = {
-    if (livyConf.get(LivyConf.HA_MODE) == LivyServer.HA_MODE_MULTI_ACTIVE) {
+    if (livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
+      require(zkManager != None, "Please config livy.server.zookeeper.url")
       new DistributedSessionIdGenerator(sessionType, sessionStore, zkManager.get)
     } else {
       new LocalSessionIdGenerator(sessionType, sessionStore)
@@ -154,11 +155,11 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   def shutdown(): Unit = {
-    val haMode = Option(livyConf.get(LivyConf.HA_MODE)).
-      orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE))).
-      map(_.trim).orNull
+    val haMode = Option(livyConf.get(LivyConf.HA_MODE))
+      .orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE)))
+      .map(_.trim).orNull
 
-    val recoveryEnabled = haMode != LivyServer.HA_MODE_OFF
+    val recoveryEnabled = haMode != LivyConf.HA_MODE_OFF
     if (!recoveryEnabled) {
       sessions.values.map(_.stop).foreach { future =>
         Await.ready(future, Duration.Inf)

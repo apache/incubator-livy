@@ -31,7 +31,7 @@ class StateStoreSpec extends FunSpec with BeforeAndAfter with LivyBaseUnitTestSu
 
     def createConf(stateStore: String): LivyConf = {
       val conf = new LivyConf()
-      conf.set(LivyConf.RECOVERY_MODE.key, LivyServer.HA_MODE_RECOVERY)
+      conf.set(LivyConf.RECOVERY_MODE.key, LivyConf.HA_MODE_RECOVERY)
       conf.set(LivyConf.RECOVERY_STATE_STORE.key, stateStore)
       conf
     }

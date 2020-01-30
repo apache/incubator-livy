@@ -273,7 +273,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
 
     it("should not delete sessions on shutdown with recovery is on") {
       val conf = new LivyConf()
-      conf.set(LivyConf.RECOVERY_MODE, LivyServer.HA_MODE_RECOVERY)
+      conf.set(LivyConf.RECOVERY_MODE, LivyConf.HA_MODE_RECOVERY)
 
       val sessionId = 24
       val sessionStore = mock[SessionStore]

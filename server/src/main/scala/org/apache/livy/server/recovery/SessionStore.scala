@@ -28,6 +28,21 @@ import org.apache.livy.sessions.Session.RecoveryMetadata
 
 private[recovery] case class SessionManagerState(nextSessionId: Int)
 
+object SessionStore {
+  private val STORE_VERSION: String = "v1"
+
+  private def sessionManagerPath(sessionType: String): String =
+    s"$STORE_VERSION/$sessionType/state"
+
+  private def sessionPath(sessionType: String): String =
+    s"$STORE_VERSION/$sessionType"
+
+  private def sessionPath(sessionType: String, id: Int): String =
+    s"$STORE_VERSION/$sessionType/$id"
+
+  def sessionIdLockPath(sessionType: String): String =
+    s"$STORE_VERSION/$sessionType/ha-session-id-lock"
+}
 /**
  * SessionStore provides high level functions to get/save session state from/to StateStore.
  */
@@ -36,18 +51,16 @@ class SessionStore(
     store: => StateStore = StateStore.get) // For unit testing.
   extends Logging {
 
-  private val STORE_VERSION: String = "v1"
-
   /**
    * Persist a session to the session state store.
    * @param m RecoveryMetadata for the session.
    */
   def save(sessionType: String, m: RecoveryMetadata): Unit = {
-    store.set(sessionPath(sessionType, m.id), m)
+    store.set(SessionStore.sessionPath(sessionType, m.id), m)
   }
 
   def saveNextSessionId(sessionType: String, id: Int): Unit = {
-    store.set(sessionManagerPath(sessionType), SessionManagerState(id))
+    store.set(SessionStore.sessionManagerPath(sessionType), SessionManagerState(id))
   }
 
   def getStore: StateStore = store
@@ -56,10 +69,10 @@ class SessionStore(
    * Return all sessions stored in the store with specified session type.
    */
   def getAllSessions[T <: RecoveryMetadata : ClassTag](sessionType: String): Seq[Try[T]] = {
-    store.getChildren(sessionPath(sessionType))
+    store.getChildren(SessionStore.sessionPath(sessionType))
       .flatMap { c => Try(c.toInt).toOption } // Ignore all non numerical keys
       .flatMap { id =>
-        val p = sessionPath(sessionType, id)
+        val p = SessionStore.sessionPath(sessionType, id)
         try {
           store.get[T](p).map(Success(_))
         } catch {
@@ -76,7 +89,7 @@ class SessionStore(
    * @throws Exception If SessionManagerState stored is corrupted, it throws an error.
    */
   def getNextSessionId(sessionType: String): Int = {
-    store.get[SessionManagerState](sessionManagerPath(sessionType))
+    store.get[SessionManagerState](SessionStore.sessionManagerPath(sessionType))
       .map(_.nextSessionId).getOrElse(0)
   }
 
@@ -84,15 +97,6 @@ class SessionStore(
    * Remove a session from the state store.
    */
   def remove(sessionType: String, id: Int): Unit = {
-    store.remove(sessionPath(sessionType, id))
+    store.remove(SessionStore.sessionPath(sessionType, id))
   }
-
-  private def sessionManagerPath(sessionType: String): String =
-    s"$STORE_VERSION/$sessionType/state"
-
-  private def sessionPath(sessionType: String): String =
-    s"$STORE_VERSION/$sessionType"
-
-  private def sessionPath(sessionType: String, id: Int): String =
-    s"$STORE_VERSION/$sessionType/$id"
 }
