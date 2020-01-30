@@ -121,10 +121,12 @@ public final class LivyClientBuilder {
     }
 
     LivyClient client = null;
+    boolean loaded = false;
     // ServiceLoader instances are not safe for use by multiple concurrent threads.
     // Ensure that the ServiceLoader's iterator is called by only one thread at a time.
     synchronized (LivyClientBuilder.class) {
       for (LivyClientFactory factory : CLIENT_FACTORY_LOADER) {
+        loaded = true;
         try {
           client = factory.createClient(uri, config);
         } catch (Exception e) {
@@ -139,6 +141,9 @@ public final class LivyClientBuilder {
       }
     }
 
+    if (!loaded) {
+      throw new IllegalStateException("No LivyClientFactory implementation was found.");
+    }
     if (client == null) {
       // Redact any user information from the URI when throwing user-visible exceptions that might
       // be logged.
