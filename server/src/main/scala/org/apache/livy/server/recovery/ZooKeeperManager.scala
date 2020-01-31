@@ -33,8 +33,7 @@ import org.apache.livy.utils.LivyUncaughtException
 
 class ZooKeeperManager(
     livyConf: LivyConf,
-    mockCuratorClient: Option[CuratorFramework] = None,
-    mockDistributedLock: Option[InterProcessSemaphoreMutex] = None)
+    mockCuratorClient: Option[CuratorFramework] = None)
   extends JsonMapper with Logging {
 
   def this(livyConf: LivyConf) {

@@ -428,6 +428,7 @@ class LivyServer extends Logging {
 }
 
 object LivyServer {
+
   def main(args: Array[String]): Unit = {
     val server = new LivyServer()
     try {
