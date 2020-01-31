@@ -38,6 +38,19 @@ public final class LivyClientBuilder {
   private static final ServiceLoader<LivyClientFactory> CLIENT_FACTORY_LOADER =
     ServiceLoader.load(LivyClientFactory.class, classLoader());
 
+  private static LivyClientFactory getLivyClientFactory() {
+    LivyClientFactory factory = null;
+    for (LivyClientFactory f : CLIENT_FACTORY_LOADER) {
+      factory = f;
+      if (factory != null) {
+        break;
+      }
+    }
+    return factory;
+  }
+
+  private static final LivyClientFactory CLIENT_FACTORY = getLivyClientFactory();
+
   private final Properties config;
 
   /**
@@ -121,29 +134,18 @@ public final class LivyClientBuilder {
     }
 
     LivyClient client = null;
-    boolean loaded = false;
-    // ServiceLoader instances are not safe for use by multiple concurrent threads.
-    // Ensure that the ServiceLoader's iterator is called by only one thread at a time.
-    synchronized (CLIENT_FACTORY_LOADER) {
-      for (LivyClientFactory factory : CLIENT_FACTORY_LOADER) {
-        loaded = true;
-        try {
-          client = factory.createClient(uri, config);
-        } catch (Exception e) {
-          if (!(e instanceof RuntimeException)) {
-            e = new RuntimeException(e);
-          }
-          throw (RuntimeException) e;
-        }
-        if (client != null) {
-          break;
-        }
-      }
-    }
-
-    if (!loaded) {
+    if (CLIENT_FACTORY == null) {
       throw new IllegalStateException("No LivyClientFactory implementation was found.");
     }
+    try {
+      client = CLIENT_FACTORY.createClient(uri, config);
+    } catch (Exception e) {
+      if (!(e instanceof RuntimeException)) {
+        e = new RuntimeException(e);
+      }
+      throw (RuntimeException) e;
+    }
+
     if (client == null) {
       // Redact any user information from the URI when throwing user-visible exceptions that might
       // be logged.
