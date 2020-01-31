@@ -151,8 +151,6 @@
 
 # The dir in zk to store the data about session.
 # livy.server.recovery.zk-state-store.key-prefix = livy
-# The dir in zk to store distributed lock.
-# livy.server.zk.lock = livy/zk/lock
 
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s

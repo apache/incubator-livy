@@ -245,9 +245,6 @@ object LivyConf {
   val RECOVERY_ZK_STATE_STORE_KEY_PREFIX =
     Entry("livy.server.recovery.zk-state-store.key-prefix", "livy")
 
-  // The dir in zk to store distributed lock.
-  val ZK_LOCK_DIR = Entry("livy.server.zk.lock", "livy/zk/lock")
-
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)
 
