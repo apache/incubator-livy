@@ -48,6 +48,8 @@ trait Cluster {
   def livyEndpoint: String
   def jdbcEndpoint: Option[String]
   def authScheme: String
+  def user: String
+  def password: String
   def hdfsScratchDir(): Path
 
   def doAsClusterUser[T](task: => T): T
@@ -61,7 +63,7 @@ trait Cluster {
     }
 
     UserGroupInformation.setConfiguration(conf);
-    UserGroupInformation.loginUserFromKeytab(s"${knoxUser}@AZDATA.LOCAL", s"/tests/kerberos_setup/${knoxUser}.keytab");
+    UserGroupInformation.loginUserFromKeytab(s"${user}@AZDATA.LOCAL", s"/tests/kerberos_setup/${user}.keytab");
   }
 
   lazy val hadoopConf = {
