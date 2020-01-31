@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.scalatest.BeforeAndAfterAll
 
+import org.apache.http.client.methods.HttpGet
+
 import org.apache.livy._
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.sessions.SessionKindModule
@@ -95,9 +97,13 @@ class Spark2JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll wit
   }
 
   private def sessionList(): SessionList = {
-    val response = httpClient.prepareGet(s"$livyEndpoint/sessions/").execute().get()
-    assert(response.getStatusCode === HttpServletResponse.SC_OK)
-    mapper.readValue(response.getResponseBodyAsStream, classOf[SessionList])
+    val httpGet = new HttpGet(s"$livyEndpoint/sessions/")
+    val r = livyClient.httpClient.execute(httpGet)
+
+    assert(r.getStatusLine().getStatusCode() ==  HttpServletResponse.SC_OK)
+    val sessionList = mapper.readValue(r.getEntity().getContent, classOf[SessionList])
+    r.close()
+    sessionList
   }
 
   private def createClient(uri: String): LivyClient = {

@@ -191,6 +191,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
   private var hdfs: Option[ProcessInfo] = None
   private var yarn: Option[ProcessInfo] = None
   private var livy: Option[ProcessInfo] = None
+  private var authType: String = _
   private var livyUrl: String = _
   private var livyThriftJdbcUrl: Option[String] = None
   private var _hdfsScrathDir: Path = _
@@ -254,6 +255,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     val localLivy = start(MiniLivyMain.getClass, confFile, extraJavaArgs = jacocoArgs)
 
     val props = loadProperties(confFile)
+    authType = props("livy.server.auth.type")
     livyUrl = props("livy.server.server-url")
     livyThriftJdbcUrl = props.get("livy.server.thrift.jdbc-url")
 
@@ -275,6 +277,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     livy = None
   }
 
+  def authScheme: String = authType
   def livyEndpoint: String = livyUrl
 
   def jdbcEndpoint: Option[String] = livyThriftJdbcUrl

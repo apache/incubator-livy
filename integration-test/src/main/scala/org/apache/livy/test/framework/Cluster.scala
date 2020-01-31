@@ -28,6 +28,10 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.yarn.client.api.YarnClient
+import org.apache.hadoop.yarn.conf.YarnConfiguration
+
+import org.apache.hadoop.security.UserGroupInformation
+
 
 import org.apache.livy.Logging
 
@@ -43,11 +47,28 @@ trait Cluster {
   def stopLivy(): Unit
   def livyEndpoint: String
   def jdbcEndpoint: Option[String]
+  def authScheme: String
   def hdfsScratchDir(): Path
 
   def doAsClusterUser[T](task: => T): T
 
+  def initKubeConf(): Unit = {
+    val conf = new Configuration(false)
+    configDir().listFiles().foreach { f =>
+      if (f.getName().endsWith(".xml")) {
+        conf.addResource(new Path(f.toURI()))
+      }
+    }
+
+    UserGroupInformation.setConfiguration(conf);
+    UserGroupInformation.loginUserFromKeytab(s"${knoxUser}@AZDATA.LOCAL", s"/tests/kerberos_setup/${knoxUser}.keytab");
+  }
+
   lazy val hadoopConf = {
+    if(authScheme == "kerberos"){
+      initKubeConf()
+    }
+
     val conf = new Configuration(false)
     configDir().listFiles().foreach { f =>
       if (f.getName().endsWith(".xml")) {
@@ -58,8 +79,13 @@ trait Cluster {
   }
 
   lazy val yarnConf = {
+    if(authScheme == "kerberos"){
+      initKubeConf()
+    }
+
     val conf = new Configuration(false)
     conf.addResource(new Path(s"${configDir().getCanonicalPath}/yarn-site.xml"))
+    conf.addResource(new Path(s"${configDir().getCanonicalPath}/core-site.xml"))
     conf
   }
 
