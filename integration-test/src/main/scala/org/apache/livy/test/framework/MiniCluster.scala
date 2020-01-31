@@ -257,10 +257,10 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     val localLivy = start(MiniLivyMain.getClass, confFile, extraJavaArgs = jacocoArgs)
 
     val props = loadProperties(confFile)
-    authType = props("livy.server.auth.type")
     usr = config.getOrElse("user", "")
     pwd = config.getOrElse("password", "")
-    livyUrl = props("livy.server.server-url")
+    authType = config.getOrElse("authScheme", props("livy.server.auth.type"))
+    livyUrl = config.getOrElse("livyEndpoint", props("livy.server.server-url"))
     livyThriftJdbcUrl = props.get("livy.server.thrift.jdbc-url")
 
     // Wait until Livy server responds.
