@@ -83,7 +83,7 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
 
     if(authScheme == "kerberos") {
       val proxy =
-        UserGroupInformation.createProxyUser(knoxUser, UserGroupInformation.getLoginUser());
+        UserGroupInformation.createProxyUser(user, UserGroupInformation.getLoginUser());
       proxy.doAs(new PrivilegedExceptionAction[Unit] {
         def run() = {
           cluster.fs.copyFromLocalFile(new Path(file.toURI()), hdfsPath);
