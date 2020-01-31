@@ -63,12 +63,15 @@ class LocalSessionIdGenerator(
 class DistributedSessionIdGenerator(
     sessionType: String,
     sessionStore: SessionStore,
-    zkManager: ZooKeeperManager) extends SessionIdGenerator(sessionType, sessionStore) {
+    zkManager: ZooKeeperManager,
+    mockLock: Option[InterProcessSemaphoreMutex] = None)
+  extends SessionIdGenerator(sessionType, sessionStore) {
 
   require(sessionStore.getStore.isDistributed(),
     "Choose a distributed store such as hdfs or zookeeper")
 
-  val distributedLock = zkManager.createLock(SessionStore.sessionIdLockPath(sessionType))
+  val distributedLock = mockLock.getOrElse(
+    zkManager.createLock(SessionStore.sessionIdLockPath(sessionType)))
 
   override def getNextSessionId(): Int = {
     distributedLock.acquire()

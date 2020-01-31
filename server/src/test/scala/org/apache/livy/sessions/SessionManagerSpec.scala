@@ -30,8 +30,7 @@ import org.scalatest.mock.MockitoSugar.mock
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.server.batch.{BatchRecoveryMetadata, BatchSession}
 import org.apache.livy.server.interactive.{InteractiveRecoveryMetadata, InteractiveSession}
-import org.apache.livy.server.LivyServer
-import org.apache.livy.server.recovery.SessionStore
+import org.apache.livy.server.recovery.{SessionStore, ZooKeeperManager, ZooKeeperStateStore}
 import org.apache.livy.sessions.Session.RecoveryMetadata
 
 class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuite {
@@ -284,6 +283,50 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       sm.shutdown()
 
       verify(session, never).stop()
+    }
+
+    it("should crate instance of LocalSessionIdGenerator if livy.server.ha.mode is off") {
+      val conf = new LivyConf()
+      conf.set(LivyConf.HA_MODE, LivyConf.HA_MODE_OFF)
+
+      val sessionId = 24
+      val sessionStore = mock[SessionStore]
+      val session = mockSession(sessionId)
+
+      val sm = new BatchSessionManager(conf, sessionStore, None, Some(Seq(session)))
+      assert(sm.getSessionIdGenerator.isInstanceOf[LocalSessionIdGenerator])
+    }
+
+    it("should crate instance of DistributedSessionIdGenerator " +
+      "if livy.server.ha.mode is recovery") {
+      val conf = new LivyConf()
+      conf.set(LivyConf.HA_MODE, LivyConf.HA_MODE_RECOVERY)
+
+      val sessionId = 24
+      val sessionStore = mock[SessionStore]
+      val session = mockSession(sessionId)
+
+      val sm = new BatchSessionManager(conf, sessionStore, None, Some(Seq(session)))
+      assert(sm.getSessionIdGenerator.isInstanceOf[LocalSessionIdGenerator])
+    }
+
+    it("should crate instance of DistributedSessionIdGenerator " +
+      "if livy.server.ha.mode is multi-active") {
+      val conf = new LivyConf()
+      conf.set(LivyConf.HA_MODE, LivyConf.HA_MODE_MULTI_ACTIVE)
+
+      val sessionStore = mock[SessionStore]
+      val store = mock[ZooKeeperStateStore]
+      when(sessionStore.getStore).thenReturn(store)
+      when(store.isDistributed()).thenReturn(true)
+
+      val sessionId = 24
+      val session = mockSession(sessionId)
+      val zkManager = Some(mock[ZooKeeperManager])
+
+      val sm = new BatchSessionManager(conf, sessionStore, zkManager, Some(Seq(session)))
+
+      assert(sm.getSessionIdGenerator.isInstanceOf[DistributedSessionIdGenerator])
     }
   }
 }
