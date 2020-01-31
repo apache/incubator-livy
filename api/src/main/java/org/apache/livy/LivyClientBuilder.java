@@ -124,7 +124,7 @@ public final class LivyClientBuilder {
     boolean loaded = false;
     // ServiceLoader instances are not safe for use by multiple concurrent threads.
     // Ensure that the ServiceLoader's iterator is called by only one thread at a time.
-    synchronized (LivyClientBuilder.class) {
+    synchronized (CLIENT_FACTORY_LOADER) {
       for (LivyClientFactory factory : CLIENT_FACTORY_LOADER) {
         loaded = true;
         try {

@@ -80,20 +80,10 @@ public class TestLivyClientBuilder {
 
   @Test
   public void testSinglenessOfClientFactory() throws Exception {
-    Runnable r = () -> {
-      try {
-        LivyClient client = new LivyClientBuilder().build();
-        assertTrue(client instanceof TestClientFactory.Client);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    };
-    Thread t1 = new Thread(r);
-    Thread t2 = new Thread(r);
-    t1.start();
-    t2.start();
-    t1.join(1000L);
-    t2.join(1000L);
+    LivyClient client1 = new LivyClientBuilder().build();
+    assertTrue(client1 instanceof TestClientFactory.Client);
+    LivyClient client2 = new LivyClientBuilder().build();
+    assertTrue(client2 instanceof TestClientFactory.Client);
     assertEquals(1L, TestClientFactory.getInstanceCount());
   }
 }
