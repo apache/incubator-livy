@@ -29,9 +29,8 @@ import scala.util.{Properties, Try}
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import org.scalatest.BeforeAndAfterAll
-
 import org.apache.http.client.methods.HttpGet
+import org.scalatest.BeforeAndAfterAll
 
 import org.apache.livy._
 import org.apache.livy.client.common.HttpMessages._

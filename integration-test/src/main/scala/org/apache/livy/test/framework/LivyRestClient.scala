@@ -29,15 +29,14 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.apache.hadoop.yarn.api.records.ApplicationId
 import org.apache.hadoop.yarn.util.ConverterUtils
-import org.scalatest.concurrent.Eventually._
-
-import org.apache.http.impl.client.CloseableHttpClient
-import org.apache.http.entity.StringEntity
-import org.apache.http.HttpResponse
+import org.apache.http.client.methods.HttpDelete
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpPost
-import org.apache.http.client.methods.HttpDelete
+import org.apache.http.entity.StringEntity
+import org.apache.http.impl.client.CloseableHttpClient
+import org.apache.http.HttpResponse
 import org.apache.http.StatusLine
+import org.scalatest.concurrent.Eventually._
 
 import org.apache.livy.server.batch.CreateBatchRequest
 import org.apache.livy.server.interactive.CreateInteractiveRequest
@@ -306,7 +305,7 @@ class LivyRestClient(val httpClient: CloseableHttpClient, val livyEndpoint: Stri
     val entity = new StringEntity(body)
     httpPost.setEntity(entity)
     val r = httpClient.execute(httpPost)
-    
+
     assertStatusCode(r.getStatusLine(), HttpServletResponse.SC_CREATED)
 
     val newSession = mapper.readValue(r.getEntity().getContent, classOf[SessionSnapshot])
@@ -314,7 +313,7 @@ class LivyRestClient(val httpClient: CloseableHttpClient, val livyEndpoint: Stri
     newSession.id
   }
 
-  private def assertStatusCode(r: StatusLine , expected: Int): Unit = {
+  private def assertStatusCode(r: StatusLine, expected: Int): Unit = {
     def pretty(r: StatusLine): String = {
       s"${r.getStatusCode} ${r.getReasonPhrase}"
     }

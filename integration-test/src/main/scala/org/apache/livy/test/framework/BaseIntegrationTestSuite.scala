@@ -18,6 +18,8 @@
 package org.apache.livy.test.framework
 
 import java.io.File
+import java.security.Principal
+import java.security.PrivilegedExceptionAction
 import java.util.UUID
 
 import scala.concurrent._
@@ -25,21 +27,17 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.control.NonFatal
 
-import java.security.Principal;
-import org.apache.http.impl.client.DefaultHttpClient
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.client.params.AuthPolicy;
-import org.apache.http.impl.auth.SPNegoSchemeFactory;
-import org.apache.http.impl.auth.BasicSchemeFactory;
-import org.apache.http.auth.UsernamePasswordCredentials
-
 import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.security.UserGroupInformation
-import java.security.PrivilegedExceptionAction
-
 import org.apache.hadoop.fs.Path
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.util.ConverterUtils
+import org.apache.http.auth.AuthScope
+import org.apache.http.auth.Credentials
+import org.apache.http.auth.UsernamePasswordCredentials
+import org.apache.http.client.params.AuthPolicy
+import org.apache.http.impl.auth.BasicSchemeFactory
+import org.apache.http.impl.auth.SPNegoSchemeFactory
+import org.apache.http.impl.client.DefaultHttpClient
 import org.scalatest._
 
 abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with BeforeAndAfterAll {
@@ -92,7 +90,7 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
     } else {
       cluster.fs.copyFromLocalFile(new Path(file.toURI()), hdfsPath)
     }
-    
+
     hdfsPath.toUri().getPath()
   }
 
@@ -125,12 +123,12 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
     cluster = Cluster.get()
     httpClient = new DefaultHttpClient()
 
-    if(authScheme == "kerberos") {
+    if (authScheme == "kerberos") {
       val use_jaas_creds = new Credentials() {
         def getPassword(): String = {
           return null
         }
-        
+
         def getUserPrincipal(): Principal = {
           return null
         }
@@ -140,7 +138,7 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
       httpClient.getCredentialsProvider().setCredentials(
         new AuthScope(null, -1, null),
         use_jaas_creds);
-    } else if(authScheme == "basic"){
+    } else if (authScheme == "basic"){
       httpClient.getAuthSchemes().register(AuthPolicy.BASIC, new BasicSchemeFactory());
       httpClient.getCredentialsProvider().setCredentials(
         AuthScope.ANY,

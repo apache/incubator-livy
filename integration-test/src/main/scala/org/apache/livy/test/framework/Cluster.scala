@@ -27,11 +27,9 @@ import scala.util.Try
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.hadoop.yarn.conf.YarnConfiguration
-
-import org.apache.hadoop.security.UserGroupInformation
-
 
 import org.apache.livy.Logging
 
@@ -63,11 +61,12 @@ trait Cluster {
     }
 
     UserGroupInformation.setConfiguration(conf);
-    UserGroupInformation.loginUserFromKeytab(s"${user}@AZDATA.LOCAL", s"/tests/kerberos_setup/${user}.keytab");
+    UserGroupInformation.loginUserFromKeytab(s"${user}@AZDATA.LOCAL",
+      s"/tests/kerberos_setup/${user}.keytab");
   }
 
   lazy val hadoopConf = {
-    if(authScheme == "kerberos"){
+    if (authScheme == "kerberos"){
       initKubeConf()
     }
 
@@ -81,7 +80,7 @@ trait Cluster {
   }
 
   lazy val yarnConf = {
-    if(authScheme == "kerberos"){
+    if (authScheme == "kerberos"){
       initKubeConf()
     }
 
