@@ -32,6 +32,7 @@ abstract class ThriftResultSet {
   def addRow(row: Array[Any]): Unit
   def setRowOffset(rowOffset: Long): Unit
   def numRows: Int
+  def extractSubset(maxRows: Int): ThriftResultSet
 }
 
 object ThriftResultSet {
@@ -124,4 +125,11 @@ class ColumnOrientedResultSet(
   override def setRowOffset(rowOffset: Long): Unit = this.rowOffset = rowOffset
 
   override def numRows: Int = columns.headOption.map(_.size).getOrElse(0)
+
+  override def extractSubset(maxRows: Int): ThriftResultSet = {
+    val nRows = Math.min(numRows, maxRows)
+    val result = new ColumnOrientedResultSet(columns.map(_.extractSubset(nRows)))
+    rowOffset += nRows
+    result
+  }
 }

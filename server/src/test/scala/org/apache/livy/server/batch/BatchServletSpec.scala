@@ -66,6 +66,8 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
     val id = 0
     val state = SessionState.Running
     val appId = "appid"
+    val owner = "owner"
+    val proxyUser = "proxyUser"
     val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
     val log = IndexedSeq[String]("log1", "log2")
 
@@ -76,7 +78,8 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
     when(session.appId).thenReturn(Some(appId))
     when(session.appInfo).thenReturn(appInfo)
     when(session.logLines()).thenReturn(log)
-    when(session.proxyUser).thenReturn(None)
+    when(session.owner).thenReturn(owner)
+    when(session.proxyUser).thenReturn(Some(proxyUser))
 
     val req = mock[HttpServletRequest]
 
@@ -87,6 +90,8 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
     view.name shouldEqual name
     view.state shouldEqual state.toString
     view.appId shouldEqual Some(appId)
+    view.owner shouldEqual owner
+    view.proxyUser shouldEqual Some(proxyUser)
     view.appInfo shouldEqual appInfo
     view.log shouldEqual log
   }

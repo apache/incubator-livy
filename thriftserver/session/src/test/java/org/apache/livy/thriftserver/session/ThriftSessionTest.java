@@ -132,49 +132,61 @@ public class ThriftSessionTest {
     String s3 = nextSession();
     waitFor(new RegisterSessionJob(s3));
     String getSchemaJobId = "test_get_schema_job";
-    waitFor(new GetSchemasJob("default", s3, getSchemaJobId));
-    List<Object[]> schemas = waitFor(
-        new FetchCatalogResultJob(s3, getSchemaJobId, Integer.MAX_VALUE));
-    assertEquals(1, schemas.size());
-    assertEquals("default", schemas.get(0)[0]);
-    assertTrue(waitFor(new CleanupCatalogResultJob(s3, getSchemaJobId)));
+    DataType[] resultTypes = new DataType[] { DataType.STRING, DataType.STRING };
+    waitFor(new GetSchemasJob("default", s3, getSchemaJobId, resultTypes));
+    rs = waitFor(new FetchResultJob(s3, getSchemaJobId, Integer.MAX_VALUE));
+    cols = rs.getColumns();
+    assertEquals(1, cols[0].size());
+    assertEquals("default", cols[0].get(0));
+    assertTrue(waitFor(new CleanupStatementJob(s3, getSchemaJobId)));
 
     String getTablesJobId = "test_get_tables_job";
     List<String> testTableTypes = new ArrayList<>();
     testTableTypes.add("Table");
-    waitFor(new GetTablesJob("default", "*",
-        testTableTypes, s3, getTablesJobId));
-    List<Object[]> tables = waitFor(
-        new FetchCatalogResultJob(s3, getTablesJobId, Integer.MAX_VALUE));
-    assertEquals(1, tables.size());
-    assertEquals("default", tables.get(0)[1]);
-    assertEquals("test", tables.get(0)[2]);
-    assertTrue(waitFor(new CleanupCatalogResultJob(s3, getTablesJobId)));
+    resultTypes = new DataType[] {
+        DataType.STRING, DataType.STRING, DataType.STRING, DataType.STRING, DataType.STRING };
+    waitFor(new GetTablesJob(
+        "default", "*", testTableTypes, s3, getTablesJobId, resultTypes));
+    rs = waitFor(new FetchResultJob(s3, getTablesJobId, Integer.MAX_VALUE));
+    cols = rs.getColumns();
+    assertEquals(1, cols[0].size());
+    assertEquals("default", cols[1].get(0));
+    assertEquals("test", cols[2].get(0));
+    assertTrue(waitFor(new CleanupStatementJob(s3, getTablesJobId)));
 
     String getColumnsJobId = "test_get_columns_job";
-    waitFor(new GetColumnsJob("default", "test", ".*", s3, getColumnsJobId));
-    List<Object[]> columns = waitFor(
-        new FetchCatalogResultJob(s3, getColumnsJobId, Integer.MAX_VALUE));
-    assertEquals(2, columns.size());
-    assertEquals("default", columns.get(0)[1]);
-    assertEquals("test", columns.get(0)[2]);
-    assertEquals("id", columns.get(0)[3]);
-    assertEquals("integer", columns.get(0)[5]);
-    assertEquals("default", columns.get(1)[1]);
-    assertEquals("test", columns.get(1)[2]);
-    assertEquals("desc", columns.get(1)[3]);
-    assertEquals("string", columns.get(1)[5]);
-    assertTrue(waitFor(new CleanupCatalogResultJob(s3, getColumnsJobId)));
+    resultTypes = new DataType[] {
+        DataType.STRING, DataType.STRING, DataType.STRING, DataType.STRING, DataType.INTEGER,
+        DataType.STRING, DataType.INTEGER, DataType.BYTE, DataType.INTEGER, DataType.INTEGER,
+        DataType.INTEGER, DataType.STRING, DataType.STRING, DataType.INTEGER, DataType.INTEGER,
+        DataType.INTEGER, DataType.INTEGER, DataType.STRING, DataType.STRING, DataType.STRING,
+        DataType.STRING, DataType.SHORT, DataType.STRING };
+    waitFor(new GetColumnsJob("default", "test", ".*", s3, getColumnsJobId, resultTypes));
+    rs = waitFor(new FetchResultJob(s3, getColumnsJobId, Integer.MAX_VALUE));
+    cols = rs.getColumns();
+    assertEquals(2, cols[0].size());
+    assertEquals("default", cols[1].get(0));
+    assertEquals("test", cols[2].get(0));
+    assertEquals("id", cols[3].get(0));
+    assertEquals("integer", cols[5].get(0));
+    assertEquals("default", cols[1].get(1));
+    assertEquals("test", cols[2].get(1));
+    assertEquals("desc", cols[3].get(1));
+    assertEquals("string", cols[5].get(1));
+    assertTrue(waitFor(new CleanupStatementJob(s3, getColumnsJobId)));
 
     String getFunctionsJobId = "test_get_functions_job";
-    waitFor(new GetFunctionsJob("default", "unix_timestamp", s3, getFunctionsJobId));
-    List<Object[]> functions = waitFor(
-        new FetchCatalogResultJob(s3, getFunctionsJobId, Integer.MAX_VALUE));
-    assertEquals(1, functions.size());
-    assertNull(functions.get(0)[1]);
-    assertEquals("unix_timestamp", functions.get(0)[2]);
-    assertEquals("org.apache.spark.sql.catalyst.expressions.UnixTimestamp", functions.get(0)[5]);
-    assertTrue(waitFor(new CleanupCatalogResultJob(s3, getFunctionsJobId)));
+    resultTypes = new DataType[] {
+        DataType.STRING, DataType.STRING, DataType.STRING, DataType.STRING, DataType.INTEGER,
+        DataType.STRING };
+    waitFor(new GetFunctionsJob("default", "unix_timestamp", s3, getFunctionsJobId, resultTypes));
+    rs = waitFor(new FetchResultJob(s3, getFunctionsJobId, Integer.MAX_VALUE));
+    cols = rs.getColumns();
+    assertEquals(1, cols[0].size());
+    assertNull(cols[1].get(0));
+    assertEquals("unix_timestamp", cols[2].get(0));
+    assertEquals("org.apache.spark.sql.catalyst.expressions.UnixTimestamp", cols[5].get(0));
+    assertTrue(waitFor(new CleanupStatementJob(s3, getFunctionsJobId)));
 
     // Tear down the session.
     waitFor(new UnregisterSessionJob(s3));

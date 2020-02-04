@@ -264,7 +264,7 @@ class ThriftHttpServlet(
 
 
   /**
-   * Do the authentication (LDAP/PAM not yet supported)
+   * Do the authentication (PAM not yet supported)
    */
   private def doPasswdAuth(request: HttpServletRequest, authType: String): String = {
     val userName = getUsername(request, authType)

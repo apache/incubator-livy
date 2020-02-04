@@ -32,6 +32,7 @@ requirements = [
     'configparser>=3.5.0',
     'future>=0.15.2',
     'futures>=3.0.5',
+    'mock~=3.0.5',
     'requests>=2.10.0',
     'responses>=0.5.1',
     'requests-kerberos>=0.11.0',
@@ -39,7 +40,7 @@ requirements = [
 
 setup(
     name='livy-python-api',
-    version="0.7.0-incubating-SNAPSHOT",
+    version="0.8.0-incubating-SNAPSHOT",
     packages=["livy", "livy-tests"],
     package_dir={
         "": "src/main/python",

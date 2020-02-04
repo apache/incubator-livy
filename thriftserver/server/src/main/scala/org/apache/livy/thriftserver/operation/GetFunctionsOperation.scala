@@ -26,9 +26,8 @@ import org.apache.livy.thriftserver.LivyThriftSessionManager
 
 class GetFunctionsOperation(
     sessionHandle: SessionHandle,
-    catalogName: String,
-    schemaName: String,
-    functionName: String,
+    schemaPattern: String,
+    functionSQLSearch: String,
     sessionManager: LivyThriftSessionManager)
   extends SparkCatalogOperation(
     sessionHandle, OperationType.GET_FUNCTIONS, sessionManager) with Logging {
@@ -38,11 +37,11 @@ class GetFunctionsOperation(
     setState(OperationState.RUNNING)
     try {
       rscClient.submit(new GetFunctionsJob(
-        convertSchemaPattern(schemaName),
-        convertFunctionName(functionName),
+        schemaPattern,
+        functionSQLSearch,
         sessionId,
-        jobId
-      )).get()
+        jobId,
+        GetFunctionsOperation.SCHEMA.fields.map(_.fieldType.dataType))).get()
 
       setState(OperationState.FINISHED)
     } catch {
@@ -58,25 +57,6 @@ class GetFunctionsOperation(
     assertState(Seq(OperationState.FINISHED))
     GetFunctionsOperation.SCHEMA
   }
-
-  private def convertFunctionName(name: String): String = {
-    if (name == null) {
-      ".*"
-    } else {
-      var escape = false
-      name.flatMap {
-        case c if escape =>
-          if (c != '\\') escape = false
-          c.toString
-        case '\\' =>
-          escape = true
-          ""
-        case '%' => ".*"
-        case '_' => "."
-        case c => Character.toLowerCase(c).toString
-      }
-    }
-  }
 }
 
 object GetFunctionsOperation {
@@ -89,6 +69,5 @@ object GetFunctionsOperation {
     Field("FUNCTION_TYPE", BasicDataType("integer"),
       "Kind of function."),
     Field("SPECIFIC_NAME", BasicDataType("string"),
-      "The name which uniquely identifies this function within its schema")
-  )
+      "The name which uniquely identifies this function within its schema"))
 }
