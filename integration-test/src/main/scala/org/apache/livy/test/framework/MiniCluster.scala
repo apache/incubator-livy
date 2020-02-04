@@ -135,8 +135,7 @@ object MiniLivyMain extends MiniClusterBase {
       LivyConf.YARN_POLL_INTERVAL.key -> "500ms",
       LivyConf.RECOVERY_MODE.key -> "recovery",
       LivyConf.RECOVERY_STATE_STORE.key -> "filesystem",
-      LivyConf.RECOVERY_STATE_STORE_URL.key -> s"file://$configPath/state-store",
-      LivyConf.AUTH_TYPE.key -> "")
+      LivyConf.RECOVERY_STATE_STORE_URL.key -> s"file://$configPath/state-store")
     val thriftEnabled = sys.env.get("LIVY_TEST_THRIFT_ENABLED")
     if (thriftEnabled.nonEmpty && thriftEnabled.forall(_.toBoolean)) {
       baseConf + (LivyConf.THRIFT_SERVER_ENABLED.key -> "true")
@@ -258,10 +257,10 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     val localLivy = start(MiniLivyMain.getClass, confFile, extraJavaArgs = jacocoArgs)
 
     val props = loadProperties(confFile)
+    authType = props.getOrElse("livy.server.auth.type", "")
+    livyUrl = config.getOrElse("livyEndpoint", props("livy.server.server-url"))
     usr = config.getOrElse("user", "")
     pwd = config.getOrElse("password", "")
-    authType = config.getOrElse("authScheme", props("livy.server.auth.type"))
-    livyUrl = config.getOrElse("livyEndpoint", props("livy.server.server-url"))
     livyThriftJdbcUrl = props.get("livy.server.thrift.jdbc-url")
 
     // Wait until Livy server responds.
@@ -286,7 +285,6 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
   def livyEndpoint: String = livyUrl
   def user: String = usr
   def password: String = pwd
-
   def jdbcEndpoint: Option[String] = livyThriftJdbcUrl
 
   private def mkdir(name: String, parent: File = tempDir): File = {
