@@ -23,11 +23,11 @@
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>0.7.0-incubating-SNAPSHOT</version>
+    <version>0.8.0-incubating-SNAPSHOT</version>
   </parent>
 
   <artifactId>livy-integration-test</artifactId>
-  <version>0.7.0-incubating-SNAPSHOT</version>
+  <version>0.8.0-incubating-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <properties>
@@ -100,6 +100,16 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
       <classifier>tests</classifier>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.curator</groupId>
+          <artifactId>curator-client</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -128,6 +138,13 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-yarn-server-tests</artifactId>
       <classifier>tests</classifier>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
+        </exclusion>
+      </exclusions>
+
     </dependency>
 
     <dependency>
@@ -169,6 +186,26 @@
     <dependency>
       <groupId>org.scalatra</groupId>
       <artifactId>scalatra-test_${scala.binary.version}</artifactId>
+    </dependency>
+
+    <!-- hadoop-common in test scope needs curator-client, but we want to use the proper version -->
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-client</artifactId>
+      <version>${curator.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- hadoop-common, hadoop-yarn-server-tests and curator needs zookeeper, but we want to use the proper version -->
+    <dependency>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+      <version>${zookeeper.version}</version>
     </dependency>
 
   </dependencies>

@@ -26,10 +26,9 @@ import org.apache.livy.thriftserver.session.{GetColumnsJob, GetFunctionsJob}
 
 class GetColumnsOperation(
     sessionHandle: SessionHandle,
-    catalogName: String,
-    schemaName: String,
-    tableName: String,
-    columnName: String,
+    schemaPattern: String,
+    tablePattern: String,
+    columnPattern: String,
     sessionManager: LivyThriftSessionManager)
   extends SparkCatalogOperation(
     sessionHandle, OperationType.GET_COLUMNS, sessionManager) with Logging {
@@ -39,12 +38,12 @@ class GetColumnsOperation(
     setState(OperationState.RUNNING)
     try {
       rscClient.submit(new GetColumnsJob(
-        convertSchemaPattern(schemaName),
-        convertIdentifierPattern(tableName, datanucleusFormat = true),
-        Option(columnName).map { convertIdentifierPattern(_, datanucleusFormat = false) }.orNull,
+        schemaPattern,
+        tablePattern,
+        columnPattern,
         sessionId,
-        jobId
-      )).get()
+        jobId,
+        GetColumnsOperation.SCHEMA.fields.map(_.fieldType.dataType))).get()
 
       setState(OperationState.FINISHED)
     } catch {
@@ -97,6 +96,5 @@ object GetColumnsOperation {
       "user-generated Ref type, SQL type from java.sql.Types (null if DATA_TYPE isn't " +
       "DISTINCT or user-generated REF)"),
     Field("IS_AUTO_INCREMENT", BasicDataType("string"), "Indicates whether this column is " +
-      "auto incremented.")
-  )
+      "auto incremented."))
 }

@@ -22,9 +22,11 @@ import java.util.List;
 
 import static scala.collection.JavaConversions.seqAsJavaList;
 
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
+import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.apache.spark.sql.types.StructField;
 
 public class GetColumnsJob extends SparkCatalogJob {
@@ -33,20 +35,21 @@ public class GetColumnsJob extends SparkCatalogJob {
   private final String columnPattern;
 
   public GetColumnsJob(
-    String databasePattern,
-    String tablePattern,
-    String columnPattern,
-    String sessionId,
-    String jobId) {
-      super(sessionId, jobId);
-      this.databasePattern = databasePattern;
-      this.tablePattern = tablePattern;
-      this.columnPattern = columnPattern;
+      String databasePattern,
+      String tablePattern,
+      String columnPattern,
+      String sessionId,
+      String jobId,
+      DataType[] resultTypes) {
+    super(sessionId, jobId, resultTypes);
+    this.databasePattern = convertSchemaPattern(databasePattern);
+    this.tablePattern = convertIdentifierPattern(tablePattern, true);
+    this.columnPattern = convertIdentifierPattern(columnPattern, false);
   }
 
   @Override
-  protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
-    List<Object[]> columnList = new ArrayList<Object[]>();
+  protected List<Row> fetchCatalogObjects(SessionCatalog catalog) {
+    List<Row> columnList = new ArrayList<>();
     List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));
 
     for (String db : databases) {
@@ -57,8 +60,8 @@ public class GetColumnsJob extends SparkCatalogJob {
         List<StructField> fields = seqAsJavaList(table.schema());
         int position = 0;
         for (StructField field : fields) {
-          if (columnPattern == null || field.name().matches(columnPattern)) {
-            columnList.add(new Object[] {
+          if (field.name().matches(columnPattern)) {
+            columnList.add(new GenericRow(new Object[] {
               DEFAULT_HIVE_CATALOG,
               table.database(),
               table.identifier().table(),
@@ -82,7 +85,7 @@ public class GetColumnsJob extends SparkCatalogJob {
               null, // SCOPE_TABLE
               null, // SOURCE_DATA_TYPE
               "NO" // IS_AUTO_INCREMENT
-            });
+            }));
             position += 1;
           }
         }

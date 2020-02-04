@@ -41,6 +41,9 @@ case class BasicDataType(name: String) extends FieldType {
     case "float" => DataType.FLOAT
     case "double" => DataType.DOUBLE
     case "binary" => DataType.BINARY
+    case _ if name.contains("decimal") => DataType.DECIMAL
+    case "timestamp" => DataType.TIMESTAMP
+    case "date" => DataType.DATE
     case _ => DataType.STRING
   }
 }
@@ -100,6 +103,9 @@ object Schema {
       case DataType.FLOAT => TTypeId.FLOAT_TYPE
       case DataType.DOUBLE => TTypeId.DOUBLE_TYPE
       case DataType.BINARY => TTypeId.BINARY_TYPE
+      case DataType.DECIMAL => TTypeId.DECIMAL_TYPE
+      case DataType.TIMESTAMP => TTypeId.TIMESTAMP_TYPE
+      case DataType.DATE => TTypeId.DATE_TYPE
       case _ => TTypeId.STRING_TYPE
     }
     val primitiveEntry = new TPrimitiveTypeEntry(typeId)

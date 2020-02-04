@@ -28,6 +28,8 @@ import org.apache.livy.utils.AppInfo
 case class BatchSessionView(
   id: Long,
   name: Option[String],
+  owner: String,
+  proxyUser: Option[String],
   state: String,
   appId: Option[String],
   appInfo: AppInfo,
@@ -73,8 +75,8 @@ class BatchSessionServlet(
       } else {
         Nil
       }
-    BatchSessionView(session.id, session.name, session.state.toString, session.appId,
-      session.appInfo, logs)
+    BatchSessionView(session.id, session.name, session.owner, session.proxyUser,
+      session.state.toString, session.appId, session.appInfo, logs)
   }
 
 }

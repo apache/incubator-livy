@@ -37,13 +37,16 @@ import org.apache.livy.{LivyConf, Logging, Utils}
 
 object SparkYarnApp extends Logging {
 
-  def init(livyConf: LivyConf): Unit = {
+  def init(livyConf: LivyConf, client: Option[YarnClient] = None): Unit = {
+    mockYarnClient = client
     sessionLeakageCheckInterval = livyConf.getTimeAsMs(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL)
     sessionLeakageCheckTimeout = livyConf.getTimeAsMs(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT)
     leakedAppsGCThread.setDaemon(true)
     leakedAppsGCThread.setName("LeakedAppsGCThread")
     leakedAppsGCThread.start()
   }
+
+  private var mockYarnClient: Option[YarnClient] = None
 
   // YarnClient is thread safe. Create once, share it across threads.
   lazy val yarnClient = {
@@ -59,9 +62,9 @@ object SparkYarnApp extends Logging {
   private def getYarnPollInterval(livyConf: LivyConf): FiniteDuration =
     livyConf.getTimeAsMs(LivyConf.YARN_POLL_INTERVAL) milliseconds
 
-  private val appType = Set("SPARK").asJava
+  private[utils] val appType = Set("SPARK").asJava
 
-  private val leakedAppTags = new java.util.concurrent.ConcurrentHashMap[String, Long]()
+  private[utils] val leakedAppTags = new java.util.concurrent.ConcurrentHashMap[String, Long]()
 
   private var sessionLeakageCheckTimeout: Long = _
 
@@ -69,24 +72,34 @@ object SparkYarnApp extends Logging {
 
   private val leakedAppsGCThread = new Thread() {
     override def run(): Unit = {
+      val client = {
+        mockYarnClient match {
+          case Some(client) => client
+          case None => yarnClient
+        }
+      }
+
       while (true) {
         if (!leakedAppTags.isEmpty) {
           // kill the app if found it and remove it if exceeding a threshold
           val iter = leakedAppTags.entrySet().iterator()
-          var isRemoved = false
           val now = System.currentTimeMillis()
-          val apps = yarnClient.getApplications(appType).asScala
+          val apps = client.getApplications(appType).asScala
+
           while(iter.hasNext) {
+            var isRemoved = false
             val entry = iter.next()
+
             apps.find(_.getApplicationTags.contains(entry.getKey))
               .foreach({ e =>
                 info(s"Kill leaked app ${e.getApplicationId}")
-                yarnClient.killApplication(e.getApplicationId)
+                client.killApplication(e.getApplicationId)
                 iter.remove()
                 isRemoved = true
               })
+
             if (!isRemoved) {
-              if ((entry.getValue - now) > sessionLeakageCheckTimeout) {
+              if ((now - entry.getValue) > sessionLeakageCheckTimeout) {
                 iter.remove()
                 info(s"Remove leaked yarn app tag ${entry.getKey}")
               }
@@ -122,6 +135,7 @@ class SparkYarnApp private[utils] (
   with Logging {
   import SparkYarnApp._
 
+  private var killed = false
   private val appIdPromise: Promise[ApplicationId] = Promise()
   private[utils] var state: SparkApp.State = SparkApp.State.STARTING
   private var yarnDiagnostics: IndexedSeq[String] = IndexedSeq.empty[String]
@@ -132,6 +146,7 @@ class SparkYarnApp private[utils] (
     ("\nYARN Diagnostics: " +: yarnDiagnostics)
 
   override def kill(): Unit = synchronized {
+    killed = true
     if (isRunning) {
       try {
         val timeout = SparkYarnApp.getYarnTagToAppIdTimeout(livyConf)
@@ -147,6 +162,10 @@ class SparkYarnApp private[utils] (
         process.foreach(_.destroy())
       }
     }
+  }
+
+  private def isProcessErrExit(): Boolean = {
+    process.isDefined && !process.get.isAlive && process.get.exitValue() != 0
   }
 
   private def changeState(newState: SparkApp.State.Value): Unit = {
@@ -169,6 +188,10 @@ class SparkYarnApp private[utils] (
       appTag: String,
       pollInterval: Duration,
       deadline: Deadline): ApplicationId = {
+    if (isProcessErrExit()) {
+      throw new IllegalStateException("spark-submit start failed")
+    }
+
     val appTagLowerCase = appTag.toLowerCase()
 
     // FIXME Should not loop thru all YARN applications but YarnClient doesn't offer an API.
@@ -199,7 +222,8 @@ class SparkYarnApp private[utils] (
       .getOrElse(IndexedSeq.empty)
   }
 
-  private def isRunning: Boolean = {
+  // Exposed for unit test.
+  private[utils] def isRunning: Boolean = {
     state != SparkApp.State.FAILED && state != SparkApp.State.FINISHED &&
       state != SparkApp.State.KILLED
   }
@@ -215,7 +239,8 @@ class SparkYarnApp private[utils] (
            (YarnApplicationState.SUBMITTED, FinalApplicationStatus.UNDEFINED) |
            (YarnApplicationState.ACCEPTED, FinalApplicationStatus.UNDEFINED) =>
         SparkApp.State.STARTING
-      case (YarnApplicationState.RUNNING, FinalApplicationStatus.UNDEFINED) =>
+      case (YarnApplicationState.RUNNING, FinalApplicationStatus.UNDEFINED) |
+           (YarnApplicationState.RUNNING, FinalApplicationStatus.SUCCEEDED) =>
         SparkApp.State.RUNNING
       case (YarnApplicationState.FINISHED, FinalApplicationStatus.SUCCEEDED) =>
         SparkApp.State.FINISHED
@@ -264,6 +289,14 @@ class SparkYarnApp private[utils] (
             appReport.getApplicationId,
             appReport.getYarnApplicationState,
             appReport.getFinalApplicationStatus))
+
+          if (isProcessErrExit()) {
+            if (killed) {
+              changeState(SparkApp.State.KILLED)
+            } else {
+              changeState(SparkApp.State.FAILED)
+            }
+          }
 
           val latestAppInfo = {
             val attempt =

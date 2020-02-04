@@ -23,11 +23,11 @@
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>0.7.0-incubating-SNAPSHOT</version>
+    <version>0.8.0-incubating-SNAPSHOT</version>
   </parent>
 
   <artifactId>livy-server</artifactId>
-  <version>0.7.0-incubating-SNAPSHOT</version>
+  <version>0.8.0-incubating-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <dependencies>
@@ -98,6 +98,14 @@
           <groupId>jline</groupId>
           <artifactId>jline</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.apache.curator</groupId>
+          <artifactId>curator-framework</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -115,6 +123,32 @@
         </exclusion>
       </exclusions>
       <scope>${hadoop.scope}</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-recipes</artifactId>
+      <version>${curator.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- hadoop-auth needs curator-framework, but we want to use the proper version -->
+    <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-framework</artifactId>
+      <version>${curator.version}</version>
+    </dependency>
+
+    <!-- hadoop-auth and curator needs zookeeper, but we want to use the proper version -->
+    <dependency>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+      <version>${zookeeper.version}</version>
     </dependency>
 
     <dependency>
@@ -220,6 +254,49 @@
     <dependency>
       <groupId>org.scalatra</groupId>
       <artifactId>scalatra-test_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.directory.server</groupId>
+      <artifactId>apacheds-core</artifactId>
+      <version>${apacheds.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.server</groupId>
+      <artifactId>apacheds-protocol-ldap</artifactId>
+      <version>${apacheds.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.server</groupId>
+      <artifactId>apacheds-ldif-partition</artifactId>
+      <version>${apacheds.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.api</groupId>
+      <artifactId>api-ldap-codec-core</artifactId>
+      <version>${ldap-api.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.api</groupId>
+      <artifactId>api-ldap-model</artifactId>
+      <version>${ldap-api.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.server</groupId>
+      <artifactId>apacheds-server-integ</artifactId>
+      <version>${apacheds.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.server</groupId>
+      <artifactId>apacheds-core-integ</artifactId>
+      <version>${apacheds.version}</version>
       <scope>test</scope>
     </dependency>
 

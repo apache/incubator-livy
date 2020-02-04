@@ -87,6 +87,13 @@ object LivyConf {
   val HADOOP_CREDENTIAL_PROVIDER_PATH = Entry("livy.hadoop.security.credential.provider.path", null)
 
   val AUTH_TYPE = Entry("livy.server.auth.type", null)
+  // Ldap configurations
+  val AUTH_LDAP_URL = Entry("livy.server.auth.ldap.url", null)
+  val AUTH_LDAP_BASE_DN = Entry("livy.server.auth.ldap.base-dn", null)
+  val AUTH_LDAP_USERNAME_DOMAIN = Entry("livy.server.auth.ldap.username-domain", null)
+  val AUTH_LDAP_ENABLE_START_TLS = Entry("livy.server.auth.ldap.enable-start-tls", "false")
+  val AUTH_LDAP_SECURITY_AUTH = Entry("livy.server.auth.ldap.security-authentication", "simple")
+  // kerberos configurations
   val AUTH_KERBEROS_PRINCIPAL = Entry("livy.server.auth.kerberos.principal", null)
   val AUTH_KERBEROS_KEYTAB = Entry("livy.server.auth.kerberos.keytab", null)
   val AUTH_KERBEROS_NAME_RULES = Entry("livy.server.auth.kerberos.name-rules", "DEFAULT")
@@ -167,7 +174,8 @@ object LivyConf {
     Entry("livy.server.thrift.delegation.token.max-lifetime", "7d")
   val THRIFT_DELEGATION_TOKEN_RENEW_INTERVAL =
     Entry("livy.server.thrift.delegation.token.renew-interval", "1d")
-
+  val THRIFT_LDAP_AUTHENTICATION_USERFILTER =
+    Entry("livy.server.thrift.ldap.authentication.userfilter", null)
   /**
    * Recovery mode of Livy. Possible values:
    * off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
@@ -177,6 +185,10 @@ object LivyConf {
    * configure the state store.
    */
   val RECOVERY_MODE = Entry("livy.server.recovery.mode", "off")
+
+  // Zookeeper address used for HA and state store. e.g. host1:port1, host2:port2
+  val ZOOKEEPER_URL = Entry("livy.server.zookeeper.url", null)
+
   /**
    * Where Livy should store state to for recovery. Possible values:
    * <empty>: Default. State store disabled.
@@ -188,8 +200,32 @@ object LivyConf {
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
    * For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+   * If livy.server.recovery.state-store is zookeeper, this config is for back-compatibility,
+   * so if both this config and livy.server.zookeeper.url exist,
+   * livy uses livy.server.zookeeper.url first.
    */
-  val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", "")
+  val RECOVERY_STATE_STORE_URL = Entry("livy.server.recovery.state-store.url", null)
+
+  /**
+    * The policy of curator connecting to zookeeper.
+    * For example, m, n means retry m times and the interval of retry is n milliseconds.
+    * Please use the new config: livy.server.zk.retry-policy.
+    * Keep this config for back-compatibility.
+    * If both this config and livy.server.zk.retry-policy exist,
+    * livy uses livy.server.zk.retry-policy first.
+    */
+  val RECOVERY_ZK_STATE_STORE_RETRY_POLICY =
+    Entry("livy.server.recovery.zk-state-store.retry-policy", "5,100")
+
+  /**
+    * The policy of curator connecting to zookeeper.
+    * For example, m, n means retry m times and the interval of retry is n milliseconds
+   */
+  val ZK_RETRY_POLICY = Entry("livy.server.zk.retry-policy", null)
+
+  // The dir in zookeeper to store the data about session.
+  val RECOVERY_ZK_STATE_STORE_KEY_PREFIX =
+    Entry("livy.server.recovery.zk-state-store.key-prefix", "livy")
 
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)

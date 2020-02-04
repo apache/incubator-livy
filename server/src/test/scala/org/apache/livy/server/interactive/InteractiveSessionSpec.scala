@@ -247,6 +247,21 @@ class InteractiveSessionSpec extends FunSpec
       }
     }
 
+    withSession("should refresh last activity time when statement finished") { session =>
+      val code =
+        """
+          |from time import sleep
+          |sleep(3)
+        """.stripMargin
+      session.executeStatement(ExecuteRequest(code, None))
+      val executionBeginTime = session.lastActivity
+
+      eventually(timeout(10 seconds), interval(100 millis)) {
+        session.state should be(SessionState.Idle)
+        session.lastActivity should be > executionBeginTime
+      }
+    }
+
     withSession("should error out the session if the interpreter dies") { session =>
       session.executeStatement(ExecuteRequest("import os; os._exit(666)", None))
       eventually(timeout(30 seconds), interval(100 millis)) {

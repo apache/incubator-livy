@@ -36,9 +36,10 @@ import org.scalatra.metrics.MetricsSupportExtensions._
 import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
 
 import org.apache.livy._
+import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.interactive.InteractiveSessionServlet
-import org.apache.livy.server.recovery.{SessionStore, StateStore}
+import org.apache.livy.server.recovery.{SessionStore, StateStore, ZooKeeperManager}
 import org.apache.livy.server.ui.UIServlet
 import org.apache.livy.sessions.{BatchSessionManager, InteractiveSessionManager}
 import org.apache.livy.sessions.SessionManager.SESSION_RECOVERY_MODE_OFF
@@ -58,6 +59,8 @@ class LivyServer extends Logging {
   private var executor: ScheduledExecutorService = _
   private var accessManager: AccessManager = _
   private var _thriftServerFactory: Option[ThriftServerFactory] = None
+
+  private var zkManager: Option[ZooKeeperManager] = None
 
   private var ugi: UserGroupInformation = _
 
@@ -145,7 +148,12 @@ class LivyServer extends Logging {
       Future { SparkYarnApp.yarnClient }
     }
 
-    StateStore.init(livyConf)
+    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
+      zkManager = Some(new ZooKeeperManager(livyConf))
+      zkManager.foreach(_.start())
+    }
+
+    StateStore.init(livyConf, zkManager)
     val sessionStore = new SessionStore(livyConf)
     val batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
     val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)
@@ -260,6 +268,26 @@ class LivyServer extends Logging {
         server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
         info(s"SPNEGO auth enabled (principal = $principal)")
 
+      case authType @ LdapAuthenticationHandlerImpl.TYPE =>
+        val holder = new FilterHolder(new AuthenticationFilter())
+        holder.setInitParameter(AuthenticationFilter.AUTH_TYPE,
+          LdapAuthenticationHandlerImpl.getClass.getCanonicalName.dropRight(1))
+        Option(livyConf.get(LivyConf.AUTH_LDAP_URL)).foreach { url =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.PROVIDER_URL, url)
+        }
+        Option(livyConf.get(LivyConf.AUTH_LDAP_USERNAME_DOMAIN)).foreach { domain =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.LDAP_BIND_DOMAIN, domain)
+        }
+        Option(livyConf.get(LivyConf.AUTH_LDAP_BASE_DN)).foreach { baseDN =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.BASE_DN, baseDN)
+        }
+        holder.setInitParameter(LdapAuthenticationHandlerImpl.SECURITY_AUTHENTICATION,
+          livyConf.get(LivyConf.AUTH_LDAP_SECURITY_AUTH))
+        holder.setInitParameter(LdapAuthenticationHandlerImpl.ENABLE_START_TLS,
+          livyConf.get(LivyConf.AUTH_LDAP_ENABLE_START_TLS))
+        server.context.addFilter(holder, "/*", EnumSet.allOf(classOf[DispatcherType]))
+        info("LDAP auth enabled.")
+
       case null =>
         // Nothing to do.
 
@@ -302,6 +330,7 @@ class LivyServer extends Logging {
     Runtime.getRuntime().addShutdownHook(new Thread("Livy Server Shutdown") {
       override def run(): Unit = {
         info("Shutting down Livy server.")
+        zkManager.foreach(_.stop())
         server.stop()
         _thriftServerFactory.foreach(_.stop())
       }

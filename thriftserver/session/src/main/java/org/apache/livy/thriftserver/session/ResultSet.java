@@ -37,16 +37,13 @@ import org.apache.spark.sql.types.StructField;
  */
 public class ResultSet {
 
-  private final String schema;
   private final ColumnBuffer[] columns;
 
   public ResultSet() {
-    this.schema = null;
     this.columns = null;
   }
 
-  public ResultSet(DataType[] types, String schema) {
-    this.schema = schema;
+  public ResultSet(DataType[] types) {
     this.columns = new ColumnBuffer[types.length];
     for (int i = 0; i < columns.length; i++) {
       columns[i] = new ColumnBuffer(types[i]);
@@ -67,10 +64,6 @@ public class ResultSet {
       }
       columns[i].add(value);
     }
-  }
-
-  public String getSchema() {
-    return schema;
   }
 
   public ColumnBuffer[] getColumns() {
