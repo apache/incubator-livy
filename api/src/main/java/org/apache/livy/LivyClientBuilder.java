@@ -23,9 +23,11 @@ import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.concurrent.CopyOnWriteArrayList;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -38,18 +40,15 @@ public final class LivyClientBuilder {
   private static final ServiceLoader<LivyClientFactory> CLIENT_FACTORY_LOADER =
     ServiceLoader.load(LivyClientFactory.class, classLoader());
 
-  private static LivyClientFactory getLivyClientFactory() {
-    LivyClientFactory factory = null;
+  private static List<LivyClientFactory> getLivyClientFactories() {
+    List<LivyClientFactory> factories = new CopyOnWriteArrayList<>();
     for (LivyClientFactory f : CLIENT_FACTORY_LOADER) {
-      factory = f;
-      if (factory != null) {
-        break;
-      }
+      factories.add(f);
     }
-    return factory;
+    return factories;
   }
 
-  private static final LivyClientFactory CLIENT_FACTORY = getLivyClientFactory();
+  private static final List<LivyClientFactory> CLIENT_FACTORIES = getLivyClientFactories();
 
   private final Properties config;
 
@@ -134,16 +133,22 @@ public final class LivyClientBuilder {
     }
 
     LivyClient client = null;
-    if (CLIENT_FACTORY == null) {
+    if (CLIENT_FACTORIES.isEmpty()) {
       throw new IllegalStateException("No LivyClientFactory implementation was found.");
     }
-    try {
-      client = CLIENT_FACTORY.createClient(uri, config);
-    } catch (Exception e) {
-      if (!(e instanceof RuntimeException)) {
-        e = new RuntimeException(e);
+
+    for (LivyClientFactory factory : CLIENT_FACTORIES) {
+      try {
+        client = factory.createClient(uri, config);
+      } catch (Exception e) {
+        if (!(e instanceof RuntimeException)) {
+          e = new RuntimeException(e);
+        }
+        throw (RuntimeException) e;
       }
-      throw (RuntimeException) e;
+      if (client != null) {
+        break;
+      }
     }
 
     if (client == null) {
