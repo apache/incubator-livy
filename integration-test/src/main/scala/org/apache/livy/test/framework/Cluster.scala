@@ -85,8 +85,11 @@ trait Cluster {
     }
 
     val conf = new Configuration(false)
-    conf.addResource(new Path(s"${configDir().getCanonicalPath}/yarn-site.xml"))
-    conf.addResource(new Path(s"${configDir().getCanonicalPath}/core-site.xml"))
+    configDir().listFiles().foreach { f =>
+      if (f.getName().endsWith(".xml")) {
+        conf.addResource(new Path(f.toURI()))
+      }
+    }
     conf
   }
 

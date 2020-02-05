@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletResponse
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.ning.http.client.AsyncHttpClient
+import org.asynchttpclient.DefaultAsyncHttpClient
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -264,7 +264,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     livyThriftJdbcUrl = props.get("livy.server.thrift.jdbc-url")
 
     // Wait until Livy server responds.
-    val httpClient = new AsyncHttpClient()
+    val httpClient = new DefaultAsyncHttpClient()
     eventually(timeout(30 seconds), interval(1 second)) {
       val res = httpClient.prepareGet(livyUrl + "/metrics").execute().get()
       assert(res.getStatusCode() == HttpServletResponse.SC_OK)
