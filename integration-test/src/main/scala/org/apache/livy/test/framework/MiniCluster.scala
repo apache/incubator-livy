@@ -24,7 +24,6 @@ import javax.servlet.http.HttpServletResponse
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import org.asynchttpclient.DefaultAsyncHttpClient
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -32,6 +31,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.server.MiniYARNCluster
 import org.apache.spark.launcher.SparkLauncher
+import org.asynchttpclient.DefaultAsyncHttpClient
 import org.scalatest.concurrent.Eventually._
 
 import org.apache.livy.{LivyConf, Logging}
