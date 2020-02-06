@@ -45,11 +45,13 @@ trait Cluster {
   def stopLivy(): Unit
   def livyEndpoint: String
   def jdbcEndpoint: Option[String]
+  def hdfsScratchDir(): Path
+    
   def authScheme: String
   def user: String
   def password: String
-  def hdfsScratchDir(): Path
-
+  def sslCertPath: String
+  
   def doAsClusterUser[T](task: => T): T
 
   def initKubeConf(): Unit = {
@@ -106,6 +108,8 @@ trait Cluster {
 }
 
 object Cluster extends Logging {
+  private val CLUSTER_TYPE = "cluster.type"
+  
   private lazy val config = {
     sys.props.get("cluster.spec")
       .filter { path => path.nonEmpty && path != "default" }
@@ -127,7 +131,11 @@ object Cluster extends Logging {
   private lazy val cluster = {
     var _cluster: Cluster = null
     try {
-      _cluster = new MiniCluster(config)
+      _cluster = config.get(CLUSTER_TYPE) match {
+        case Some("mini") => new MiniCluster(config)
+        case Some("external") => new ExternalCluster(config)
+        case t => new MiniCluster(config)
+      }
       Runtime.getRuntime.addShutdownHook(new Thread {
         override def run(): Unit = {
           info("Shutting down cluster pool.")

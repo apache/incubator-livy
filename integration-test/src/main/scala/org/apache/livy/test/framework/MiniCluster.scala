@@ -185,18 +185,22 @@ private case class ProcessInfo(process: Process, logFile: File)
  * TODO: add support for MiniKdc.
  */
 class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterUtils with Logging {
-  private val tempDir = new File(s"${sys.props("java.io.tmpdir")}/livy-int-test")
-  private var sparkConfDir: File = _
+  private var _livyEndpoint: String = _
+  private var _livyThriftJdbcUrl: Option[String] = None
+  private var _hdfsScrathDir: Path = _
+
+  private val _tempDir = new File(s"${sys.props("java.io.tmpdir")}/livy-int-test")
+  private var _sparkConfigDir: File = _
   private var _configDir: File = _
+
   private var hdfs: Option[ProcessInfo] = None
   private var yarn: Option[ProcessInfo] = None
   private var livy: Option[ProcessInfo] = None
-  private var authType: String = _
-  private var livyUrl: String = _
-  private var usr: String = _
-  private var pwd: String = _
-  private var livyThriftJdbcUrl: Option[String] = None
-  private var _hdfsScrathDir: Path = _
+
+  private var _authScheme: String = _
+  private var _user: String = _
+  private var _password: String = _
+  private var _sslCertPath: String = _
 
   override def configDir(): File = _configDir
 
@@ -214,11 +218,11 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
   }
 
   override def deploy(): Unit = {
-    if (tempDir.exists()) {
-      FileUtils.deleteQuietly(tempDir)
+    if (_tempDir.exists()) {
+      FileUtils.deleteQuietly(_tempDir)
     }
-    assert(tempDir.mkdir(), "Cannot create temp test dir.")
-    sparkConfDir = mkdir("spark-conf")
+    assert(_tempDir.mkdir(), "Cannot create temp test dir.")
+    _sparkConfigDir = mkdir("spark-conf")
 
     val sparkConf = Map(
       "spark.executor.instances" -> "1",
@@ -229,7 +233,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
       SparkLauncher.DRIVER_EXTRA_JAVA_OPTIONS -> "-Dtest.appender=console",
       SparkLauncher.EXECUTOR_EXTRA_JAVA_OPTIONS -> "-Dtest.appender=console"
     )
-    saveProperties(sparkConf, new File(sparkConfDir, "spark-defaults.conf"))
+    saveProperties(sparkConf, new File(_sparkConfigDir, "spark-defaults.conf"))
 
     _configDir = mkdir("hadoop-conf")
     saveProperties(config, new File(configDir, "cluster.conf"))
@@ -257,16 +261,13 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     val localLivy = start(MiniLivyMain.getClass, confFile, extraJavaArgs = jacocoArgs)
 
     val props = loadProperties(confFile)
-    authType = props.getOrElse("livy.server.auth.type", "")
-    livyUrl = config.getOrElse("livyEndpoint", props("livy.server.server-url"))
-    usr = config.getOrElse("user", "")
-    pwd = config.getOrElse("password", "")
-    livyThriftJdbcUrl = props.get("livy.server.thrift.jdbc-url")
+    _livyEndpoint = config.getOrElse("livyEndpoint", props("livy.server.server-url"))
+    _livyThriftJdbcUrl = props.get("livy.server.thrift.jdbc-url")
 
     // Wait until Livy server responds.
     val httpClient = new DefaultAsyncHttpClient()
     eventually(timeout(30 seconds), interval(1 second)) {
-      val res = httpClient.prepareGet(livyUrl + "/metrics").execute().get()
+      val res = httpClient.prepareGet(_livyEndpoint + "/metrics").execute().get()
       assert(res.getStatusCode() == HttpServletResponse.SC_OK)
     }
 
@@ -276,18 +277,20 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
   def stopLivy(): Unit = {
     assert(livy.isDefined)
     livy.foreach(stop)
-    livyUrl = null
-    livyThriftJdbcUrl = None
+    _livyEndpoint = null
+    _livyThriftJdbcUrl = None
     livy = None
   }
 
-  def authScheme: String = authType
-  def livyEndpoint: String = livyUrl
-  def user: String = usr
-  def password: String = pwd
-  def jdbcEndpoint: Option[String] = livyThriftJdbcUrl
+  def livyEndpoint: String = _livyEndpoint
+  def jdbcEndpoint: Option[String] = _livyThriftJdbcUrl
 
-  private def mkdir(name: String, parent: File = tempDir): File = {
+  def authScheme: String = _authScheme
+  def user: String = _user
+  def password: String = _password
+  def sslCertPath: String = _sslCertPath
+
+  private def mkdir(name: String, parent: File = _tempDir): File = {
     val dir = new File(parent, name)
     if (!dir.exists()) {
       assert(dir.mkdir(), s"Failed to create directory $name.")
@@ -325,7 +328,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
 
     pb.environment().put("LIVY_CONF_DIR", configDir.getAbsolutePath())
     pb.environment().put("HADOOP_CONF_DIR", configDir.getAbsolutePath())
-    pb.environment().put("SPARK_CONF_DIR", sparkConfDir.getAbsolutePath())
+    pb.environment().put("SPARK_CONF_DIR", _sparkConfigDir.getAbsolutePath())
     pb.environment().put("SPARK_LOCAL_IP", "127.0.0.1")
 
     val child = pb.start()
