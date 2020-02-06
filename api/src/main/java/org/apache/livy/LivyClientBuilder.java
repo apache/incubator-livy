@@ -23,11 +23,11 @@ import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
-import java.util.concurrent.CopyOnWriteArrayList;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -41,7 +41,7 @@ public final class LivyClientBuilder {
     ServiceLoader.load(LivyClientFactory.class, classLoader());
 
   private static List<LivyClientFactory> getLivyClientFactories() {
-    List<LivyClientFactory> factories = new CopyOnWriteArrayList<>();
+    List<LivyClientFactory> factories = new ArrayList<>();
     for (LivyClientFactory f : CLIENT_FACTORY_LOADER) {
       factories.add(f);
     }
