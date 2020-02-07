@@ -19,11 +19,11 @@ package org.apache.livy.test.framework
 
 import java.io._
 
-import org.apache.hadoop.fs.Path
 import org.apache.commons.io.FileUtils
+import org.apache.hadoop.fs.Path
 
-import org.apache.livy.client.common.TestUtils
 import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.client.common.TestUtils
 import org.apache.livy.server.LivyServer
 
 class ExternalCluster(config: Map[String, String]) extends Cluster with Logging {

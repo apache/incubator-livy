@@ -54,25 +54,25 @@ trait Cluster {
 
   def doAsClusterUser[T](task: => T): T
 
-  def initKubeConf(): Unit = {
+  def initKubeConf(): Configuration = {
     val conf = new Configuration(false)
     configDir().listFiles().foreach { f =>
       if (f.getName().endsWith(".xml")) {
         conf.addResource(new Path(f.toURI()))
       }
     }
-
     UserGroupInformation.setConfiguration(conf);
     UserGroupInformation.loginUserFromKeytab(s"${user}@AZDATA.LOCAL",
       s"/tests/kerberos_setup/${user}.keytab");
+    conf
   }
 
   lazy val hadoopConf = {
-    if (authScheme == "kerberos"){
-      initKubeConf()
-    }
+    var conf = new Configuration(false)
 
-    val conf = new Configuration(false)
+    if (authScheme == "kerberos"){
+      conf = initKubeConf()
+    }    
     configDir().listFiles().foreach { f =>
       if (f.getName().endsWith(".xml")) {
         conf.addResource(new Path(f.toURI()))
@@ -82,16 +82,12 @@ trait Cluster {
   }
 
   lazy val yarnConf = {
-    if (authScheme == "kerberos"){
-      initKubeConf()
-    }
+    var conf = new Configuration(false)
 
-    val conf = new Configuration(false)
-    configDir().listFiles().foreach { f =>
-      if (f.getName().endsWith(".xml")) {
-        conf.addResource(new Path(f.toURI()))
-      }
+    if (authScheme == "kerberos"){
+      conf = initKubeConf()
     }
+    conf.addResource(new Path(s"${configDir().getCanonicalPath}/yarn-site.xml"))
     conf
   }
 
