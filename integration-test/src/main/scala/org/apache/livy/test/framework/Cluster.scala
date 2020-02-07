@@ -46,12 +46,12 @@ trait Cluster {
   def livyEndpoint: String
   def jdbcEndpoint: Option[String]
   def hdfsScratchDir(): Path
-    
+
   def authScheme: String
   def user: String
   def password: String
   def sslCertPath: String
-  
+
   def doAsClusterUser[T](task: => T): T
 
   def initKubeConf(): Unit = {
@@ -109,7 +109,7 @@ trait Cluster {
 
 object Cluster extends Logging {
   private val CLUSTER_TYPE = "cluster.type"
-  
+
   private lazy val config = {
     sys.props.get("cluster.spec")
       .filter { path => path.nonEmpty && path != "default" }
