@@ -72,7 +72,7 @@ trait Cluster {
 
     if (authScheme == "kerberos"){
       conf = initKubeConf()
-    }    
+    }
     configDir().listFiles().foreach { f =>
       if (f.getName().endsWith(".xml")) {
         conf.addResource(new Path(f.toURI()))
