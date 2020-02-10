@@ -61,9 +61,9 @@ trait Cluster {
         conf.addResource(new Path(f.toURI()))
       }
     }
-    UserGroupInformation.setConfiguration(conf);
-    UserGroupInformation.loginUserFromKeytab(s"${user}@AZDATA.LOCAL",
-      s"/tests/kerberos_setup/${user}.keytab");
+    UserGroupInformation.setConfiguration(conf)
+    val keytabPath = ""
+    UserGroupInformation.loginUserFromKeytab(keytabPath)
     conf
   }
 

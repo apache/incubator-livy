@@ -353,5 +353,4 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     svc.process.destroy()
     svc.process.waitFor()
   }
-
 }
