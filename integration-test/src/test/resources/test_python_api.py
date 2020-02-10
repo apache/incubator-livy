@@ -35,13 +35,12 @@ livy_end_point = os.environ.get("LIVY_END_POINT")
 user = os.environ.get("USER")
 password = os.environ.get("PASSWORD")
 
-if user == 'None':
-    requestAuth = None
+if auth_scheme == 'kerberos':
+    requestAuth = HTTPKerberosAuth(mutual_authentication=OPTIONAL, sanitize_mutual_error_response=False, force_preemptive = True)
+elif auth_scheme == 'basic':
+    requestAuth = (user, password)
 else:
-    if auth_scheme == 'kerberos':
-       requestAuth = HTTPKerberosAuth(mutual_authentication=OPTIONAL, sanitize_mutual_error_response=False, force_preemptive = True)
-    else:
-        requestAuth = (user, password)
+    requestAuth = None
 
 add_file_url = os.environ.get("ADD_FILE_URL")
 add_pyfile_url = os.environ.get("ADD_PYFILE_URL")

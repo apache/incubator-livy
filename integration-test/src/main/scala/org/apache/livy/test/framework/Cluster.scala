@@ -47,6 +47,7 @@ trait Cluster {
   def jdbcEndpoint: Option[String]
   def hdfsScratchDir(): Path
 
+  // The potential values for authScheme are kerberos for kerberos, basic, or nothing for no authentication
   def authScheme: String
   def user: String
   def password: String
@@ -54,7 +55,7 @@ trait Cluster {
 
   def doAsClusterUser[T](task: => T): T
 
-  def initKubeConf(): Configuration = {
+  def initKerberosConf(): Configuration = {
     val conf = new Configuration(false)
     configDir().listFiles().foreach { f =>
       if (f.getName().endsWith(".xml")) {
@@ -74,7 +75,7 @@ trait Cluster {
     var conf = new Configuration(false)
 
     if (authScheme == "kerberos"){
-      conf = initKubeConf()
+      conf = initKerberosConf()
     }
     configDir().listFiles().foreach { f =>
       if (f.getName().endsWith(".xml")) {
@@ -88,7 +89,7 @@ trait Cluster {
     var conf = new Configuration(false)
 
     if (authScheme == "kerberos"){
-      conf = initKubeConf()
+      conf = initKerberosConf()
     }
     conf.addResource(new Path(s"${configDir().getCanonicalPath}/yarn-site.xml"))
     conf

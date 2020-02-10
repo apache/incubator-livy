@@ -50,7 +50,7 @@ class ExternalCluster(config: Map[String, String]) extends Cluster with Logging 
   // Working directory that store core-site.xml, yarn-site.xml
   override def configDir(): File = _configDir
 
-  // Knox rest url endpoint details
+  // Security details
   override def authScheme: String = _authScheme
   override def user: String = _user
   override def password: String = _password
@@ -73,10 +73,8 @@ class ExternalCluster(config: Map[String, String]) extends Cluster with Logging 
   }
 
   def runLivy(): Unit = {
-    // Do nothing. Livy is already started in aris cluster.
   }
 
   def stopLivy(): Unit = {
-    // Do nothing. We will not stop livy in aris cluster.
   }
 }
