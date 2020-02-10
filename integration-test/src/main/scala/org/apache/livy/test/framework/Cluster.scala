@@ -62,8 +62,10 @@ trait Cluster {
       }
     }
     UserGroupInformation.setConfiguration(conf)
+    //Fill provide your own principal and keytab path here
+    val principal = ""
     val keytabPath = ""
-    UserGroupInformation.loginUserFromKeytab(keytabPath)
+    UserGroupInformation.loginUserFromKeytab(principal, keytabPath)
     conf
   }
 
