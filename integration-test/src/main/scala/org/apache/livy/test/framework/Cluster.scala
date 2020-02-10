@@ -47,7 +47,8 @@ trait Cluster {
   def jdbcEndpoint: Option[String]
   def hdfsScratchDir(): Path
 
-  // The potential values for authScheme are kerberos for kerberos, basic, or nothing for no authentication
+  // The potential values for authScheme are kerberos for kerberos auth,
+  // basic for basic auth, or nothing for no authentication
   def authScheme: String
   def user: String
   def password: String
