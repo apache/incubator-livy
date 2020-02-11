@@ -417,10 +417,7 @@ class LivyServer extends Logging {
   private[livy] def testRecovery(livyConf: LivyConf): Unit = {
     if (!livyConf.isRunningOnYarn()) {
       // If recovery is turned on but we are not running on YARN, quit.
-      val haMode = Option(livyConf.get(LivyConf.HA_MODE))
-        .orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE)))
-        .map(_.trim).orNull
-
+      val haMode = LivyServer.getHAMode(livyConf)
       require(haMode == LivyConf.HA_MODE_OFF,
         "Session recovery requires YARN.")
     }
@@ -439,4 +436,9 @@ object LivyServer {
     }
   }
 
+  def getHAMode(livyConf: LivyConf): String = {
+    Option(livyConf.get(LivyConf.HA_MODE))
+      .orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE)))
+      .map(_.trim).orNull
+  }
 }

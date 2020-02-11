@@ -285,7 +285,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       verify(session, never).stop()
     }
 
-    it("should crate instance of LocalSessionIdGenerator if livy.server.ha.mode is off") {
+    it("should create instance of LocalSessionIdGenerator if livy.server.ha.mode is off") {
       val conf = new LivyConf()
       conf.set(LivyConf.HA_MODE, LivyConf.HA_MODE_OFF)
 
@@ -297,7 +297,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       assert(sm.getSessionIdGenerator.isInstanceOf[LocalSessionIdGenerator])
     }
 
-    it("should crate instance of DistributedSessionIdGenerator " +
+    it("should create instance of DistributedSessionIdGenerator " +
       "if livy.server.ha.mode is recovery") {
       val conf = new LivyConf()
       conf.set(LivyConf.HA_MODE, LivyConf.HA_MODE_RECOVERY)
@@ -310,7 +310,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       assert(sm.getSessionIdGenerator.isInstanceOf[LocalSessionIdGenerator])
     }
 
-    it("should crate instance of DistributedSessionIdGenerator " +
+    it("should create instance of DistributedSessionIdGenerator " +
       "if livy.server.ha.mode is multi-active") {
       val conf = new LivyConf()
       conf.set(LivyConf.HA_MODE, LivyConf.HA_MODE_MULTI_ACTIVE)

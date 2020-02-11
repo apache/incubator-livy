@@ -75,10 +75,13 @@ class DistributedSessionIdGenerator(
 
   override def getNextSessionId(): Int = {
     distributedLock.acquire()
-    val result = getAndIncreaseId()
-    persist(result + 1)
-    distributedLock.release()
-    result
+    try {
+      val result = getAndIncreaseId()
+      persist(result + 1)
+      result
+    } finally {
+      distributedLock.release()
+    }
   }
 
   override def getAndIncreaseId(): Int = {

@@ -108,10 +108,7 @@ object StateStore extends Logging {
   }
 
   private[recovery] def pickStateStore(livyConf: LivyConf): Class[_] = {
-    val haMode = Option(livyConf.get(LivyConf.HA_MODE)).
-      orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE))).
-      map(_.trim).orNull
-
+    val haMode = LivyServer.getHAMode(livyConf)
     haMode match {
       case LivyConf.HA_MODE_OFF => classOf[BlackholeStateStore]
       case LivyConf.HA_MODE_RECOVERY | LivyConf.HA_MODE_MULTI_ACTIVE =>
