@@ -38,6 +38,9 @@ class ExternalCluster(config: Map[String, String]) extends Cluster with Logging 
   private var _password: String = _
   private var _sslCertPath: String = _
 
+  private var _principal: String = _
+  private var _keytabPath: String = _
+
   // Livy rest url endpoint
   override def livyEndpoint: String = _livyEndpoint
 
@@ -56,6 +59,8 @@ class ExternalCluster(config: Map[String, String]) extends Cluster with Logging 
   override def password: String = _password
   override def sslCertPath: String = _sslCertPath
 
+  override def principal: String = _principal
+  override def keytabPath: String = _keytabPath
 
   override def doAsClusterUser[T](task: => T): T = task
 
@@ -67,6 +72,8 @@ class ExternalCluster(config: Map[String, String]) extends Cluster with Logging 
     _user = config.getOrElse("user", "")
     _password = config.getOrElse("password", "")
     _sslCertPath = config.getOrElse("sslCertPath", "")
+    _principal = config.getOrElse("principal", "")
+    _keytabPath = config.getOrElse("keytabPath", "")
   }
 
   override def cleanUp(): Unit = {

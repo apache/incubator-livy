@@ -202,6 +202,9 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
   private var _password: String = _
   private var _sslCertPath: String = _
 
+  private var _principal: String = _
+  private var _keytabPath: String = _
+
   override def configDir(): File = _configDir
 
   override def hdfsScratchDir(): Path = _hdfsScrathDir
@@ -289,6 +292,9 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
   def user: String = _user
   def password: String = _password
   def sslCertPath: String = _sslCertPath
+
+  override def principal: String = _principal
+  override def keytabPath: String = _keytabPath
 
   private def mkdir(name: String, parent: File = _tempDir): File = {
     val dir = new File(parent, name)

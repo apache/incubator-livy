@@ -54,6 +54,9 @@ trait Cluster {
   def password: String
   def sslCertPath: String
 
+  def principal: String
+  def keytabPath: String
+
   def doAsClusterUser[T](task: => T): T
 
   def initKerberosConf(): Configuration = {
@@ -64,10 +67,6 @@ trait Cluster {
       }
     }
     UserGroupInformation.setConfiguration(conf)
-
-    // Provide your own principal and keytab path here
-    val principal = ""
-    val keytabPath = ""
     UserGroupInformation.loginUserFromKeytab(principal, keytabPath)
     conf
   }
