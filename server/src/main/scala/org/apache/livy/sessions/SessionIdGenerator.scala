@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 
 import org.apache.livy.server.recovery.{SessionStore, ZooKeeperManager}
+import org.apache.livy.utils.LivyUncaughtException
 
 /**
   * Interface of session id generator.
@@ -79,6 +80,8 @@ class DistributedSessionIdGenerator(
       val result = getAndIncreaseId()
       persist(result + 1)
       result
+    } catch {
+      case e: Exception => throw new LivyUncaughtException(e.getMessage)
     } finally {
       distributedLock.release()
     }
