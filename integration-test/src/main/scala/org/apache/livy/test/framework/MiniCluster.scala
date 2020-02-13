@@ -293,8 +293,8 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
   def password: String = _password
   def sslCertPath: String = _sslCertPath
 
-  override def principal: String = _principal
-  override def keytabPath: String = _keytabPath
+  def principal: String = _principal
+  def keytabPath: String = _keytabPath
 
   private def mkdir(name: String, parent: File = _tempDir): File = {
     val dir = new File(parent, name)
