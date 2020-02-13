@@ -27,11 +27,11 @@ import org.apache.livy.client.common.TestUtils
 import org.apache.livy.server.LivyServer
 
 class ExternalCluster(config: Map[String, String]) extends Cluster with Logging {
+  private var _configDir: File = _
+
   private var _livyEndpoint: String = _
   private var _livyThriftJdbcUrl: Option[String] = _
   private var _hdfsScrathDir: Path = _
-
-  private var _configDir: File = _
 
   private var _authScheme: String = _
   private var _user: String = _
@@ -65,15 +65,18 @@ class ExternalCluster(config: Map[String, String]) extends Cluster with Logging 
   override def doAsClusterUser[T](task: => T): T = task
 
   override def deploy(): Unit = {
-    _livyEndpoint = config.getOrElse("livyEndpoint", "")
     _configDir = new File(config.getOrElse("configDir", "hadoop-conf"))
-    _hdfsScrathDir = fs.makeQualified(new Path(config.getOrElse("hdfsScratchDir", "/")))
+    _livyEndpoint = config.getOrElse("livyEndpoint", "")
+
     _authScheme = config.getOrElse("authScheme", "")
     _user = config.getOrElse("user", "")
     _password = config.getOrElse("password", "")
     _sslCertPath = config.getOrElse("sslCertPath", "")
     _principal = config.getOrElse("principal", "")
     _keytabPath = config.getOrElse("keytabPath", "")
+
+    // Needs to be set after all the other fields are filled in properly
+    _hdfsScrathDir = fs.makeQualified(new Path(config.getOrElse("hdfsScratchDir", "/")))
   }
 
   override def cleanUp(): Unit = {

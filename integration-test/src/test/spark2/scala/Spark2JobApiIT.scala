@@ -53,13 +53,14 @@ class Spark2JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll wit
   }
 
   test("create a new session and upload test jar") {
+    val prevSessionCount = sessionList().total
     val tempClient = createClient(livyEndpoint)
 
     try {
       // Figure out the session ID by poking at the REST endpoint. We should probably expose this
       // in the Java API.
       val list = sessionList()
-      assert(list.total === 1)
+      assert(list.total === prevSessionCount + 1)
       val tempSessionId = list.sessions(0).id
 
       livyClient.connectSession(tempSessionId).verifySessionIdle()
