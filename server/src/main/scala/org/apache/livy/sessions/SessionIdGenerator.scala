@@ -75,15 +75,19 @@ class DistributedSessionIdGenerator(
     zkManager.createLock(SessionStore.sessionIdLockPath(sessionType)))
 
   override def getNextSessionId(): Int = {
-    distributedLock.acquire()
     try {
+      distributedLock.acquire()
       val result = getAndIncreaseId()
       persist(result + 1)
       result
     } catch {
       case e: Exception => throw new LivyUncaughtException(e.getMessage)
     } finally {
-      distributedLock.release()
+      try {
+        distributedLock.release()
+      } catch {
+        case e: Exception => throw new LivyUncaughtException(e.getMessage)
+      }
     }
   }
 
