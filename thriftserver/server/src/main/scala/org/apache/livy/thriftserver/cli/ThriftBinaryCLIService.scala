@@ -76,7 +76,7 @@ class ThriftBinaryCLIService(override val cliService: LivyCLIService, val oomHoo
           throw new IllegalArgumentException(
             s"${LivyConf.SSL_KEYSTORE.key} Not configured for SSL connection")
         }
-        val keyStorePassword = livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD)
+        val keyStorePassword = getKeyStorePassword()
         val params = new TSSLTransportFactory.TSSLTransportParameters
         params.setKeyStore(keyStorePath, keyStorePassword)
         serverSocket =

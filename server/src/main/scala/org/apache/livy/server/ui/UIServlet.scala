@@ -66,7 +66,7 @@ class UIServlet(val basePath: String, livyConf: LivyConf) extends ScalatraServle
             href={basePath + "/static/css/dataTables.bootstrap.min.css"}
             type="text/css"/>
       <link rel="stylesheet" href={basePath + "/static/css/livy-ui.css"} type="text/css"/>
-      <script src={basePath + "/static/js/jquery-3.2.1.min.js"}></script>
+      <script src={basePath + "/static/js/jquery-3.4.1.min.js"}></script>
       <script src={basePath + "/static/js/bootstrap.min.js"}></script>
       <script src={basePath + "/static/js/jquery.dataTables.min.js"}></script>
       <script src={basePath + "/static/js/dataTables.bootstrap.min.js"}></script>

@@ -44,6 +44,7 @@ import org.apache.livy.client.common.BufferUtils;
 import org.apache.livy.rsc.driver.AddFileJob;
 import org.apache.livy.rsc.driver.AddJarJob;
 import org.apache.livy.rsc.rpc.Rpc;
+import org.apache.livy.sessions.SessionState;
 
 import static org.apache.livy.rsc.RSCConf.Entry.*;
 
@@ -64,6 +65,8 @@ public class RSCClient implements LivyClient {
   private Process driverProcess;
   private volatile boolean isAlive;
   private volatile String replState;
+  // Record the last activity timestamp of the repl
+  private volatile long replLastActivity = System.nanoTime();
 
   RSCClient(RSCConf conf, Promise<ContextInfo> ctx, Process driverProcess) throws IOException {
     this.conf = conf;
@@ -315,6 +318,16 @@ public class RSCClient implements LivyClient {
     return replState;
   }
 
+  /**
+   * Get the timestamp of the last activity of the repl. It will be updated when the repl state
+   * changed from busy to idle
+   *
+   * @return last activity timestamp
+   */
+  public long getReplLastActivity() {
+    return replLastActivity;
+  }
+
   private class ClientProtocol extends BaseProtocol {
 
     <T> JobHandleImpl<T> submit(Job<T> job) {
@@ -381,7 +394,7 @@ public class RSCClient implements LivyClient {
     }
 
     private void handle(ChannelHandlerContext ctx, InitializationError msg) {
-      LOG.warn("Error reported from remote driver: %s", msg.stackTrace);
+      LOG.warn("Error reported from remote driver: {}", msg.stackTrace);
     }
 
     private void handle(ChannelHandlerContext ctx, JobResult msg) {
@@ -411,6 +424,11 @@ public class RSCClient implements LivyClient {
 
     private void handle(ChannelHandlerContext ctx, ReplState msg) {
       LOG.trace("Received repl state for {}", msg.state);
+      // Update last activity timestamp when state change is from busy to idle.
+      if (SessionState.Busy$.MODULE$.state().equals(replState) && msg != null &&
+        SessionState.Idle$.MODULE$.state().equals(msg.state)) {
+        replLastActivity = System.nanoTime();
+      }
       replState = msg.state;
     }
   }

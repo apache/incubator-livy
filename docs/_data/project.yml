@@ -16,6 +16,6 @@
 # Apache Project configurations
 #
 name: Apache Livy
-version: 0.7.0-incubating-SNAPSHOT
+version: 0.8.0-incubating-SNAPSHOT
 
 podling: true

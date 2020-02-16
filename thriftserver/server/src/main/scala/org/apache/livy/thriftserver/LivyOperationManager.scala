@@ -187,6 +187,63 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
     })
   }
 
+  @throws[HiveSQLException]
+  def getTables(
+      sessionHandle: SessionHandle,
+      catalogName: String,
+      schemaName: String,
+      tableName: String,
+      tableTypes: util.List[String]): OperationHandle = {
+    executeOperation(sessionHandle, {
+      val op = new GetTablesOperation(
+        sessionHandle, schemaName, tableName, tableTypes, livyThriftSessionManager)
+      addOperation(op, sessionHandle)
+      op
+    })
+  }
+
+  @throws[HiveSQLException]
+  def getFunctions(
+      sessionHandle: SessionHandle,
+      catalogName: String,
+      schemaName: String,
+      functionName: String): OperationHandle = {
+    executeOperation(sessionHandle, {
+      val op = new GetFunctionsOperation(
+        sessionHandle, schemaName, functionName, livyThriftSessionManager)
+      addOperation(op, sessionHandle)
+      op
+    })
+  }
+
+  @throws[HiveSQLException]
+  def getSchemas(
+      sessionHandle: SessionHandle,
+      catalogName: String,
+      schemaName: String): OperationHandle = {
+    executeOperation(sessionHandle, {
+      val op = new GetSchemasOperation(sessionHandle, schemaName, livyThriftSessionManager)
+      addOperation(op, sessionHandle)
+      op
+    })
+  }
+
+  @throws[HiveSQLException]
+  def getColumns(
+      sessionHandle: SessionHandle,
+      catalogName: String,
+      schemaName: String,
+      tableName: String,
+      columnName: String): OperationHandle = {
+    executeOperation(sessionHandle, {
+      val op = new GetColumnsOperation(
+        sessionHandle, schemaName, tableName, columnName, livyThriftSessionManager)
+      addOperation(op, sessionHandle)
+      op
+    })
+  }
+
+
   /**
    * Cancel the running operation unless it is already in a terminal state
    */

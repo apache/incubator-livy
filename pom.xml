@@ -22,7 +22,7 @@
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-main</artifactId>
-  <version>0.7.0-incubating-SNAPSHOT</version>
+  <version>0.8.0-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Livy Project Parent POM</name>
   <description>Livy Project</description>
@@ -80,7 +80,7 @@
   <properties>
     <hadoop.version>2.7.3</hadoop.version>
     <hadoop.scope>compile</hadoop.scope>
-    <spark.scala-2.11.version>2.2.0</spark.scala-2.11.version>
+    <spark.scala-2.11.version>2.2.3</spark.scala-2.11.version>
     <spark.version>${spark.scala-2.11.version}</spark.version>
     <hive.version>3.0.0</hive.version>
     <commons-codec.version>1.9</commons-codec.version>
@@ -109,9 +109,9 @@
     <execution.root>${user.dir}</execution.root>
     <spark.home>${execution.root}/dev/spark</spark.home>
     <spark.bin.download.url>
-      https://d3kbcqa49mib13.cloudfront.net/spark-2.2.0-bin-hadoop2.7.tgz
+      https://archive.apache.org/dist/spark/spark-2.2.3/spark-2.2.3-bin-hadoop2.7.tgz
     </spark.bin.download.url>
-    <spark.bin.name>spark-2.2.0-bin-hadoop2.7</spark.bin.name>
+    <spark.bin.name>spark-2.2.3-bin-hadoop2.7</spark.bin.name>
     <!--  used for testing, NCSARequestLog use it for access log  -->
     <livy.log.dir>${basedir}/target</livy.log.dir>
 
@@ -120,6 +120,13 @@
 
     <!-- Set this to "true" to skip PySpark3 tests. -->
     <skipPySpark3Tests>false</skipPySpark3Tests>
+
+    <!-- Required for testing LDAP integration -->
+    <apacheds.version>2.0.0-M21</apacheds.version>
+    <ldap-api.version>1.0.0-M33</ldap-api.version>
+
+    <curator.version>2.7.1</curator.version>
+    <zookeeper.version>3.4.6</zookeeper.version>
 
     <!--
       Properties for the copyright header style checks. Modules that use the ASF header
@@ -1093,6 +1100,8 @@
               <thirdPartyFilename>THIRD-PARTY</thirdPartyFilename>
               <sortArtifactByName>true</sortArtifactByName>
               <fileTemplate>${execution.root}/dev/third-party-file.ftl</fileTemplate>
+              <useMissingFile>true</useMissingFile>
+              <missingFile>${execution.root}/dev/third-party-missing-license.properties</missingFile>
             </configuration>
             <executions>
               <execution>

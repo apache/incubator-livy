@@ -125,5 +125,4 @@ class ThriftSessionState {
       throw new IllegalArgumentException(err);
     }
   }
-
 }

@@ -19,10 +19,11 @@ package org.apache.livy.rsc.rpc;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Map;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -208,6 +209,7 @@ public class Rpc implements Closeable {
         dispatcher);
     Rpc rpc = new Rpc(new RSCConf(null), c, ImmediateEventExecutor.INSTANCE);
     rpc.dispatcher = dispatcher;
+    dispatcher.registerRpc(c, rpc);
     return rpc;
   }
 
@@ -217,6 +219,10 @@ public class Rpc implements Closeable {
   private final Channel channel;
   private final EventExecutorGroup egroup;
   private volatile RpcDispatcher dispatcher;
+
+  private final Map<Class<?>, Method> handlers = new ConcurrentHashMap<>();
+  private final Collection<OutstandingRpc> rpcCalls = new ConcurrentLinkedQueue<OutstandingRpc>();
+  private volatile Rpc.MessageHeader lastHeader;
 
   private Rpc(RSCConf config, Channel channel, EventExecutorGroup egroup) {
     Utils.checkArgument(channel != null);
@@ -236,6 +242,166 @@ public class Rpc implements Closeable {
           super.channelInactive(ctx);
         }
     });
+  }
+
+  /**
+   * For debugging purposes.
+   * @return The name of this Class.
+   */
+  protected String name() {
+    return getClass().getSimpleName();
+  }
+
+  public void handleMsg(ChannelHandlerContext ctx, Object msg, Class<?> handleClass, Object obj)
+      throws Exception {
+    if (lastHeader == null) {
+      if (!(msg instanceof MessageHeader)) {
+        LOG.warn("[{}] Expected RPC header, got {} instead.", name(),
+          msg != null ? msg.getClass().getName() : null);
+        throw new IllegalArgumentException();
+      }
+      lastHeader = (MessageHeader) msg;
+    } else {
+      LOG.debug("[{}] Received RPC message: type={} id={} payload={}", name(),
+        lastHeader.type, lastHeader.id, msg != null ? msg.getClass().getName() : null);
+      try {
+        switch (lastHeader.type) {
+          case CALL:
+            handleCall(ctx, msg, handleClass, obj);
+            break;
+          case REPLY:
+            handleReply(ctx, msg, findRpcCall(lastHeader.id));
+            break;
+          case ERROR:
+            handleError(ctx, msg, findRpcCall(lastHeader.id));
+            break;
+          default:
+            throw new IllegalArgumentException("Unknown RPC message type: " + lastHeader.type);
+        }
+      } finally {
+        lastHeader = null;
+      }
+    }
+  }
+
+  private void handleCall(ChannelHandlerContext ctx, Object msg, Class<?> handleClass, Object obj)
+      throws Exception {
+    Method handler = handlers.get(msg.getClass());
+    if (handler == null) {
+      // Try both getDeclaredMethod() and getMethod() so that we try both private methods
+      // of the class, and public methods of parent classes.
+      try {
+        handler = handleClass.getDeclaredMethod("handle", ChannelHandlerContext.class,
+            msg.getClass());
+      } catch (NoSuchMethodException e) {
+        try {
+          handler = handleClass.getMethod("handle", ChannelHandlerContext.class,
+              msg.getClass());
+        } catch (NoSuchMethodException e2) {
+          LOG.warn(String.format("[%s] Failed to find handler for msg '%s'.", name(),
+            msg.getClass().getName()));
+          writeMessage(MessageType.ERROR, Utils.stackTraceAsString(e.getCause()));
+          return;
+        }
+      }
+      handler.setAccessible(true);
+      handlers.put(msg.getClass(), handler);
+    }
+
+    try {
+      Object payload = handler.invoke(obj, ctx, msg);
+      if (payload == null) {
+        payload = new NullMessage();
+      }
+      writeMessage(MessageType.REPLY, payload);
+    } catch (InvocationTargetException ite) {
+      LOG.debug(String.format("[%s] Error in RPC handler.", name()), ite.getCause());
+      writeMessage(MessageType.ERROR, Utils.stackTraceAsString(ite.getCause()));
+    }
+  }
+
+  private void handleReply(ChannelHandlerContext ctx, Object msg, OutstandingRpc rpc) {
+    rpc.future.setSuccess(msg instanceof NullMessage ? null : msg);
+  }
+
+  private void handleError(ChannelHandlerContext ctx, Object msg, OutstandingRpc rpc) {
+    if (msg instanceof String) {
+      LOG.warn("Received error message:{}.", msg);
+      rpc.future.setFailure(new RpcException((String) msg));
+    } else {
+      String error = String.format("Received error with unexpected payload (%s).",
+          msg != null ? msg.getClass().getName() : null);
+      LOG.warn(String.format("[%s] %s", name(), error));
+      rpc.future.setFailure(new IllegalArgumentException(error));
+      ctx.close();
+    }
+  }
+
+  private void writeMessage(MessageType replyType, Object payload) {
+    channel.write(new MessageHeader(lastHeader.id, replyType));
+    channel.writeAndFlush(payload);
+  }
+
+  private OutstandingRpc findRpcCall(long id) {
+    for (Iterator<OutstandingRpc> it = rpcCalls.iterator(); it.hasNext();) {
+      OutstandingRpc rpc = it.next();
+      if (rpc.id == id) {
+        it.remove();
+        return rpc;
+      }
+    }
+    throw new IllegalArgumentException(String.format(
+        "Received RPC reply for unknown RPC (%d).", id));
+  }
+
+  private void registerRpcCall(long id, Promise<?> promise, String type) {
+    LOG.debug("[{}] Registered outstanding rpc {} ({}).", name(), id, type);
+    rpcCalls.add(new OutstandingRpc(id, promise));
+  }
+
+  private void discardRpcCall(long id) {
+    LOG.debug("[{}] Discarding failed RPC {}.", name(), id);
+    findRpcCall(id);
+  }
+
+  private static class OutstandingRpc {
+    final long id;
+    final Promise<Object> future;
+
+    @SuppressWarnings("unchecked")
+    OutstandingRpc(long id, Promise<?> future) {
+      this.id = id;
+      this.future = (Promise<Object>) future;
+    }
+  }
+
+  public void handleChannelException(ChannelHandlerContext ctx, Throwable cause) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(String.format("[%s] Caught exception in channel pipeline.", name()), cause);
+    } else {
+      LOG.info(String.format("[%s] Caught exception in channel pipeline.", name()), cause);
+    }
+
+    if (lastHeader != null) {
+      // There's an RPC waiting for a reply. Exception was most probably caught while processing
+      // the RPC, so send an error.
+      channel.write(new MessageHeader(lastHeader.id, MessageType.ERROR));
+      channel.writeAndFlush(Utils.stackTraceAsString(cause));
+      lastHeader = null;
+    }
+
+    ctx.close();
+  }
+
+  public void handleChannelInactive() {
+    if (rpcCalls.size() > 0) {
+      LOG.warn("[{}] Closing RPC channel with {} outstanding RPCs.", name(), rpcCalls.size());
+      for (OutstandingRpc rpc : rpcCalls) {
+        rpc.future.cancel(true);
+      }
+    } else {
+      LOG.debug("Channel {} became inactive.", channel);
+    }
   }
 
   /**
@@ -269,13 +435,13 @@ public class Rpc implements Closeable {
             if (!cf.isSuccess() && !promise.isDone()) {
               LOG.warn("Failed to send RPC, closing connection.", cf.cause());
               promise.setFailure(cf.cause());
-              dispatcher.discardRpc(id);
+              discardRpcCall(id);
               close();
             }
           }
       };
 
-      dispatcher.registerRpc(id, promise, msg.getClass().getName());
+      registerRpcCall(id, promise, msg.getClass().getName());
       channel.eventLoop().submit(new Runnable() {
         @Override
         public void run() {
@@ -294,11 +460,18 @@ public class Rpc implements Closeable {
     return channel;
   }
 
+  public void unRegisterRpc() {
+    if (dispatcher != null) {
+      dispatcher.unregisterRpc(channel);
+    }
+  }
+
   void setDispatcher(RpcDispatcher dispatcher) {
     Utils.checkNotNull(dispatcher);
     Utils.checkState(this.dispatcher == null, "Dispatcher already set.");
     this.dispatcher = dispatcher;
     channel.pipeline().addLast("dispatcher", dispatcher);
+    dispatcher.registerRpc(channel, this);
   }
 
   @Override

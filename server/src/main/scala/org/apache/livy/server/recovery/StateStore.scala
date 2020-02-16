@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
 import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.server.recovery.ZooKeeperManager
 import org.apache.livy.sessions.SessionKindModule
 import org.apache.livy.sessions.SessionManager._
 
@@ -78,11 +79,17 @@ abstract class StateStore(livyConf: LivyConf) extends JsonMapper {
 object StateStore extends Logging {
   private[this] var stateStore: Option[StateStore] = None
 
-  def init(livyConf: LivyConf): Unit = synchronized {
+  def init(livyConf: LivyConf, zkManager: Option[ZooKeeperManager] = None): Unit = synchronized {
     if (stateStore.isEmpty) {
       val fileStateStoreClassTag = pickStateStore(livyConf)
-      stateStore = Option(fileStateStoreClassTag.getDeclaredConstructor(classOf[LivyConf])
-        .newInstance(livyConf).asInstanceOf[StateStore])
+      if (fileStateStoreClassTag == classOf[ZooKeeperStateStore]) {
+        stateStore = Option(fileStateStoreClassTag.
+          getDeclaredConstructor(classOf[LivyConf], classOf[ZooKeeperManager])
+          .newInstance(livyConf, zkManager.get).asInstanceOf[StateStore])
+      } else {
+        stateStore = Option(fileStateStoreClassTag.getDeclaredConstructor(classOf[LivyConf])
+          .newInstance(livyConf).asInstanceOf[StateStore])
+      }
       info(s"Using ${stateStore.get.getClass.getSimpleName} for recovery.")
     }
   }

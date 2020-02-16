@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
-import org.apache.livy.sessions.{Session, SessionState}
+import org.apache.livy.sessions.{FinishedSessionState, Session, SessionState}
 import org.apache.livy.sessions.Session._
 import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
 
@@ -188,8 +188,14 @@ class BatchSession(
           info(s"Batch session $id created [appid: ${appId.orNull}, state: ${state.toString}, " +
             s"info: ${appInfo.asJavaMap}]")
         case SparkApp.State.FINISHED => _state = SessionState.Success()
-        case SparkApp.State.KILLED => _state = SessionState.Killed()
-        case SparkApp.State.FAILED => _state = SessionState.Dead()
+        case SparkApp.State.KILLED => {
+          _state = SessionState.Killed()
+          sessionStore.remove(RECOVERY_SESSION_TYPE, id)
+        }
+        case SparkApp.State.FAILED => {
+          _state = SessionState.Dead()
+          sessionStore.remove(RECOVERY_SESSION_TYPE, id)
+        }
         case _ =>
       }
     }

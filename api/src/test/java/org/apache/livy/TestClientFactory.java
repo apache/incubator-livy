@@ -21,8 +21,18 @@ import java.io.File;
 import java.net.URI;
 import java.util.Properties;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TestClientFactory implements LivyClientFactory {
+
+  private static AtomicLong instanceCount = new AtomicLong();
+  public static long getInstanceCount() {
+    return instanceCount.get();
+  }
+
+  public TestClientFactory() {
+    instanceCount.incrementAndGet();
+  }
 
   @Override
   public LivyClient createClient(URI uri, Properties config) {
@@ -81,6 +91,6 @@ public class TestClientFactory implements LivyClientFactory {
       throw new UnsupportedOperationException();
     }
 
-}
+  }
 
 }

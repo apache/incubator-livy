@@ -25,14 +25,15 @@ import org.apache.hive.service.auth.PasswdAuthenticationProvider
 import org.apache.livy.LivyConf
 
 object AuthenticationProvider {
-  // TODO: support LDAP and PAM
-  val AUTH_METHODS = Seq("NONE", "CUSTOM")
+  // TODO: support PAM
+  val AUTH_METHODS = Seq("NONE", "CUSTOM", "LDAP")
 
   @throws[AuthenticationException]
   def getAuthenticationProvider(method: String, conf: LivyConf): PasswdAuthenticationProvider = {
     method match {
       case "NONE" => new NoneAuthenticationProvider
       case "CUSTOM" => new CustomAuthenticationProvider(conf)
+      case "LDAP" => new LdapAuthenticationProviderImpl(conf)
       case _ => throw new AuthenticationException("Unsupported authentication method")
     }
   }

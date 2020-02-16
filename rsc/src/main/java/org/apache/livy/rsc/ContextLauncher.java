@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -207,7 +208,7 @@ class ContextLauncher {
     if (!conf.getBoolean(CLIENT_IN_PROCESS) &&
         // For tests which doesn't shutdown RscDriver gracefully, JaCoCo exec isn't dumped properly.
         // Disable JaCoCo for this case.
-        !conf.getBoolean(TEST_STUCK_END_SESSION)) {
+        !conf.getBoolean(TEST_NO_CODE_COVERAGE_ANALYSIS)) {
       // For testing; propagate jacoco settings so that we also do coverage analysis
       // on the launched driver. We replace the name of the main file ("main.exec")
       // so that we don't end up fighting with the main test launcher.
@@ -340,7 +341,9 @@ class ContextLauncher {
     }
 
     private void handle(ChannelHandlerContext ctx, RemoteDriverAddress msg) {
-      ContextInfo info = new ContextInfo(msg.host, msg.port, clientId, secret);
+      InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
+      String ip = insocket.getAddress().getHostAddress();
+      ContextInfo info = new ContextInfo(ip, msg.port, clientId, secret);
       if (promise.trySuccess(info)) {
         timeout.cancel(true);
         LOG.debug("Received driver info for client {}: {}/{}.", client.getChannel(),
