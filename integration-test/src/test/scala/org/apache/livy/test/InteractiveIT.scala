@@ -36,7 +36,11 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       s.run("val sparkVersion = sc.version").result().left.foreach(info(_))
       s.run("val scalaVersion = util.Properties.versionString").result().left.foreach(info(_))
       s.run("1+1").verifyResult("res0: Int = 2\n")
+
+      // Ignore the following line if running on a external cluster due to config differences
+      // with the mini cluster
       s.run("""sc.getConf.get("spark.executor.instances")""").verifyResult("res1: String = 1\n")
+
       s.run("val sql = new org.apache.spark.sql.SQLContext(sc)").verifyResult(
         ".*" + Pattern.quote(
         "sql: org.apache.spark.sql.SQLContext = org.apache.spark.sql.SQLContext") + ".*")
