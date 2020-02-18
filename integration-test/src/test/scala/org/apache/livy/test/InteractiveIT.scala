@@ -170,7 +170,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
     withNewSession(Spark, Map.empty, true, heartbeatTimeout.toSeconds.toInt) { s =>
       // If the test reaches here, that means verifySessionIdle() is successfully keeping the
       // session alive. Now verify heartbeat is killing expired session.
-      Thread.sleep(heartbeatTimeout.toMillis * 2)
+      Thread.sleep(heartbeatTimeout.toMillis * 10)
       s.verifySessionDoesNotExist()
     }
   }

@@ -1,0 +1,29 @@
+# type of cluster you are running integration tests against
+# use mini to test against the mini cluster, use external to test 
+# against a real external cluster
+cluster.type=external
+
+# The authentication scheme used by your external cluster
+# The potential values for authScheme are kerberos for kerberos auth,
+# basic for basic auth, or nothing for no authentication
+authScheme=
+
+# The location of hadoop config files
+configDir=
+
+# The location in hdfs to store temporary files
+hdfsScratchDir=
+
+# Endpoint for talking to livy
+livyEndpoint=
+
+# username and password for authentication
+user=
+password=
+
+# SSL Certificate Path
+sslCertPath=
+
+# principal and keytab Path for kerberos authentication
+principal=
+keytabPath=

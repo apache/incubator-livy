@@ -124,7 +124,7 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
     httpClient = new DefaultHttpClient()
 
     if (authScheme == "kerberos") {
-      val use_jaas_creds = new Credentials() {
+      val useJAASCreds = new Credentials() {
         def getPassword(): String = {
           return null
         }
@@ -137,7 +137,7 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
       httpClient.getAuthSchemes().register(AuthPolicy.SPNEGO, new SPNegoSchemeFactory());
       httpClient.getCredentialsProvider().setCredentials(
         new AuthScope(null, -1, null),
-        use_jaas_creds);
+        useJAASCreds);
     } else if (authScheme == "basic"){
       httpClient.getAuthSchemes().register(AuthPolicy.BASIC, new BasicSchemeFactory());
       httpClient.getCredentialsProvider().setCredentials(

@@ -26,6 +26,19 @@ import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.client.common.TestUtils
 import org.apache.livy.server.LivyServer
 
+/**
+ * Used to run tests on an real external cluster
+ * In order to utilize test against an external cluster, you need to create
+ * a configuration called cluster.spec and run the test suite with the option
+ * -Dcluster.spec=<yourcluster.spec>
+ *
+ * Also, make sure to disable the following line InteractiveIT.scala
+ * s.run("""sc.getConf.get("spark.executor.instances")""").verifyResult("res1: String = 1\n")
+ * 
+ * This is because your external cluster may not have the same configuration as the MiniCluster
+ *
+ * See the cluster.spec.template file for an example cluster.spec
+ */
 class ExternalCluster(config: Map[String, String]) extends Cluster with Logging {
   private var _configDir: File = _
 

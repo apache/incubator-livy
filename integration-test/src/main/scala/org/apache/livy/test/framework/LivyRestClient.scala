@@ -117,8 +117,8 @@ class LivyRestClient(val httpClient: CloseableHttpClient, val livyEndpoint: Stri
     def verifySessionDoesNotExist(): Unit = {
       val httpGet = new HttpGet(url)
       val r = httpClient.execute(httpGet)
-      r.close()
       assertStatusCode(r.getStatusLine(), HttpServletResponse.SC_NOT_FOUND)
+      r.close()
     }
   }
 
