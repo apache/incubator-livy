@@ -34,7 +34,7 @@ import org.apache.livy.server.LivyServer
  *
  * Also, make sure to disable the following line InteractiveIT.scala
  * s.run("""sc.getConf.get("spark.executor.instances")""").verifyResult("res1: String = 1\n")
- * 
+ *
  * This is because your external cluster may not have the same configuration as the MiniCluster
  *
  * See the cluster.spec.template file for an example cluster.spec
