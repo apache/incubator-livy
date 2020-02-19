@@ -51,6 +51,7 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
   protected def livyEndpoint: String = cluster.livyEndpoint
   protected def user: String = cluster.user
   protected def password: String = cluster.password
+  protected def sslCertPath = cluster.sslCertPath
 
   protected val testLib = sys.props("java.class.path")
     .split(File.pathSeparator)

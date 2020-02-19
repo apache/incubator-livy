@@ -30,17 +30,18 @@ global session_id, job_id
 session_id = None
 job_id = None
 
-auth_scheme = os.environ.get("AUTH_SCHEME")
 livy_end_point = os.environ.get("LIVY_END_POINT")
-user = os.environ.get("USER")
-password = os.environ.get("PASSWORD")
+auth_scheme = os.environ.get("AUTH_SCHEME", "")
+user = os.environ.get("USER", "")
+password = os.environ.get("PASSWORD", "")
+ssl_cert = os.environ.get("SSL_CERT", True)
 
 if auth_scheme == 'kerberos':
-    requestAuth = HTTPKerberosAuth(mutual_authentication=OPTIONAL, sanitize_mutual_error_response=False, force_preemptive = True)
+    request_auth = HTTPKerberosAuth(mutual_authentication=OPTIONAL, sanitize_mutual_error_response=False, force_preemptive = True)
 elif auth_scheme == 'basic':
-    requestAuth = (user, password)
+    request_auth = (user, password)
 else:
-    requestAuth = None
+    request_auth = None
 
 add_file_url = os.environ.get("ADD_FILE_URL")
 add_pyfile_url = os.environ.get("ADD_PYFILE_URL")
@@ -60,7 +61,7 @@ def process_job(job, expected_result, is_error_job=False):
     base64_pickled_job_json = json.dumps({'job': base64_pickled_job, 'jobType': 'pyspark'})
     request_url = livy_end_point + "/sessions/" + str(session_id) + "/submit-job"
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
-    response = requests.request('POST', request_url, headers=header, data=base64_pickled_job_json, auth=requestAuth)
+    response = requests.request('POST', request_url, headers=header, data=base64_pickled_job_json, auth=request_auth, verify=ssl_cert)
 
     assert response.status_code == httplib.CREATED
     job_id = response.json()['id']
@@ -74,7 +75,7 @@ def process_job(job, expected_result, is_error_job=False):
         poll_request_uri = livy_end_point + "/sessions/" + str(session_id) + \
                            "/jobs/" + str(job_id)
         poll_header = {'X-Requested-By': 'livy'}
-        poll_response = requests.request('GET', poll_request_uri, headers=poll_header)
+        poll_response = requests.request('GET', poll_request_uri, headers=poll_header, auth=request_auth, verify=ssl_cert)
         poll_time *= 2
 
     assert poll_response.json()['id'] == job_id
@@ -101,7 +102,7 @@ def stop_session():
 
     request_url = livy_end_point + "/sessions/" + str(session_id)
     headers = {'X-Requested-By': 'livy'}
-    response = requests.request('DELETE', request_url, headers=headers, auth=requestAuth)
+    response = requests.request('DELETE', request_url, headers=headers, auth=request_auth, verify=ssl_cert)
     assert response.status_code == httplib.OK
 
 
@@ -112,7 +113,7 @@ def test_create_session():
     uri = urlparse(request_url)
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
     json_data = json.dumps({'kind': 'pyspark', 'conf': {'livy.uri': uri.geturl()}})
-    response = requests.request('POST', request_url, headers=header, data=json_data, auth=requestAuth)
+    response = requests.request('POST', request_url, headers=header, data=json_data, auth=request_auth, verify=ssl_cert)
 
     assert response.status_code == httplib.CREATED
     session_id = response.json()['id']
@@ -122,7 +123,7 @@ def test_create_session():
 def test_wait_for_session_to_become_idle():
     request_url = livy_end_point + "/sessions/" + str(session_id)
     header = {'X-Requested-By': 'livy'}
-    response = requests.request('GET', request_url, headers=header, auth=requestAuth)
+    response = requests.request('GET', request_url, headers=header, auth=request_auth, verify=ssl_cert)
     assert response.status_code == httplib.OK
     session_state = response.json()['state']
 
@@ -151,7 +152,7 @@ def test_reconnect():
 
     request_url = livy_end_point + "/sessions/" + str(session_id) + "/connect"
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
-    response = requests.request('POST', request_url, headers=header, auth=requestAuth)
+    response = requests.request('POST', request_url, headers=header, auth=request_auth, verify=ssl_cert)
 
     assert response.status_code == httplib.OK
     assert session_id == response.json()['id']
@@ -162,7 +163,7 @@ def test_add_file():
     json_data = json.dumps({'uri': add_file_url})
     request_url = livy_end_point + "/sessions/" + str(session_id) + "/add-file"
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
-    response = requests.request('POST', request_url, headers=header, data=json_data, auth=requestAuth)
+    response = requests.request('POST', request_url, headers=header, data=json_data, auth=request_auth, verify=ssl_cert)
 
     assert response.status_code == httplib.OK
 
@@ -181,7 +182,7 @@ def test_add_pyfile():
     json_data = json.dumps({'uri': add_pyfile_url})
     request_url = livy_end_point + "/sessions/" + str(session_id) + "/add-pyfile"
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
-    response_add_pyfile = requests.request('POST', request_url, headers=header, data=json_data, auth=requestAuth)
+    response_add_pyfile = requests.request('POST', request_url, headers=header, data=json_data, auth=request_auth, verify=ssl_cert)
 
     assert response_add_pyfile.status_code == httplib.OK
 
@@ -198,7 +199,7 @@ def test_upload_file():
     request_url = livy_end_point + "/sessions/" + str(session_id) + "/upload-file"
     files = {'file': upload_file}
     header = {'X-Requested-By': 'livy'}
-    response = requests.request('POST', request_url, headers=header, files=files, auth=requestAuth)
+    response = requests.request('POST', request_url, headers=header, files=files, auth=request_auth, verify=ssl_cert)
 
     assert response.status_code == httplib.OK
 
@@ -218,7 +219,7 @@ def test_upload_pyfile():
     request_url = livy_end_point + "/sessions/" + str(session_id) + "/upload-pyfile"
     files = {'file': upload_pyfile}
     header = {'X-Requested-By': 'livy'}
-    response = requests.request('POST', request_url, headers=header, files=files, auth=requestAuth)
+    response = requests.request('POST', request_url, headers=header, files=files, auth=request_auth, verify=ssl_cert)
     assert response.status_code == httplib.OK
 
     def upload_pyfile_job(context):
