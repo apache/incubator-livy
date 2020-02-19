@@ -265,10 +265,10 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     env.put("UPLOAD_FILE_URL", uploadFilePath)
     env.put("UPLOAD_PYFILE_URL", uploadPyFilePath)
 
-    if (authScheme != "") { env.put("AUTH_SCHEME", authScheme) }
-    if (user != "") { env.put("USER", user) }
-    if (password != "") { env.put("PASSWORD", password) }
-    if (sslCertPath != "") { env.put("SSL_CERT", sslCertPath) }
+    if (authScheme != null && !authScheme.isEmpty()) { env.put("AUTH_SCHEME", authScheme) }
+    if (user != null && !user.isEmpty()) { env.put("USER", user) }
+    if (password != null && !password.isEmpty()) { env.put("PASSWORD", password) }
+    if (sslCertPath != null && !sslCertPath.isEmpty()) { env.put("SSL_CERT", sslCertPath) }
 
     builder.redirectErrorStream(true)
     builder.redirectOutput(new File(tmpDir, "pytest_results.log"))
