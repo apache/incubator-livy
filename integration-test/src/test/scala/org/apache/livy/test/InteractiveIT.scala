@@ -169,12 +169,12 @@ class InteractiveIT extends BaseIntegrationTestSuite {
   }
 
   test("heartbeat should kill expired session") {
-    // Set it to 3s because verifySessionIdle() is calling GET every second.
-    val heartbeatTimeout = Duration.create("3s")
+    // Set it to 2s because verifySessionIdle() is calling GET every second.
+    val heartbeatTimeout = Duration.create("2s")
     withNewSession(Spark, Map.empty, true, heartbeatTimeout.toSeconds.toInt) { s =>
       // If the test reaches here, that means verifySessionIdle() is successfully keeping the
       // session alive. Now verify heartbeat is killing expired session.
-      Thread.sleep(heartbeatTimeout.toMillis * 10)
+      Thread.sleep(heartbeatTimeout.toMillis * 30)
       s.verifySessionDoesNotExist()
     }
   }
