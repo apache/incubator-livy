@@ -80,14 +80,14 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
     val hdfsPath = new Path(cluster.hdfsScratchDir(),
       UUID.randomUUID().toString() + "-" + file.getName())
 
-    if(authScheme == "kerberos") {
+    if (authScheme == "kerberos") {
       val proxy =
-        UserGroupInformation.createProxyUser(user, UserGroupInformation.getLoginUser());
+        UserGroupInformation.createProxyUser(user, UserGroupInformation.getLoginUser())
       proxy.doAs(new PrivilegedExceptionAction[Unit] {
         def run() = {
-          cluster.fs.copyFromLocalFile(new Path(file.toURI()), hdfsPath);
+          cluster.fs.copyFromLocalFile(new Path(file.toURI()), hdfsPath)
         }
-      });
+      })
     } else {
       cluster.fs.copyFromLocalFile(new Path(file.toURI()), hdfsPath)
     }
@@ -135,15 +135,15 @@ abstract class BaseIntegrationTestSuite extends FunSuite with Matchers with Befo
         }
       }
 
-      httpClient.getAuthSchemes().register(AuthPolicy.SPNEGO, new SPNegoSchemeFactory());
+      httpClient.getAuthSchemes().register(AuthPolicy.SPNEGO, new SPNegoSchemeFactory())
       httpClient.getCredentialsProvider().setCredentials(
         new AuthScope(null, -1, null),
-        useJAASCreds);
-    } else if (authScheme == "basic"){
-      httpClient.getAuthSchemes().register(AuthPolicy.BASIC, new BasicSchemeFactory());
+        useJAASCreds)
+    } else if (authScheme == "basic") {
+      httpClient.getAuthSchemes().register(AuthPolicy.BASIC, new BasicSchemeFactory())
       httpClient.getCredentialsProvider().setCredentials(
         AuthScope.ANY,
-        new UsernamePasswordCredentials(user, password));
+        new UsernamePasswordCredentials(user, password))
     }
 
     livyClient = new LivyRestClient(httpClient, livyEndpoint)
