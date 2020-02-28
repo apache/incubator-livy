@@ -100,7 +100,7 @@ class Spark2JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll wit
   private def sessionList(): SessionList = {
     val httpGet = new HttpGet(s"$livyEndpoint/sessions/")
     val r = livyClient.httpClient.execute(httpGet)
-    val statusCode = r.getStatusLine()
+    val statusCode = r.getStatusLine().getStatusCode()
     val responseBody = r.getEntity().getContent
     val sessionList = mapper.readValue(responseBody, classOf[SessionList])
     r.close()
