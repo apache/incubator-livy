@@ -83,8 +83,8 @@ class LivyRestClient(val httpClient: CloseableHttpClient, val livyEndpoint: Stri
       val httpGet = new HttpGet(url)
       val r = httpClient.execute(httpGet)
       val statusCode = r.getStatusLine()
-      val body = r.getEntity().getContent
-      val sessionSnapshot = mapper.readValue(body, classOf[SessionSnapshot])
+      val responseBody = r.getEntity().getContent
+      val sessionSnapshot = mapper.readValue(responseBody, classOf[SessionSnapshot])
       r.close()
 
       assertStatusCode(statusCode, HttpServletResponse.SC_OK)
@@ -147,8 +147,8 @@ class LivyRestClient(val httpClient: CloseableHttpClient, val livyEndpoint: Stri
 
         val r = httpClient.execute(httpPost)
         val statusCode = r.getStatusLine()
-        val body = r.getEntity().getContent
-        val newStmt = mapper.readValue(body, classOf[StatementResult])
+        val responseBody = r.getEntity().getContent
+        val newStmt = mapper.readValue(responseBody, classOf[StatementResult])
         r.close()
 
         assertStatusCode(statusCode, HttpServletResponse.SC_CREATED)
@@ -160,8 +160,8 @@ class LivyRestClient(val httpClient: CloseableHttpClient, val livyEndpoint: Stri
           val httpGet = new HttpGet(s"$url/statements/$stmtId")
           val r = httpClient.execute(httpGet)
           val statusCode = r.getStatusLine()
-          val body = r.getEntity().getContent
-          val newStmt = mapper.readValue(body, classOf[StatementResult])
+          val responseBody = r.getEntity().getContent
+          val newStmt = mapper.readValue(responseBody, classOf[StatementResult])
           r.close()
 
           assertStatusCode(statusCode, HttpServletResponse.SC_OK)
@@ -229,8 +229,8 @@ class LivyRestClient(val httpClient: CloseableHttpClient, val livyEndpoint: Stri
 
         val r = httpClient.execute(httpPost)
         val statusCode = r.getStatusLine()
-        val body = r.getEntity().getContent
-        val res = mapper.readValue(body, classOf[CompletionResult])
+        val responseBody = r.getEntity().getContent
+        val res = mapper.readValue(responseBody, classOf[CompletionResult])
         r.close()
 
         assertStatusCode(statusCode, HttpServletResponse.SC_OK)
@@ -314,10 +314,11 @@ class LivyRestClient(val httpClient: CloseableHttpClient, val livyEndpoint: Stri
     val httpPost = new HttpPost(s"$livyEndpoint/$sessionType")
     val entity = new StringEntity(body)
     httpPost.setEntity(entity)
+
     val r = httpClient.execute(httpPost)
     val statusCode = r.getStatusLine()
-    val body = r.getEntity().getContent
-    val newSession = mapper.readValue(body, classOf[SessionSnapshot])
+    val responseBody = r.getEntity().getContent
+    val newSession = mapper.readValue(responseBody, classOf[SessionSnapshot])
     r.close()
 
     assertStatusCode(statusCode, HttpServletResponse.SC_CREATED)

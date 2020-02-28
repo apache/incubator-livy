@@ -313,8 +313,8 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val httpGet = new HttpGet(s"$livyEndpoint/sessions/")
     val r = livyClient.httpClient.execute(httpGet)
     val statusCode = r.getStatusLine()
-    val body = r.getEntity().getContent
-    val sessionList = mapper.readValue(body, classOf[SessionList])
+    val responseBody = r.getEntity().getContent
+    val sessionList = mapper.readValue(responseBody, classOf[SessionList])
     r.close()
 
     assert(statusCode ==  HttpServletResponse.SC_OK)
