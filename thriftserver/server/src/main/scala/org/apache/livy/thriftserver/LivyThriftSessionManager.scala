@@ -21,6 +21,7 @@ import java.lang.reflect.UndeclaredThrowableException
 import java.security.PrivilegedExceptionAction
 import java.util
 import java.util.{Date, Map => JMap, UUID}
+import java.util.function.BiFunction
 import java.util.concurrent.{ConcurrentHashMap, LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
 import java.util.concurrent.atomic.AtomicLong
 
@@ -420,29 +421,30 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       forwardedAddresses: util.List[String]): Unit = {
     val clientIpAddress: String = getOriginClientIpAddress(ipAddress, forwardedAddresses)
     val violation = anyViolations(username, clientIpAddress)
-    // increment the counters only when there are no violations
-    if (violation.isEmpty) {
-      if (trackConnectionsPerUser(username)) incrementConnectionsCount(username)
-      if (trackConnectionsPerIpAddress(clientIpAddress)) incrementConnectionsCount(clientIpAddress)
-      if (trackConnectionsPerUserIpAddress(username, clientIpAddress)) {
-        incrementConnectionsCount(username + ":" + clientIpAddress)
-      }
-    } else {
+    if (!violation.isEmpty) {
       error(violation.get)
       throw new HiveSQLException(violation.get)
     }
   }
 
-  // Taken from Hive
-  private def incrementConnectionsCount(key: String): Unit = {
-    if (!connectionsCount.containsKey(key)) connectionsCount.get(key).incrementAndGet
-    else connectionsCount.put(key, new AtomicLong)
+  private def incrementConnectionsCount(key: String): Long = {
+    // Increment the count, returning the new value.
+    val count = connectionsCount.putIfAbsent(key, new AtomicLong(1L))
+    if (count != null) count.incrementAndGet()
+    else 1L
   }
 
-  // Taken from Hive
   private def decrementConnectionsCount(key: String): Unit = {
-    if (!connectionsCount.containsKey(key)) connectionsCount.get(key).decrementAndGet
-    else connectionsCount.put(key, new AtomicLong)
+    // Decrement the count. Remove the entry if the count reaches zero.
+    val decrementCount = new BiFunction[String, AtomicLong, AtomicLong] {
+      override def apply(unused: String, count: AtomicLong): AtomicLong = {
+        val countValue = count.decrementAndGet()
+        debug(s"Connection count for $key is $countValue")
+        if (countValue == 0L) null
+        else count
+      }
+    }
+    connectionsCount.computeIfPresent(key, decrementCount)
   }
 
   // Taken from Hive
@@ -455,17 +457,45 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     }
   }
 
-  // Taken from Hive
   private def anyViolations(username: String, ipAddress: String): Option[String] = {
+    // As a side effect, if there are no violations, the connection counts are incremented.
     val userAndAddress = username + ":" + ipAddress
-    if (trackConnectionsPerUser(username) && !withinLimits(username, userLimit)) {
+    val trackUser = trackConnectionsPerUser(username)
+    val trackIpAddress = trackConnectionsPerIpAddress(ipAddress)
+    val trackUserIpAddress = trackConnectionsPerUserIpAddress(username, ipAddress)
+    var userLimitExceeded = false
+    var ipAddressLimitExceeded = false
+    var userIpAddressLimitExceeded = false
+
+    // Optimistically increment the counts while getting them to check for violations.
+    if (trackUser) {
+      val userCount = incrementConnectionsCount(username)
+      if (userCount > userLimit) userLimitExceeded = true
+    }
+    if (trackIpAddress) {
+      val ipAddressCount = incrementConnectionsCount(ipAddress)
+      if (ipAddressCount > ipAddressLimit) ipAddressLimitExceeded = true
+    }
+    if (trackUserIpAddress) {
+      val userIpAddressCount = incrementConnectionsCount(userAndAddress)
+      if (userIpAddressCount > userIpAddressLimit) userIpAddressLimitExceeded = true
+    }
+
+    // If any limit has been exceeded, we won't be going ahead with the connection,
+    // so decrement all counts that have been incremented.
+    if (userLimitExceeded || ipAddressLimitExceeded || userIpAddressLimitExceeded) {
+      if (trackUser) decrementConnectionsCount(username)
+      if (trackIpAddress) decrementConnectionsCount(ipAddress)
+      if (trackUserIpAddress) decrementConnectionsCount(userAndAddress)
+    }
+
+    // the violation to return
+    if (userLimitExceeded) {
       Some(s"Connection limit per user reached (user: $username limit: $userLimit)")
-    } else if (trackConnectionsPerIpAddress(ipAddress) &&
-        !withinLimits(ipAddress, ipAddressLimit)) {
+    } else if (ipAddressLimitExceeded) {
       Some(s"Connection limit per ipaddress reached (ipaddress: $ipAddress limit: " +
         s"$ipAddressLimit)")
-    } else if (trackConnectionsPerUserIpAddress(username, ipAddress) &&
-        !withinLimits(userAndAddress, userIpAddressLimit)) {
+    } else if (userIpAddressLimitExceeded) {
       Some(s"Connection limit per user:ipaddress reached (user:ipaddress: $userAndAddress " +
         s"limit: $userIpAddressLimit)")
     } else {
