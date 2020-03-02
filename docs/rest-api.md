@@ -389,6 +389,8 @@ Returns all the active batch sessions.
 
 ### POST /batches
 
+Creates a new batch session.	
+
 #### Request Body
 
 <table class="table">
