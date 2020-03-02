@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.scalatest.BeforeAndAfterAll
 
+import org.apache.http.client.methods.HttpGet
+
 import org.apache.livy._
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.sessions.SessionKindModule
@@ -51,13 +53,14 @@ class Spark2JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll wit
   }
 
   test("create a new session and upload test jar") {
+    val prevSessionCount = sessionList().total
     val tempClient = createClient(livyEndpoint)
 
     try {
       // Figure out the session ID by poking at the REST endpoint. We should probably expose this
       // in the Java API.
       val list = sessionList()
-      assert(list.total === 1)
+      assert(list.total === prevSessionCount + 1)
       val tempSessionId = list.sessions(0).id
 
       livyClient.connectSession(tempSessionId).verifySessionIdle()
@@ -95,9 +98,15 @@ class Spark2JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll wit
   }
 
   private def sessionList(): SessionList = {
-    val response = httpClient.prepareGet(s"$livyEndpoint/sessions/").execute().get()
-    assert(response.getStatusCode === HttpServletResponse.SC_OK)
-    mapper.readValue(response.getResponseBodyAsStream, classOf[SessionList])
+    val httpGet = new HttpGet(s"$livyEndpoint/sessions/")
+    val r = livyClient.httpClient.execute(httpGet)
+    val statusCode = r.getStatusLine().getStatusCode()
+    val responseBody = r.getEntity().getContent
+    val sessionList = mapper.readValue(responseBody, classOf[SessionList])
+    r.close()
+
+    assert(statusCode ==  HttpServletResponse.SC_OK)
+    sessionList
   }
 
   private def createClient(uri: String): LivyClient = {

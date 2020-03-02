@@ -29,6 +29,7 @@ import scala.util.{Properties, Try}
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import org.apache.http.client.methods.HttpGet
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.livy._
@@ -67,13 +68,14 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
   }
 
   test("create a new session and upload test jar") {
+    val prevSessionCount = sessionList().total
     val tempClient = createClient(livyEndpoint)
 
     try {
       // Figure out the session ID by poking at the REST endpoint. We should probably expose this
       // in the Java API.
       val list = sessionList()
-      assert(list.total === 1)
+      assert(list.total === prevSessionCount + 1)
       val tempSessionId = list.sessions(0).id
 
       livyClient.connectSession(tempSessionId).verifySessionIdle()
@@ -263,6 +265,11 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     env.put("UPLOAD_FILE_URL", uploadFilePath)
     env.put("UPLOAD_PYFILE_URL", uploadPyFilePath)
 
+    if (authScheme != null && !authScheme.isEmpty()) { env.put("AUTH_SCHEME", authScheme) }
+    if (user != null && !user.isEmpty()) { env.put("USER", user) }
+    if (password != null && !password.isEmpty()) { env.put("PASSWORD", password) }
+    if (sslCertPath != null && !sslCertPath.isEmpty()) { env.put("SSL_CERT", sslCertPath) }
+
     builder.redirectErrorStream(true)
     builder.redirectOutput(new File(tmpDir, "pytest_results.log"))
 
@@ -303,9 +310,15 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
   }
 
   private def sessionList(): SessionList = {
-    val response = httpClient.prepareGet(s"$livyEndpoint/sessions/").execute().get()
-    assert(response.getStatusCode === HttpServletResponse.SC_OK)
-    mapper.readValue(response.getResponseBodyAsStream, classOf[SessionList])
+    val httpGet = new HttpGet(s"$livyEndpoint/sessions/")
+    val r = livyClient.httpClient.execute(httpGet)
+    val statusCode = r.getStatusLine().getStatusCode()
+    val responseBody = r.getEntity().getContent
+    val sessionList = mapper.readValue(responseBody, classOf[SessionList])
+    r.close()
+
+    assert(statusCode ==  HttpServletResponse.SC_OK)
+    sessionList
   }
 
   private def createClient(uri: String): LivyClient = {
