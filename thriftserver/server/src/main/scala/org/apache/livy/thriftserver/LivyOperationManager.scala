@@ -196,12 +196,7 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
       tableTypes: util.List[String]): OperationHandle = {
     executeOperation(sessionHandle, {
       val op = new GetTablesOperation(
-        sessionHandle,
-        catalogName,
-        schemaName,
-        tableName,
-        tableTypes,
-        livyThriftSessionManager)
+        sessionHandle, schemaName, tableName, tableTypes, livyThriftSessionManager)
       addOperation(op, sessionHandle)
       op
     })
@@ -214,8 +209,8 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
       schemaName: String,
       functionName: String): OperationHandle = {
     executeOperation(sessionHandle, {
-      val op = new GetFunctionsOperation(sessionHandle, catalogName, schemaName, functionName,
-        livyThriftSessionManager)
+      val op = new GetFunctionsOperation(
+        sessionHandle, schemaName, functionName, livyThriftSessionManager)
       addOperation(op, sessionHandle)
       op
     })
@@ -227,8 +222,7 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
       catalogName: String,
       schemaName: String): OperationHandle = {
     executeOperation(sessionHandle, {
-      val op = new GetSchemasOperation(sessionHandle, catalogName, schemaName,
-        livyThriftSessionManager)
+      val op = new GetSchemasOperation(sessionHandle, schemaName, livyThriftSessionManager)
       addOperation(op, sessionHandle)
       op
     })
@@ -242,8 +236,8 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
       tableName: String,
       columnName: String): OperationHandle = {
     executeOperation(sessionHandle, {
-      val op = new GetColumnsOperation(sessionHandle, catalogName, schemaName, tableName,
-        columnName, livyThriftSessionManager)
+      val op = new GetColumnsOperation(
+        sessionHandle, schemaName, tableName, columnName, livyThriftSessionManager)
       addOperation(op, sessionHandle)
       op
     })

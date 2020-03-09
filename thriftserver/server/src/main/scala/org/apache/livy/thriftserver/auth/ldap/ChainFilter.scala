@@ -14,24 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.livy.thriftserver.auth.ldap
 
-package org.apache.livy.thriftserver.session;
+import javax.security.sasl.AuthenticationException
 
-import org.apache.livy.Job;
-import org.apache.livy.JobContext;
-
-public class CleanupCatalogResultJob implements Job<Boolean> {
-  private final String sessionId;
-  private final String jobId;
-
-  public CleanupCatalogResultJob(String sessionId, String jobId) {
-    this.sessionId = sessionId;
-    this.jobId = jobId;
+/**
+ * Applies all the filters passed as param to the `ChainFilter`
+ */
+class ChainFilter(val chainedFilters: Seq[Filter]) extends Filter {
+  @throws[AuthenticationException]
+  def apply(user: String): Unit = {
+    chainedFilters.foreach { f => f(user) }
   }
-
-  @Override
-  public Boolean call(JobContext jc) throws Exception {
-    ThriftSessionState session = ThriftSessionState.get(jc, sessionId);
-      return session.cleanupCatalogJob(jobId);
-    }
 }

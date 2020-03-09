@@ -26,6 +26,7 @@ import javax.security.auth.login.LoginException
 import scala.collection.JavaConverters._
 
 import com.google.common.base.Preconditions.checkArgument
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.security.authentication.util.KerberosName
 import org.apache.hadoop.security.authorize.ProxyUsers
@@ -82,6 +83,19 @@ abstract class ThriftCLIService(val cliService: LivyCLIService, val serviceName:
     maxWorkerThreads = livyConf.getInt(LivyConf.THRIFT_MAX_WORKER_THREADS)
     super.init(livyConf)
   }
+
+  protected def getKeyStorePassword(): String =
+    Option(livyConf.get(LivyConf.SSL_KEYSTORE_PASSWORD)).orElse {
+      val credentialProviderPath = livyConf.get(LivyConf.HADOOP_CREDENTIAL_PROVIDER_PATH)
+      val hadoopConf = new Configuration()
+      if (credentialProviderPath != null) {
+        hadoopConf.set("hadoop.security.credential.provider.path", credentialProviderPath)
+      }
+      Option(hadoopConf.getPassword(LivyConf.SSL_KEYSTORE_PASSWORD.key)).map(_.mkString)
+    }.getOrElse {
+      throw new IllegalArgumentException(
+        "Livy keystore password not configured for SSL connection")
+    }
 
   protected def initServer(): Unit
 
@@ -397,7 +411,7 @@ abstract class ThriftCLIService(val cliService: LivyCLIService, val serviceName:
   override def GetTypeInfo(req: TGetTypeInfoReq): TGetTypeInfoResp = {
     val resp = new TGetTypeInfoResp
     try {
-      val operationHandle = cliService.getTypeInfo(new SessionHandle(req.getSessionHandle))
+      val operationHandle = cliService.getTypeInfo(createSessionHandle(req.getSessionHandle))
       resp.setOperationHandle(operationHandle.toTOperationHandle)
       resp.setStatus(ThriftCLIService.OK_STATUS)
     } catch {
@@ -412,7 +426,7 @@ abstract class ThriftCLIService(val cliService: LivyCLIService, val serviceName:
   override def GetCatalogs(req: TGetCatalogsReq): TGetCatalogsResp = {
     val resp = new TGetCatalogsResp
     try {
-      val opHandle = cliService.getCatalogs(new SessionHandle(req.getSessionHandle))
+      val opHandle = cliService.getCatalogs(createSessionHandle(req.getSessionHandle))
       resp.setOperationHandle(opHandle.toTOperationHandle)
       resp.setStatus(ThriftCLIService.OK_STATUS)
     } catch {
@@ -463,7 +477,7 @@ abstract class ThriftCLIService(val cliService: LivyCLIService, val serviceName:
   override def GetTableTypes(req: TGetTableTypesReq): TGetTableTypesResp = {
     val resp = new TGetTableTypesResp
     try {
-      val opHandle = cliService.getTableTypes(new SessionHandle(req.getSessionHandle))
+      val opHandle = cliService.getTableTypes(createSessionHandle(req.getSessionHandle))
       resp.setOperationHandle(opHandle.toTOperationHandle)
       resp.setStatus(ThriftCLIService.OK_STATUS)
     } catch {

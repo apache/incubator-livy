@@ -44,21 +44,22 @@ class GetTypeInfoOperation(sessionHandle: SessionHandle)
         val data = Array[Any](
           t.name,
           t.sqlType,
-          t.precision,
+          t.precision.orNull,
           null, // LITERAL_PREFIX
           null, // LITERAL_SUFFIX
           null, // CREATE_PARAMS
-          DatabaseMetaData.typeNullable, // All types are nullable
+          DatabaseMetaData.typeNullable.toShort, // All types are nullable
           t.caseSensitive,
+          t.searchable,
           t.unsignedAttribute,
           false, // FIXED_PREC_SCALE
           false, // AUTO_INCREMENT
           null, // LOCAL_TYPE_NAME
-          0, // MINIMUM_SCALE
-          0, // MAXIMUM_SCALE
+          0.toShort, // MINIMUM_SCALE
+          0.toShort, // MAXIMUM_SCALE
           null, // SQL_DATA_TYPE
           null, // SQL_DATETIME_SUB
-          t.numPrecRadix)
+          t.numPrecRadix.orNull)
         rowSet.addRow(data)
       }
       setState(OperationState.FINISHED)

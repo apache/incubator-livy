@@ -101,7 +101,6 @@ object BatchSession extends Logging {
             case 0 =>
             case exitCode =>
               warn(s"spark-submit exited with code $exitCode")
-              s.stateChanged(SparkApp.State.FAILED)
           }
         } finally {
           childProcesses.decrementAndGet()
@@ -183,22 +182,20 @@ class BatchSession(
   override def stateChanged(oldState: SparkApp.State, newState: SparkApp.State): Unit = {
     synchronized {
       debug(s"$this state changed from $oldState to $newState")
-      if (!_state.isInstanceOf[FinishedSessionState]) {
-        stateChanged(newState)
-      }
-    }
-  }
-
-  private def stateChanged(newState: SparkApp.State): Unit = {
-    synchronized {
       newState match {
         case SparkApp.State.RUNNING =>
           _state = SessionState.Running
           info(s"Batch session $id created [appid: ${appId.orNull}, state: ${state.toString}, " +
             s"info: ${appInfo.asJavaMap}]")
         case SparkApp.State.FINISHED => _state = SessionState.Success()
-        case SparkApp.State.KILLED => _state = SessionState.Killed()
-        case SparkApp.State.FAILED => _state = SessionState.Dead()
+        case SparkApp.State.KILLED => {
+          _state = SessionState.Killed()
+          sessionStore.remove(RECOVERY_SESSION_TYPE, id)
+        }
+        case SparkApp.State.FAILED => {
+          _state = SessionState.Dead()
+          sessionStore.remove(RECOVERY_SESSION_TYPE, id)
+        }
         case _ =>
       }
     }

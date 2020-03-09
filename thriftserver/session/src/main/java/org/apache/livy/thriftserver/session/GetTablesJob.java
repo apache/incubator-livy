@@ -22,10 +22,12 @@ import java.util.List;
 
 import static scala.collection.JavaConversions.seqAsJavaList;
 
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
+import org.apache.spark.sql.catalyst.expressions.GenericRow;
 
 public class GetTablesJob extends SparkCatalogJob {
   private final String databasePattern;
@@ -37,10 +39,11 @@ public class GetTablesJob extends SparkCatalogJob {
       String tablePattern,
       List<String> tableTypes,
       String sessionId,
-      String jobId) {
-    super(sessionId, jobId);
-    this.databasePattern = databasePattern;
-    this.tablePattern = tablePattern;
+      String jobId,
+      DataType[] resultTypes) {
+    super(sessionId, jobId, resultTypes);
+    this.databasePattern = convertSchemaPattern(databasePattern);
+    this.tablePattern = convertIdentifierPattern(tablePattern, true);
     if (tableTypes != null) {
       for (String type : tableTypes) {
         this.tableTypes.add(type.toUpperCase());
@@ -49,8 +52,8 @@ public class GetTablesJob extends SparkCatalogJob {
   }
 
   @Override
-  protected List<Object[]> fetchCatalogObjects(SessionCatalog catalog) {
-    List<Object[]> tableList = new ArrayList<Object[]>();
+  protected List<Row> fetchCatalogObjects(SessionCatalog catalog) {
+    List<Row> tableList = new ArrayList<Row>();
     List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));
     for (String db : databases) {
       List<TableIdentifier> tableIdentifiers =
@@ -59,14 +62,14 @@ public class GetTablesJob extends SparkCatalogJob {
         CatalogTable table = catalog.getTempViewOrPermanentTableMetadata(tableIdentifier);
         String type = convertTableType(table.tableType().name());
         if (tableTypes.isEmpty() || tableTypes.contains(type)) {
-          tableList.add(
+          tableList.add(new GenericRow(
             new Object[] {
               DEFAULT_HIVE_CATALOG,
               table.database(),
               table.identifier().table(),
               type,
               table.comment().isDefined() ? table.comment().get() : ""
-            });
+            }));
         }
       }
     }

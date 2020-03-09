@@ -18,9 +18,7 @@
 package org.apache.livy.thriftserver.session;
 
 import java.util.Iterator;
-import java.util.List;
 
-import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -88,5 +86,4 @@ public class SqlJob implements Job<Void> {
     // has been executed.
     session.registerStatement(statementId, schema, iter);
   }
-
 }

@@ -33,11 +33,11 @@ class GetCatalogsOperation(sessionHandle: SessionHandle)
   @throws(classOf[HiveSQLException])
   override def runInternal(): Unit = {
     setState(OperationState.RUNNING)
-    info("Fetching table type metadata")
+    info("Fetching catalogs metadata")
     try {
       // catalogs are actually not supported in spark, so this is a no-op
       setState(OperationState.FINISHED)
-      info("Fetching table type metadata has been successfully finished")
+      info("Fetching catalogs has been successfully finished")
     } catch {
       case e: Throwable =>
         setState(OperationState.ERROR)

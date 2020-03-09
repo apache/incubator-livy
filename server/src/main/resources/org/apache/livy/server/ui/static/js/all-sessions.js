@@ -21,6 +21,7 @@ function loadSessionsTable(sessions) {
       "<tr>" +
         tdWrap(uiLink("session/" + session.id, session.id)) +
         tdWrap(appIdLink(session)) +
+        tdWrap(session.name) +
         tdWrap(session.owner) +
         tdWrap(session.proxyUser) +
         tdWrap(session.kind) +
@@ -37,6 +38,9 @@ function loadBatchesTable(sessions) {
       "<tr>" +
         tdWrap(session.id) +
         tdWrap(appIdLink(session)) +
+        tdWrap(session.name) +
+        tdWrap(session.owner) +
+        tdWrap(session.proxyUser) +
         tdWrap(session.state) +
         tdWrap(logLinks(session, "batch")) +
         "</tr>"
