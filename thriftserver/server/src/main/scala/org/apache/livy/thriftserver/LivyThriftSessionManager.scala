@@ -413,20 +413,6 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     }
   }
 
-  // Taken from Hive
-  @throws[HiveSQLException]
-  private def incrementConnections(
-      username: String,
-      ipAddress: String,
-      forwardedAddresses: util.List[String]): Unit = {
-    val clientIpAddress: String = getOriginClientIpAddress(ipAddress, forwardedAddresses)
-    val violation = anyViolations(username, clientIpAddress)
-    if (!violation.isEmpty) {
-      error(violation.get)
-      throw new HiveSQLException(violation.get)
-    }
-  }
-
   private def incrementConnectionsCount(key: String): Long = {
     // Increment the count, returning the new value.
     val count = connectionsCount.putIfAbsent(key, new AtomicLong(1L))
@@ -457,12 +443,17 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     }
   }
 
-  private def anyViolations(username: String, ipAddress: String): Option[String] = {
-    // As a side effect, if there are no violations, the connection counts are incremented.
-    val userAndAddress = username + ":" + ipAddress
+  // Visible for testing
+  @throws[HiveSQLException]
+  private[thriftserver] def incrementConnections(
+      username: String,
+      ipAddress: String,
+      forwardedAddresses: util.List[String]): Unit = {
+    val clientIpAddress: String = getOriginClientIpAddress(ipAddress, forwardedAddresses)
+    val userAndAddress = username + ":" + clientIpAddress
     val trackUser = trackConnectionsPerUser(username)
-    val trackIpAddress = trackConnectionsPerIpAddress(ipAddress)
-    val trackUserIpAddress = trackConnectionsPerUserIpAddress(username, ipAddress)
+    val trackIpAddress = trackConnectionsPerIpAddress(clientIpAddress)
+    val trackUserIpAddress = trackConnectionsPerUserIpAddress(username, clientIpAddress)
     var userLimitExceeded = false
     var ipAddressLimitExceeded = false
     var userIpAddressLimitExceeded = false
@@ -473,7 +464,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       if (userCount > userLimit) userLimitExceeded = true
     }
     if (trackIpAddress) {
-      val ipAddressCount = incrementConnectionsCount(ipAddress)
+      val ipAddressCount = incrementConnectionsCount(clientIpAddress)
       if (ipAddressCount > ipAddressLimit) ipAddressLimitExceeded = true
     }
     if (trackUserIpAddress) {
@@ -485,21 +476,25 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     // so decrement all counts that have been incremented.
     if (userLimitExceeded || ipAddressLimitExceeded || userIpAddressLimitExceeded) {
       if (trackUser) decrementConnectionsCount(username)
-      if (trackIpAddress) decrementConnectionsCount(ipAddress)
+      if (trackIpAddress) decrementConnectionsCount(clientIpAddress)
       if (trackUserIpAddress) decrementConnectionsCount(userAndAddress)
     }
 
-    // the violation to return
-    if (userLimitExceeded) {
-      Some(s"Connection limit per user reached (user: $username limit: $userLimit)")
-    } else if (ipAddressLimitExceeded) {
-      Some(s"Connection limit per ipaddress reached (ipaddress: $ipAddress limit: " +
-        s"$ipAddressLimit)")
-    } else if (userIpAddressLimitExceeded) {
-      Some(s"Connection limit per user:ipaddress reached (user:ipaddress: $userAndAddress " +
-        s"limit: $userIpAddressLimit)")
-    } else {
-      None
+    val violation =
+      if (userLimitExceeded) {
+        Some(s"Connection limit per user reached (user: $username limit: $userLimit)")
+      } else if (ipAddressLimitExceeded) {
+        Some(s"Connection limit per ipaddress reached (ipaddress: $clientIpAddress limit: " +
+          s"$ipAddressLimit)")
+      } else if (userIpAddressLimitExceeded) {
+        Some(s"Connection limit per user:ipaddress reached (user:ipaddress: $userAndAddress " +
+          s"limit: $userIpAddressLimit)")
+      } else {
+        None
+      }
+    if (!violation.isEmpty) {
+      error(violation.get)
+      throw new HiveSQLException(violation.get)
     }
   }
 
@@ -517,11 +512,6 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   // Taken from Hive
   private def trackConnectionsPerUser(username: String): Boolean = {
     userLimit > 0 && username != null && !username.isEmpty
-  }
-
-  // Taken from Hive
-  private def withinLimits(track: String, limit: Int): Boolean = {
-    !(connectionsCount.containsKey(track) && connectionsCount.get(track).intValue >= limit)
   }
 
   private def decrementConnections(sessionInfo: SessionInfo): Unit = {
