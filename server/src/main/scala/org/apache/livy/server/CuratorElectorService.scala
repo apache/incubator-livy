@@ -36,12 +36,20 @@ object CuratorElectorService {
   val HA_RETRY_CONF = Entry("livy.server.ha.retry-policy", "5,100")
 }
 
-class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
+object HAState extends Enumeration{
+  type HAState = Value
+  val Active, Standby = Value
+}
+
+
+class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
+    mockCuratorClient: Option[CuratorFramework] = None, mockLeaderLatch: Option[LeaderLatch] = None) // For testing)
   extends LeaderLatchListener
   with Logging
 {
 
   import CuratorElectorService._
+  import HAState._
 
   val haAddress = livyConf.get(LivyConf.HA_ZOOKEEPER_URL)
   require(!haAddress.isEmpty, s"Please configure ${LivyConf.HA_ZOOKEEPER_URL.key}.")
@@ -56,26 +64,25 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
         "Correct format is <max retry count>,<sleep ms between retry>. e.g. 5,100")
   }
 
-  val client: CuratorFramework = CuratorFrameworkFactory.newClient(haAddress, retryPolicy)
-  val leaderKey = s"/$haKeyPrefix/leader"
-
   var server : LivyServer = livyServer
 
-  var leaderLatch = new LeaderLatch(client, leaderKey)
+  val client: CuratorFramework = mockCuratorClient.getOrElse {
+    CuratorFrameworkFactory.newClient(haAddress, retryPolicy)
+  }
+  val leaderKey = s"/$haKeyPrefix/leader"
+
+  var leaderLatch = mockLeaderLatch.getOrElse {
+    new LeaderLatch(client, leaderKey)
+  }
   leaderLatch.addListener(this)
 
-  object HAState extends Enumeration{
-    type HAState = Value
-    val Active, Standby = Value
-  }
   var currentState = HAState.Standby
-
   def isLeader() {
-    transitionToActive();
+    transitionToActive()
   }
 
-  def notLeader() {
-    transitionToStandby();
+  def notLeader(){
+    transitionToStandby()
   }
 
   def start(): Unit = {
@@ -92,8 +99,8 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
   }
 
   def close(): Unit = {
-    transitionToStandby();
-    leaderLatch.close();
+    transitionToStandby()
+    leaderLatch.close()
   }
 
   def transitionToActive(): Unit = {
@@ -111,12 +118,12 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer)
   def transitionToStandby(): Unit = {
     info("Transitioning to Standby state")
     if(currentState == HAState.Standby) {
-      info("Already in Standby State");
+      info("Already in Standby State")
     }
     else {
-      server.stop();
+      server.stop()
       currentState = HAState.Standby
-      info("Transition complete");
+      info("Transition complete")
     }
   }
 }
