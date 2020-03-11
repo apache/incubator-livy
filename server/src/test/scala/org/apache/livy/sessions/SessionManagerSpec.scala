@@ -232,6 +232,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
         .thenReturn(validMetadata ++ invalidMetadata)
 
       val sm = new BatchSessionManager(conf, sessionStore)
+      sm.startSessionManager()
       sm.nextId() shouldBe nextId
       validMetadata.foreach { m =>
         sm.get(m.get.id) shouldBe defined
@@ -248,6 +249,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       val session = mockSession(sessionId)
 
       val sm = new BatchSessionManager(conf, sessionStore, Some(Seq(session)))
+      sm.startSessionManager()
       sm.get(sessionId) shouldBe defined
 
       Await.ready(sm.delete(sessionId).get, 30 seconds)
@@ -263,6 +265,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       val session = mockSession(sessionId)
 
       val sm = new BatchSessionManager(conf, sessionStore, Some(Seq(session)))
+      sm.startSessionManager()
       sm.get(sessionId) shouldBe defined
       sm.shutdown()
 
@@ -278,6 +281,7 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       val session = mockSession(sessionId)
 
       val sm = new BatchSessionManager(conf, sessionStore, Some(Seq(session)))
+      sm.startSessionManager()
       sm.get(sessionId) shouldBe defined
       sm.shutdown()
 

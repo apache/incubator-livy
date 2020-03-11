@@ -60,30 +60,29 @@ class CuratorElectorServiceSpec extends FunSpec with LivyBaseUnitTestSuite {
       }
     }
 
-    it("should start the livy server after acquiring leadership") {
+    it("should restart the livy server after acquiring leadership") {
       withMock { f =>
         f.electorService.isLeader()
         f.electorService.currentState shouldBe HAState.Active
-        verify(f.electorService.server, times(1)).start()
+        verify(f.electorService.server, times(1)).restart()
       }
     }
 
-    it("should stop the Livy Server if it loses leadership") {
+    it("should be in standy state if loses leadership") {
       withMock { f =>
         f.electorService.isLeader()
         f.electorService.notLeader()
         f.electorService.currentState shouldBe HAState.Standby
-        verify(f.electorService.server, times(1)).stop()
       }
     }
 
-    it("should start a new Livy Server after reacquiring leadership") {
+    it("should restart the Livy Server again after reacquiring leadership") {
       withMock { f =>
         f.electorService.isLeader()
         f.electorService.notLeader()
         f.electorService.isLeader()
         f.electorService.currentState shouldBe HAState.Active
-        verify(f.electorService.server, times(2)).start()      
+        verify(f.electorService.server, times(2)).restart()      
         }
     }
   }
