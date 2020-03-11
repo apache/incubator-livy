@@ -37,16 +37,18 @@ class TestLivyThriftSessionManager {
   import ConnectionLimitType._
 
   private def createThriftSessionManager(
-      limitType: ConnectionLimitType): LivyThriftSessionManager = {
+      limitTypes: ConnectionLimitType*): LivyThriftSessionManager = {
     val conf = new LivyConf()
     conf.set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
     val limit = 3
-    val entry = limitType match {
-      case User => LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_USER
-      case IpAddress => LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_IPADDRESS
-      case UserIpAddress => LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_USER_IPADDRESS
+    for (limitType <- limitTypes) {
+      val entry = limitType match {
+        case User => LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_USER
+        case IpAddress => LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_IPADDRESS
+        case UserIpAddress => LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_USER_IPADDRESS
+      }
+      conf.set(entry, limit)
     }
-    conf.set(entry, limit)
     val server = new LivyThriftServer(
       conf,
       mock(classOf[InteractiveSessionManager]),
@@ -124,4 +126,20 @@ class TestLivyThriftSessionManager {
     testLimit(thriftSessionMgr, user, ipAddress, forwardedAddresses, msg)
   }
 
+  @Test
+  def testMultipleConnectionLimits(): Unit = {
+    val thriftSessionMgr = createThriftSessionManager(User, IpAddress)
+    val user = "alice"
+    val ipAddress = "10.20.30.40"
+    val forwardedAddresses = new java.util.ArrayList[String]()
+    thriftSessionMgr.incrementConnections(user, ipAddress, forwardedAddresses)
+    thriftSessionMgr.incrementConnections("bob", ipAddress, forwardedAddresses)
+    thriftSessionMgr.incrementConnections("charlie", ipAddress, forwardedAddresses)
+    thriftSessionMgr.incrementConnections(user, "10.20.30.41", forwardedAddresses)
+    thriftSessionMgr.incrementConnections(user, "10.20.30.42", forwardedAddresses)
+    // At this point, both user and ipAddress are at their respective limits.
+    // If the limit for both are exceeded at the same time, the error message is for user.
+    val msg = s"Connection limit per user reached (user: $user limit: 3)"
+    testLimit(thriftSessionMgr, user, ipAddress, forwardedAddresses, msg)
+  }
 }

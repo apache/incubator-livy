@@ -416,8 +416,11 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   private def incrementConnectionsCount(key: String): Long = {
     // Increment the count, returning the new value.
     val count = connectionsCount.putIfAbsent(key, new AtomicLong(1L))
-    if (count != null) count.incrementAndGet()
-    else 1L
+    if (count != null) {
+      count.incrementAndGet()
+    } else {
+      1L
+    }
   }
 
   private def decrementConnectionsCount(key: String): Unit = {
@@ -426,8 +429,11 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       override def apply(unused: String, count: AtomicLong): AtomicLong = {
         val countValue = count.decrementAndGet()
         debug(s"Connection count for $key is $countValue")
-        if (countValue == 0L) null
-        else count
+        if (countValue == 0L) {
+          null
+        } else {
+          count
+        }
       }
     }
     connectionsCount.computeIfPresent(key, decrementCount)
@@ -443,6 +449,11 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     }
   }
 
+  private def logAndThrowException(msg: String): Unit = {
+    error(msg)
+    throw new HiveSQLException(msg)
+  }
+
   // Visible for testing
   @throws[HiveSQLException]
   private[thriftserver] def incrementConnections(
@@ -454,47 +465,36 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     val trackUser = trackConnectionsPerUser(username)
     val trackIpAddress = trackConnectionsPerIpAddress(clientIpAddress)
     val trackUserIpAddress = trackConnectionsPerUserIpAddress(username, clientIpAddress)
-    var userLimitExceeded = false
-    var ipAddressLimitExceeded = false
-    var userIpAddressLimitExceeded = false
 
     // Optimistically increment the counts while getting them to check for violations.
+    // If any limit has been exceeded, we won't be going ahead with the connection,
+    // so decrement all counts that have been incremented.
     if (trackUser) {
       val userCount = incrementConnectionsCount(username)
-      if (userCount > userLimit) userLimitExceeded = true
+      if (userCount > userLimit) {
+        decrementConnectionsCount(username)
+        logAndThrowException("Connection limit per user reached " +
+          s"(user: $username limit: $userLimit)")
+      }
     }
     if (trackIpAddress) {
       val ipAddressCount = incrementConnectionsCount(clientIpAddress)
-      if (ipAddressCount > ipAddressLimit) ipAddressLimitExceeded = true
+      if (ipAddressCount > ipAddressLimit) {
+        if (trackUser) decrementConnectionsCount(username)
+        decrementConnectionsCount(clientIpAddress)
+        logAndThrowException("Connection limit per ipaddress reached " +
+          s"(ipaddress: $clientIpAddress limit: $ipAddressLimit)")
+      }
     }
     if (trackUserIpAddress) {
       val userIpAddressCount = incrementConnectionsCount(userAndAddress)
-      if (userIpAddressCount > userIpAddressLimit) userIpAddressLimitExceeded = true
-    }
-
-    // If any limit has been exceeded, we won't be going ahead with the connection,
-    // so decrement all counts that have been incremented.
-    if (userLimitExceeded || ipAddressLimitExceeded || userIpAddressLimitExceeded) {
-      if (trackUser) decrementConnectionsCount(username)
-      if (trackIpAddress) decrementConnectionsCount(clientIpAddress)
-      if (trackUserIpAddress) decrementConnectionsCount(userAndAddress)
-    }
-
-    val violation =
-      if (userLimitExceeded) {
-        Some(s"Connection limit per user reached (user: $username limit: $userLimit)")
-      } else if (ipAddressLimitExceeded) {
-        Some(s"Connection limit per ipaddress reached (ipaddress: $clientIpAddress limit: " +
-          s"$ipAddressLimit)")
-      } else if (userIpAddressLimitExceeded) {
-        Some(s"Connection limit per user:ipaddress reached (user:ipaddress: $userAndAddress " +
-          s"limit: $userIpAddressLimit)")
-      } else {
-        None
+      if (userIpAddressCount > userIpAddressLimit) {
+        if (trackUser) decrementConnectionsCount(username)
+        if (trackIpAddress) decrementConnectionsCount(clientIpAddress)
+        decrementConnectionsCount(userAndAddress)
+        logAndThrowException("Connection limit per user:ipaddress reached " +
+          s"(user:ipaddress: $userAndAddress limit: $userIpAddressLimit)")
       }
-    if (!violation.isEmpty) {
-      error(violation.get)
-      throw new HiveSQLException(violation.get)
     }
   }
 
