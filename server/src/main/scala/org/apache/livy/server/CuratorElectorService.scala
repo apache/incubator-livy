@@ -19,6 +19,7 @@ package org.apache.livy.server
 
 import java.io.Closeable
 import java.io.IOException
+import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -47,7 +48,6 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
   extends LeaderLatchListener
   with Logging
 {
-
   import CuratorElectorService._
   import HAState._
 
@@ -71,8 +71,11 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
   }
   val leaderKey = s"/$haKeyPrefix/leader"
 
+  val leaderIds = livyConf.configToSeq(LivyConf.HA_SERVER_IDS)
+  val leaderEndpoints = livyConf.configToSeq(LivyConf.HA_SERVER_ENDPOINTS)
+
   var leaderLatch = mockLeaderLatch.getOrElse {
-    new LeaderLatch(client, leaderKey)
+    new LeaderLatch(client, leaderKey, getCurrentId())
   }
   leaderLatch.addListener(this)
 
@@ -85,9 +88,24 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
     transitionToStandby()
   }
 
+  def getCurrentId(): String = {
+    val currentEndpoint = java.net.InetAddress.getLocalHost().getHostName();
+    info(currentEndpoint)
+    info(leaderEndpoints)
+    val currentId = leaderIds(leaderEndpoints indexOf currentEndpoint)
+    currentId
+  }
+  
+  def getActiveEndpoint(): String = {
+    val activeLeaderId = leaderLatch.getLeader().getId()
+    val activeEndpoint = leaderEndpoints(leaderIds indexOf activeLeaderId)
+    activeEndpoint
+  }
+
   def start(): Unit = {
     transitionToStandby()
 
+    server.start()
     client.start()
     leaderLatch.start()
 
@@ -109,7 +127,7 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
       info("Already in Active State")
     }
     else {
-      server.start()
+      server.restart()
       currentState = HAState.Active
       info("Transition complete")
     }
@@ -121,7 +139,6 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
       info("Already in Standby State")
     }
     else {
-      server.stop()
       currentState = HAState.Standby
       info("Transition complete")
     }

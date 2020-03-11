@@ -209,6 +209,15 @@ object LivyConf {
   // For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
   val HA_ZOOKEEPER_URL = Entry("livy.server.ha.zookeeper-url", "")
 
+  // The id of the current livy server
+  val HA_SERVER_ID = Entry("livy.server.ha.server-id", "")
+
+  // The ids of all servers used in HA
+  val HA_SERVER_IDS = Entry("livy.server.ha.server-ids", "")
+
+  // The endpoints of all servers used in HA
+  val HA_SERVER_ENDPOINTS = Entry("livy.server.ha.server-addresses", "")
+
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.

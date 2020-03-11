@@ -63,9 +63,13 @@ class LivyServer extends Logging {
 
   private var zkManager: Option[ZooKeeperManager] = None
 
+  private var interactiveSessionManager: InteractiveSessionManager = _
+  private var batchSessionManager: BatchSessionManager = _
+  private var sessionStore: SessionStore = _
+
   private var ugi: UserGroupInformation = _
 
-  def start(): Unit = {
+  def init(): Unit = {
     livyConf = new LivyConf().loadFromFile("livy.conf")
     accessManager = new AccessManager(livyConf)
 
@@ -153,11 +157,11 @@ class LivyServer extends Logging {
       zkManager = Some(new ZooKeeperManager(livyConf))
       zkManager.foreach(_.start())
     }
-
+    
     StateStore.init(livyConf, zkManager)
-    val sessionStore = new SessionStore(livyConf)
-    val batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
-    val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)
+    sessionStore = new SessionStore(livyConf)
+    batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
+    interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)
 
     server = new WebServer(livyConf, host, port)
     server.context.setResourceBase("src/main/org/apache/livy/server")
@@ -321,7 +325,29 @@ class LivyServer extends Logging {
       val accessHolder = new FilterHolder(new AccessFilter(accessManager))
       server.context.addFilter(accessHolder, "/*", EnumSet.allOf(classOf[DispatcherType]))
     }
+  }
 
+  def initHa(electorService: CuratorElectorService): Unit = {
+    //Start server HA leader election service if applicable
+    if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON){
+      info("Starting HA connection")
+
+      //val thread = new Thread {
+      //  override def run {
+      //   electorService.start()
+      //  }
+      //}
+      //thread.start
+
+      val redirectHolder = new FilterHolder(new DomainRedirectionFilter(electorService))
+      server.context.addFilter(redirectHolder, "/*", EnumSet.allOf(classOf[DispatcherType]))
+    }
+  }
+
+  def start(): Unit = {
+    info("Starting HA connection")
+    interactiveSessionManager.startSessionManager()
+    batchSessionManager.startSessionManager()
     server.start()
 
     _thriftServerFactory.foreach {
@@ -330,10 +356,7 @@ class LivyServer extends Logging {
 
     Runtime.getRuntime().addShutdownHook(new Thread("Livy Server Shutdown") {
       override def run(): Unit = {
-        info("Shutting down Livy server.")
-        zkManager.foreach(_.stop())
-        server.stop()
-        _thriftServerFactory.foreach(_.stop())
+        stop()
       }
     })
 
@@ -392,8 +415,17 @@ class LivyServer extends Logging {
 
   def stop(): Unit = {
     if (server != null) {
-      server.stop()
+        info("Shutting down Livy server.")
+        zkManager.foreach(_.stop())
+        server.stop()
+        _thriftServerFactory.foreach(_.stop())
     }
+  }
+
+  def restart(): Unit =
+  {
+    stop()
+    start()
   }
 
   def serverUrl(): String = {
@@ -435,9 +467,11 @@ object LivyServer {
     val server = new LivyServer()
     val livyConf = new LivyConf().loadFromFile("livy.conf")
 
+    server.init()
     if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON) {
       info("Starting HA connection")
       val electorService: CuratorElectorService = new CuratorElectorService(livyConf, server)
+      server.initHa(electorService)
       electorService.start()
     }
     else {

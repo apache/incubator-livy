@@ -110,6 +110,15 @@
 # For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
 # livy.server.ha.zookeeper-url =
 
+# The id of the current livy server
+# livy.server.ha.server-id =
+
+# The list of ids for all livy servers used for HA
+# livy.server.ha.server-ids =
+
+# The list of server addresses for all livy servers used for HA
+# livy.server.ha.server-addresses =
+
 # Recovery mode of Livy. Possible values:
 # off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
 # recovery: Livy persists session info to the state store. When Livy restarts, it recovers
