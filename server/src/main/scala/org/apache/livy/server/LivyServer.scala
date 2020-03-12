@@ -18,7 +18,7 @@
 package org.apache.livy.server
 
 import java.io.{BufferedInputStream, InputStream}
-0import java.net.InetAddress
+import java.net.InetAddress
 import java.util.concurrent._
 import java.util.EnumSet
 import javax.servlet._
