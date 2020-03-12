@@ -41,7 +41,7 @@ class TestLivyThriftSessionManager {
     val conf = new LivyConf()
     conf.set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
     val limit = 3
-    for (limitType <- limitTypes) {
+    limitTypes.foreach { limitType =>
       val entry = limitType match {
         case User => LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_USER
         case IpAddress => LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_IPADDRESS
