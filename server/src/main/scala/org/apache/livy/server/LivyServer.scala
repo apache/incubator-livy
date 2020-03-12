@@ -329,7 +329,7 @@ class LivyServer extends Logging {
 
   def initHa(electorService: CuratorElectorService): Unit = {
     // Start server HA leader election service if applicable
-    if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON) {
+    if (livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON) {
       info("Starting HA connection")
 
       val redirectHolder = new FilterHolder(new DomainRedirectionFilter(electorService))
