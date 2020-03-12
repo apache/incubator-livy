@@ -201,7 +201,6 @@ object LivyConf {
   val HA_MODE_RECOVERY = "recovery"
   val HA_MODE_MULTI_ACTIVE = "multi-active"
 
-
   // Zookeeper address used for HA and state store. e.g. host1:port1, host2:port2
   val ZOOKEEPER_URL = Entry("livy.server.zookeeper.url", null)
 
@@ -243,7 +242,7 @@ object LivyConf {
   val RECOVERY_ZK_STATE_STORE_KEY_PREFIX =
     Entry("livy.server.recovery.zk-state-store.key-prefix", "livy")
 
-  val ZK_SERVICE_DIR = Entry("livy.server.zk.services", "/livy/zk/services")
+  val ZK_SERVICE_DIR = Entry("livy.server.ha.zk-services", "/livy/zk/services")
 
   // Livy will cache the max no of logs specified. 0 means don't cache the logs.
   val SPARK_LOGS_SIZE = Entry("livy.cache-log.size", 200)

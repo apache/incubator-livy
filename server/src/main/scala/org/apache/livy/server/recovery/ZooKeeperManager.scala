@@ -138,7 +138,6 @@ class ZooKeeperManager(
     new PathChildrenCache(curatorClient, path, true)
   }
 
-
   private def deleteNode(path: String): Unit = {
     if (curatorClient.checkExists().forPath(path) != null) {
       curatorClient.delete().forPath(path)

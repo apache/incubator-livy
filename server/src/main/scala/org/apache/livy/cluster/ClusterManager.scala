@@ -16,7 +16,7 @@
  */
 package org.apache.livy.cluster
 
-import scala.collection.mutable.Set
+import scala.collection.immutable.Set
 
 case class ServiceNode(host: String, port: Int, UUID: String)
 
@@ -40,7 +40,7 @@ abstract class ClusterManager {
    * Add a listener which will be notified when a new node join the cluster.
    * @param listener
    */
-  def registerNodeJoinListener(listener: ServiceNode => Unit): Unit
+  def registerNodeJoinListener(listener : ServiceNode => Unit): Unit
 
   /**
    * Add a listener which will be notified when a node leave the cluster.

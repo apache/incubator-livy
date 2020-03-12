@@ -153,7 +153,7 @@
 # livy.server.recovery.zk-state-store.key-prefix = livy
 
 # The dir in zk to store service node metadata
-# livy.server.zk.services = livy/zk/services
+# livy.server.ha.zk-services = livy/zk/services
 
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s

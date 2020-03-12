@@ -18,8 +18,8 @@ package org.apache.livy.cluster
 
 import java.util.UUID
 
-import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, Set}
+import scala.collection.immutable.Set
+import scala.collection.mutable.{ArrayBuffer, HashSet}
 
 import org.apache.livy.rsc.RSCConf.Entry.LAUNCHER_ADDRESS
 import org.apache.livy.LivyConf.{SERVER_PORT, ZK_SERVICE_DIR}
@@ -35,7 +35,7 @@ class ZKClusterManager(livyConf: LivyConf, zkManager: ZooKeeperManager)
   private val port = livyConf.getInt(SERVER_PORT)
   private val serviceDir = livyConf.get(ZK_SERVICE_DIR)
 
-  private val nodes = new mutable.HashSet[ServiceNode]()
+  private val nodes = new HashSet[ServiceNode]()
   private val nodeJoinListeners = new ArrayBuffer[ServiceNode => Unit]()
   private val nodeLeaveListeners = new ArrayBuffer[ServiceNode => Unit]()
 
@@ -54,7 +54,7 @@ class ZKClusterManager(livyConf: LivyConf, zkManager: ZooKeeperManager)
   }
 
   override def getNodes(): Set[ServiceNode] = {
-    nodes
+    nodes.toSet
   }
 
   override def registerNodeJoinListener(listener: ServiceNode => Unit): Unit = {
