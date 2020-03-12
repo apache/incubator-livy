@@ -40,7 +40,7 @@ class CuratorElectorServiceSpec extends FunSpec with LivyBaseUnitTestSuite {
     val conf = new LivyConf()
     conf.set(LivyConf.HA_ZOOKEEPER_URL, "host")
 
-    //Need to create mock leader latches and their associated functions
+    // Need to create mock leader latches and their associated functions
     def withMock[R](testBody: TestFixture => R): R = {
       val curatorClient = mock[CuratorFramework]
       when(curatorClient.getUnhandledErrorListenable())
@@ -48,11 +48,12 @@ class CuratorElectorServiceSpec extends FunSpec with LivyBaseUnitTestSuite {
       val leaderLatch = mock[LeaderLatch]
 
       val server = mock[LivyServer]
-      val electorService = new CuratorElectorService(conf, server, Some(curatorClient), Some(leaderLatch))
-      
+      val electorService = new CuratorElectorService(conf, server,
+                               Some(curatorClient), Some(leaderLatch))
+
       testBody(TestFixture(electorService))
     }
- 
+
     it("should not start the server until it acquires leadership") {
       withMock { f =>
         f.electorService.currentState shouldBe HAState.Standby
@@ -82,7 +83,7 @@ class CuratorElectorServiceSpec extends FunSpec with LivyBaseUnitTestSuite {
         f.electorService.notLeader()
         f.electorService.isLeader()
         f.electorService.currentState shouldBe HAState.Active
-        verify(f.electorService.server, times(2)).restart()      
+        verify(f.electorService.server, times(2)).restart()
         }
     }
   }

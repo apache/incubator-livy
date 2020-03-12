@@ -44,7 +44,8 @@ object HAState extends Enumeration{
 
 
 class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
-    mockCuratorClient: Option[CuratorFramework] = None, mockLeaderLatch: Option[LeaderLatch] = None) // For testing)
+    mockCuratorClient: Option[CuratorFramework] = None,
+    mockLeaderLatch: Option[LeaderLatch] = None)
   extends LeaderLatchListener
   with Logging
 {
@@ -95,7 +96,7 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
     val currentId = leaderIds(leaderEndpoints indexOf currentEndpoint)
     currentId
   }
-  
+
   def getActiveEndpoint(): String = {
     val activeLeaderId = leaderLatch.getLeader().getId()
     val activeEndpoint = leaderEndpoints(leaderIds indexOf activeLeaderId)

@@ -18,7 +18,7 @@
 package org.apache.livy.server
 
 import java.io.{BufferedInputStream, InputStream}
-import java.net.InetAddress
+0import java.net.InetAddress
 import java.util.concurrent._
 import java.util.EnumSet
 import javax.servlet._
@@ -157,7 +157,7 @@ class LivyServer extends Logging {
       zkManager = Some(new ZooKeeperManager(livyConf))
       zkManager.foreach(_.start())
     }
-    
+
     StateStore.init(livyConf, zkManager)
     sessionStore = new SessionStore(livyConf)
     batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
@@ -328,16 +328,9 @@ class LivyServer extends Logging {
   }
 
   def initHa(electorService: CuratorElectorService): Unit = {
-    //Start server HA leader election service if applicable
-    if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON){
+    // Start server HA leader election service if applicable
+    if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON) {
       info("Starting HA connection")
-
-      //val thread = new Thread {
-      //  override def run {
-      //   electorService.start()
-      //  }
-      //}
-      //thread.start
 
       val redirectHolder = new FilterHolder(new DomainRedirectionFilter(electorService))
       server.context.addFilter(redirectHolder, "/*", EnumSet.allOf(classOf[DispatcherType]))
