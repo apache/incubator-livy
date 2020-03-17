@@ -65,7 +65,7 @@ class DomainRedirectionFilter(HAService: CuratorElectorService) extends Filter
 
         val httpServletResponse = response.asInstanceOf[HttpServletResponse];
         val redirectMsg = "This is a standby Livy Instance. The redirect url is: " + redirectURL
-        val out = httpServletResponse.getWriter()es
+        val out = httpServletResponse.getWriter()
         // scalastyle:off println
         out.println(redirectMsg)
         // scalastyle:on println
