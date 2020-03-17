@@ -409,9 +409,11 @@ class LivyServer extends Logging {
   def stop(): Unit = {
     if (server != null) {
         info("Shutting down Livy server.")
-        zkManager.foreach(_.stop())
         server.stop()
         _thriftServerFactory.foreach(_.stop())
+	if (livyConf.get(LivyConf.HA_MODE) != HighAvailabilitySettings.HA_ON) {
+          zkManager.foreach(_.stop())
+	}
     }
   }
 
