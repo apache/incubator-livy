@@ -73,7 +73,8 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
   val leaderKey = s"/$haKeyPrefix/leader"
 
   val leaderIds = livyConf.configToSeq(LivyConf.HA_SERVER_IDS)
-  val leaderEndpoints = livyConf.configToSeq(LivyConf.HA_SERVER_ENDPOINTS)
+  val leaderHostnames = livyConf.configToSeq(LivyConf.HA_SERVER_HOSTNAMES)
+  val leaderAddresses = livyConf.configToSeq(LivyConf.HA_SERVER_HOSTNAMES)
 
   var leaderLatch = mockLeaderLatch.getOrElse {
     new LeaderLatch(client, leaderKey, getCurrentId())
@@ -90,17 +91,17 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
   }
 
   def getCurrentId(): String = {
-    val currentEndpoint = java.net.InetAddress.getLocalHost().getHostName();
-    info(currentEndpoint)
-    info(leaderEndpoints)
-    val currentId = leaderIds(leaderEndpoints indexOf currentEndpoint)
+    val currentHostname = java.net.InetAddress.getLocalHost().getHostName();
+    info(currentHostname)
+    info(leaderHostnames)
+    val currentId = leaderIds(leaderHostnames indexOf currentHostname)
     currentId
   }
 
-  def getActiveEndpoint(): String = {
+  def getActiveAddress(): String = {
     val activeLeaderId = leaderLatch.getLeader().getId()
-    val activeEndpoint = leaderEndpoints(leaderIds indexOf activeLeaderId)
-    activeEndpoint
+    val activeAddress = leaderAddresses(leaderIds indexOf activeLeaderId)
+    activeAddress
   }
 
   def start(): Unit = {

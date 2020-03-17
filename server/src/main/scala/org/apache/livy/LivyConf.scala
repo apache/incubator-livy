@@ -201,7 +201,7 @@ object LivyConf {
   * High Availability mode of Livy. Possible values:
   * off: Default. Turn off High Availability.
   * on: Livy uses Zookeeper as a state store to ensure a livy server is always available with the
-  *     correct state.
+*     correct state.
   * Must set livy.server.ha.zookeeper-url to configure HA
   */
   val HA_MODE = Entry("livy.server.ha.mode", "off")
@@ -209,14 +209,14 @@ object LivyConf {
   // For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
   val HA_ZOOKEEPER_URL = Entry("livy.server.ha.zookeeper-url", "")
 
-  // The id of the current livy server
-  val HA_SERVER_ID = Entry("livy.server.ha.server-id", "")
-
   // The ids of all servers used in HA
   val HA_SERVER_IDS = Entry("livy.server.ha.server-ids", "")
 
-  // The endpoints of all servers used in HA
-  val HA_SERVER_ENDPOINTS = Entry("livy.server.ha.server-addresses", "")
+  // The hostnames of all servers used in HA
+  val HA_SERVER_HOSTNAMES = Entry("livy.server.ha.server-hostnames", "")
+
+  // The addresses of all servers used in HA
+  val HA_SERVER_ADDRESSES = Entry("livy.server.ha.server-addresses", "")
 
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a

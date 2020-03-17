@@ -110,11 +110,11 @@
 # For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
 # livy.server.ha.zookeeper-url =
 
-# The id of the current livy server
-# livy.server.ha.server-id =
-
 # The list of ids for all livy servers used for HA
 # livy.server.ha.server-ids =
+
+# The list of hostnames for all livy servers used for HA
+# livy.server.ha.server-hostnames =
 
 # The list of server addresses for all livy servers used for HA
 # livy.server.ha.server-addresses =
