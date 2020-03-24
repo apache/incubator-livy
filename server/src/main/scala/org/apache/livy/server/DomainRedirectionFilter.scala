@@ -53,16 +53,16 @@ class DomainRedirectionFilter(HAService: CuratorElectorService) extends Filter
                         response: ServletResponse,
                         chain: FilterChain): Unit = {
     if (!isLeader()) {
-        debug("active leader is:" + HAService.getActiveAddress())
-        debug("current id:" + HAService.getCurrentId())
+        debug("active leader's address is:" + haService.getActiveAddress())
+        debug("current id:" + haService.getCurrentId())
 
         val httpRequest = request.asInstanceOf[HttpServletRequest]
         val requestURL = httpRequest.getRequestURL().toString()
-        debug(requestURL)
+        debug("requested url: " + requestURL)
 
         val builder = UriComponentsBuilder.fromHttpUrl(requestURL)
         val redirectURL = builder.host(HAService.getActiveAddress()).toUriString()
-        debug(redirectURL)
+        debug("redirected url:" + redirectURL)
 
         val httpServletResponse = response.asInstanceOf[HttpServletResponse];
         val redirectMsg = "This is a standby Livy Instance. The redirect url is: " + redirectURL

@@ -92,9 +92,10 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
 
   def getCurrentId(): String = {
     val currentHostname = java.net.InetAddress.getLocalHost().getHostName();
-    debug(currentHostname)
-    debug(leaderHostnames)
+    debug("This server's current hostname is: " + currentHostname)
+    debug("This hostnames for valid leaders are: " + leaderHostnames)
     val currentId = leaderIds(leaderHostnames indexOf currentHostname)
+    debug("This server's designated ID is: " + currentId)
     currentId
   }
 
