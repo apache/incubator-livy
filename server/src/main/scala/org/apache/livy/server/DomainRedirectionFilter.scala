@@ -35,7 +35,7 @@ import org.springframework.web.util.UriComponentsBuilder
 
 import org.apache.livy.{LivyConf, Logging}
 
-class DomainRedirectionFilter(HAService: CuratorElectorService) extends Filter
+class DomainRedirectionFilter(haService: CuratorElectorService) extends Filter
   with Logging
 {
 
@@ -44,7 +44,7 @@ class DomainRedirectionFilter(HAService: CuratorElectorService) extends Filter
   val HEADER_NAME = "X-Requested-By"
 
   def isLeader(): Boolean = {
-    HAService.currentState == HAState.Active
+    haService.currentState == HAState.Active
   }
 
   override def init(filterConfig: FilterConfig): Unit = {}
@@ -61,7 +61,7 @@ class DomainRedirectionFilter(HAService: CuratorElectorService) extends Filter
         debug("requested url: " + requestURL)
 
         val builder = UriComponentsBuilder.fromHttpUrl(requestURL)
-        val redirectURL = builder.host(HAService.getActiveAddress()).toUriString()
+        val redirectURL = builder.host(haService.getActiveAddress()).toUriString()
         debug("redirected url:" + redirectURL)
 
         val httpServletResponse = response.asInstanceOf[HttpServletResponse];
