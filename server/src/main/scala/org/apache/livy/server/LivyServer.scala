@@ -411,9 +411,9 @@ class LivyServer extends Logging {
         info("Shutting down Livy server.")
         server.stop()
         _thriftServerFactory.foreach(_.stop())
-	if (livyConf.get(LivyConf.HA_MODE) != HighAvailabilitySettings.HA_ON) {
+        if (livyConf.get(LivyConf.HA_MODE) != HighAvailabilitySettings.HA_ON) {
           zkManager.foreach(_.stop())
-	}
+        }
     }
   }
 
