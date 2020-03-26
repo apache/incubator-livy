@@ -83,6 +83,8 @@ object BatchSession extends Logging {
       request.executorMemory.foreach(builder.executorMemory)
       request.executorCores.foreach(builder.executorCores)
       request.numExecutors.foreach(builder.numExecutors)
+      request.queue.foreach(builder.queue)
+      request.name.foreach(builder.name)
       request.driverMemoryOverhead.foreach(builder.driverMemoryOverhead)
       request.executorMemoryOverhead.foreach(builder.executorMemoryOverhead)
       request.dynamicAllocationEnabled.foreach(builder.dynamicAllocationEnabled)
