@@ -312,7 +312,7 @@ Cancel the specified statement in this session.
 
 ### POST /sessions/{sessionId}/completion
 
-Runs a statement in a session.
+Returns code completion candidates for the specified code in the session.
 
 #### Request Body
 
