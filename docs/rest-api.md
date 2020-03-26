@@ -151,6 +151,57 @@ Creates a new interactive Scala, Python, or R shell in the cluster.
     <td>Timeout in second to which session be orphaned</td>
     <td>int</td>
   </tr>
+  <tr>
+    <td>driverMemoryOverhead</td>
+    <td>The amount of off-heap memory to be allocated per driver in cluster mode</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>executorMemoryOverhead</td>
+    <td>The amount of off-heap memory to be allocated per executor in cluster mode</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationEnabled</td>
+    <td>Whether to use dynamic resource allocation</td>
+    <td>boolean</td>
+  </tr>
+  <tr>
+    <td>shuffleServiceEnabled</td>
+    <td>Enables the external shuffle service</td>
+    <td>boolean</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationMinExecutors</td>
+    <td>Lower bound on the number of executors</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationMaxExecutors</td>
+    <td>Upper bound on the number of executors</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationInitialExecutors</td>
+    <td>Number of executors to start with</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationSchedulerBacklogTimeout</td>
+    <td>If there are backlogged tasks for this duration, add new executors</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationSustainedSchedulerBacklogTimeout</td>
+    <td>If the backlog is sustained for this duration, add more executors. 
+    This is used only after the initial backlog timeout is exceeded</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationExecutorIdleTimeout</td>
+    <td>If an executor has been idle for this duration, remove it</td>
+    <td>int</td>
+  </tr>
 </table>
 
 <a id="footnote1">1</a>: Starting with version 0.5.0-incubating this field is not required. To be
@@ -472,6 +523,57 @@ Returns all the active batch sessions.
     <td>conf</td>
     <td>Spark configuration properties</td>
     <td>Map of key=val</td>
+  </tr>
+  <tr>
+    <td>driverMemoryOverhead</td>
+    <td>The amount of off-heap memory to be allocated per driver in cluster mode</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>executorMemoryOverhead</td>
+    <td>The amount of off-heap memory to be allocated per executor in cluster mode</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationEnabled</td>
+    <td>Whether to use dynamic resource allocation</td>
+    <td>boolean</td>
+  </tr>
+  <tr>
+    <td>shuffleServiceEnabled</td>
+    <td>Enables the external shuffle service</td>
+    <td>boolean</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationMinExecutors</td>
+    <td>Lower bound on the number of executors</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationMaxExecutors</td>
+    <td>Upper bound on the number of executors</td>
+    <td>int</td>
+  </tr>
+  <tr>
+  <td>dynamicAllocationInitialExecutors</td>
+    <td>Number of executors to start with</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationSchedulerBacklogTimeout</td>
+    <td>If there are backlogged tasks for this duration, add new executors</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationSustainedSchedulerBacklogTimeout</td>
+    <td>If the backlog is sustained for this duration, add more executors. 
+    This is used only after the initial backlog timeout is exceeded</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>dynamicAllocationExecutorIdleTimeout</td>
+    <td>If an executor has been idle for this duration, remove it</td>
+    <td>int</td>
   </tr>
 </table>
 
