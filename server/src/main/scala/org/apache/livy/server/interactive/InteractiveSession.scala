@@ -91,7 +91,20 @@ object InteractiveSession extends Logging {
         SparkLauncher.EXECUTOR_MEMORY -> request.executorMemory.map(_.toString),
         "spark.executor.instances" -> request.numExecutors.map(_.toString),
         "spark.app.name" -> request.name.map(_.toString),
-        "spark.yarn.queue" -> request.queue
+        "spark.yarn.queue" -> request.queue,
+        "spark.yarn.driver.memoryOverhead" -> request.driverMemoryOverhead.map(_.toString),
+        "spark.yarn.executor.memoryOverhead" -> request.executorMemoryOverhead.map(_.toString),
+        "spark.dynamicAllocation.enabled" -> request.dynamicAllocationEnabled.map(_.toString),
+        "spark.shuffle.service.enabled" -> request.shuffleServiceEnabled.map(_.toString),
+        "spark.dynamicAllocation.minExecutors" -> request.dynamicAllocationMinExecutors.map(_.toString),
+        "spark.dynamicAllocation.maxExecutors" -> request.dynamicAllocationMaxExecutors.map(_.toString),
+        "spark.dynamicAllocation.initialExecutors" -> request.dynamicAllocationInitialExecutors.map(_.toString),
+        "spark.dynamicAllocation.schedulerBacklogTimeout" ->
+          request.dynamicAllocationSchedulerBacklogTimeout.map(_.toString),
+        "spark.dynamicAllocation.sustainedSchedulerBacklogTimeout" ->
+          request.dynamicAllocationSustainedSchedulerBacklogTimeout.map(_.toString),
+        "spark.dynamicAllocation.executorIdleTimeout" ->
+          request.dynamicAllocationExecutorIdleTimeout.map(_.toString)
       )
 
       userOpts.foreach { case (key, opt) =>

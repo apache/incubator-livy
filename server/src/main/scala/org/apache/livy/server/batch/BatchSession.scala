@@ -83,8 +83,18 @@ object BatchSession extends Logging {
       request.executorMemory.foreach(builder.executorMemory)
       request.executorCores.foreach(builder.executorCores)
       request.numExecutors.foreach(builder.numExecutors)
-      request.queue.foreach(builder.queue)
-      request.name.foreach(builder.name)
+      request.driverMemoryOverhead.foreach(builder.driverMemoryOverhead)
+      request.executorMemoryOverhead.foreach(builder.executorMemoryOverhead)
+      request.dynamicAllocationEnabled.foreach(builder.dynamicAllocationEnabled)
+      request.shuffleServiceEnabled.foreach(builder.shuffleServiceEnabled)
+      request.dynamicAllocationMinExecutors.foreach(builder.dynamicAllocationMinExecutors)
+      request.dynamicAllocationMaxExecutors.foreach(builder.dynamicAllocationMaxExecutors)
+      request.dynamicAllocationInitialExecutors.foreach(builder.dynamicAllocationInitialExecutors)
+      request.dynamicAllocationSchedulerBacklogTimeout.foreach(builder.dynamicAllocationSchedulerBacklogTimeout)
+      request.dynamicAllocationSustainedSchedulerBacklogTimeout.foreach(
+        builder.dynamicAllocationSustainedSchedulerBacklogTimeout)
+      request.dynamicAllocationExecutorIdleTimeout.foreach(builder.dynamicAllocationExecutorIdleTimeout)
+
 
       sessionStore.save(BatchSession.RECOVERY_SESSION_TYPE, s.recoveryMetadata)
 

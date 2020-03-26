@@ -124,6 +124,79 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
     this.conf("spark.executor.instances", numExecutors)
   }
 
+
+  def driverMemoryOverhead(memoryOverhead: String): SparkProcessBuilder = {
+    this.conf("spark.yarn.driver.memoryOverhead", memoryOverhead)
+  }
+
+  def executorMemoryOverhead(memoryOverhead: String): SparkProcessBuilder = {
+    this.conf("spark.yarn.executor.memoryOverhead", memoryOverhead)
+  }
+
+  def dynamicAllocationEnabled(dynamicAllocationEnabled: Boolean): SparkProcessBuilder = {
+    this.conf("spark.dynamicAllocation.enabled", dynamicAllocationEnabled.toString)
+  }
+
+  def shuffleServiceEnabled(enabled: Boolean): SparkProcessBuilder = {
+    shuffleServiceEnabled(enabled.toString)
+  }
+
+  def dynamicAllocationMinExecutors(minExecutors: Int): SparkProcessBuilder = {
+    dynamicAllocationMinExecutors(minExecutors.toString)
+  }
+
+  def dynamicAllocationMaxExecutors(numExecutors: Int): SparkProcessBuilder = {
+    dynamicAllocationMaxExecutors(numExecutors.toString)
+  }
+
+  def dynamicAllocationInitialExecutors(numExecutors: Int): SparkProcessBuilder = {
+    dynamicAllocationInitialExecutors(numExecutors.toString)
+  }
+
+  def dynamicAllocationSchedulerBacklogTimeout(timeOut: Int): SparkProcessBuilder = {
+    dynamicAllocationSchedulerBacklogTimeout(timeOut.toString)
+  }
+
+  def dynamicAllocationSustainedSchedulerBacklogTimeout(timeOut: Int): SparkProcessBuilder = {
+    dynamicAllocationSustainedSchedulerBacklogTimeout(timeOut.toString)
+  }
+
+  def dynamicAllocationExecutorIdleTimeout(timeOut: Int): SparkProcessBuilder = {
+    dynamicAllocationExecutorIdleTimeout(timeOut.toString)
+  }
+
+  def dynamicAllocationEnabled(enabled: String): SparkProcessBuilder = {
+    this.conf("spark.dynamicAllocation.enabled", enabled)
+  }
+
+  def shuffleServiceEnabled(enabled: String): SparkProcessBuilder = {
+    this.conf("spark.shuffle.service.enabled", enabled)
+  }
+
+  def dynamicAllocationMinExecutors(minExecutors: String): SparkProcessBuilder = {
+    this.conf("spark.dynamicAllocation.minExecutors", minExecutors)
+  }
+
+  def dynamicAllocationMaxExecutors(numExecutors: String): SparkProcessBuilder = {
+    this.conf("spark.dynamicAllocation.maxExecutors", numExecutors)
+  }
+
+  def dynamicAllocationInitialExecutors(numExecutors: String): SparkProcessBuilder = {
+    this.conf("spark.dynamicAllocation.initialExecutors", numExecutors)
+  }
+
+  def dynamicAllocationSchedulerBacklogTimeout(timeOut: String): SparkProcessBuilder = {
+    this.conf("spark.dynamicAllocation.schedulerBacklogTimeout", timeOut)
+  }
+
+  def dynamicAllocationSustainedSchedulerBacklogTimeout(timeOut: String): SparkProcessBuilder = {
+    this.conf("spark.dynamicAllocation.sustainedSchedulerBacklogTimeout", timeOut)
+  }
+
+  def dynamicAllocationExecutorIdleTimeout(timeOut: String): SparkProcessBuilder = {
+    this.conf("spark.dynamicAllocation.executorIdleTimeout", timeOut)
+  }
+
   def proxyUser(proxyUser: String): SparkProcessBuilder = {
     _proxyUser = Some(proxyUser)
     this
