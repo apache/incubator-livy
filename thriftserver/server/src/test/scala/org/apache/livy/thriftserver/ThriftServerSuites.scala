@@ -73,6 +73,8 @@ trait CommonThriftTests {
 
     assert(resultSet.getBigDecimal(7).doubleValue() == 7.7)
     assert(rsMetaData.getColumnTypeName(7) == "decimal")
+    assert(rsMetaData.getPrecision(7) == 10)
+    assert(rsMetaData.getScale(7) == 1)
 
     assert(resultSet.getBoolean(8) == true)
     assert(rsMetaData.getColumnTypeName(8) == "boolean")
