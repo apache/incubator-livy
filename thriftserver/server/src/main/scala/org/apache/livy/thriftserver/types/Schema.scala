@@ -128,7 +128,7 @@ object Schema {
       if (name == "decimal") {
         (10, 0)
       } else {
-        val suffix = name.substring(7)
+        val suffix = name.substring("decimal".length)
         require(suffix.startsWith("(") && suffix.endsWith(")"),
           name + " is not of the form decimal(<precision>,<scale>)")
         val parts = suffix.substring(1, suffix.length - 1).split(",")
