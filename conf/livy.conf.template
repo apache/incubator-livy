@@ -96,6 +96,17 @@
 # http-header "X-Requested-By" in request if the http method is POST/DELETE/PUT/PATCH.
 # livy.server.csrf-protection.enabled =
 
+# Whether to add security related HTTP headers to responses, by default false. If enabled,
+# Livy server adds HTTP headers to responses based on below configuration parameters starting with
+# `Livy.server.http.header.`
+# livy.server.security-headers.enabled =
+
+# Security headers added to responses by default when
+# configuration `livy.server.security-headers.enabled` is set to true.
+# livy.server.http.header.X-XSS-Protection = 1; mode=block
+# livy.server.http.header.X-Frame-Options = SAMEORIGIN
+# livy.server.http.header.X-Content-Type-Options = nosniff
+
 # Whether to enable HiveContext in livy interpreter, if it is true hive-site.xml will be detected
 # on user request and then livy server classpath automatically.
 # livy.repl.enable-hive-context =

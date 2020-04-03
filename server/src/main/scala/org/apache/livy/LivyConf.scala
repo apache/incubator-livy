@@ -69,6 +69,14 @@ object LivyConf {
 
   val CSRF_PROTECTION = Entry("livy.server.csrf-protection.enabled", false)
 
+  val SECURITY_HEADERS_ENABLED = Entry("livy.server.security-headers.enabled", false)
+  val SECURITY_HEADERS_XSS_PROTECTION =
+    Entry("livy.server.http.header.X-XSS-Protection", "1; mode=block")
+  val SECURITY_HEADERS_FRAME_OPTIONS =
+    Entry("livy.server.http.header.X-Frame-Options", "SAMEORIGIN")
+  val SECURITY_HEADERS_CONTENT_TYPE_OPTIONS =
+    Entry("livy.server.http.header.X-Content-Type-Options", "nosniff")
+
   val IMPERSONATION_ENABLED = Entry("livy.impersonation.enabled", false)
   val SUPERUSERS = Entry("livy.superusers", null)
 
