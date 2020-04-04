@@ -84,7 +84,7 @@
     <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version>
     <spark.scala-2.12.version>2.4.5</spark.scala-2.12.version>
     <spark.version>${spark.scala-2.11.version}</spark.version>
-    <kubernetes.client.version>4.1.1</kubernetes.client.version>
+    <kubernetes.client.version>4.6.4</kubernetes.client.version>
     <hive.version>3.0.0</hive.version>
     <commons-codec.version>1.9</commons-codec.version>
     <httpclient.version>4.5.3</httpclient.version>
@@ -1088,6 +1088,7 @@
           https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop2.7.tgz
         </spark.bin.download.url>
         <spark.bin.name>spark-3.0.0-bin-hadoop2.7</spark.bin.name>
+        <kubernetes.client.version>4.9.2</kubernetes.client.version>
       </properties>
     </profile>
 
