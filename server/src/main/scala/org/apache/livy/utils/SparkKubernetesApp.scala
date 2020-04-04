@@ -27,7 +27,7 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
-import io.fabric8.kubernetes.api.model._
+import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client._
 
 import org.apache.livy.{LivyConf, Logging, Utils}
