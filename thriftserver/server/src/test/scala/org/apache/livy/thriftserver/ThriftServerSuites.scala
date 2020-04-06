@@ -47,7 +47,9 @@ trait CommonThriftTests {
         "cast('varchar_val' as varchar(20))," +
         "cast('char_val' as char(20))," +
         "cast('2018-08-06 09:11:15' as timestamp)," +
-        "cast('2018-08-06' as date)")
+        "cast('2018-08-06' as date)," +
+        "cast(1234567890 as decimal(10))," +
+        "cast(1234567890 as decimal)")
 
     val rsMetaData = resultSet.getMetaData()
 
@@ -100,6 +102,16 @@ trait CommonThriftTests {
     assert(resultSet.getDate(14).
       compareTo(Date.valueOf("2018-08-06")) == 0)
     assert(rsMetaData.getColumnTypeName(14) == "date")
+
+    assert(resultSet.getBigDecimal(15).intValue() == 1234567890)
+    assert(rsMetaData.getColumnTypeName(15) == "decimal")
+    assert(rsMetaData.getPrecision(15) == 10)
+    assert(rsMetaData.getScale(15) == 0)
+
+    assert(resultSet.getBigDecimal(16).intValue() == 1234567890)
+    assert(rsMetaData.getColumnTypeName(16) == "decimal")
+    assert(rsMetaData.getPrecision(16) == 10)
+    assert(rsMetaData.getScale(16) == 0)
 
     assert(!resultSet.next())
 

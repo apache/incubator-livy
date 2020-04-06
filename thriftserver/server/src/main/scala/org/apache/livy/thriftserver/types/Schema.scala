@@ -131,12 +131,8 @@ object Schema {
         val suffix = name.substring("decimal".length)
         require(suffix.startsWith("(") && suffix.endsWith(")"),
           name + " is not of the form decimal(<precision>,<scale>)")
-        val parts = suffix.substring(1, suffix.length - 1).split(",")
-        if (parts.length == 1) {
-          (parts(0).trim.toInt, 0)
-        } else {
-          (parts(0).trim.toInt, parts(1).trim.toInt)
-        }
+        val parts = suffix.substring(1, suffix.length - 1).split(",").map(_.trim.toInt)
+        (parts(0), parts.lift(1).getOrElse(0))
       }
     val qMap = new java.util.HashMap[String, TTypeQualifierValue]
     val pVal = new TTypeQualifierValue
