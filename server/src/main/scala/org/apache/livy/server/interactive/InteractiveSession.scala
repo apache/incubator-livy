@@ -399,7 +399,12 @@ class InteractiveSession(
     app = mockApp.orElse {
       val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
         .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
-      driverProcess.map { _ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)) }
+
+      if (livyConf.isRunningOnYarn() || driverProcess.isDefined) {
+        Some(SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)))
+      } else {
+        None
+      }
     }
 
     if (client.isEmpty) {
@@ -577,6 +582,17 @@ class InteractiveSession(
     // Since these 2 transitions are triggered by different threads, there's a race condition.
     // Make sure we won't transit from dead to error state.
     val areSameStates = serverSideState.getClass() == newState.getClass()
+
+    if (!areSameStates) {
+      newState match {
+        case _: SessionState.Killed | _: SessionState.Dead =>
+          sessionStore.remove(RECOVERY_SESSION_TYPE, id)
+        case SessionState.ShuttingDown =>
+          sessionStore.remove(RECOVERY_SESSION_TYPE, id)
+        case _ =>
+      }
+    }
+
     val transitFromInactiveToActive = !serverSideState.isActive && newState.isActive
     if (!areSameStates && !transitFromInactiveToActive) {
       debug(s"$this session state change from ${serverSideState} to $newState")
@@ -626,4 +642,16 @@ class InteractiveSession(
   }
 
   override def infoChanged(appInfo: AppInfo): Unit = { this.appInfo = appInfo }
+
+  override def lastActivity: Long = {
+    val serverSideLastActivity = super.lastActivity
+    if (serverSideState == SessionState.Running) {
+      // If the rsc client is running, we compare the lastActivity of the session and the repl,
+      // and return the more latest one
+      client.flatMap { s => Option(s.getReplLastActivity) }.filter(_ > serverSideLastActivity)
+        .getOrElse(serverSideLastActivity)
+    } else {
+      serverSideLastActivity
+    }
+  }
 }

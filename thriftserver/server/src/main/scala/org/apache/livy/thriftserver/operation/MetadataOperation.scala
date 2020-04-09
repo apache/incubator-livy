@@ -21,6 +21,9 @@ import org.apache.hive.service.cli.{FetchOrientation, HiveSQLException, Operatio
 
 import org.apache.livy.thriftserver.serde.ThriftResultSet
 
+/**
+  * MetadataOperation is the base class for operations which do not perform any call on Spark side
+  */
 abstract class MetadataOperation(sessionHandle: SessionHandle, opType: OperationType)
   extends Operation(sessionHandle, opType) {
   setHasResultSet(true)
@@ -44,6 +47,6 @@ abstract class MetadataOperation(sessionHandle: SessionHandle, opType: Operation
     if (orientation.equals(FetchOrientation.FETCH_FIRST)) {
       rowSet.setRowOffset(0)
     }
-    rowSet
+    rowSet.extractSubset(maxRows.toInt)
   }
 }

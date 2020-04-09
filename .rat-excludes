@@ -14,7 +14,7 @@ logs/*
 **/dataTables.bootstrap.min.css
 **/dataTables.bootstrap.min.js
 **/jquery.dataTables.min.js
-**/jquery-3.2.1.min.js
+**/jquery-3.4.1.min.js
 **/fonts/**
 **/livy_python_api.egg-info/*
 **/*.txt

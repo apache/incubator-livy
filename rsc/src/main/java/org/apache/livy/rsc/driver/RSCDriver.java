@@ -124,7 +124,11 @@ public class RSCDriver extends BaseProtocol {
 
     // Cancel any pending jobs.
     for (JobWrapper<?> job : activeJobs.values()) {
-      job.cancel();
+      try {
+        job.cancel();
+      } catch (Exception e) {
+        LOG.warn("Error during cancel job.", e);
+      }
     }
 
     try {
@@ -220,6 +224,7 @@ public class RSCDriver extends BaseProtocol {
       @Override
       public void onSuccess(Void unused) {
         clients.remove(client);
+        client.unRegisterRpc();
         if (!inShutdown.get()) {
           setupIdleTimeout();
         }

@@ -305,14 +305,14 @@ Cancel the specified statement in this session.
   <tr><th>Name</th><th>Description</th><th>Type</th></tr>
   <tr>
     <td>msg</td>
-    <td>is always "cancelled"</td>
+    <td>is always "canceled"</td>
     <td>string</td>
   </tr>
 </table>
 
 ### POST /sessions/{sessionId}/completion
 
-Runs a statement in a session.
+Returns code completion candidates for the specified code in the session.
 
 #### Request Body
 
@@ -388,6 +388,8 @@ Returns all the active batch sessions.
 </table>
 
 ### POST /batches
+
+Creates a new batch session.	
 
 #### Request Body
 
@@ -590,7 +592,7 @@ A session represents an interactive shell.
   </tr>
   <tr>
     <td>kind</td>
-    <td>Session kind (spark, pyspark, or sparkr)</td>
+    <td>Session kind (spark, pyspark, sparkr, or sql)</td>
     <td><a href="#session-kind">session kind</a></td>
   </tr>
   <tr>
@@ -726,6 +728,21 @@ A statement represents the result of an execution statement.
     <td>The execution output</td>
     <td>statement output</td>
   </tr>
+  <tr>
+     <td>progress</td>
+     <td>The execution progress</td>
+     <td>double</td>
+  </tr>
+  <tr>
+     <td>started</td>
+     <td>The start time of statement code</td>
+     <td>long</td>
+  </tr>
+  <tr>
+     <td>completed</td>
+     <td>The complete time of statement code</td>
+     <td>long</td>
+  </tr> 
 </table>
 
 #### Statement State

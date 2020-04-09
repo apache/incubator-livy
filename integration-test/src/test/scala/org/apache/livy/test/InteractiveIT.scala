@@ -36,7 +36,11 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       s.run("val sparkVersion = sc.version").result().left.foreach(info(_))
       s.run("val scalaVersion = util.Properties.versionString").result().left.foreach(info(_))
       s.run("1+1").verifyResult("res0: Int = 2\n")
+
+      // Ignore the following line if running on a external cluster due to config differences
+      // with the mini cluster
       s.run("""sc.getConf.get("spark.executor.instances")""").verifyResult("res1: String = 1\n")
+
       s.run("val sql = new org.apache.spark.sql.SQLContext(sc)").verifyResult(
         ".*" + Pattern.quote(
         "sql: org.apache.spark.sql.SQLContext = org.apache.spark.sql.SQLContext") + ".*")
@@ -55,7 +59,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       s.run("""sc.getConf.getAll.exists(_._1.startsWith("spark.__livy__."))""")
         .verifyResult(".*false\n")
       s.run("""sys.props.exists(_._1.startsWith("spark.__livy__."))""").verifyResult(".*false\n")
-      s.run("""val str = "str"""")
+      s.run("""val str = "str"""").result()
       s.complete("str.", "scala", 4).verifyContaining(List("compare", "contains"))
       s.complete("str2.", "scala", 5).verifyNone()
 
@@ -114,14 +118,16 @@ class InteractiveIT extends BaseIntegrationTestSuite {
   }
 
   test("application kills session") {
-    withNewSession(Spark) { s =>
+    val noCodeCoverageConf = s"${RSCConf.Entry.TEST_NO_CODE_COVERAGE_ANALYSIS.key()}"
+    withNewSession(Spark, Map(noCodeCoverageConf -> "true")) { s =>
       s.runFatalStatement("System.exit(0)")
     }
   }
 
   test("should kill RSCDriver if it doesn't respond to end session") {
     val testConfName = s"${RSCConf.LIVY_SPARK_PREFIX}${RSCConf.Entry.TEST_STUCK_END_SESSION.key()}"
-    withNewSession(Spark, Map(testConfName -> "true")) { s =>
+    val noCodeCoverageConf = s"${RSCConf.Entry.TEST_NO_CODE_COVERAGE_ANALYSIS.key()}"
+    withNewSession(Spark, Map(testConfName -> "true", noCodeCoverageConf -> "true")) { s =>
       val appId = s.appId()
       s.stop()
       val appReport = cluster.yarnClient.getApplicationReport(appId)
@@ -168,7 +174,7 @@ class InteractiveIT extends BaseIntegrationTestSuite {
     withNewSession(Spark, Map.empty, true, heartbeatTimeout.toSeconds.toInt) { s =>
       // If the test reaches here, that means verifySessionIdle() is successfully keeping the
       // session alive. Now verify heartbeat is killing expired session.
-      Thread.sleep(heartbeatTimeout.toMillis * 2)
+      Thread.sleep(heartbeatTimeout.toMillis * 30)
       s.verifySessionDoesNotExist()
     }
   }

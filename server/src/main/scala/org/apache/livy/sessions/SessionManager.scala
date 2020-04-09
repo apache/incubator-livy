@@ -77,6 +77,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
 
 
   private[this] final val sessionTimeoutCheck = livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK)
+  private[this] final val sessionTimeoutCheckSkipBusy =
+    livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK_SKIP_BUSY)
   private[this] final val sessionTimeout =
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_TIMEOUT))
   private[this] final val sessionStateRetainedInSec =
@@ -96,7 +98,10 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     synchronized {
       session.name.foreach { sessionName =>
         if (sessionsByName.contains(sessionName)) {
-          throw new IllegalArgumentException(s"Duplicate session name: ${session.name}")
+          val errMsg = s"Duplicate session name: ${session.name} for session ${session.id}"
+          error(errMsg)
+          session.stop()
+          throw new IllegalArgumentException(errMsg)
         } else {
           sessionsByName.put(sessionName, session)
         }
@@ -104,6 +109,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
       sessions.put(session.id, session)
       session.start()
     }
+    info(s"Registered new session ${session.id}")
     session
   }
 
@@ -120,6 +126,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   def delete(session: S): Future[Unit] = {
+    info(s"Deleting session ${session.id}")
     session.stop().map { case _ =>
       try {
         sessionStore.remove(sessionType, session.id)
@@ -131,6 +138,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
         case NonFatal(e) =>
           error("Exception was thrown during stop session:", e)
           throw e
+      } finally {
+        info(s"Deleted session ${session.id}")
       }
     }
   }
@@ -152,6 +161,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
           currentTime - s.time > sessionStateRetainedInSec
         case _ =>
           if (!sessionTimeoutCheck) {
+            false
+          } else if (session.state == SessionState.Busy && sessionTimeoutCheckSkipBusy) {
             false
           } else if (session.isInstanceOf[BatchSession]) {
             false

@@ -90,6 +90,42 @@ public class ColumnBuffer {
     }
   }
 
+  private ColumnBuffer(DataType type, byte[] nulls, Object values, int currentSize) {
+    this.type = type;
+    this.nulls = nulls;
+    this.currentSize = currentSize;
+
+    switch (type) {
+      case BOOLEAN:
+        bools = (boolean[]) values;
+        break;
+      case BYTE:
+        bytes = (byte[]) values;
+        break;
+      case SHORT:
+        shorts = (short[]) values;
+        break;
+      case INTEGER:
+        ints = (int[]) values;
+        break;
+      case LONG:
+        longs = (long[]) values;
+        break;
+      case FLOAT:
+        floats = (float[]) values;
+        break;
+      case DOUBLE:
+        doubles = (double[]) values;
+        break;
+      case BINARY:
+        buffers = (byte[][]) values;
+        break;
+      case STRING:
+        strings = (String[]) values;
+        break;
+    }
+  }
+
   public DataType getType() {
     return type;
   }
@@ -202,6 +238,76 @@ public class ColumnBuffer {
 
   public BitSet getNulls() {
     return nulls != null ? BitSet.valueOf(nulls) : new BitSet();
+  }
+
+  /**
+   * Extract subset data to a new ColumnBuffer. It will remove the extracted data from current
+   * ColumnBuffer.
+   *
+   * @param end index of the end row, exclusive
+   */
+  public ColumnBuffer extractSubset(int end) {
+    if (end > this.currentSize) {
+      end = this.currentSize;
+    }
+    if (end < 0) {
+      end = 0;
+    }
+
+    byte[] subNulls = getNulls().get(0, end).toByteArray();
+    int split = 0;
+    ColumnBuffer subset = null;
+    switch (type) {
+      case BOOLEAN:
+        split = Math.min(bools.length, end);
+        subset = new ColumnBuffer(type, subNulls, Arrays.copyOfRange(bools, 0, split), end);
+        bools = Arrays.copyOfRange(bools, split, bools.length);
+        break;
+      case BYTE:
+        split = Math.min(bytes.length, end);
+        subset = new ColumnBuffer(type, subNulls, Arrays.copyOfRange(bytes, 0, split), end);
+        bytes = Arrays.copyOfRange(bytes, split, bytes.length);
+        break;
+      case SHORT:
+        split = Math.min(shorts.length, end);
+        subset = new ColumnBuffer(type, subNulls, Arrays.copyOfRange(shorts, 0, split), end);
+        shorts = Arrays.copyOfRange(shorts, split, shorts.length);
+        break;
+      case INTEGER:
+        split = Math.min(ints.length, end);
+        subset = new ColumnBuffer(type, subNulls, Arrays.copyOfRange(ints, 0, split), end);
+        ints = Arrays.copyOfRange(ints, split, ints.length);
+        break;
+      case LONG:
+        split = Math.min(longs.length, end);
+        subset = new ColumnBuffer(type, subNulls, Arrays.copyOfRange(longs, 0, split), end);
+        longs = Arrays.copyOfRange(longs, split, longs.length);
+        break;
+      case FLOAT:
+        split = Math.min(floats.length, end);
+        subset = new ColumnBuffer(type, subNulls, Arrays.copyOfRange(floats, 0, split), end);
+        floats = Arrays.copyOfRange(floats, split, floats.length);
+        break;
+      case DOUBLE:
+        split = Math.min(doubles.length, end);
+        subset = new ColumnBuffer(type, subNulls, Arrays.copyOfRange(doubles, 0, split), end);
+        doubles = Arrays.copyOfRange(doubles, split, doubles.length);
+        break;
+      case BINARY:
+        split = Math.min(buffers.length, end);
+        subset = new ColumnBuffer(type, subNulls, Arrays.copyOfRange(buffers, 0, split), end);
+        buffers = Arrays.copyOfRange(buffers, split, buffers.length);
+        break;
+      case STRING:
+        split = Math.min(strings.length, end);
+        subset = new ColumnBuffer(type, subNulls, Arrays.copyOfRange(strings, 0, split), end);
+        strings = Arrays.copyOfRange(strings, split, strings.length);
+        break;
+    }
+    nulls = getNulls().get(end, currentSize).toByteArray();
+    currentSize = currentSize - end;
+
+    return subset;
   }
 
   private boolean isNull(int index) {

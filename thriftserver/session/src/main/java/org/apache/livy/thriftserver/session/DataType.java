@@ -30,6 +30,9 @@ public enum DataType {
   FLOAT,
   DOUBLE,
   BINARY,
+  DECIMAL,
+  TIMESTAMP,
+  DATE,
   STRING;
 
 }
