@@ -112,7 +112,7 @@ public final class LivyClientBuilder {
   }
 
   /**
-   * Sets the sessionId the client will connect to. If sessionId is set,
+   * Sets the session ID the client will connect to. If a session ID is set,
    * the chosen session will be used with its own configurations, so Spark configurations will be ignored.
    * If not set, a new session will be created when the client is built.
    *
