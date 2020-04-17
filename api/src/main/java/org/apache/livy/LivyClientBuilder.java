@@ -98,7 +98,7 @@ public final class LivyClientBuilder {
   }
 
   /**
-   * Set the URI of the Livy server the client will connect to.
+   * Sets the URI of the Livy server the client will connect to.
    * If the URI contains <pre>sessions/{sessionId}</pre>,
    * the client will connect to the specified existing session;
    * otherwise it will create a new session.
