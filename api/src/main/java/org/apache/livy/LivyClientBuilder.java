@@ -98,9 +98,8 @@ public final class LivyClientBuilder {
   }
 
   /**
-   * Sets the URI of the Livy server the client will connect to.
-   * If the URI contains <pre>sessions/{sessionId}</pre>,
-   * the client will connect to the specified existing session;
+   * Sets the URI of the Livy server the client will connect to. If the URI contains
+   * <pre>sessions/{sessionId}</pre>, the client will connect to the specified existing session;
    * otherwise it will create a new session.
    *
    * @param uri The URI of Livy server.
@@ -112,9 +111,9 @@ public final class LivyClientBuilder {
   }
 
   /**
-   * Sets the session ID the client will connect to. If a session ID is set,
-   * the chosen session will be used with its own configurations, so Spark configurations will be ignored.
-   * If not set, a new session will be created when the client is built.
+   * Sets the session ID the client will connect to. If a session ID is set, the chosen session
+   * will be used with its own configurations, so Spark configurations will be ignored. If not set,
+   * a new session will be created when the client is built.
    *
    * @param sessionId The ID of the session to attach to.
    * @return the builder itself.
