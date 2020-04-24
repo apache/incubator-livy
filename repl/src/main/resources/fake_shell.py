@@ -20,8 +20,10 @@ import ast
 from collections import OrderedDict
 import datetime
 import decimal
+import hashlib
 import io
 import json
+import linecache
 import logging
 import sys
 import traceback
@@ -30,6 +32,7 @@ import os
 import re
 import threading
 import tempfile
+import time
 import shutil
 import pickle
 import textwrap
@@ -212,7 +215,22 @@ class ExecutionError(Exception):
 
 class NormalNode(object):
     def __init__(self, code):
-        self.code = compile(code, '<stdin>', 'exec', ast.PyCF_ONLY_AST, 1)
+        self.cell_name = self.code_name(code)
+        linecache_entry = (len(code), time.time(), [line+'\n' for line in code.splitlines()], self.cell_name)
+        linecache.cache[self.cell_name] = linecache_entry
+        linecache._livy_cache[self.cell_name] = linecache_entry
+
+        self.code = compile(code, self.cell_name, 'exec', ast.PyCF_ONLY_AST, 1)
+
+    def code_name(self, code, number=0):
+        """ Compute a (probably) unique name for code for caching.
+        This now expects code to be unicode.
+        """
+        hash_digest = hashlib.sha1(code.encode("utf-8")).hexdigest()
+        # Include the number and 12 characters of the hash in the name.  It's
+        # pretty much impossible that in a single session we'll have collisions
+        # even with truncated hashes, and the full one makes tracebacks too long
+        return '<livy-input-{0}-{1}>'.format(number, hash_digest[:12])
 
     def execute(self):
         to_run_exec, to_run_single = self.code.body[:-1], self.code.body[-1:]
@@ -220,12 +238,12 @@ class NormalNode(object):
         try:
             for node in to_run_exec:
                 mod = ast.Module([node])
-                code = compile(mod, '<stdin>', 'exec')
+                code = compile(mod, self.cell_name, 'exec')
                 exec(code, global_dict)
 
             for node in to_run_single:
                 mod = ast.Interactive([node])
-                code = compile(mod, '<stdin>', 'single')
+                code = compile(mod, self.cell_name, 'single')
                 exec(code, global_dict)
         except:
             # We don't need to log the exception because we're just executing user
@@ -436,7 +454,7 @@ def magic_table(name):
     for row in value:
         cols = []
         data.append(cols)
-        
+
         if 'Row' == row.__class__.__name__:
             row = row.asDict()
 
@@ -541,7 +559,28 @@ def clearOutputs():
     sys.stderr = UnicodeDecodingStringIO()
 
 
+def setup_livy_linecache():
+    def check_linecache_livy(*args):
+        """Call linecache.checkcache() safely protecting livy cached values.
+        """
+        # First call the orignal checkcache as intended
+        linecache._checkcache_ori(*args)
+        # Then, update back the cache with our data, so that tracebacks related
+        # to our compiled codes can be produced.
+        linecache.cache.update(linecache._livy_cache)
+
+    if not hasattr(linecache, '_livy_cache'):
+        linecache._livy_cache = {}
+
+    if not hasattr(linecache, '_checkcache_ori'):
+        linecache._checkcache_ori = linecache.checkcache
+
+    linecache.checkcache = check_linecache_livy
+
+
 def main():
+    setup_livy_linecache()
+
     sys_stdin = sys.stdin
     sys_stdout = sys.stdout
     sys_stderr = sys.stderr
