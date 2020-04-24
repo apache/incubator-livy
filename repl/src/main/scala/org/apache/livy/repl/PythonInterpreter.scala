@@ -43,7 +43,6 @@ import org.apache.livy.rsc.driver.SparkEntries
 import org.apache.livy.sessions._
 import org.apache.livy.Utils.usingResource
 
-
 // scalastyle:off println
 object PythonInterpreter extends Logging {
 
