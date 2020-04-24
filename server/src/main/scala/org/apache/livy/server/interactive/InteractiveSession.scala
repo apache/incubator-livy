@@ -46,7 +46,6 @@ import org.apache.livy.sessions.SessionState.Dead
 import org.apache.livy.utils._
 import org.apache.livy.Utils.usingResource
 
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class InteractiveRecoveryMetadata(
     id: Int,
