@@ -255,7 +255,8 @@ object InteractiveSession extends Logging {
             val pyLibPath = Seq(sparkHome, "python", "lib").mkString(File.separator)
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
             val py4jFile = Try {
-              usingResource(Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")) { ds =>
+              usingResource(
+                Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")) { ds =>
                 ds.iterator().next().toFile
               }
             }.toOption
