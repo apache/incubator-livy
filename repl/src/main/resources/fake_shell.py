@@ -215,14 +215,15 @@ class ExecutionError(Exception):
 
 class NormalNode(object):
     def __init__(self, code):
-        self.cell_name = self.code_name(code)
+        self.cell_name = NormalNode._code_name(code)
         linecache_entry = (len(code), time.time(), [line+'\n' for line in code.splitlines()], self.cell_name)
         linecache.cache[self.cell_name] = linecache_entry
         linecache._livy_cache[self.cell_name] = linecache_entry
 
         self.code = compile(code, self.cell_name, 'exec', ast.PyCF_ONLY_AST, 1)
 
-    def code_name(self, code, number=0):
+    @staticmethod
+    def _code_name(code, number=0):
         """ Compute a (probably) unique name for code for caching.
         This now expects code to be unicode.
         """

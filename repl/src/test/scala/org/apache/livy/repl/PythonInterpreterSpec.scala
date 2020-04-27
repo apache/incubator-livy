@@ -194,14 +194,13 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
 
   it should "report an error if accessing an unknown variable" in withInterpreter { interpreter =>
     val response = interpreter.execute("x")
-    response should equal(Interpreter.ExecuteError(
-      "NameError",
-      "name 'x' is not defined",
-      List(
-        "Traceback (most recent call last):\n",
-        "NameError: name 'x' is not defined\n"
-      )
-    ))
+    response shouldBe a [Interpreter.ExecuteError]
+    val executeErrorResp = response.asInstanceOf[Interpreter.ExecuteError]
+
+    executeErrorResp.ename shouldEqual "NameError"
+    executeErrorResp.evalue shouldEqual "name 'x' is not defined"
+    executeErrorResp.traceback.head shouldEqual "Traceback (most recent call last):\n"
+    executeErrorResp.traceback.last shouldEqual "NameError: name 'x' is not defined\n"
   }
 
   it should "report an error if empty magic command" in withInterpreter { interpreter =>
@@ -228,26 +227,26 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
         |'
       """.stripMargin)
 
-    response should equal(Interpreter.ExecuteError(
-      "SyntaxError",
-      "EOL while scanning string literal (<stdin>, line 2)",
-      List(
-        "  File \"<stdin>\", line 2\n",
-        "    '\n",
-        "    ^\n",
-        "SyntaxError: EOL while scanning string literal\n"
-      )
-    ))
+    response shouldBe a [Interpreter.ExecuteError]
+    val executeErrorResp = response.asInstanceOf[Interpreter.ExecuteError]
+
+    executeErrorResp.ename shouldEqual "SyntaxError"
+    executeErrorResp.evalue should startWith ("EOL while scanning string literal (")
+    executeErrorResp.evalue should endWith (", line 2)")
+    executeErrorResp.traceback should have size 4
+    executeErrorResp.traceback(0) should startWith ("  File ")
+    executeErrorResp.traceback(0) should endWith (", line 2\n")
+    executeErrorResp.traceback(1) shouldEqual "    '\n"
+    executeErrorResp.traceback(2) shouldEqual "    ^\n"
+    executeErrorResp.traceback(3) shouldEqual "SyntaxError: EOL while scanning string literal\n"
 
     response = intp.execute("x")
-    response should equal(Interpreter.ExecuteError(
-      "NameError",
-      "name 'x' is not defined",
-      List(
-        "Traceback (most recent call last):\n",
-        "NameError: name 'x' is not defined\n"
-      )
-    ))
+    val executeErrorResp2 = response.asInstanceOf[Interpreter.ExecuteError]
+
+    executeErrorResp2.ename shouldEqual "NameError"
+    executeErrorResp2.evalue shouldEqual "name 'x' is not defined"
+    executeErrorResp2.traceback.head shouldEqual "Traceback (most recent call last):\n"
+    executeErrorResp2.traceback.last shouldEqual "NameError: name 'x' is not defined\n"
   }
 }
 
