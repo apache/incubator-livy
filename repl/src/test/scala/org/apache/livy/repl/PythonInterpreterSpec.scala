@@ -194,7 +194,7 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
 
   it should "report an error if accessing an unknown variable" in withInterpreter { interpreter =>
     val response = interpreter.execute("x")
-    response shouldBe a [Interpreter.ExecuteError]
+    response shouldBe a[Interpreter.ExecuteError]
     val executeErrorResp = response.asInstanceOf[Interpreter.ExecuteError]
 
     executeErrorResp.ename shouldEqual "NameError"
@@ -227,7 +227,7 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
         |'
       """.stripMargin)
 
-    response shouldBe a [Interpreter.ExecuteError]
+    response shouldBe a[Interpreter.ExecuteError]
     val executeErrorResp = response.asInstanceOf[Interpreter.ExecuteError]
 
     executeErrorResp.ename shouldEqual "SyntaxError"

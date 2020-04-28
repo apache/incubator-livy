@@ -17,9 +17,10 @@
 
 package org.apache.livy.repl
 
-import org.json4s.{Extraction, JString}
+import org.json4s.Extraction
 import org.json4s.jackson.JsonMethods.parse
 import org.scalatest._
+
 import org.apache.livy.sessions._
 
 abstract class PythonSessionSpec extends BaseSessionSpec(PySpark) {
