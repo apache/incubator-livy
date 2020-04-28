@@ -214,18 +214,15 @@ class InteractiveSessionSpec extends FunSpec
 
     withSession("should report an error if accessing an unknown variable") { session =>
       val result = executeStatement("x")
-      val expectedResult = Extraction.decompose(Map(
-        "status" -> "error",
-        "execution_count" -> 3,
-        "ename" -> "NameError",
-        "evalue" -> "name 'x' is not defined",
-        "traceback" -> List(
-          "Traceback (most recent call last):\n",
-          "NameError: name 'x' is not defined\n"
-        )
-      ))
+      (result \ "status").extract[String] shouldEqual "error"
+      (result \ "execution_count").extract[Int] shouldEqual 3
+      (result \ "ename").extract[String] shouldEqual "NameError"
+      (result \ "evalue").extract[String] shouldEqual "name 'x' is not defined"
 
-      result should equal (expectedResult)
+      val traceback = (result \ "traceback").values.asInstanceOf[List[String]]
+      traceback.head shouldEqual "Traceback (most recent call last):\n"
+      traceback.last shouldEqual "NameError: name 'x' is not defined\n"
+
       eventually(timeout(10 seconds), interval(30 millis)) {
         session.state shouldBe (SessionState.Idle)
       }
