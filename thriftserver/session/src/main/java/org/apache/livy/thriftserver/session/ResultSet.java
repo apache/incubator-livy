@@ -88,7 +88,7 @@ public class ResultSet {
     } else if (quoteStrings && value instanceof String) {
       return "\"" + value + "\"";
     } else if (value instanceof BigDecimal) {
-      return ((BigDecimal) value).stripTrailingZeros().toString();
+      return ((BigDecimal) value).toString();
     } else if (value instanceof Map) {
       return stream(new ScalaIterator<>(((Map<?,?>) value).iterator()))
         .map(o -> toHiveString(o, true))

@@ -76,6 +76,8 @@ public class ColumnBufferTest {
 
       Encoder<TestBean> encoder = Encoders.bean(TestBean.class);
       Dataset<TestBean> ds = spark.createDataset(Arrays.asList(tb), encoder);
+      // In ds, the decimal field will be a org.apache.spark.sql.types.DecimalType,
+      // specifically DecimalType.SYSTEM_DEFAULT, i.e., DecimalType(38, 18).
 
       ds.write().format("parquet").saveAsTable("types_test");
 
@@ -117,7 +119,9 @@ public class ColumnBufferTest {
           assertEquals(Double.valueOf(tb.getDbl()), cols[idx++].get(0));
           break;
         case "decimal":
-          assertEquals(tb.getDecimal().stripTrailingZeros().toString(), cols[idx++].get(0));
+          // As decimal maps to DecimalType(38, 18), we need to change the scale
+          // before comparing
+          assertEquals(tb.getDecimal().setScale(18).toString(), cols[idx++].get(0));
           break;
         case "desc":
           assertEquals(tb.getDesc(), cols[idx++].get(0));
