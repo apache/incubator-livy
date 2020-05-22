@@ -197,35 +197,6 @@ object InteractiveSession extends Logging {
       }
     }
 
-    def datanucleusJars(livyConf: LivyConf, sparkMajorVersion: Int): Seq[String] = {
-      if (sys.env.getOrElse("LIVY_INTEGRATION_TEST", "false").toBoolean) {
-        // datanucleus jars has already been in classpath in integration test
-        Seq.empty
-      } else {
-        val sparkHome = livyConf.sparkHome().get
-        val libdir = sparkMajorVersion match {
-          case 2 =>
-            if (new File(sparkHome, "RELEASE").isFile) {
-              new File(sparkHome, "jars")
-            } else {
-              new File(sparkHome, "assembly/target/scala-2.11/jars")
-            }
-          case v =>
-            throw new RuntimeException(s"Unsupported Spark major version: $sparkMajorVersion")
-        }
-        val jars = if (!libdir.isDirectory) {
-          Seq.empty[String]
-        } else {
-          libdir.listFiles().filter(_.getName.startsWith("datanucleus-"))
-            .map(_.getAbsolutePath).toSeq
-        }
-        if (jars.isEmpty) {
-          warn("datanucleus jars can not be found")
-        }
-        jars
-      }
-    }
-
     /**
      * Look for hive-site.xml (for now just ignore spark.files defined in spark-defaults.conf)
      * 1. First look for hive-site.xml in user request
@@ -290,12 +261,10 @@ object InteractiveSession extends Logging {
       hiveSiteFile(sparkFiles, livyConf) match {
         case (_, true) =>
           debug("Enable HiveContext because hive-site.xml is found in user request.")
-          mergeConfList(datanucleusJars(livyConf, sparkMajorVersion), LivyConf.SPARK_JARS)
         case (Some(file), false) =>
           debug("Enable HiveContext because hive-site.xml is found under classpath, "
             + file.getAbsolutePath)
           mergeConfList(List(file.getAbsolutePath), LivyConf.SPARK_FILES)
-          mergeConfList(datanucleusJars(livyConf, sparkMajorVersion), LivyConf.SPARK_JARS)
         case (None, false) =>
           warn("Enable HiveContext but no hive-site.xml found under" +
             " classpath or user request.")
