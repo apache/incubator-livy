@@ -75,9 +75,9 @@ public class ColumnBufferTest {
       tb.getChild().getM().put("two", 2);
 
       Encoder<TestBean> encoder = Encoders.bean(TestBean.class);
+      // In the following Dataset ds, the Encoder maps the decimal field in the TestBean class
+      // to org.apache.spark.sql.types.DecimalType.SYSTEM_DEFAULT, i.e., DecimalType(38, 18).
       Dataset<TestBean> ds = spark.createDataset(Arrays.asList(tb), encoder);
-      // In ds, the decimal field will be a org.apache.spark.sql.types.DecimalType,
-      // specifically DecimalType.SYSTEM_DEFAULT, i.e., DecimalType(38, 18).
 
       ds.write().format("parquet").saveAsTable("types_test");
 
