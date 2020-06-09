@@ -177,7 +177,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
       }
 
       servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 1)
-      jpost[Map[String, Any]]("/", createRequest, SC_BAD_REQUEST) { data => None }
+      jpost[Map[String, Any]]("/", createRequest, SC_SERVICE_UNAVAILABLE) { data => None }
 
       jdelete[Map[String, Any]]("/2") { data =>
         data should equal (Map("msg" -> "deleted"))

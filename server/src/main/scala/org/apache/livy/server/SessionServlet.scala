@@ -129,7 +129,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   post("/") {
     synchronized {
       if (tooManySessions) {
-        BadRequest(ResponseMessage("Rejected, too many sessions are being created!"))
+        ServiceUnavailable(ResponseMessage("Rejected, too many sessions are being created!"))
       } else {
         val session = sessionManager.register(createSession(request))
         // Because it may take some time to establish the session, update the last activity

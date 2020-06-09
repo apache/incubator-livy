@@ -214,7 +214,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     servlet.livyConf.set(LivyConf.SESSION_MAX_CREATION, 1)
 
     waitSession
-    jpost[Map[String, Any]]("/", createRequest(), HttpServletResponse.SC_BAD_REQUEST) { data =>
+    jpost[Any]("/", createRequest(), HttpServletResponse.SC_SERVICE_UNAVAILABLE) { _ =>
       None
     }
 
