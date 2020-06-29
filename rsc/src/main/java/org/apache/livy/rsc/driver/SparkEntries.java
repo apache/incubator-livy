@@ -17,7 +17,6 @@
 
 package org.apache.livy.rsc.driver;
 
-import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.spark.SparkConf;
@@ -60,7 +59,7 @@ public class SparkEntries {
     return sc;
   }
 
-  public SparkSession sparkSession() throws Exception {
+  public SparkSession sparkSession() {
     if (sparksession == null) {
       synchronized (this) {
         if (sparksession == null) {
@@ -100,7 +99,7 @@ public class SparkEntries {
     if (sqlctx == null) {
       synchronized (this) {
         if (sqlctx == null) {
-          sqlctx = new SQLContext(sc());
+          sqlctx = sparkSession().sqlContext();
           LOG.info("Created SQLContext.");
         }
       }
@@ -112,7 +111,7 @@ public class SparkEntries {
     if (hivectx == null) {
       synchronized (this) {
         if (hivectx == null) {
-          SparkConf conf = sc.getConf();
+          SparkConf conf = sc().getConf();
           if (conf.getBoolean("spark.repl.enableHiveContext", false) ||
             conf.get("spark.sql.catalogImplementation", "in-memory").toLowerCase()
               .equals("hive")) {

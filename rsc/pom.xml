@@ -58,7 +58,7 @@
     </dependency>
 
     <dependency>
-      <groupId>com.esotericsoftware.kryo</groupId>
+      <groupId>com.esotericsoftware</groupId>
       <artifactId>kryo</artifactId>
     </dependency>
     <dependency>
@@ -140,7 +140,9 @@
               <artifactSet>
                 <includes>
                   <include>org.apache.livy:livy-client-common</include>
-                  <include>com.esotericsoftware.kryo:kryo</include>
+                  <include>com.esotericsoftware:kryo</include>
+                  <include>com.esotericsoftware:minlog</include>
+                  <include>com.esotericsoftware:reflectasm</include>
                 </includes>
               </artifactSet>
               <filters>

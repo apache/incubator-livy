@@ -22,18 +22,14 @@ language: scala
 
 matrix:
   include:
-  - name: "Spark 2.2 Unit Tests"
-    env: MVN_FLAG='-Pthriftserver -DskipITs'
-  - name: "Spark 2.2 ITs"
-    env: MVN_FLAG='-Pthriftserver -DskipTests'
-  - name: "Spark 2.3 Unit Tests"
-    env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipITs'
-  - name: "Spark 2.3 ITs"
-    env: MVN_FLAG='-Pspark-2.3 -Pthriftserver -DskipTests'
   - name: "Spark 2.4 Unit Tests"
     env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipITs'
   - name: "Spark 2.4 ITs"
     env: MVN_FLAG='-Pspark-2.4 -Pthriftserver -DskipTests'
+  - name: "Spark 3.0 Unit Tests"
+    env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipITs'
+  - name: "Spark 3.0 ITs"
+    env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipTests'
 
 jdk:
   - oraclejdk8

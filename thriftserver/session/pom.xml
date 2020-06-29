@@ -94,17 +94,4 @@
     </plugins>
   </build>
 
-  <profiles>
-    <!--
-      Override the json4s version to match Spark 2.4's. This module doesn't use json4s, but the
-      Spark APIs called in the tests require a different version of json4s than Livy's (and Livy
-      doesn't really work with Spark's version yet).
-    -->
-    <profile>
-      <id>spark-2.4</id>
-      <properties>
-        <json4s.version>3.5.3</json4s.version>
-      </properties>
-    </profile>
-  </profiles>
 </project>
