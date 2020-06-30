@@ -32,7 +32,7 @@ matrix:
     env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipTests'
 
 jdk:
-  - oraclejdk8
+  - openjdk8
 
 cache:
   pip: true
