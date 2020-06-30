@@ -42,7 +42,7 @@ cache:
 install:
   - sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu xenial-cran35/'
   - sudo apt-get update
-  - sudo apt-get -qq install r-base
+  - sudo apt-get -qq --allow-unauthenticated install r-base
   - sudo apt-get -qq install python3-pip python-dev
   - sudo apt-get -qq install libkrb5-dev
   - sudo apt-get -qq remove python-setuptools
