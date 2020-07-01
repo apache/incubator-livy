@@ -198,7 +198,6 @@ class ScalaJobHandle[T] private[livy] (jobHandle: JobHandle[T]) extends Future[T
 
   def transformWith[S](f: (Try[T]) => Future[S])(implicit executor: ExecutionContext): Future[S] =
     throw new UnsupportedOperationException()
-
 }
 
 private abstract class AbstractScalaJobHandleListener[T] extends Listener[T] {
