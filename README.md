@@ -57,7 +57,7 @@ Required python packages for building Livy:
 To run Livy, you will also need a Spark installation. You can get Spark releases at
 https://spark.apache.org/downloads.html.
 
-Livy requires Spark 2.2+. You can switch to a different version of Spark by setting the
+Livy requires Spark 2.4+. You can switch to a different version of Spark by setting the
 ``SPARK_HOME`` environment variable in the Livy server process, without needing to rebuild Livy.
 
 
@@ -71,7 +71,7 @@ cd incubator-livy
 mvn package
 ```
 
-By default Livy is built against Apache Spark 2.2.0, but the version of Spark used when running
+By default Livy is built against Apache Spark 2.4.5, but the version of Spark used when running
 Livy does not need to match the version used to build Livy. Livy internally handles the differences
 between different Spark versions.
 

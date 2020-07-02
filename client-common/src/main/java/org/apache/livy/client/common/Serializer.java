@@ -23,7 +23,8 @@ import java.nio.ByteBuffer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.shaded.org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.serializers.ClosureSerializer;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import org.apache.livy.annotations.Private;
 
@@ -49,7 +50,10 @@ public class Serializer {
           kryo.register(klass, REG_ID_BASE + count);
           count++;
         }
-        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+        kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(
+          new StdInstantiatorStrategy()));
+        kryo.register(java.lang.invoke.SerializedLambda.class);
+        kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
         kryo.setClassLoader(Thread.currentThread().getContextClassLoader());
         return kryo;
       }
