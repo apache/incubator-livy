@@ -1202,6 +1202,7 @@
           https://archive.apache.org/dist/spark/spark-${spark.version}/${spark.bin.name}.tgz
         </spark.bin.download.url>
         <kubernetes.client.version>4.9.2</kubernetes.client.version>
+        <jackson.version>2.10.3</jackson.version>
       </properties>
     </profile>
 
