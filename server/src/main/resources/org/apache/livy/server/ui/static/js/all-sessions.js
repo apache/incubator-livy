@@ -26,7 +26,7 @@ function loadSessionsTable(sessions) {
         tdWrap(session.proxyUser) +
         tdWrap(session.kind) +
         tdWrap(session.state) +
-        tdWrap(logLinks(session, "session")) +
+        tdWrapWithClass(logLinks(session, "session"), "with-scroll-bar") +
         "</tr>"
     );
   });
@@ -42,7 +42,7 @@ function loadBatchesTable(sessions) {
         tdWrap(session.owner) +
         tdWrap(session.proxyUser) +
         tdWrap(session.state) +
-        tdWrap(logLinks(session, "batch")) +
+        tdWrapWithClass(logLinks(session, "batch"), "with-scroll-bar") +
         "</tr>"
     );
   });
