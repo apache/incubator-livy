@@ -88,3 +88,4 @@ class CuratorElectorServiceSpec extends FunSpec with LivyBaseUnitTestSuite {
     }
   }
 }
+

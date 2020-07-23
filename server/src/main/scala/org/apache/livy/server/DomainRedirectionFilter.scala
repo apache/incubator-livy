@@ -56,11 +56,13 @@ class DomainRedirectionFilter(haService: CuratorElectorService) extends Filter
         debug("active leader's address is:" + haService.getActiveAddress())
         debug("current id:" + haService.getCurrentId())
         val httpRequest = request.asInstanceOf[HttpServletRequest]
+        val queryOpt: Option[String] = Option(httpRequest.getQueryString())
         val requestURL = httpRequest.getRequestURL().toString()
         debug("requested url: " + requestURL)
 
         val builder = UriComponentsBuilder.fromHttpUrl(requestURL)
-        val redirectURL = builder.host(haService.getActiveAddress()).toUriString()
+        val activeURL = builder.host(haService.getActiveAddress()).toUriString()
+        val redirectURL = if (queryOpt.isEmpty) activeURL else activeURL + "?" + queryOpt.get
         debug("redirected url:" + redirectURL)
 
         val httpServletResponse = response.asInstanceOf[HttpServletResponse];
@@ -79,3 +81,4 @@ class DomainRedirectionFilter(haService: CuratorElectorService) extends Filter
 
   override def destroy(): Unit = {}
 }
+

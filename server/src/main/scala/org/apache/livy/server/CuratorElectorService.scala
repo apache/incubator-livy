@@ -148,3 +148,4 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
     }
   }
 }
+
