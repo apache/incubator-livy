@@ -53,7 +53,7 @@ class DomainRedirectionFilter(haService: CuratorElectorService) extends Filter
                         response: ServletResponse,
                         chain: FilterChain): Unit = {
     if (!isLeader()) {
-        debug("active leader's address is:" + haService.getActiveAddress())
+        debug("active leader's hostnames are:" + haService.getActiveHostname())
         debug("current id:" + haService.getCurrentId())
         val httpRequest = request.asInstanceOf[HttpServletRequest]
         val queryOpt: Option[String] = Option(httpRequest.getQueryString())
@@ -61,7 +61,7 @@ class DomainRedirectionFilter(haService: CuratorElectorService) extends Filter
         debug("requested url: " + requestURL)
 
         val builder = UriComponentsBuilder.fromHttpUrl(requestURL)
-        val activeURL = builder.host(haService.getActiveAddress()).toUriString()
+        val activeURL = builder.host(haService.getActiveHostname()).toUriString()
         val redirectURL = if (queryOpt.isEmpty) activeURL else activeURL + "?" + queryOpt.get
         debug("redirected url:" + redirectURL)
 

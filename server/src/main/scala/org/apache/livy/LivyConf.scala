@@ -215,9 +215,6 @@ object LivyConf {
   // The hostnames of all servers used in HA
   val HA_SERVER_HOSTNAMES = Entry("livy.server.ha.server-hostnames", "")
 
-  // The addresses of all servers used in HA
-  val HA_SERVER_ADDRESSES = Entry("livy.server.ha.server-addresses", "")
-
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
