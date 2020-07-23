@@ -82,11 +82,11 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
   leaderLatch.addListener(this)
 
   var currentState = HAState.Standby
-  def isLeader() {
+  override def isLeader() {
     transitionToActive()
   }
 
-  def notLeader(){
+  override def notLeader(){
     transitionToStandby()
   }
 
@@ -106,6 +106,7 @@ class CuratorElectorService(livyConf : LivyConf, livyServer : LivyServer,
   }
 
   def start(): Unit = {
+    server.initHa(this)
     transitionToStandby()
 
     server.start()

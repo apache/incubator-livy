@@ -55,7 +55,6 @@ class DomainRedirectionFilter(haService: CuratorElectorService) extends Filter
     if (!isLeader()) {
         debug("active leader's address is:" + haService.getActiveAddress())
         debug("current id:" + haService.getCurrentId())
-
         val httpRequest = request.asInstanceOf[HttpServletRequest]
         val requestURL = httpRequest.getRequestURL().toString()
         debug("requested url: " + requestURL)

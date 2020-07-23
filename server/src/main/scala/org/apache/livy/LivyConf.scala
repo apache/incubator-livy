@@ -201,7 +201,7 @@ object LivyConf {
   * High Availability mode of Livy. Possible values:
   * off: Default. Turn off High Availability.
   * on: Livy uses Zookeeper as a state store to ensure a livy server is always available with the
-*     correct state.
+  *     correct state.
   * Must set livy.server.ha.zookeeper-url to configure HA
   */
   val HA_MODE = Entry("livy.server.ha.mode", "off")

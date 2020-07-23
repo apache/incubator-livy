@@ -84,8 +84,9 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_STATE_RETAIN_TIME))
 
   new GarbageCollector().start()
+  recoverSessions()
 
-  def startSessionManager(): Unit = {
+  def recoverSessions(): Unit = {
     idCounter.set(0)
     sessions.clear()
     sessionsByName.clear()

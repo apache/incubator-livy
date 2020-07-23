@@ -339,8 +339,8 @@ class LivyServer extends Logging {
 
   def start(): Unit = {
     info("Starting HA connection")
-    interactiveSessionManager.startSessionManager()
-    batchSessionManager.startSessionManager()
+    interactiveSessionManager.recoverSessions()
+    batchSessionManager.recoverSessions()
     server.start()
 
     _thriftServerFactory.foreach {
@@ -466,7 +466,6 @@ object LivyServer {
     if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON) {
       info("Starting HA connection")
       val electorService: CuratorElectorService = new CuratorElectorService(livyConf, server)
-      server.initHa(electorService)
       electorService.start()
     }
     else {
