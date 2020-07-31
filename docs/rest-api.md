@@ -822,6 +822,11 @@ A statement represents the result of an execution statement.
     <td>list of strings</td>
   </tr>
   <tr>
+    <td>exceptions</td>
+    <td>The log lines contains exceptions or stacktrace</td>
+    <td>list of strings</td>
+  </tr>
+  <tr>
     <td>state</td>
     <td>The batch state</td>
     <td>string</td>
