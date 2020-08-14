@@ -634,6 +634,7 @@ class InteractiveSession(
   override def stateChanged(oldState: SparkApp.State, newState: SparkApp.State): Unit = {
     synchronized {
       debug(s"$this app state changed from $oldState to $newState")
+      this.appInfo.appState = Some(newState)
       newState match {
         case SparkApp.State.FINISHED | SparkApp.State.FAILED =>
           transition(SessionState.Dead())

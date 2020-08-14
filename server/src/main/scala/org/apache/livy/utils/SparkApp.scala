@@ -24,12 +24,18 @@ import org.apache.livy.LivyConf
 object AppInfo {
   val DRIVER_LOG_URL_NAME = "driverLogUrl"
   val SPARK_UI_URL_NAME = "sparkUiUrl"
+  val APP_STATE_NAME = "appState"
 }
 
-case class AppInfo(var driverLogUrl: Option[String] = None, var sparkUiUrl: Option[String] = None) {
+case class AppInfo(
+    var driverLogUrl: Option[String] = None,
+    var sparkUiUrl: Option[String] = None,
+    var appState: Option[SparkApp.State]) {
   import AppInfo._
   def asJavaMap: java.util.Map[String, String] =
-    Map(DRIVER_LOG_URL_NAME -> driverLogUrl.orNull, SPARK_UI_URL_NAME -> sparkUiUrl.orNull).asJava
+    Map(DRIVER_LOG_URL_NAME -> driverLogUrl.orNull,
+      SPARK_UI_URL_NAME -> sparkUiUrl.orNull,
+      APP_STATE_NAME -> appState.map(s => s.toString).orNull).asJava
 }
 
 trait SparkAppListener {
