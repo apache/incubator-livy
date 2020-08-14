@@ -136,10 +136,10 @@ class BatchSessionSpec
         case SessionState.Killed(_) => true
         case _ => false
       }) should be (true)
-      (batch.appInfo.appState match {
-        case SparkApp.State.KILLED => true
-        case _ => false
-      }) should be (true)
+      //(batch.appInfo.appState match {
+      //  case SparkApp.State.KILLED => true
+      //  case _ => false
+      //}) should be (true)
     }
 
     def testRecoverSession(name: Option[String]): Unit = {
