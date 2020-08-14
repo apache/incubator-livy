@@ -30,7 +30,7 @@ object AppInfo {
 case class AppInfo(
     var driverLogUrl: Option[String] = None,
     var sparkUiUrl: Option[String] = None,
-    var appState: Option[SparkApp.State]) {
+    var appState: Option[SparkApp.State] = None) {
   import AppInfo._
   def asJavaMap: java.util.Map[String, String] =
     Map(DRIVER_LOG_URL_NAME -> driverLogUrl.orNull,
