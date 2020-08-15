@@ -285,10 +285,11 @@ class SparkYarnApp private[utils] (
           // Refresh application state
           val appReport = yarnClient.getApplicationReport(appId)
           yarnDiagnostics = getYarnDiagnostics(appReport)
-          changeState(mapYarnState(
+          val state = mapYarnState(
             appReport.getApplicationId,
             appReport.getYarnApplicationState,
-            appReport.getFinalApplicationStatus))
+            appReport.getFinalApplicationStatus)
+          changeState(state)
 
           if (isProcessErrExit()) {
             if (killed) {
@@ -304,7 +305,7 @@ class SparkYarnApp private[utils] (
             val driverLogUrl =
               Try(yarnClient.getContainerReport(attempt.getAMContainerId).getLogUrl)
                 .toOption
-            AppInfo(driverLogUrl, Option(appReport.getTrackingUrl))
+            AppInfo(driverLogUrl, Option(appReport.getTrackingUrl), Some(state))
           }
 
           if (appInfo != latestAppInfo) {
