@@ -380,7 +380,8 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
           verify(mockAppReport, atLeast(1)).getTrackingUrl()
           verify(mockContainerReport, atLeast(1)).getLogUrl()
           verify(mockListener).appIdKnown(appId.toString)
-          verify(mockListener).infoChanged(AppInfo(Some(driverLogUrl), Some(sparkUiUrl), Some(SparkApp.State.FINISHED)))
+          verify(mockListener).infoChanged(
+            AppInfo(Some(driverLogUrl), Some(sparkUiUrl), Some(SparkApp.State.FINISHED)))
         }
       }
     }
