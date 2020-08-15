@@ -141,11 +141,16 @@
 
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s
+# If Livy can't find the yarn app within this max times, consider it lost.
+# livy.server.yarn.app-lookup.max-failed.times = 120
+# The size of thread pool to monitor all yarn apps.
+# livy.server.yarn.app-lookup.thread-pool.size = 4
+
 # When the cluster is busy, we may fail to launch yarn app in app-lookup-timeout, then it would
 # cause session leakage, so we need to check session leakage.
-# How long to check livy session leakage
+# How long to check livy session leakage.
 # livy.server.yarn.app-leakage.check-timeout = 600s
-# how often to check livy session leakage
+# How often to check livy session leakage.
 # livy.server.yarn.app-leakage.check-interval = 60s
 
 # How often Livy polls YARN to refresh YARN app state.
