@@ -28,7 +28,7 @@ CLASSIFIERS = [
 ]
 
 requirements = [
-    'cloudpickle>=0.2.1',
+    'cloudpickle<=1.3.0',
     'configparser>=3.5.0',
     'future>=0.15.2',
     'futures>=3.0.5',
@@ -55,5 +55,5 @@ setup(
     classifiers=CLASSIFIERS,
     install_requires=requirements,
     setup_requires=['pytest-runner', 'flake8'],
-    tests_require=['pytest']
+    tests_require=['pytest<5']
 )
