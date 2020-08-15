@@ -322,7 +322,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
       }
     }
 
-    it("should expose driver log url and Spark UI url") {
+    it("should expose driver log url, Spark UI url, and app state") {
       Clock.withSleepMethod(mockSleep) {
         val mockYarnClient = mock[YarnClient]
         val driverLogUrl = "DRIVER LOG URL"
