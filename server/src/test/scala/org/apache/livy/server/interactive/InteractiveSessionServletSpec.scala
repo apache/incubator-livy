@@ -33,14 +33,13 @@ import org.mockito.stubbing.Answer
 import org.scalatest.Entry
 import org.scalatest.concurrent.Eventually._
 import org.scalatestplus.mockito.MockitoSugar.mock
-
 import org.apache.livy.{ExecuteRequest, LivyConf}
 import org.apache.livy.client.common.HttpMessages.SessionInfo
 import org.apache.livy.rsc.driver.{Statement, StatementState}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
-import org.apache.livy.utils.AppInfo
+import org.apache.livy.utils.{AppInfo, SparkApp}
 
 class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
 
@@ -168,7 +167,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     val proxyUser = "proxyUser"
     val state = SessionState.Running
     val kind = Spark
-    val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
+    val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"), Some(SparkApp.State.RUNNING))
     val log = IndexedSeq[String]("log1", "log2")
 
     val session = mock[InteractiveSession]
@@ -197,6 +196,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     view.kind shouldEqual kind.toString
     view.appInfo should contain (Entry(AppInfo.DRIVER_LOG_URL_NAME, appInfo.driverLogUrl.get))
     view.appInfo should contain (Entry(AppInfo.SPARK_UI_URL_NAME, appInfo.sparkUiUrl.get))
+    view.appInfo should contain (Entry(AppInfo.APP_STATE_NAME, appInfo.appState.get))
     view.log shouldEqual log.asJava
   }
 
