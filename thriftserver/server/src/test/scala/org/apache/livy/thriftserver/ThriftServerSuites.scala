@@ -17,6 +17,7 @@
 
 package org.apache.livy.thriftserver
 
+import java.math.BigDecimal
 import java.sql.{Connection, Date, SQLException, Statement, Timestamp, Types}
 
 import scala.collection.mutable.ArrayBuffer
@@ -49,7 +50,10 @@ trait CommonThriftTests {
         "cast('2018-08-06 09:11:15' as timestamp)," +
         "cast('2018-08-06' as date)," +
         "cast(1234567890 as decimal(10))," +
-        "cast(1234567890 as decimal)")
+        "cast(1234567890 as decimal)," +
+        "cast(123.45 as decimal(5, 2))," +
+        "cast(123.4 as decimal(5, 2))," +
+        "cast(123 as decimal(5, 2))")
 
     val rsMetaData = resultSet.getMetaData()
 
@@ -112,6 +116,13 @@ trait CommonThriftTests {
     assert(rsMetaData.getColumnTypeName(16) == "decimal")
     assert(rsMetaData.getPrecision(16) == 10)
     assert(rsMetaData.getScale(16) == 0)
+
+    assert(resultSet.getString(17) == "123.45")
+    assert(resultSet.getBigDecimal(17) == new BigDecimal("123.45"))
+    assert(resultSet.getString(18) == "123.40")
+    assert(resultSet.getBigDecimal(18) == new BigDecimal("123.40"))
+    assert(resultSet.getString(19) == "123.00")
+    assert(resultSet.getBigDecimal(19) == new BigDecimal("123.00"))
 
     assert(!resultSet.next())
 
