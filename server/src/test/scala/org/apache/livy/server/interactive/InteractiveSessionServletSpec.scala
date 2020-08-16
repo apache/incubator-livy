@@ -200,7 +200,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     view.kind shouldEqual kind.toString
     view.appInfo should contain (Entry(AppInfo.DRIVER_LOG_URL_NAME, appInfo.driverLogUrl.get))
     view.appInfo should contain (Entry(AppInfo.SPARK_UI_URL_NAME, appInfo.sparkUiUrl.get))
-    view.appInfo should contain (Entry(AppInfo.APP_STATE_NAME, appInfo.appState.get))
+    view.appInfo should contain (Entry(AppInfo.APP_STATE_NAME, appInfo.appState.get.toString))
     view.log shouldEqual log.asJava
   }
 
