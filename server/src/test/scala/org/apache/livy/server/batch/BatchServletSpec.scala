@@ -27,6 +27,7 @@ import scala.concurrent.duration.Duration
 
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar.mock
+
 import org.apache.livy.{LivyConf, Utils}
 import org.apache.livy.server.{AccessManager, BaseSessionServletSpec}
 import org.apache.livy.server.recovery.SessionStore
@@ -67,7 +68,10 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
     val appId = "appid"
     val owner = "owner"
     val proxyUser = "proxyUser"
-    val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"), Some(SparkApp.State.RUNNING))
+    val appInfo = AppInfo(
+      Some("DRIVER LOG URL"),
+      Some("SPARK UI URL"),
+      Some(SparkApp.State.RUNNING))
     val log = IndexedSeq[String]("log1", "log2")
 
     val session = mock[BatchSession]

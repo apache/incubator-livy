@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
 import org.json4s.jackson.Json4sScalaModule
@@ -33,6 +33,7 @@ import org.mockito.stubbing.Answer
 import org.scalatest.Entry
 import org.scalatest.concurrent.Eventually._
 import org.scalatestplus.mockito.MockitoSugar.mock
+
 import org.apache.livy.{ExecuteRequest, LivyConf}
 import org.apache.livy.client.common.HttpMessages.SessionInfo
 import org.apache.livy.rsc.driver.{Statement, StatementState}
@@ -167,7 +168,10 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     val proxyUser = "proxyUser"
     val state = SessionState.Running
     val kind = Spark
-    val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"), Some(SparkApp.State.RUNNING))
+    val appInfo = AppInfo(
+      Some("DRIVER LOG URL"),
+      Some("SPARK UI URL"),
+      Some(SparkApp.State.RUNNING))
     val log = IndexedSeq[String]("log1", "log2")
 
     val session = mock[InteractiveSession]
