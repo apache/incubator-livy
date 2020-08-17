@@ -19,7 +19,7 @@ package org.apache.livy.utils
 
 import scala.collection.JavaConverters._
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 
 import org.apache.livy.LivyConf
 
@@ -32,7 +32,7 @@ object AppInfo {
 case class AppInfo(
     var driverLogUrl: Option[String] = None,
     var sparkUiUrl: Option[String] = None,
-    @JsonProperty
+    @JsonScalaEnumeration(classOf[SparkApp.State])
     var appState: Option[SparkApp.State] = None) {
   import AppInfo._
   def asJavaMap: java.util.Map[String, String] =
