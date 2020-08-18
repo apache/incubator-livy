@@ -202,6 +202,17 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     view.appInfo should contain (Entry(AppInfo.SPARK_UI_URL_NAME, appInfo.sparkUiUrl.get))
     view.appInfo should contain (Entry(AppInfo.APP_STATE_NAME, appInfo.appState.get.toString))
     view.log shouldEqual log.asJava
+
+    // Test case where appState=None.
+    val noStateAppInfo = AppInfo(
+      Some("DRIVER LOG URL"),
+      Some("SPARK UI URL"))
+    when(session.appInfo).thenReturn(noStateAppInfo)
+    val noStateView = servlet
+      .asInstanceOf[InteractiveSessionServlet]
+      .clientSessionView(session, req)
+      .asInstanceOf[SessionInfo]
+    noStateView.appInfo should contain (Entry(AppInfo.APP_STATE_NAME, null))
   }
 
   private def waitSession(): Unit = {

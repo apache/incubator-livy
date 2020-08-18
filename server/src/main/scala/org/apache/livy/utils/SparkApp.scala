@@ -40,7 +40,7 @@ case class AppInfo(
   def asJavaMap: java.util.Map[String, String] =
     Map(DRIVER_LOG_URL_NAME -> driverLogUrl.orNull,
       SPARK_UI_URL_NAME -> sparkUiUrl.orNull,
-      APP_STATE_NAME -> appState.map(s => s.toString).orNull).asJava
+      APP_STATE_NAME -> appState.map(_.toString).orNull).asJava
 }
 
 trait SparkAppListener {
