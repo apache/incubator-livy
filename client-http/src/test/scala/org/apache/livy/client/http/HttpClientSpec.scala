@@ -95,12 +95,12 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     }
 
     withClient("should run and monitor asynchronous jobs") {
-      testJob(false)
+      testJob()
     }
 
     withClient("should propagate errors from jobs") {
       val errorMessage = "This job throws an error."
-      val (jobId, handle) = runJob(false, { id => Seq(
+      val (jobId, handle) = runJob({ id => Seq(
           new JobStatus(id, JobHandle.State.FAILED, null, errorMessage))
         })
 
@@ -113,7 +113,7 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     }
 
     withClient("should run and monitor synchronous jobs") {
-      testJob(false)
+      testJob()
     }
 
     withClient("should add files and jars") {
@@ -133,7 +133,7 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     }
 
     withClient("should cancel jobs") {
-      val (jobId, handle) = runJob(false, { id => Seq(
+      val (jobId, handle) = runJob({ id => Seq(
           new JobStatus(id, JobHandle.State.STARTED, null, null),
           new JobStatus(id, JobHandle.State.CANCELLED, null, null))
         })
@@ -147,7 +147,7 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     }
 
     withClient("should notify listeners of job completion") {
-      val (jobId, handle) = runJob(false, { id => Seq(
+      val (jobId, handle) = runJob({ id => Seq(
           new JobStatus(id, JobHandle.State.STARTED, null, null),
           new JobStatus(id, JobHandle.State.SUCCEEDED, serialize(id), null))
         })
@@ -163,7 +163,7 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
       // JobHandleImpl does exponential backoff checking the result of a job. Given an initial
       // wait of 100ms, 4 iterations should result in a wait of 800ms, so the handle should at that
       // point timeout a wait of 100ms.
-      val (jobId, handle) = runJob(false, { id => Seq(
+      val (jobId, handle) = runJob({ id => Seq(
           new JobStatus(id, JobHandle.State.STARTED, null, null),
           new JobStatus(id, JobHandle.State.STARTED, null, null),
           new JobStatus(id, JobHandle.State.STARTED, null, null),
@@ -178,7 +178,7 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     }
 
     withClient("should handle null responses") {
-      testJob(false, response = Some(null))
+      testJob(response = Some(null))
     }
 
     withClient("should connect to existing sessions") {
@@ -215,7 +215,7 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     assert(expectedStr === new String(b))
   }
 
-  private def runJob(sync: Boolean, genStatusFn: Long => Seq[JobStatus]): (Long, JFuture[Int]) = {
+  private def runJob(genStatusFn: Long => Seq[JobStatus]): (Long, JobHandle[Int]) = {
     val jobId = java.lang.Long.valueOf(ID_GENERATOR.incrementAndGet())
     when(session.submitJob(any(classOf[Array[Byte]]), anyString())).thenReturn(jobId)
 
@@ -225,16 +225,17 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     when(session.jobStatus(meq(jobId))).thenReturn(first, remaining: _*)
 
     val job = new Echo(42)
-    val handle = if (sync) client.run(job) else client.submit(job)
+    val handle = client.submit(job)
     (jobId, handle)
   }
 
-  private def testJob(sync: Boolean, response: Option[Any] = None): Unit = {
-    val (jobId, handle) = runJob(sync, { id => Seq(
+  private def testJob(response: Option[Any] = None): Unit = {
+    val (jobId, handle) = runJob({ id => Seq(
         new JobStatus(id, JobHandle.State.STARTED, null, null),
         new JobStatus(id, JobHandle.State.SUCCEEDED, serialize(response.getOrElse(id)), null))
       })
     assert(handle.get(TIMEOUT_S, TimeUnit.SECONDS) === response.getOrElse(jobId))
+    assertResult(handle.getJobId)(jobId.toString)
     verify(session, times(2)).jobStatus(meq(jobId))
   }
 
