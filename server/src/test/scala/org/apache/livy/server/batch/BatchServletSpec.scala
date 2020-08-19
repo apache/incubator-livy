@@ -56,7 +56,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
     val sessionStore = mock[SessionStore]
     val accessManager = new AccessManager(livyConf)
     new BatchSessionServlet(
-      new BatchSessionManager(livyConf, sessionStore, Some(Seq.empty)),
+      new BatchSessionManager(livyConf, sessionStore, None, Some(Seq.empty)),
       sessionStore,
       livyConf,
       accessManager)
