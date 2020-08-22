@@ -203,7 +203,7 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     view.appInfo should contain (Entry(AppInfo.APP_STATE_NAME, appInfo.appState.get.toString))
     view.log shouldEqual log.asJava
 
-    // Test case where appState=None.
+    // Test case where appState = None.
     val noStateAppInfo = AppInfo(
       Some("DRIVER LOG URL"),
       Some("SPARK UI URL"))
