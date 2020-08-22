@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
 import org.json4s.jackson.Json4sScalaModule
@@ -40,7 +40,7 @@ import org.apache.livy.rsc.driver.{Statement, StatementState}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
-import org.apache.livy.utils.AppInfo
+import org.apache.livy.utils.{AppInfo, SparkApp}
 
 class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
 
@@ -168,7 +168,10 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     val proxyUser = "proxyUser"
     val state = SessionState.Running
     val kind = Spark
-    val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
+    val appInfo = AppInfo(
+      Some("DRIVER LOG URL"),
+      Some("SPARK UI URL"),
+      Some(SparkApp.State.RUNNING))
     val log = IndexedSeq[String]("log1", "log2")
 
     val session = mock[InteractiveSession]
@@ -197,7 +200,19 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     view.kind shouldEqual kind.toString
     view.appInfo should contain (Entry(AppInfo.DRIVER_LOG_URL_NAME, appInfo.driverLogUrl.get))
     view.appInfo should contain (Entry(AppInfo.SPARK_UI_URL_NAME, appInfo.sparkUiUrl.get))
+    view.appInfo should contain (Entry(AppInfo.APP_STATE_NAME, appInfo.appState.get.toString))
     view.log shouldEqual log.asJava
+
+    // Test case where appState = None.
+    val noStateAppInfo = AppInfo(
+      Some("DRIVER LOG URL"),
+      Some("SPARK UI URL"))
+    when(session.appInfo).thenReturn(noStateAppInfo)
+    val noStateView = servlet
+      .asInstanceOf[InteractiveSessionServlet]
+      .clientSessionView(session, req)
+      .asInstanceOf[SessionInfo]
+    noStateView.appInfo should contain (Entry(AppInfo.APP_STATE_NAME, null))
   }
 
   private def waitSession(): Unit = {
