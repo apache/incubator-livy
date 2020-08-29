@@ -46,6 +46,7 @@ LOG = logging.getLogger('fake_shell')
 global_dict = {}
 job_context = None
 local_tmp_dir_path = None
+listening_port = 0
 
 TOP_FRAME_REGEX = re.compile(r'\s*File "<stdin>".*in <module>')
 
@@ -556,7 +557,6 @@ def main():
 
     spark_major_version = os.getenv("LIVY_SPARK_MAJOR_VERSION")
     try:
-        listening_port = 0
         if os.environ.get("LIVY_TEST") != "true":
             #Load spark into the context
             exec('from pyspark.sql import HiveContext', global_dict)
@@ -619,7 +619,14 @@ def main():
 
             #Start py4j callback server
             from py4j.protocol import ENTRY_POINT_OBJECT_ID
-            from py4j.java_gateway import CallbackServerParameters
+            from py4j.java_gateway import CallbackServerParameters, server_started
+
+            def after_server_started(sender, **kwargs):
+                global listening_port
+                server = kwargs['server']
+                listening_port = server.server_socket.getsockname()[1]
+
+            server_started.connect(after_server_started)
 
             try:
                 gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
@@ -630,8 +637,6 @@ def main():
                 gateway.start_callback_server(
                     callback_server_parameters=CallbackServerParameters(port=0))
 
-            socket_info = gateway._callback_server.server_socket.getsockname()
-            listening_port = socket_info[1]
             pyspark_job_processor = PySparkJobProcessorImpl()
             gateway.gateway_property.pool.dict[ENTRY_POINT_OBJECT_ID] = pyspark_job_processor
 
