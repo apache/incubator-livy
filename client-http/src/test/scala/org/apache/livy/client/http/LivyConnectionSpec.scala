@@ -38,7 +38,9 @@ class LivyConnectionSpec extends FunSpecLike with BeforeAndAfterAll with LivyBas
       val roles = Array("user")
 
       val l = new HashLoginService()
-      l.putUser(username, Credential.getCredential(password), roles)
+      val userStore = new UserStore()
+      userStore.addUser(username, Credential.getCredential(password), roles)
+      l.setUserStore(userStore)
       l.setName(realm)
 
       val constraint = new Constraint()
