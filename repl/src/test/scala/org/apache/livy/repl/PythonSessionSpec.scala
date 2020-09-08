@@ -128,18 +128,14 @@ abstract class PythonSessionSpec extends BaseSessionSpec(PySpark) {
     statement.id should equal (0)
 
     val result = parse(statement.output)
-    val expectedResult = Extraction.decompose(Map(
-      "status" -> "error",
-      "execution_count" -> 0,
-      "traceback" -> List(
-        "Traceback (most recent call last):\n",
-        "NameError: name 'x' is not defined\n"
-      ),
-      "ename" -> "NameError",
-      "evalue" -> "name 'x' is not defined"
-    ))
+    (result \ "status").extract[String] shouldEqual "error"
+    (result \ "execution_count").extract[Int] shouldEqual 0
+    (result \ "ename").extract[String] shouldEqual "NameError"
+    (result \ "evalue").extract[String] shouldEqual "name 'x' is not defined"
 
-    result should equal (expectedResult)
+    val traceback = (result \ "traceback").values.asInstanceOf[List[String]]
+    traceback.head shouldEqual "Traceback (most recent call last):\n"
+    traceback.last shouldEqual "NameError: name 'x' is not defined\n"
   }
 
   it should "report an error if exception is thrown" in withSession { session =>
@@ -153,20 +149,18 @@ abstract class PythonSessionSpec extends BaseSessionSpec(PySpark) {
     statement.id should equal (0)
 
     val result = parse(statement.output)
-    val expectedResult = Extraction.decompose(Map(
-      "status" -> "error",
-      "execution_count" -> 0,
-      "traceback" -> List(
-        "Traceback (most recent call last):\n",
-        "  File \"<stdin>\", line 4, in func2\n",
-        "  File \"<stdin>\", line 2, in func1\n",
-        "Exception: message\n"
-      ),
-      "ename" -> "Exception",
-      "evalue" -> "message"
-    ))
+    (result \ "status").extract[String] shouldEqual "error"
+    (result \ "execution_count").extract[Int] shouldEqual 0
+    (result \ "ename").extract[String] shouldEqual "Exception"
+    (result \ "evalue").extract[String] shouldEqual "message"
 
-    result should equal (expectedResult)
+    val traceback = (result \ "traceback").values.asInstanceOf[List[String]]
+    traceback should have size 6
+    traceback(0) shouldEqual "Traceback (most recent call last):\n"
+    traceback(2) should endWith (", line 5, in <module>\n    func2()\n")
+    traceback(3) should endWith (", line 4, in func2\n    func1()\n")
+    traceback(4) should endWith (", line 2, in func1\n    raise Exception(\"message\")\n")
+    traceback(5) shouldEqual "Exception: message\n"
   }
 }
 
