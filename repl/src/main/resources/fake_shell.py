@@ -43,6 +43,8 @@ else:
 logging.basicConfig()
 LOG = logging.getLogger('fake_shell')
 
+shutdown_hook = threading.Event()
+
 global_dict = {}
 job_context = None
 local_tmp_dir_path = None
@@ -179,6 +181,7 @@ class JobContextImpl(object):
 
 
 class PySparkJobProcessorImpl(object):
+
     def processBypassJob(self, serialized_job):
         try:
             if sys.version >= '3':
@@ -200,6 +203,52 @@ class PySparkJobProcessorImpl(object):
 
     def getLocalTmpDirPath(self):
         return os.path.join(job_context.get_local_tmp_dir_path(), '__livy__')
+
+    def executeRequest(self, request):
+
+        try:
+            msg = json.loads(request)
+            handler = msg_type_router[msg['msg_type']]
+            response = handler(msg['content'])
+            return json.dumps(response)
+
+        except:
+            return execute_reply_error(*sys.exc_info())
+
+        # try:
+        #     content = msg['content']
+        # except KeyError:
+        #     LOG.error('missing content', exc_info=True)
+        #     raise
+        #
+        # if not isinstance(content, dict):
+        #     LOG.error('content is not a dictionary')
+        #     raise
+        #
+        # try:
+        #     handler = msg_type_router[msg_type]
+        # except KeyError:
+        #     LOG.error('unknown message type: %s', msg_type)
+        #     raise
+        #
+        # response = handler(content)
+        #
+        # try:
+        #     response = json.dumps(response)
+        # except ValueError:
+        #     response = json.dumps({
+        #         'msg_type': 'inspect_reply',
+        #         'content': {
+        #             'status': 'error',
+        #             'ename': 'ValueError',
+        #             'evalue': 'cannot json-ify %s' % response,
+        #             'traceback': [],
+        #         }
+        #     })
+        # return response
+
+        # print(response, file=sys_stdout)
+        # sys_stdout.flush()
 
     class Scala:
         extends = ['org.apache.livy.repl.PySparkJobProcessor']
@@ -513,7 +562,7 @@ def magic_matplot(name):
     }
 
 def shutdown_request(_content):
-    sys.exit()
+    shutdown_hook.set()
 
 
 magic_router = {
@@ -647,59 +696,9 @@ def main():
         print('READY(port=' + str(listening_port) + ')', file=sys_stdout)
         sys_stdout.flush()
 
-        while True:
-            line = sys_stdin.readline()
+        shutdown_hook.wait()
 
-            if line == '':
-                break
-            elif line == '\n':
-                continue
 
-            try:
-                msg = json.loads(line)
-            except ValueError:
-                LOG.error('failed to parse message', exc_info=True)
-                continue
-
-            try:
-                msg_type = msg['msg_type']
-            except KeyError:
-                LOG.error('missing message type', exc_info=True)
-                continue
-
-            try:
-                content = msg['content']
-            except KeyError:
-                LOG.error('missing content', exc_info=True)
-                continue
-
-            if not isinstance(content, dict):
-                LOG.error('content is not a dictionary')
-                continue
-
-            try:
-                handler = msg_type_router[msg_type]
-            except KeyError:
-                LOG.error('unknown message type: %s', msg_type)
-                continue
-
-            response = handler(content)
-
-            try:
-                response = json.dumps(response)
-            except ValueError:
-                response = json.dumps({
-                    'msg_type': 'inspect_reply',
-                    'content': {
-                        'status': 'error',
-                        'ename': 'ValueError',
-                        'evalue': 'cannot json-ify %s' % response,
-                        'traceback': [],
-                    }
-                })
-
-            print(response, file=sys_stdout)
-            sys_stdout.flush()
     finally:
         if os.environ.get("LIVY_TEST") != "true" and 'sc' in global_dict:
             gateway.shutdown_callback_server()

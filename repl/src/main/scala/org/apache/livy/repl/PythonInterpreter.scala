@@ -28,7 +28,6 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
-
 import org.apache.spark.{SparkConf, SparkContext}
 import org.json4s.{DefaultFormats, JValue}
 import org.json4s.JsonAST.JObject
@@ -36,11 +35,12 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization.write
 import py4j._
 import py4j.reflection.PythonProxyHandler
-
 import org.apache.livy.{Logging, Utils}
 import org.apache.livy.client.common.ClientConf
 import org.apache.livy.rsc.driver.SparkEntries
 import org.apache.livy.sessions._
+
+import scala.util.Try
 
 // scalastyle:off println
 object PythonInterpreter extends Logging {
@@ -278,12 +278,14 @@ private class PythonInterpreter(
   }
 
   private def sendRequest(request: Map[String, Any]): Option[JValue] = {
-    stdin.println(write(request))
-    stdin.flush()
+      Try(parse(pysparkJobProcessor.executeRequest(write(request)))).toOption
 
-    Option(stdout.readLine()).map { case line =>
-      parse(line)
-    }
+//    stdin.flush()
+//
+//    Option(stdout.readLine()).map { case line =>
+//      logger.warn(s"STDOUT: $line")
+//      parse(line)
+//    }
   }
 
   def addFile(path: String): Unit = {
