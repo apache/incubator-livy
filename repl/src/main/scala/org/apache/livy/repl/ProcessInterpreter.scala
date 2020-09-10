@@ -76,6 +76,8 @@ abstract class ProcessInterpreter(process: Process)
     }
   }
 
+  override def cancel(): Unit = {}
+
   protected def sendExecuteRequest(request: String): Interpreter.ExecuteResponse
 
   protected def sendShutdownRequest(): Unit = {}

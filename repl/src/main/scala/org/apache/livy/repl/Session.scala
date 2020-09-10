@@ -157,7 +157,7 @@ class Session(
     }
 
     val statementId = newStatementId.getAndIncrement()
-    val statement = new Statement(statementId, code, StatementState.Waiting, null)
+    val statement = new Statement(statementId, code, StatementState.Waiting, null, tpe.name)
     _statements.synchronized { _statements(statementId) = statement }
 
     Future {
@@ -213,6 +213,11 @@ class Session(
           statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
         } else {
           sc.cancelJobGroup(statementId.toString)
+          val intpOpt = interpreter(Kind(statement.kind))
+          if (!intpOpt.isEmpty) {
+            val intp = intpOpt.get
+            intp.cancel()
+          }
           if (statement.state.get() == StatementState.Cancelling) {
             Thread.sleep(livyConf.getTimeAsMs(RSCConf.Entry.JOB_CANCEL_TRIGGER_INTERVAL))
           }
