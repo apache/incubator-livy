@@ -80,6 +80,8 @@ object SessionServletSpec {
         }
         MockSessionView(session.id, session.owner, session.proxyUser, logs)
       }
+
+      override protected def sessionName(req: HttpServletRequest): Option[String] = None
     }
   }
 }

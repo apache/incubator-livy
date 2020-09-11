@@ -79,4 +79,8 @@ class BatchSessionServlet(
       session.state.toString, session.appId, session.appInfo, logs)
   }
 
+  override protected def sessionName(req: HttpServletRequest): Option[String] = {
+    val createRequest = bodyAs[CreateBatchRequest](req)
+    createRequest.name
+  }
 }
