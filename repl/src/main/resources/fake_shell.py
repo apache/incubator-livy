@@ -66,17 +66,20 @@ def execute_reply_ok(data):
         'data': data,
     })
 
-
-def execute_reply_error(exc_type, exc_value, tb):
-    LOG.error('execute_reply', exc_info=True)
+def format_tb(exc_type, exc_value, tb):
     if sys.version >= '3':
-      formatted_tb = traceback.format_exception(exc_type, exc_value, tb, chain=False)
+        formatted_tb = traceback.format_exception(exc_type, exc_value, tb, chain=False)
     else:
-      formatted_tb = traceback.format_exception(exc_type, exc_value, tb)
+        formatted_tb = traceback.format_exception(exc_type, exc_value, tb)
     for i in range(len(formatted_tb)):
         if TOP_FRAME_REGEX.match(formatted_tb[i]):
             formatted_tb = formatted_tb[:1] + formatted_tb[i + 1:]
             break
+    return formatted_tb
+
+def execute_reply_error(exc_type, exc_value, tb):
+    LOG.error('execute_reply', exc_info=True)
+    formatted_tb = format_tb(exc_type, exc_value, tb)
 
     return execute_reply('error', {
         'ename': unicode(exc_type.__name__),
@@ -211,7 +214,6 @@ class PySparkJobProcessorImpl(object):
             handler = msg_type_router[msg['msg_type']]
             response = handler(msg['content'])
             return json.dumps(response)
-
         except:
             return execute_reply_error(*sys.exc_info())
 
@@ -571,87 +573,86 @@ def main():
     spark_major_version = os.getenv("LIVY_SPARK_MAJOR_VERSION")
     try:
         listening_port = 0
-        if os.environ.get("LIVY_TEST") != "true":
-            #Load spark into the context
-            exec('from pyspark.sql import HiveContext', global_dict)
-            exec('from pyspark.streaming import StreamingContext', global_dict)
-            exec('import pyspark.cloudpickle as cloudpickle', global_dict)
+        #Load spark into the context
+        exec('from pyspark.sql import HiveContext', global_dict)
+        exec('from pyspark.streaming import StreamingContext', global_dict)
+        exec('import pyspark.cloudpickle as cloudpickle', global_dict)
 
-            from py4j.java_gateway import java_import, JavaGateway, GatewayClient
-            from pyspark.conf import SparkConf
-            from pyspark.context import SparkContext
-            from pyspark.sql import SQLContext, HiveContext, Row
-            # Connect to the gateway
-            gateway_port = int(os.environ["PYSPARK_GATEWAY_PORT"])
-            try:
-                from py4j.java_gateway import GatewayParameters
-                gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
-                gateway = JavaGateway(gateway_parameters=GatewayParameters(
-                    port=gateway_port, auth_token=gateway_secret, auto_convert=True))
-            except:
-                gateway = JavaGateway(GatewayClient(port=gateway_port), auto_convert=True)
+        from py4j.java_gateway import java_import, JavaGateway, GatewayClient
+        from pyspark.conf import SparkConf
+        from pyspark.context import SparkContext
+        from pyspark.sql import SQLContext, HiveContext, Row
+        # Connect to the gateway
+        gateway_port = int(os.environ["PYSPARK_GATEWAY_PORT"])
+        try:
+            from py4j.java_gateway import GatewayParameters
+            gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
+            gateway = JavaGateway(gateway_parameters=GatewayParameters(
+                port=gateway_port, auth_token=gateway_secret, auto_convert=True))
+        except:
+            gateway = JavaGateway(GatewayClient(port=gateway_port), auto_convert=True)
 
-            # Import the classes used by PySpark
-            java_import(gateway.jvm, "org.apache.spark.SparkConf")
-            java_import(gateway.jvm, "org.apache.spark.api.java.*")
-            java_import(gateway.jvm, "org.apache.spark.api.python.*")
-            java_import(gateway.jvm, "org.apache.spark.mllib.api.python.*")
-            java_import(gateway.jvm, "org.apache.spark.sql.*")
-            java_import(gateway.jvm, "org.apache.spark.sql.hive.*")
-            java_import(gateway.jvm, "scala.Tuple2")
+        # Import the classes used by PySpark
+        java_import(gateway.jvm, "org.apache.spark.SparkConf")
+        java_import(gateway.jvm, "org.apache.spark.api.java.*")
+        java_import(gateway.jvm, "org.apache.spark.api.python.*")
+        java_import(gateway.jvm, "org.apache.spark.mllib.api.python.*")
+        java_import(gateway.jvm, "org.apache.spark.sql.*")
+        java_import(gateway.jvm, "org.apache.spark.sql.hive.*")
+        java_import(gateway.jvm, "scala.Tuple2")
 
-            jsc = gateway.entry_point.sc()
-            jconf = gateway.entry_point.sc().getConf()
-            jsqlc = gateway.entry_point.hivectx() if gateway.entry_point.hivectx() is not None \
-                else gateway.entry_point.sqlctx()
+        jsc = gateway.entry_point.sc()
+        jconf = gateway.entry_point.sc().getConf()
+        jsqlc = gateway.entry_point.hivectx() if gateway.entry_point.hivectx() is not None \
+            else gateway.entry_point.sqlctx()
 
-            conf = SparkConf(_jvm = gateway.jvm, _jconf = jconf)
-            sc = SparkContext(jsc=jsc, gateway=gateway, conf=conf)
-            global_dict['sc'] = sc
+        conf = SparkConf(_jvm = gateway.jvm, _jconf = jconf)
+        sc = SparkContext(jsc=jsc, gateway=gateway, conf=conf)
+        global_dict['sc'] = sc
 
-            if spark_major_version >= "2":
-                from pyspark.sql import SparkSession
-                spark_session = SparkSession(sc, gateway.entry_point.sparkSession())
-                sqlc = SQLContext(sc, spark_session, jsqlc)
-                global_dict['sqlContext'] = sqlc
-                global_dict['spark'] = spark_session
-            else:
-                sqlc = SQLContext(sc, jsqlc)
-                global_dict['sqlContext'] = sqlc
+        if spark_major_version >= "2":
+            from pyspark.sql import SparkSession
+            spark_session = SparkSession(sc, gateway.entry_point.sparkSession())
+            sqlc = SQLContext(sc, spark_session, jsqlc)
+            global_dict['sqlContext'] = sqlc
+            global_dict['spark'] = spark_session
+        else:
+            # sqlc = SQLContext(sc, jsqlc)
+            # global_dict['sqlContext'] = sqlc
+            #
+            # # LIVY-294, need to check whether HiveContext can work properly,
+            # # fallback to SQLContext if HiveContext can not be initialized successfully.
+            # # Only for spark-1.
+            code = textwrap.dedent("""
+                import py4j
+                from pyspark.sql import SQLContext
+                try:
+                  sqlContext.tables()
+                except py4j.protocol.Py4JError:
+                  sqlContext = SQLContext(sc)""")
+            exec(code, global_dict)
 
-                # LIVY-294, need to check whether HiveContext can work properly,
-                # fallback to SQLContext if HiveContext can not be initialized successfully.
-                # Only for spark-1.
-                code = textwrap.dedent("""
-                    import py4j
-                    from pyspark.sql import SQLContext
-                    try:
-                      sqlContext.tables()
-                    except py4j.protocol.Py4JError:
-                      sqlContext = SQLContext(sc)""")
-                exec(code, global_dict)
+        #Start py4j callback server
+        from py4j.protocol import ENTRY_POINT_OBJECT_ID
+        from py4j.java_gateway import CallbackServerParameters
 
-            #Start py4j callback server
-            from py4j.protocol import ENTRY_POINT_OBJECT_ID
-            from py4j.java_gateway import CallbackServerParameters
+        try:
+            gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
+            gateway.start_callback_server(
+                callback_server_parameters=CallbackServerParameters(
+                    port=0, auth_token=gateway_secret))
+        except:
+            gateway.start_callback_server(
+                callback_server_parameters=CallbackServerParameters(port=0))
 
-            try:
-                gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
-                gateway.start_callback_server(
-                    callback_server_parameters=CallbackServerParameters(
-                        port=0, auth_token=gateway_secret))
-            except:
-                gateway.start_callback_server(
-                    callback_server_parameters=CallbackServerParameters(port=0))
+        socket_info = gateway._callback_server.server_socket.getsockname()
+        listening_port = socket_info[1]
+        pyspark_job_processor = PySparkJobProcessorImpl()
+        gateway.gateway_property.pool.dict[ENTRY_POINT_OBJECT_ID] = pyspark_job_processor
 
-            socket_info = gateway._callback_server.server_socket.getsockname()
-            listening_port = socket_info[1]
-            pyspark_job_processor = PySparkJobProcessorImpl()
-            gateway.gateway_property.pool.dict[ENTRY_POINT_OBJECT_ID] = pyspark_job_processor
-
-            global local_tmp_dir_path, job_context
-            local_tmp_dir_path = tempfile.mkdtemp()
-            job_context = JobContextImpl()
+        global local_tmp_dir_path, job_context
+        local_tmp_dir_path = tempfile.mkdtemp()
+        job_context = JobContextImpl()
 
         print(sys.stdout.getvalue(), file=sys_stderr)
         print(sys.stderr.getvalue(), file=sys_stderr)
@@ -662,13 +663,15 @@ def main():
         sys_stdout.flush()
 
         shutdown_hook.wait()
+        print('Received shutdown hook', file=sys_stderr)
 
+    except:
+        print("Failed to initialize python repl:", format_tb(*sys.exc_info()), file=sys_stderr)
 
     finally:
-        if os.environ.get("LIVY_TEST") != "true" and 'sc' in global_dict:
-            gateway.shutdown_callback_server()
-            shutil.rmtree(local_tmp_dir_path)
-            global_dict['sc'].stop()
+        gateway.shutdown_callback_server()
+        shutil.rmtree(local_tmp_dir_path)
+        global_dict['sc'].stop()
 
         sys.stdin = sys_stdin
         sys.stdout = sys_stdout

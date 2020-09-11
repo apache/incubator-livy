@@ -70,7 +70,7 @@ object PythonInterpreter extends Logging {
     env.put("PYSPARK_GATEWAY_PORT", "" + gatewayServer.getListeningPort)
     env.put("PYSPARK_GATEWAY_SECRET", secretKey)
     env.put("SPARK_HOME", sys.env.getOrElse("SPARK_HOME", "."))
-    env.put("LIVY_SPARK_MAJOR_VERSION", conf.get("spark.livy.spark_major_version", "1"))
+    env.put("LIVY_SPARK_MAJOR_VERSION", conf.get("spark.livy.spark_major_version", "2"))
     builder.redirectError(Redirect.PIPE)
     val process = builder.start()
     new PythonInterpreter(process, gatewayServer)
@@ -278,9 +278,14 @@ private class PythonInterpreter(
   }
 
   private def sendRequest(request: Map[String, Any]): Option[JValue] = {
-      Try(
-        parse(pysparkJobProcessor.executeRequest(write(request)))
-      ).toOption
+      try {
+        val resp = pysparkJobProcessor.executeRequest(write(request))
+        Some(parse(resp))
+      } catch {
+        case e: Exception =>
+          logger.error(s"Couldn't parse response", e)
+          None
+      }
   }
 
   def addFile(path: String): Unit = {
