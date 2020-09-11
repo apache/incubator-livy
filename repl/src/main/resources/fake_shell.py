@@ -215,41 +215,6 @@ class PySparkJobProcessorImpl(object):
         except:
             return execute_reply_error(*sys.exc_info())
 
-        # try:
-        #     content = msg['content']
-        # except KeyError:
-        #     LOG.error('missing content', exc_info=True)
-        #     raise
-        #
-        # if not isinstance(content, dict):
-        #     LOG.error('content is not a dictionary')
-        #     raise
-        #
-        # try:
-        #     handler = msg_type_router[msg_type]
-        # except KeyError:
-        #     LOG.error('unknown message type: %s', msg_type)
-        #     raise
-        #
-        # response = handler(content)
-        #
-        # try:
-        #     response = json.dumps(response)
-        # except ValueError:
-        #     response = json.dumps({
-        #         'msg_type': 'inspect_reply',
-        #         'content': {
-        #             'status': 'error',
-        #             'ename': 'ValueError',
-        #             'evalue': 'cannot json-ify %s' % response,
-        #             'traceback': [],
-        #         }
-        #     })
-        # return response
-
-        # print(response, file=sys_stdout)
-        # sys_stdout.flush()
-
     class Scala:
         extends = ['org.apache.livy.repl.PySparkJobProcessor']
 

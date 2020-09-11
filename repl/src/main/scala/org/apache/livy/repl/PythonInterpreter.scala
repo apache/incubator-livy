@@ -278,14 +278,9 @@ private class PythonInterpreter(
   }
 
   private def sendRequest(request: Map[String, Any]): Option[JValue] = {
-      Try(parse(pysparkJobProcessor.executeRequest(write(request)))).toOption
-
-//    stdin.flush()
-//
-//    Option(stdout.readLine()).map { case line =>
-//      logger.warn(s"STDOUT: $line")
-//      parse(line)
-//    }
+      Try(
+        parse(pysparkJobProcessor.executeRequest(write(request)))
+      ).toOption
   }
 
   def addFile(path: String): Unit = {
