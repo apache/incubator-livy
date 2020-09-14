@@ -51,6 +51,11 @@ object PythonInterpreter extends Logging {
       .orElse(sys.props.get("pyspark.python")) // This java property is only used for internal UT.
       .getOrElse("python")
 
+    val driverPythonExec = conf.getOption("spark.pyspark.driver.python")
+      .orElse(sys.env.get("PYSPARK_DRIVER_PYTHON"))
+      .orElse(sys.props.get("pyspark.driver.python")) // This java property is only used for internal UT.
+      .getOrElse("python")
+
     val secretKey = Utils.createSecret(256)
     val gatewayServer = createGatewayServer(sparkEntries, secretKey)
     gatewayServer.start()
@@ -65,6 +70,7 @@ object PythonInterpreter extends Logging {
       .++(if (!ClientConf.TEST_MODE) findPyFiles(conf) else Nil)
 
     env.put("PYSPARK_PYTHON", pythonExec)
+    env.put("PYSPARK_DRIVER_PYTHON", driverPythonExec)
     env.put("PYTHONPATH", pythonPath.mkString(File.pathSeparator))
     env.put("PYTHONUNBUFFERED", "YES")
     env.put("PYSPARK_GATEWAY_PORT", "" + gatewayServer.getListeningPort)

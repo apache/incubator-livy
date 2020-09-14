@@ -287,11 +287,13 @@ class Python3InterpreterSpec extends PythonBaseInterpreterSpec with BeforeAndAft
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    sys.props.put("pyspark.python", "python3")
+    sys.props.put("pyspark.python", "python3.6")
+    sys.props.put("pyspark.driver.python", "python3.7")
   }
 
   override def afterAll(): Unit = {
     sys.props.remove("pyspark.python")
+    sys.props.remove("pyspark.driver.python")
     super.afterAll()
   }
 
