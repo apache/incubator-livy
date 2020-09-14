@@ -6,32 +6,6 @@ set -e
 # See https://stackoverflow.com/questions/28881 for more details.
 export LC_ALL=C
 
-# Setup env
-
-# Commit ref to checkout when building
-if [ -z "$GIT_REF" ]; then
-  read -p "Choose git branch/tag [master]: " GIT_REF
-  GIT_REF=${GIT_REF:-master}
-  echo $GIT_REF
-fi
-
-# Set RELEASE_RC
-if [ -z "$RELEASE_RC" ]; then
-  read -p "Choose RC [rc1]: " RELEASE_RC
-  RELEASE_RC=${RELEASE_RC:-rc1}
-  echo $RELEASE_RC
-fi
-
-# Get ASF Login
-if [ -z "$ASF_USERNAME" ]; then
-  read -p "ASF username: " ASF_USERNAME
-  echo $ASF_USERNAME
-fi
-
-if [ -z "$ASF_PASSWORD" ]; then
-  read -s -p "ASF password: " ASF_PASSWORD
-  echo
-fi
 
 # Destination directory on remote server
 RELEASE_STAGING_LOCATION="https://dist.apache.org/repos/dist/dev/incubator/livy"
