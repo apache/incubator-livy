@@ -617,8 +617,8 @@ def main():
             global_dict['sqlContext'] = sqlc
             global_dict['spark'] = spark_session
         else:
-            # sqlc = SQLContext(sc, jsqlc)
-            # global_dict['sqlContext'] = sqlc
+            sqlc = SQLContext(sc, jsqlc)
+            global_dict['sqlContext'] = sqlc
             #
             # # LIVY-294, need to check whether HiveContext can work properly,
             # # fallback to SQLContext if HiveContext can not be initialized successfully.

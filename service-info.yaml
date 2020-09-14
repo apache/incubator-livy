@@ -7,7 +7,7 @@ description: |
 system: vivaldi-jasper
 
 # Main owner of this component (LDAP group or individual):
-owner: python
+owner: core-data
 
 # Intended usage of this component:
 #   'private' - only for use by the owner
