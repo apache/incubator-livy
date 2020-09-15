@@ -1,0 +1,36 @@
+version: 2
+
+pipelines:
+  - pipeline: Build
+    ref: pr/.*/merge
+    stages:
+      - stage: Build
+        tasks:
+          - task: Maven build
+            steps:
+              - action: gcr.io/action-containers/3.6.3-java8-4
+                args:
+                  - clean
+                  - verify
+                  - package
+  - pipeline: Master build
+    ref: master
+    stages:
+      - stage: Build
+        tasks:
+          - task: Maven build
+            steps:
+              - action: gcr.io/action-containers/3.6.3-java8-4
+                args:
+                  - clean
+                  - verify
+                  - package
+      - stage: Copy to GCS
+        tasks:
+          - task: gsutil
+            steps:
+              - action: gcr.io/action-containers/gsutil@sha256:91af96375798513302907463bc468763048eca8a966e0f25fb9ed18bf437ef81
+                args: ["cp", "assembly/target/apache-livy-*-bin.zip", "gs://sp-fine-ltv-sparkresources/livy-bin/"]
+
+secrets:
+  bucket: "core_data_tingle"
