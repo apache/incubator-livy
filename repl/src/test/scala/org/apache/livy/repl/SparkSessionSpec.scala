@@ -209,7 +209,7 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
     eventually(timeout(30 seconds), interval(100 millis)) {
       assert(session.statements(stmtId).state.get() == StatementState.Cancelled)
       session.statements(stmtId).output should include (
-        "Job 0 cancelled part of cancelled job group 0")
+        "java.lang.InterruptedException")
     }
   }
 
@@ -232,7 +232,7 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
     eventually(timeout(30 seconds), interval(100 millis)) {
       assert(session.statements(stmtId1).state.get() == StatementState.Cancelled)
       session.statements(stmtId1).output should include (
-        "Job 0 cancelled part of cancelled job group 0")
+        "java.lang.InterruptedException")
     }
   }
 
