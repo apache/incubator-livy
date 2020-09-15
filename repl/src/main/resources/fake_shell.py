@@ -23,6 +23,7 @@ import decimal
 import io
 import json
 import logging
+import signal
 import sys
 import traceback
 import base64
@@ -48,6 +49,14 @@ job_context = None
 local_tmp_dir_path = None
 
 TOP_FRAME_REGEX = re.compile(r'\s*File "<stdin>".*in <module>')
+
+class StatementCancellationException(Exception):
+    pass
+
+def signal_handler(signal, frame):
+    raise StatementCancellationException
+
+signal.signal(signal.SIGUSR1, signal_handler)
 
 def execute_reply(status, content):
     return {
@@ -648,58 +657,61 @@ def main():
         sys_stdout.flush()
 
         while True:
-            line = sys_stdin.readline()
-
-            if line == '':
-                break
-            elif line == '\n':
-                continue
-
             try:
-                msg = json.loads(line)
-            except ValueError:
-                LOG.error('failed to parse message', exc_info=True)
+                line = sys_stdin.readline()
+
+                if line == '':
+                    break
+                elif line == '\n':
+                    continue
+
+                try:
+                    msg = json.loads(line)
+                except ValueError:
+                    LOG.error('failed to parse message', exc_info=True)
+                    continue
+
+                try:
+                    msg_type = msg['msg_type']
+                except KeyError:
+                    LOG.error('missing message type', exc_info=True)
+                    continue
+
+                try:
+                    content = msg['content']
+                except KeyError:
+                    LOG.error('missing content', exc_info=True)
+                    continue
+
+                if not isinstance(content, dict):
+                    LOG.error('content is not a dictionary')
+                    continue
+
+                try:
+                    handler = msg_type_router[msg_type]
+                except KeyError:
+                    LOG.error('unknown message type: %s', msg_type)
+                    continue
+
+                response = handler(content)
+
+                try:
+                    response = json.dumps(response)
+                except ValueError:
+                    response = json.dumps({
+                        'msg_type': 'inspect_reply',
+                        'content': {
+                            'status': 'error',
+                            'ename': 'ValueError',
+                            'evalue': 'cannot json-ify %s' % response,
+                            'traceback': [],
+                        }
+                    })
+
+                print(response, file=sys_stdout)
+                sys_stdout.flush()
+            except StatementCancellationException:
                 continue
-
-            try:
-                msg_type = msg['msg_type']
-            except KeyError:
-                LOG.error('missing message type', exc_info=True)
-                continue
-
-            try:
-                content = msg['content']
-            except KeyError:
-                LOG.error('missing content', exc_info=True)
-                continue
-
-            if not isinstance(content, dict):
-                LOG.error('content is not a dictionary')
-                continue
-
-            try:
-                handler = msg_type_router[msg_type]
-            except KeyError:
-                LOG.error('unknown message type: %s', msg_type)
-                continue
-
-            response = handler(content)
-
-            try:
-                response = json.dumps(response)
-            except ValueError:
-                response = json.dumps({
-                    'msg_type': 'inspect_reply',
-                    'content': {
-                        'status': 'error',
-                        'ename': 'ValueError',
-                        'evalue': 'cannot json-ify %s' % response,
-                        'traceback': [],
-                    }
-                })
-
-            print(response, file=sys_stdout)
-            sys_stdout.flush()
     finally:
         if os.environ.get("LIVY_TEST") != "true" and 'sc' in global_dict:
             gateway.shutdown_callback_server()

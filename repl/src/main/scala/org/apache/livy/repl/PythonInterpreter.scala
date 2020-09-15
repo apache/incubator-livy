@@ -277,6 +277,20 @@ private class PythonInterpreter(
     }
   }
 
+  override def cancel(): Unit = {
+    val pythonPid = getPythonPid()
+    info("Sending SIGUSR1 to " + pythonPid)
+    Runtime.getRuntime().exec("kill -SIGUSR1 " + pythonPid)
+  }
+
+  def getPythonPid(): Int = {
+    // This implementation is specific to Unix type systems
+    val field = process.getClass().getDeclaredField("pid")
+    field.setAccessible(true)
+    val pid = field.get(process).asInstanceOf[Int]
+    pid
+  }
+
   private def sendRequest(request: Map[String, Any]): Option[JValue] = {
     stdin.println(write(request))
     stdin.flush()

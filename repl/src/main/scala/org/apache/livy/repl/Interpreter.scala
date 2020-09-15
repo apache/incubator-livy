@@ -52,4 +52,7 @@ trait Interpreter {
 
   /** Shut down the interpreter. */
   def close(): Unit
+
+  /** Cancel the executions */
+  def cancel(): Unit
 }

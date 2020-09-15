@@ -30,6 +30,7 @@ public class Statement {
   public double progress;
   public long started = 0;
   public long completed = 0;
+  public transient String kind;
 
   public Statement(Integer id, String code, StatementState state, String output) {
     this.id = id;
@@ -37,6 +38,11 @@ public class Statement {
     this.state = new AtomicReference<>(state);
     this.output = output;
     this.progress = 0.0;
+  }
+
+  public Statement(Integer id, String code, StatementState state, String output, String kind) {
+    this(id, code, state, output);
+    this.kind = kind;
   }
 
   public Statement() {
