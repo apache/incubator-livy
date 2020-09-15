@@ -53,7 +53,8 @@ object PythonInterpreter extends Logging {
 
     val driverPythonExec = conf.getOption("spark.pyspark.driver.python")
       .orElse(sys.env.get("PYSPARK_DRIVER_PYTHON"))
-      .orElse(sys.props.get("pyspark.driver.python")) // This java property is only used for internal UT.
+      // This java property is only used for internal UT.
+      .orElse(sys.props.get("pyspark.driver.python"))
       .getOrElse("python")
 
     val secretKey = Utils.createSecret(256)
