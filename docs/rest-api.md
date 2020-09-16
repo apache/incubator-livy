@@ -626,8 +626,16 @@ A session represents an interactive shell.
     <td>Session is starting</td>
   </tr>
   <tr>
+    <td>recovering</td>
+    <td>Session is recovering</td>
+  </tr>
+  <tr>
     <td>idle</td>
     <td>Session is waiting for input</td>
+  </tr>
+  <tr>
+    <td>running</td>
+    <td>Session is running</td>
   </tr>
   <tr>
     <td>busy</td>
