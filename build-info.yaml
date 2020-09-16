@@ -8,7 +8,7 @@ pipelines:
         tasks:
           - task: Maven build
             steps:
-              - action: gcr.io/action-containers/3.6.3-java8-4
+              - action: gcr.io/action-containers/mvn:3.6.3-java8-4
                 args:
                   - clean
                   - verify
@@ -20,7 +20,7 @@ pipelines:
         tasks:
           - task: Maven build
             steps:
-              - action: gcr.io/action-containers/3.6.3-java8-4
+              - action: gcr.io/action-containers/mvn:3.6.3-java8-4
                 args:
                   - clean
                   - verify
