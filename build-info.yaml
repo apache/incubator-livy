@@ -10,6 +10,7 @@ pipelines:
             steps:
               - action: gcr.io/action-containers/mvn:3.6.3-java8-4
                 args:
+                  - "-U"
                   - clean
                   - verify
                   - package
@@ -22,6 +23,7 @@ pipelines:
             steps:
               - action: gcr.io/action-containers/mvn:3.6.3-java8-4
                 args:
+                  - "-U"
                   - clean
                   - verify
                   - package
