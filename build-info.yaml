@@ -12,7 +12,7 @@ pipelines:
                 args:
                   - "-U"
                   - clean
-                  - verify
+                  - test
                   - package
   - pipeline: Master build
     ref: master
@@ -25,7 +25,7 @@ pipelines:
                 args:
                   - "-U"
                   - clean
-                  - verify
+                  - test
                   - package
       - stage: Copy to GCS
         tasks:
