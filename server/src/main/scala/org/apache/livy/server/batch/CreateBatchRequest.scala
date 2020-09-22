@@ -35,6 +35,16 @@ class CreateBatchRequest {
   var queue: Option[String] = None
   var name: Option[String] = None
   var conf: Map[String, String] = Map()
+  var driverMemoryOverhead:Option[String] = None
+  var executorMemoryOverhead:Option[String] = None
+  var dynamicAllocationEnabled:Option[Boolean] = None
+  var shuffleServiceEnabled:Option[Boolean] = None
+  var dynamicAllocationMinExecutors:Option[Int] = None
+  var dynamicAllocationMaxExecutors:Option[Int] = None
+  var dynamicAllocationInitialExecutors:Option[Int] = None
+  var dynamicAllocationSchedulerBacklogTimeout:Option[Int] = None
+  var dynamicAllocationSustainedSchedulerBacklogTimeout:Option[Int] = None
+  var dynamicAllocationExecutorIdleTimeout:Option[Int] = None
 
   override def toString: String = {
     s"[proxyUser: $proxyUser, " +
@@ -51,6 +61,24 @@ class CreateBatchRequest {
       (if (numExecutors.isDefined) s"numExecutors: ${numExecutors.get}, " else "") +
       (if (queue.isDefined) s"queue: ${queue.get}, " else "") +
       (if (name.isDefined) s"name: ${name.get}, " else "") +
+      (if (driverMemoryOverhead.isDefined) s"driverMemoryOverhead: ${driverMemoryOverhead.get}, " else "") +
+      (if (executorMemoryOverhead.isDefined) s"executorMemoryOverhead: ${executorMemoryOverhead.get}, " else "") +
+      (if (dynamicAllocationEnabled.isDefined) s"dynamicAllocationEnabled: " +
+        s"${dynamicAllocationEnabled.get}, " else "") +
+      (if (shuffleServiceEnabled.isDefined) s"shuffleServiceEnabled: ${shuffleServiceEnabled.get}, " else "") +
+      (if (dynamicAllocationMinExecutors.isDefined) s"dynamicAllocationMinExecutors: " +
+        s"${dynamicAllocationMinExecutors.get}, " else "") +
+      (if (dynamicAllocationMaxExecutors.isDefined) s"dynamicAllocationMaxExecutors: " +
+        s"${dynamicAllocationMaxExecutors.get}, " else "") +
+      (if (dynamicAllocationInitialExecutors.isDefined) s"dynamicAllocationInitialExecutors: " +
+        s"${dynamicAllocationInitialExecutors.get}, " else "") +
+      (if (dynamicAllocationSchedulerBacklogTimeout.isDefined) s"dynamicAllocationSchedulerBacklogTimeout: " +
+        s"${dynamicAllocationSchedulerBacklogTimeout.get}, " else "") +
+      (if (dynamicAllocationSustainedSchedulerBacklogTimeout.isDefined)
+        s"dynamicAllocationSustainedSchedulerBacklogTimeout: " +
+          s"${dynamicAllocationSustainedSchedulerBacklogTimeout.get}, " else "") +
+      (if (dynamicAllocationExecutorIdleTimeout.isDefined)
+        s"dynamicAllocationExecutorIdleTimeout: ${dynamicAllocationExecutorIdleTimeout.get}, " else "") +
       (if (conf.nonEmpty) s"conf: ${conf.mkString(",")}]" else "]")
   }
 }
