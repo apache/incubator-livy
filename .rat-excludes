@@ -32,4 +32,5 @@ venv/*
 spark-*-bin-*/**
 service-info.yaml
 build-info.yaml
-.python-version
+**/.python-version
+**/Dockerfile*

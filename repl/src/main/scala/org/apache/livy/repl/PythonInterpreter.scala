@@ -20,25 +20,28 @@ package org.apache.livy.repl
 import java.io._
 import java.lang.ProcessBuilder.Redirect
 import java.lang.reflect.Proxy
-import java.lang.{Integer => JInteger}
 import java.net.InetAddress
 import java.nio.file.{Files, Paths}
-
-import org.apache.livy.client.common.ClientConf
-import org.apache.livy.rsc.driver.SparkEntries
-import org.apache.livy.{Logging, Utils}
-import org.apache.spark.{SparkConf, SparkContext}
-import org.json4s.JsonAST.JObject
-import org.json4s.jackson.JsonMethods._
-import org.json4s.jackson.Serialization.write
-import org.json4s.{DefaultFormats, JValue}
-import py4j._
-import py4j.reflection.PythonProxyHandler
+import java.lang.{Integer => JInteger} // scalastyle:ignore
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
+
+import org.apache.spark.{SparkConf, SparkContext}
+import org.json4s.JsonAST.JObject
+import org.json4s.jackson.JsonMethods._
+import org.json4s.jackson.Serialization.write
+import org.json4s.DefaultFormats
+import org.json4s.JValue
+import py4j._
+import py4j.reflection.PythonProxyHandler
+
+import org.apache.livy.client.common.ClientConf
+import org.apache.livy.rsc.driver.SparkEntries
+import org.apache.livy.Logging
+import org.apache.livy.Utils
 
 
 // scalastyle:off println
