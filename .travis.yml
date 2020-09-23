@@ -25,19 +25,19 @@ matrix:
   - name: "Spark 2.4 Unit Tests"
     env:
       - MVN_FLAG='-Pthriftserver -DskipITs'
-      - PIP_FILES='pyspark=2.4.5'
+      - PIP_FILES='pyspark==2.4.5'
   - name: "Spark 2.4 ITs"
     env:
       - MVN_FLAG='-Pthriftserver -DskipTests'
-      - PIP_FILES='pyspark=2.4.5'
+      - PIP_FILES='pyspark==2.4.5'
   - name: "Spark 3.0 Unit Tests"
     env:
       - MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipITs'
-      - PIP_FILES='pyspark=3.0.0'
+      - PIP_FILES='pyspark==3.0.0'
   - name: "Spark 3.0 ITs"
     env:
       - MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipTests'
-      - PIP_FILES='pyspark=3.0.0'
+      - PIP_FILES='pyspark==3.0.0'
 
 jdk:
   - openjdk8
