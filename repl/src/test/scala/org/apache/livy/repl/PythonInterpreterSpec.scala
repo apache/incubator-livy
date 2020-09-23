@@ -99,6 +99,17 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
     ))
   }
 
+  it should "Should handle non py native" in withInterpreter { interpreter =>
+    val response = interpreter.execute(
+      """
+        |import subprocess
+        |p = subprocess.run(["echo", "hello", "world"])
+      """.stripMargin)
+    response should equal(Interpreter.ExecuteSuccess(
+      TEXT_PLAIN -> ""
+    ))
+  }
+
   it should "do json magic" in withInterpreter { interpreter =>
     val response = interpreter.execute(
       """x = [[1, 'a'], [3, 'b']]
