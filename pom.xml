@@ -78,7 +78,7 @@
   </mailingLists>
 
   <properties>
-    <revision>0.8.0-spotify-SNAPSHOT</revision>
+    <revision>0.8.0-incubating-SNAPSHOT</revision>
     <asynchttpclient.version>2.10.1</asynchttpclient.version>
     <hadoop.version>2.7.3</hadoop.version>
     <hadoop.scope>compile</hadoop.scope>
