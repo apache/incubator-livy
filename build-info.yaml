@@ -4,6 +4,15 @@ pipelines:
   - pipeline: Build
     ref: pr/.*/merge
     stages:
+#      - stage: Build Env
+#        tasks:
+#          - task: Docker build
+#            steps:
+#              - action: gcr.io/cloud-builders/docker:latest
+#                args:
+#                  - build
+#                  - -t
+#                  -
       - stage: Build
         tasks:
           - task: Maven build
