@@ -8,7 +8,16 @@ RUN apt-get install -y software-properties-common \
     && add-apt-repository \
         'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/' \
     && apt-get update \
-    && apt-get install -y \
-        python3 \
+    && apt-get install -y --upgrade \
+        libkrb5-dev \
+        python \
+        python-pip \
         r-base
 
+RUN pip install \
+    pyspark>2.0.0,<3.0.0 \
+    requests>2.10.0 \
+    pytest \
+    flaky \
+    flake8 \
+    requests-kerberos
