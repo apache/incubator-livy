@@ -18,29 +18,31 @@
 package org.apache.livy.repl
 
 import java.io._
-import java.lang.{Integer => JInteger}
 import java.lang.ProcessBuilder.Redirect
 import java.lang.reflect.Proxy
 import java.net.InetAddress
 import java.nio.file.{Files, Paths}
+import java.lang.{Integer => JInteger} // scalastyle:ignore
 
 import scala.annotation.tailrec
-import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
 
 import org.apache.spark.{SparkConf, SparkContext}
-import org.json4s.{DefaultFormats, JValue}
 import org.json4s.JsonAST.JObject
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization.write
+import org.json4s.DefaultFormats
+import org.json4s.JValue
 import py4j._
 import py4j.reflection.PythonProxyHandler
 
-import org.apache.livy.{Logging, Utils}
 import org.apache.livy.client.common.ClientConf
 import org.apache.livy.rsc.driver.SparkEntries
-import org.apache.livy.sessions._
+import org.apache.livy.Logging
+import org.apache.livy.Utils
+
 
 // scalastyle:off println
 object PythonInterpreter extends Logging {
@@ -70,7 +72,7 @@ object PythonInterpreter extends Logging {
     env.put("PYSPARK_GATEWAY_PORT", "" + gatewayServer.getListeningPort)
     env.put("PYSPARK_GATEWAY_SECRET", secretKey)
     env.put("SPARK_HOME", sys.env.getOrElse("SPARK_HOME", "."))
-    env.put("LIVY_SPARK_MAJOR_VERSION", conf.get("spark.livy.spark_major_version", "1"))
+    env.put("LIVY_SPARK_MAJOR_VERSION", conf.get("spark.livy.spark_major_version", "2"))
     builder.redirectError(Redirect.PIPE)
     val process = builder.start()
     new PythonInterpreter(process, gatewayServer)
@@ -278,12 +280,14 @@ private class PythonInterpreter(
   }
 
   private def sendRequest(request: Map[String, Any]): Option[JValue] = {
-    stdin.println(write(request))
-    stdin.flush()
-
-    Option(stdout.readLine()).map { case line =>
-      parse(line)
-    }
+      try {
+        val resp = pysparkJobProcessor.executeRequest(write(request))
+        Some(parse(resp))
+      } catch {
+        case e: Exception =>
+          logger.error(s"Couldn't parse response", e)
+          None
+      }
   }
 
   def addFile(path: String): Unit = {

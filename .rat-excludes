@@ -29,3 +29,8 @@ logs/*
 docs/**/*.html
 docs/**/JB/**
 venv/*
+spark-*-bin-*/**
+service-info.yaml
+build-info.yaml
+**/.python-version
+**/Dockerfile*

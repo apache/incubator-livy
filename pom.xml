@@ -22,7 +22,7 @@
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-main</artifactId>
-  <version>0.8.0-incubating-SNAPSHOT</version>
+  <version>${revision}</version>
   <packaging>pom</packaging>
   <name>Livy Project Parent POM</name>
   <description>Livy Project</description>
@@ -78,6 +78,7 @@
   </mailingLists>
 
   <properties>
+    <revision>0.8.0-incubating-SNAPSHOT</revision>
     <asynchttpclient.version>2.10.1</asynchttpclient.version>
     <hadoop.version>2.7.3</hadoop.version>
     <hadoop.scope>compile</hadoop.scope>

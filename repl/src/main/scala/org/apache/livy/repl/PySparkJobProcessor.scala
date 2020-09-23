@@ -24,4 +24,6 @@ trait PySparkJobProcessor {
   def addPyFile(path: String)
 
   def getLocalTmpDirPath: String
+
+  def executeRequest(json: String): String
 }

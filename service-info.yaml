@@ -1,0 +1,25 @@
+id: vivaldi-livy
+
+# Brief description of this component:
+description: |
+  Fork of apache livy including several important patches and features
+# The system this component belongs to:
+system: vivaldi-jasper
+
+# Main owner of this component (LDAP group or individual):
+owner: core-data
+
+# Intended usage of this component:
+#   'private' - only for use by the owner
+#   'public'  - exposes an api for other squads (like metadata)
+# Components that are under development, experimental, not
+# supported, replaced, liable to change without warning, etc.
+# should generally be marked as private.
+visibility: private
+
+# A list of other components (services, data stores, etc.) on which
+# this component depends. Must be valid service_discovery names
+# registered in the Nameless service.
+dependencies: []
+
+facts:
