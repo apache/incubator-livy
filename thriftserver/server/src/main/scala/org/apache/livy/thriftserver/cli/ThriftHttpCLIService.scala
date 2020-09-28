@@ -88,6 +88,7 @@ class ThriftHttpCLIService(
               s"${LivyConf.SSL_KEYSTORE.key} Not configured for SSL connection")
           }
           val keyStorePassword = getKeyStorePassword()
+          val keystoreType = livyConf.get(LivyConf.SSL_KEYSTORE_TYPE)
           val sslContextFactory = new SslContextFactory
           val excludedProtocols = livyConf.get(LivyConf.THRIFT_SSL_PROTOCOL_BLACKLIST).split(",")
           info(s"HTTP Server SSL: adding excluded protocols: $excludedProtocols")
@@ -96,6 +97,7 @@ class ThriftHttpCLIService(
             sslContextFactory.getExcludeProtocols)
           sslContextFactory.setKeyStorePath(keyStorePath)
           sslContextFactory.setKeyStorePassword(keyStorePassword)
+          sslContextFactory.setKeyStoreType(keystoreType)
           new ServerConnector(server, sslContextFactory, http)
         } else {
           new ServerConnector(server, http)

@@ -23,6 +23,9 @@
 # Specify the key password.
 # livy.key-password =
 
+# Name of the keystore implementation that was used when generating the keystore
+# livy.keystore.type = JKS
+
 # Hadoop Credential Provider Path to get "livy.keystore.password" and "livy.key-password".
 # Credential Provider can be created using command as follow:
 # hadoop credential create "livy.keystore.password" -value "secret" -provider jceks://hdfs/path/to/livy.jceks
