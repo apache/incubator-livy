@@ -28,8 +28,8 @@ object InteractiveSessionAudit extends Logging {
              queue: String,
              kind: String,
              code: String): Unit = {
-    debug(s"Executing statement in interactive session $id [appId: $appId, " +
+    debug(s"Executing statement in interactive session $id, appId: $appId, " +
       s"owner: $owner, proxyUser: $proxyUser, queue: $queue, " +
-      s"kind: ${kind}]: ${code.replace("\n", "\\n")}")
+      s"kind: ${kind}, code: ${code.replace("\n", "\\n")}")
   }
 }
