@@ -516,9 +516,10 @@ class InteractiveSession(
     ensureRunning()
     recordActivity()
 
-    InteractiveSessionAudit.audit(this.id, this.appId.orNull, this.owner, this.proxyUser.orNull,
-      this.livyConf.get("spark.yarn.queue"), content.kind.orNull, content.code)
-
+    if (livyConf.getBoolean(LivyConf.AUDIT_LOG_ENABLED)) {
+      InteractiveSessionAudit.audit(this.id, this.appId.orNull, this.owner, this.proxyUser.orNull,
+        this.livyConf.get("spark.yarn.queue"), content.kind.orNull, content.code)
+    }
     val id = client.get.submitReplCode(content.code, content.kind.orNull).get
     client.get.getReplJobResults(id, 1).get().statements(0)
   }
