@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.launcher.SparkLauncher;
 import org.apache.spark.sql.Dataset;
@@ -36,6 +35,7 @@ import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructField;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -46,14 +46,14 @@ public class ColumnBufferTest {
   public void testColumnBuffer() throws Exception {
     String warehouse = Files.createTempDirectory("spark-warehouse-").toFile().getAbsolutePath();
 
-    SparkConf conf = new SparkConf()
-      .set(SparkLauncher.SPARK_MASTER, "local")
-      .set("spark.app.name", getClass().getName())
-      .set("spark.sql.warehouse.dir", warehouse);
-    SparkContext sc = new SparkContext(conf);
+    SparkSession session = SparkSession.builder()
+      .master("local")
+      .appName(getClass().getName())
+      .config("spark.sql.warehouse.dir", warehouse)
+      .getOrCreate();
 
     try {
-      SQLContext spark = SQLContext.getOrCreate(sc);
+      SQLContext spark = session.sqlContext();
 
       TestBean tb = new TestBean();
       tb.setId(1);
@@ -144,7 +144,7 @@ public class ColumnBufferTest {
         }
       }
     } finally {
-      sc.stop();
+      session.stop();
     }
   }
 

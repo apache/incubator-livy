@@ -17,9 +17,9 @@
 
 package org.apache.livy
 
-import org.scalatest.{Outcome, Suite}
+import org.scalatest.{Outcome, TestSuite}
 
-trait LivyBaseUnitTestSuite extends Suite with Logging {
+trait LivyBaseUnitTestSuite extends TestSuite with Logging {
 
   protected override def withFixture(test: NoArgTest): Outcome = {
     val testName = test.name

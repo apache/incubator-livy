@@ -113,7 +113,7 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
   it should "execute sql queries" in withInterpreter { interpreter =>
     val rdd = sparkEntries.sc().parallelize(Seq(People("Jerry", 20), People("Michael", 21)))
     val df = sparkEntries.sqlctx().createDataFrame(rdd)
-    df.registerTempTable("people")
+    df.createOrReplaceTempView("people")
 
     // Test normal behavior
     val resp1 = interpreter.execute(
@@ -159,7 +159,7 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
       ("1", new java.math.BigDecimal(1.0)),
       ("2", new java.math.BigDecimal(2.0))))
     val df = sparkEntries.sqlctx().createDataFrame(rdd).selectExpr("_1 as col1", "_2 as col2")
-    df.registerTempTable("test")
+    df.createOrReplaceTempView("test")
 
     val resp1 = interpreter.execute(
       """

@@ -190,6 +190,14 @@ class ScalaJobHandle[T] private[livy] (jobHandle: JobHandle[T]) extends Future[T
     getJavaFutureResult(jobHandle, atMost)
     this
   }
+
+  // These two methods must be implemented in Scala 2.12. They are implemented as unsupported
+  // operations here.
+  def transform[S](f: (Try[T]) => Try[S])(implicit executor: ExecutionContext): Future[S] =
+    throw new UnsupportedOperationException()
+
+  def transformWith[S](f: (Try[T]) => Future[S])(implicit executor: ExecutionContext): Future[S] =
+    throw new UnsupportedOperationException()
 }
 
 private abstract class AbstractScalaJobHandleListener[T] extends Listener[T] {

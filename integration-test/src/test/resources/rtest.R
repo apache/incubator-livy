@@ -17,18 +17,17 @@
 
 library(SparkR)
 
-# Initialize SparkContext and SQLContext
-sc <- sparkR.init(appName="SparkR-DataFrame-example")
-sqlContext <- sparkRSQL.init(sc)
+# Initialize SparkSession
+sparkR.session(appName = "SparkR-DataFrame-example")
 
 # Create a simple local data.frame
 localDF <- data.frame(name=c("John", "Smith", "Sarah"), age=c(19, 23, 18))
 
 # Convert local data frame to a SparkDataFrame
-df <- createDataFrame(sqlContext, localDF)
+df <- createDataFrame(localDF)
 
 # Print its schema
 printSchema(df)
 
 # Stop the SparkContext now
-sparkR.stop()
+sparkR.session.stop()
