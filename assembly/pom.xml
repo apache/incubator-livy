@@ -43,12 +43,6 @@
 
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>livy-repl_2.11</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>livy-repl_2.12</artifactId>
       <version>${project.version}</version>
     </dependency>

@@ -83,7 +83,7 @@
     <hadoop.scope>compile</hadoop.scope>
     <spark.scala-2.11.version>2.4.6</spark.scala-2.11.version>
     <spark.scala-2.12.version>2.4.6</spark.scala-2.12.version>
-    <spark.version>${spark.scala-2.11.version}</spark.version>
+    <spark.version>${spark.scala-2.12.version}</spark.version>
     <hive.version>3.0.0</hive.version>
     <commons-codec.version>1.9</commons-codec.version>
     <httpclient.version>4.5.3</httpclient.version>
@@ -93,7 +93,7 @@
     <jetty.version>9.3.24.v20180605</jetty.version>
     <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
     <json4s.spark-2.12.version>3.5.3</json4s.spark-2.12.version>
-    <json4s.version>${json4s.spark-2.11.version}</json4s.version>
+    <json4s.version>${json4s.spark-2.12.version}</json4s.version>
     <junit.version>4.11</junit.version>
     <libthrift.version>0.9.3</libthrift.version>
     <kryo.version>4.0.2</kryo.version>
@@ -101,7 +101,7 @@
     <mockito.version>1.10.19</mockito.version>
     <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
     <netty.spark-2.12.version>4.1.17.Final</netty.spark-2.12.version>
-    <netty.version>${netty.spark-2.11.version}</netty.version>
+    <netty.version>${netty.spark-2.12.version}</netty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <py4j.version>0.10.7</py4j.version>
     <scala-2.11.version>2.11.12</scala-2.11.version>
@@ -115,17 +115,17 @@
     <execution.root>${user.dir}</execution.root>
     <spark.home>${execution.root}/dev/spark</spark.home>
     <spark.bin.download.url>
-      https://archive.apache.org/dist/spark/spark-2.4.6/spark-2.4.6-bin-hadoop2.7.tgz
+      https://archive.apache.org/dist/spark/spark-2.4.6/spark-2.4.6-bin-without-hadoop-scala-2.12.tgz
     </spark.bin.download.url>
-    <spark.bin.name>spark-2.4.6-bin-hadoop2.7</spark.bin.name>
+    <spark.bin.name>spark-2.4.6-bin-without-hadoop-scala-2.12</spark.bin.name>
     <!--  used for testing, NCSARequestLog use it for access log  -->
     <livy.log.dir>${basedir}/target</livy.log.dir>
 
     <!-- Set this to "true" to skip R tests. -->
-    <skipRTests>false</skipRTests>
+    <skipRTests>true</skipRTests>
 
     <!-- Set this to "true" to skip PySpark3 tests. -->
-    <skipPySpark3Tests>false</skipPySpark3Tests>
+    <skipPySpark3Tests>true</skipPySpark3Tests>
 
     <!-- Required for testing LDAP integration -->
     <apacheds.version>2.0.0-M21</apacheds.version>
