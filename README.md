@@ -71,7 +71,7 @@ cd incubator-livy
 mvn package
 ```
 
-By default Livy is built against Apache Spark 2.4.5, but the version of Spark used when running
+By default Livy is built against Apache Spark 2.4.6, but the version of Spark used when running
 Livy does not need to match the version used to build Livy. Livy internally handles the differences
 between different Spark versions.
 
