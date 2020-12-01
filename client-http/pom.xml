@@ -140,22 +140,30 @@
                 </filter>
               </filters>
               <relocations>
-                <relocation>
-                  <pattern>com.esotericsoftware</pattern>
-                  <shadedPattern>org.apache.livy.shaded.kryo</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.fasterxml.jackson</pattern>
-                  <shadedPattern>org.apache.livy.shaded.jackson</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.apache.commons</pattern>
-                  <shadedPattern>org.apache.livy.shaded.apache.commons</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.apache.http</pattern>
-                  <shadedPattern>org.apache.livy.shaded.apache.http</shadedPattern>
-                </relocation>
+                  <relocation>
+                      <pattern>com.esotericsoftware.kryo-shaded</pattern>
+                      <shadedPattern>org.apache.livy.shaded.kryo-shaded</shadedPattern>
+                  </relocation>
+                  <relocation>
+                      <pattern>com.esotericsoftware</pattern>
+                      <shadedPattern>org.apache.livy.shaded.kryo</shadedPattern>
+                  </relocation>
+                  <relocation>
+                      <pattern>com.fasterxml.jackson</pattern>
+                      <shadedPattern>org.apache.livy.shaded.jackson</shadedPattern>
+                  </relocation>
+                  <relocation>
+                      <pattern>org.apache.commons</pattern>
+                      <shadedPattern>org.apache.livy.shaded.apache.commons</shadedPattern>
+                  </relocation>
+                  <relocation>
+                      <pattern>org.apache.http</pattern>
+                      <shadedPattern>org.apache.livy.shaded.apache.http</shadedPattern>
+                  </relocation>
+                  <relocation>
+                      <pattern>org.objectweb.asm</pattern>
+                      <shadedPattern>org.apache.livy.shaded.kryo-shaded.com.esotericsoftware.reflectasm.shaded.org.objectweb.asm</shadedPattern>
+                  </relocation>
               </relocations>
             </configuration>
           </execution>
