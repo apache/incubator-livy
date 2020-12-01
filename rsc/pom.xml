@@ -147,6 +147,7 @@
                 <includes>
                   <include>org.apache.livy:livy-client-common</include>
                   <include>com.esotericsoftware:kryo-shaded</include>
+                  <include>com.esotericsoftware:kryo-shaded</include>
                   <include>com.esotericsoftware:minlog</include>
                 </includes>
               </artifactSet>
@@ -164,6 +165,10 @@
                 <relocation>
                   <pattern>com.esotericsoftware</pattern>
                   <shadedPattern>org.apache.livy.shaded.kryo</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.esotericsoftware.kryo-shaded</pattern>
+                  <shadedPattern>org.apache.livy.shaded.kryo-shaded</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
