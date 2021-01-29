@@ -154,7 +154,7 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
     this
   }
 
-  def start(file: Option[String], args: Traversable[String]): LineBufferedProcess = {
+  def start(file: Option[String], args: Traversable[String], id: Int): LineBufferedProcess = {
     var arguments = ArrayBuffer(_executable)
 
     def addOpt(option: String, value: Option[String]): Unit = {
@@ -212,7 +212,7 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
     _redirectError.foreach(pb.redirectError)
     _redirectErrorStream.foreach(pb.redirectErrorStream)
 
-    new LineBufferedProcess(pb.start(), livyConf.getInt(LivyConf.SPARK_LOGS_SIZE))
+    new LineBufferedProcess(pb.start(), livyConf.getInt(LivyConf.SPARK_LOGS_SIZE), Some(id))
   }
 
 }

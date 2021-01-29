@@ -32,7 +32,10 @@ class CircularQueue[T](var capacity: Int) extends util.LinkedList[T] {
   }
 }
 
-class LineBufferedStream(inputStream: InputStream, logSize: Int) extends Logging {
+class LineBufferedStream(
+    inputStream: InputStream,
+    logSize: Int,
+    sessionId: Option[Int]) extends Logging {
 
   private[this] val _lines: CircularQueue[String] = new CircularQueue[String](logSize)
 
@@ -44,7 +47,8 @@ class LineBufferedStream(inputStream: InputStream, logSize: Int) extends Logging
     override def run() = {
       val lines = Source.fromInputStream(inputStream).getLines()
       for (line <- lines) {
-        info(line)
+        val sessionIdString = sessionId.map(id => s"(Livy ID $id) ").getOrElse("")
+        info(s"${sessionIdString}stdout: $line")
         _lock.lock()
         try {
           _lines.add(line)
