@@ -21,6 +21,7 @@ import java.io.InputStream
 import java.net.{URI, URISyntaxException}
 import java.security.PrivilegedExceptionAction
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -156,6 +157,8 @@ abstract class Session(
 
   private var _lastActivity = System.nanoTime()
 
+  private val _stopped = new AtomicBoolean()
+
   // Directory where the session's staging files are created. The directory is only accessible
   // to the session's effective user.
   private var stagingDir: Path = null
@@ -184,30 +187,35 @@ abstract class Session(
   def start(): Unit
 
   def stop(): Future[Unit] = Future {
-    try {
-      info(s"Stopping $this...")
-      stopSession()
-      info(s"Stopped $this.")
-    } catch {
-      case e: Exception =>
-        warn(s"Error stopping session $id.", e)
-    }
+    if (!_stopped.get()) {
+      try {
+        info(s"Stopping $this...")
+        stopSession()
+        info(s"Stopped $this.")
+        _stopped.compareAndSet(false, true)
+      } catch {
+        case e: Exception =>
+          warn(s"Error stopping session $id.", e)
+      }
 
-    try {
-      if (stagingDir != null) {
-        debug(s"Deleting session $id staging directory $stagingDir")
-        doAsOwner {
-          val fs = FileSystem.newInstance(livyConf.hadoopConf)
-          try {
-            fs.delete(stagingDir, true)
-          } finally {
-            fs.close()
+      try {
+        if (stagingDir != null) {
+          debug(s"Deleting session $id staging directory $stagingDir")
+          doAsOwner {
+            val fs = FileSystem.newInstance(livyConf.hadoopConf)
+            try {
+              fs.delete(stagingDir, true)
+            } finally {
+              fs.close()
+            }
           }
         }
+      } catch {
+        case e: Exception =>
+          warn(s"Error cleaning up session $id staging dir.", e)
       }
-    } catch {
-      case e: Exception =>
-        warn(s"Error cleaning up session $id staging dir.", e)
+    } else {
+      debug(s"Redundant call on stop(), ${toString()} has been already stopped.")
     }
   }
 
