@@ -79,8 +79,8 @@ object InteractiveSession extends Logging {
     val impersonatedUser = accessManager.checkImpersonation(proxyUser, owner)
 
     val client = mockClient.orElse {
-      val conf = SparkApp.prepareSparkConf(appTag, livyConf, prepareConf(
-        request.conf, request.jars, request.files, request.archives, request.pyFiles, livyConf))
+      val conf = SparkApp.prepareSparkConf(appTag, livyConf, prepareConf(owner, request.conf,
+        request.jars, request.files, request.archives, request.pyFiles, livyConf))
 
       val builderProperties = prepareBuilderProp(conf, request.kind, livyConf)
 
