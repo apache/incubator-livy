@@ -18,12 +18,17 @@ import os
 import base64
 import json
 import time
-from urlparse import urlparse
+from future.moves.urllib.parse import urlparse
+import re
 import requests
 from requests_kerberos import HTTPKerberosAuth, REQUIRED, OPTIONAL
 import cloudpickle
 import pytest
-import httplib
+import sys
+if sys.version < '3':
+    import httplib
+else:
+    from http import HTTPStatus as httplib
 from flaky import flaky
 
 global session_id, job_id
@@ -89,7 +94,7 @@ def process_job(job, expected_result, is_error_job=False):
         assert deserialized_object == expected_result
     else:
         error = poll_response.json()['error']
-        assert expected_result in error
+        assert re.compile(expected_result).findall(error), "Expected regex %s did not match error %s" % (expected_result, error)
 
 
 def delay_rerun(*args):
@@ -144,7 +149,7 @@ def test_error_job():
         return "hello" + 1
 
     process_job(error_job,
-        "TypeError: cannot concatenate 'str' and 'int' objects", True)
+        "TypeError.*concatenate.*str.*int", True)
 
 
 def test_reconnect():

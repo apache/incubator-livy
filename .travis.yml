@@ -50,8 +50,8 @@ install:
   - sudo python3 -m pip -q install --upgrade "pip < 10.0.0" "setuptools < 36"
   - sudo pip2 -q install codecov cloudpickle
   - sudo python3 -m pip -q install cloudpickle
-  - sudo pip2 -q install "requests >= 2.10.0" pytest flaky flake8 requests-kerberos
-  - sudo pip3 -q install "requests >= 2.10.0" pytest flaky requests-kerberos
+  - sudo pip2 -q install "requests >= 2.10.0" pytest flaky flake8 future requests-kerberos
+  - sudo pip3 -q install "requests >= 2.10.0" pytest flaky future requests-kerberos
 
 script:
   - mvn $MVN_FLAG -Dmaven.javadoc.skip=true -B -V -e verify
