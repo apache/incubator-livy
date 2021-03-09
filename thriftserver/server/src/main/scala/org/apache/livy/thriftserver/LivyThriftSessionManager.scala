@@ -23,6 +23,7 @@ import java.util
 import java.util.{Date, Map => JMap, UUID}
 import java.util.concurrent.{ConcurrentHashMap, LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
 import java.util.concurrent.atomic.AtomicLong
+import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -412,37 +413,30 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     }
   }
 
-  // Taken from Hive
-  @throws[HiveSQLException]
-  private def incrementConnections(
-      username: String,
-      ipAddress: String,
-      forwardedAddresses: util.List[String]): Unit = {
-    val clientIpAddress: String = getOriginClientIpAddress(ipAddress, forwardedAddresses)
-    val violation = anyViolations(username, clientIpAddress)
-    // increment the counters only when there are no violations
-    if (violation.isEmpty) {
-      if (trackConnectionsPerUser(username)) incrementConnectionsCount(username)
-      if (trackConnectionsPerIpAddress(clientIpAddress)) incrementConnectionsCount(clientIpAddress)
-      if (trackConnectionsPerUserIpAddress(username, clientIpAddress)) {
-        incrementConnectionsCount(username + ":" + clientIpAddress)
-      }
+  private def incrementConnectionsCount(key: String): Long = {
+    // Increment the count, returning the new value.
+    val count = connectionsCount.putIfAbsent(key, new AtomicLong(1L))
+    if (count != null) {
+      count.incrementAndGet()
     } else {
-      error(violation.get)
-      throw new HiveSQLException(violation.get)
+      1L
     }
   }
 
-  // Taken from Hive
-  private def incrementConnectionsCount(key: String): Unit = {
-    if (!connectionsCount.containsKey(key)) connectionsCount.get(key).incrementAndGet
-    else connectionsCount.put(key, new AtomicLong)
-  }
-
-  // Taken from Hive
   private def decrementConnectionsCount(key: String): Unit = {
-    if (!connectionsCount.containsKey(key)) connectionsCount.get(key).decrementAndGet
-    else connectionsCount.put(key, new AtomicLong)
+    // Decrement the count. Remove the entry if the count reaches zero.
+    val decrementCount = new BiFunction[String, AtomicLong, AtomicLong] {
+      override def apply(unused: String, count: AtomicLong): AtomicLong = {
+        val countValue = count.decrementAndGet()
+        debug(s"Connection count for $key is $countValue")
+        if (countValue == 0L) {
+          null
+        } else {
+          count
+        }
+      }
+    }
+    connectionsCount.computeIfPresent(key, decrementCount)
   }
 
   // Taken from Hive
@@ -455,21 +449,52 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     }
   }
 
-  // Taken from Hive
-  private def anyViolations(username: String, ipAddress: String): Option[String] = {
-    val userAndAddress = username + ":" + ipAddress
-    if (trackConnectionsPerUser(username) && !withinLimits(username, userLimit)) {
-      Some(s"Connection limit per user reached (user: $username limit: $userLimit)")
-    } else if (trackConnectionsPerIpAddress(ipAddress) &&
-        !withinLimits(ipAddress, ipAddressLimit)) {
-      Some(s"Connection limit per ipaddress reached (ipaddress: $ipAddress limit: " +
-        s"$ipAddressLimit)")
-    } else if (trackConnectionsPerUserIpAddress(username, ipAddress) &&
-        !withinLimits(userAndAddress, userIpAddressLimit)) {
-      Some(s"Connection limit per user:ipaddress reached (user:ipaddress: $userAndAddress " +
-        s"limit: $userIpAddressLimit)")
-    } else {
-      None
+  private def logAndThrowException(msg: String): Unit = {
+    error(msg)
+    throw new HiveSQLException(msg)
+  }
+
+  // Visible for testing
+  @throws[HiveSQLException]
+  private[thriftserver] def incrementConnections(
+      username: String,
+      ipAddress: String,
+      forwardedAddresses: util.List[String]): Unit = {
+    val clientIpAddress: String = getOriginClientIpAddress(ipAddress, forwardedAddresses)
+    val userAndAddress = username + ":" + clientIpAddress
+    val trackUser = trackConnectionsPerUser(username)
+    val trackIpAddress = trackConnectionsPerIpAddress(clientIpAddress)
+    val trackUserIpAddress = trackConnectionsPerUserIpAddress(username, clientIpAddress)
+
+    // Optimistically increment the counts while getting them to check for violations.
+    // If any limit has been exceeded, we won't be going ahead with the connection,
+    // so decrement all counts that have been incremented.
+    if (trackUser) {
+      val userCount = incrementConnectionsCount(username)
+      if (userCount > userLimit) {
+        decrementConnectionsCount(username)
+        logAndThrowException("Connection limit per user reached " +
+          s"(user: $username limit: $userLimit)")
+      }
+    }
+    if (trackIpAddress) {
+      val ipAddressCount = incrementConnectionsCount(clientIpAddress)
+      if (ipAddressCount > ipAddressLimit) {
+        if (trackUser) decrementConnectionsCount(username)
+        decrementConnectionsCount(clientIpAddress)
+        logAndThrowException("Connection limit per ipaddress reached " +
+          s"(ipaddress: $clientIpAddress limit: $ipAddressLimit)")
+      }
+    }
+    if (trackUserIpAddress) {
+      val userIpAddressCount = incrementConnectionsCount(userAndAddress)
+      if (userIpAddressCount > userIpAddressLimit) {
+        if (trackUser) decrementConnectionsCount(username)
+        if (trackIpAddress) decrementConnectionsCount(clientIpAddress)
+        decrementConnectionsCount(userAndAddress)
+        logAndThrowException("Connection limit per user:ipaddress reached " +
+          s"(user:ipaddress: $userAndAddress limit: $userIpAddressLimit)")
+      }
     }
   }
 
@@ -487,11 +512,6 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   // Taken from Hive
   private def trackConnectionsPerUser(username: String): Boolean = {
     userLimit > 0 && username != null && !username.isEmpty
-  }
-
-  // Taken from Hive
-  private def withinLimits(track: String, limit: Int): Boolean = {
-    !(connectionsCount.containsKey(track) && connectionsCount.get(track).intValue >= limit)
   }
 
   private def decrementConnections(sessionInfo: SessionInfo): Unit = {

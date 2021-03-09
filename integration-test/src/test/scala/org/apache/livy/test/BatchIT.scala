@@ -110,7 +110,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
       cluster.yarnClient.getApplicationReport(appId).getFinalApplicationStatus shouldBe
         FinalApplicationStatus.KILLED
 
-      s.snapshot().log should contain ("Application killed by user.")
+      atLeast(1, s.snapshot().log) should include regex ("killed by user")
     }
   }
 

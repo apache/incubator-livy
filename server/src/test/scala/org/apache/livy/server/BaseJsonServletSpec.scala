@@ -108,7 +108,8 @@ abstract class BaseJsonServletSpec extends ScalatraSuite
     // Only try to parse the body if response is in the "OK" range (20x).
     if ((status / 100) * 100 == SC_OK) {
       val result =
-        if (header("Content-Type").startsWith("application/json")) {
+        if (klass.runtimeClass != classOf[Unit] &&
+          header("Content-Type").startsWith("application/json")) {
           // Sometimes there's an empty body with no "Content-Length" header. So read the whole
           // body first, and only send it to Jackson if there's content.
           val in = response.inputStream

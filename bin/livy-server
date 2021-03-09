@@ -90,7 +90,7 @@ start_livy_server() {
     fi
   fi
 
-  LIVY_CLASSPATH="$LIBDIR/*:$LIVY_CONF_DIR"
+  LIVY_CLASSPATH="${LIVY_CLASSPATH:-${LIBDIR}/*:${LIVY_CONF_DIR}}"
 
   if [ -n "$SPARK_CONF_DIR" ]; then
     LIVY_CLASSPATH="$LIVY_CLASSPATH:$SPARK_CONF_DIR"

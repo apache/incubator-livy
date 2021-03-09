@@ -58,7 +58,19 @@
 
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>livy-core_2.12</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>livy-repl_2.11</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>livy-repl_2.12</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -77,6 +89,12 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>livy-scala-api_2.11</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>livy-scala-api_2.12</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -116,6 +134,23 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-maven-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 

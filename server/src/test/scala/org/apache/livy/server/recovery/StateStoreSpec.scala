@@ -17,8 +17,6 @@
 
 package org.apache.livy.server.recovery
 
-import scala.reflect.classTag
-
 import org.scalatest.{BeforeAndAfter, FunSpec}
 import org.scalatest.Matchers._
 

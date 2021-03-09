@@ -27,7 +27,9 @@ import scala.util.Try
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.client.api.YarnClient
+import org.apache.hadoop.yarn.conf.YarnConfiguration
 
 import org.apache.livy.Logging
 
@@ -45,10 +47,36 @@ trait Cluster {
   def jdbcEndpoint: Option[String]
   def hdfsScratchDir(): Path
 
+  // The potential values for authScheme are kerberos for kerberos auth,
+  // basic for basic auth, or nothing for no authentication
+  def authScheme: String
+  def user: String
+  def password: String
+  def sslCertPath: String
+
+  def principal: String
+  def keytabPath: String
+
   def doAsClusterUser[T](task: => T): T
 
-  lazy val hadoopConf = {
+  def initKerberosConf(): Configuration = {
     val conf = new Configuration(false)
+    configDir().listFiles().foreach { f =>
+      if (f.getName().endsWith(".xml")) {
+        conf.addResource(new Path(f.toURI()))
+      }
+    }
+    UserGroupInformation.setConfiguration(conf)
+    UserGroupInformation.loginUserFromKeytab(principal, keytabPath)
+    conf
+  }
+
+  lazy val hadoopConf = {
+    var conf = new Configuration(false)
+
+    if (authScheme == "kerberos"){
+      conf = initKerberosConf()
+    }
     configDir().listFiles().foreach { f =>
       if (f.getName().endsWith(".xml")) {
         conf.addResource(new Path(f.toURI()))
@@ -58,7 +86,11 @@ trait Cluster {
   }
 
   lazy val yarnConf = {
-    val conf = new Configuration(false)
+    var conf = new Configuration(false)
+
+    if (authScheme == "kerberos"){
+      conf = initKerberosConf()
+    }
     conf.addResource(new Path(s"${configDir().getCanonicalPath}/yarn-site.xml"))
     conf
   }
@@ -76,6 +108,8 @@ trait Cluster {
 }
 
 object Cluster extends Logging {
+  private val CLUSTER_TYPE = "cluster.type"
+
   private lazy val config = {
     sys.props.get("cluster.spec")
       .filter { path => path.nonEmpty && path != "default" }
@@ -97,7 +131,11 @@ object Cluster extends Logging {
   private lazy val cluster = {
     var _cluster: Cluster = null
     try {
-      _cluster = new MiniCluster(config)
+      _cluster = config.get(CLUSTER_TYPE) match {
+        case Some("mini") => new MiniCluster(config)
+        case Some("external") => new ExternalCluster(config)
+        case t => new MiniCluster(config)
+      }
       Runtime.getRuntime.addShutdownHook(new Thread {
         override def run(): Unit = {
           info("Shutting down cluster pool.")

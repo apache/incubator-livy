@@ -17,7 +17,7 @@
 
 package org.apache.livy.thriftserver.types
 
-import org.apache.hive.service.rpc.thrift.{TColumnDesc, TPrimitiveTypeEntry, TTableSchema, TTypeDesc, TTypeEntry, TTypeId}
+import org.apache.hive.service.rpc.thrift._
 
 import org.apache.livy.thriftserver.session.DataType
 
@@ -41,7 +41,7 @@ case class BasicDataType(name: String) extends FieldType {
     case "float" => DataType.FLOAT
     case "double" => DataType.DOUBLE
     case "binary" => DataType.BINARY
-    case _ if name.contains("decimal") => DataType.DECIMAL
+    case _ if name.startsWith("decimal") => DataType.DECIMAL
     case "timestamp" => DataType.TIMESTAMP
     case "date" => DataType.DATE
     case _ => DataType.STRING
@@ -88,12 +88,12 @@ object Schema {
     val tColumnDesc = new TColumnDesc
     tColumnDesc.setColumnName(field.name)
     tColumnDesc.setComment(field.comment)
-    tColumnDesc.setTypeDesc(toTTypeDesc(field.fieldType.dataType))
+    tColumnDesc.setTypeDesc(toTTypeDesc(field.fieldType.name, field.fieldType.dataType))
     tColumnDesc.setPosition(index)
     tColumnDesc
   }
 
-  private def toTTypeDesc(dt: DataType): TTypeDesc = {
+  private def toTTypeDesc(name: String, dt: DataType): TTypeDesc = {
     val typeId = dt match {
       case DataType.BOOLEAN => TTypeId.BOOLEAN_TYPE
       case DataType.BYTE => TTypeId.TINYINT_TYPE
@@ -109,9 +109,38 @@ object Schema {
       case _ => TTypeId.STRING_TYPE
     }
     val primitiveEntry = new TPrimitiveTypeEntry(typeId)
+    if (dt == DataType.DECIMAL) {
+      val qualifiers = getDecimalQualifiers(name)
+      primitiveEntry.setTypeQualifiers(qualifiers)
+    }
     val entry = TTypeEntry.primitiveEntry(primitiveEntry)
     val desc = new TTypeDesc
     desc.addToTypes(entry)
     desc
+  }
+
+  private def getDecimalQualifiers(name: String): TTypeQualifiers = {
+    // name can be one of
+    // 1. decimal
+    // 2. decimal(p)
+    // 3. decimal(p, s)
+    val (precision, scale) =
+      if (name == "decimal") {
+        (10, 0)
+      } else {
+        val suffix = name.substring("decimal".length)
+        require(suffix.startsWith("(") && suffix.endsWith(")"),
+          name + " is not of the form decimal(<precision>,<scale>)")
+        val parts = suffix.substring(1, suffix.length - 1).split(",").map(_.trim.toInt)
+        (parts(0), parts.lift(1).getOrElse(0))
+      }
+    val qMap = new java.util.HashMap[String, TTypeQualifierValue]
+    val pVal = new TTypeQualifierValue
+    pVal.setI32Value(precision)
+    qMap.put(TCLIServiceConstants.PRECISION, pVal)
+    val sVal = new TTypeQualifierValue
+    sVal.setI32Value(scale)
+    qMap.put(TCLIServiceConstants.SCALE, sVal)
+    new TTypeQualifiers(qMap)
   }
 }
