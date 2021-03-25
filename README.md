@@ -51,6 +51,7 @@ Required python packages for building Livy:
   * requests-kerberos
   * flake8
   * flaky
+  * future
   * pytest
 
 
