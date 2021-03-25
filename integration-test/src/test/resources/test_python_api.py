@@ -19,16 +19,17 @@ import base64
 import json
 import time
 from future.moves.urllib.parse import urlparse
+from future.utils import PY3
 import re
 import requests
 from requests_kerberos import HTTPKerberosAuth, REQUIRED, OPTIONAL
 import cloudpickle
 import pytest
 import sys
-if sys.version < '3':
-    import httplib
-else:
+if PY3:
     from http import HTTPStatus as httplib
+else:
+    import httplib
 from flaky import flaky
 
 global session_id, job_id
