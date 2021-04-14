@@ -18,7 +18,6 @@
 package org.apache.livy.client.http
 
 import java.io.IOException
-import java.net.URLEncoder
 import java.nio.charset.StandardCharsets.UTF_8
 
 import org.apache.http.client.utils.URIBuilder
@@ -70,12 +69,11 @@ class LivyConnectionSpec extends FunSpecLike with BeforeAndAfterAll with LivyBas
       server.context.addEventListener(new ScalatraListener)
       server.start()
 
-      val utf8Name = UTF_8.name()
       val uri = new URIBuilder()
         .setScheme(server.protocol)
         .setHost(server.host)
         .setPort(server.port)
-        .setUserInfo(URLEncoder.encode(username, utf8Name), URLEncoder.encode(password, utf8Name))
+        .setUserInfo(username, password)
         .build()
       info(uri.toString)
       val conn = new LivyConnection(uri, new HttpConf(null))
