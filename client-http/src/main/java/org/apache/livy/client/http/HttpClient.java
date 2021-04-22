@@ -40,7 +40,7 @@ import static org.apache.livy.client.common.HttpMessages.*;
  * What is currently missing:
  * - monitoring of spark job IDs launched by jobs
  */
-class HttpClient implements LivyClient {
+public class HttpClient implements LivyClient {
 
   private final HttpConf config;
   private final LivyConnection conn;
@@ -184,7 +184,7 @@ class HttpClient implements LivyClient {
   }
 
   // For testing.
-  int getSessionId() {
+  public int getSessionId() {
     return sessionId;
   }
 
