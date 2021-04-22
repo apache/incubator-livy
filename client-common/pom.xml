@@ -20,12 +20,12 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.8.0-incubating-SNAPSHOT</version>
+    <version>0.8.0-incubating-onedot</version>
   </parent>
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-client-common</artifactId>
-  <version>0.8.0-incubating-SNAPSHOT</version>
+  <version>0.8.0-incubating-onedot</version>
   <packaging>jar</packaging>
 
   <dependencies>
@@ -37,7 +37,7 @@
 
     <dependency>
       <groupId>com.esotericsoftware</groupId>
-      <artifactId>kryo</artifactId>
+      <artifactId>kryo-shaded</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

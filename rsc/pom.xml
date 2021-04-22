@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.8.0-incubating-SNAPSHOT</version>
+    <version>0.8.0-incubating-onedot</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -59,7 +59,7 @@
 
     <dependency>
       <groupId>com.esotericsoftware</groupId>
-      <artifactId>kryo</artifactId>
+      <artifactId>kryo-shaded</artifactId>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -115,6 +115,12 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>asm</groupId>
+          <artifactId>asm</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -141,6 +147,7 @@
                 <includes>
                   <include>org.apache.livy:livy-client-common</include>
                   <include>com.esotericsoftware:kryo</include>
+                  <include>com.esotericsoftware:kryo-shaded</include>
                   <include>com.esotericsoftware:minlog</include>
                   <include>com.esotericsoftware:reflectasm</include>
                 </includes>
@@ -159,6 +166,10 @@
                 <relocation>
                   <pattern>com.esotericsoftware</pattern>
                   <shadedPattern>org.apache.livy.shaded.kryo</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.esotericsoftware.kryo-shaded</pattern>
+                  <shadedPattern>org.apache.livy.shaded.kryo-shaded</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
