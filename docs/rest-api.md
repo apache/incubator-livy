@@ -803,12 +803,12 @@ A statement represents the result of an execution statement.
   <tr><th>Name</th><th>Description</th><th>Type</th></tr>
   <tr>
     <td>id</td>
-    <td>The session id</td>
+    <td>The batch id</td>
     <td>int</td>
   </tr>
   <tr>
     <td>appId</td>
-    <td>The application id of this session</td>
+    <td>The application id of this batch</td>
     <td>string</td>
   </tr>
   <tr>
@@ -820,6 +820,21 @@ A statement represents the result of an execution statement.
     <td>log</td>
     <td>The log lines</td>
     <td>list of strings</td>
+  </tr>
+  <tr>
+    <td>name</td>
+    <td>The application name of this batch</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>owner</td>
+    <td>Remote user who submitted this batch</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>proxyUser</td>
+    <td>User to impersonate when running</td>
+    <td>string</td>
   </tr>
   <tr>
     <td>state</td>
