@@ -69,14 +69,17 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   get("/") {
-    val from = params.get("from").map(_.toInt).getOrElse(0)
-    val size = params.get("size").map(_.toInt).getOrElse(100)
-
     val sessions = sessionManager.all()
+    val sessionsSize = sessionManager.size()
+
+    val from = params.get("from").map(_.toInt).getOrElse(0)
+    val size = params.get("size").map(_.toInt).getOrElse(
+      if (sessionsSize > from) sessionsSize - from else 0
+    )
 
     Map(
       "from" -> from,
-      "total" -> sessionManager.size(),
+      "total" -> sessionsSize,
       "sessions" -> sessions.view(from, from + size).map(clientSessionView(_, request))
     )
   }
