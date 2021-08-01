@@ -277,6 +277,8 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         assert(app.mapYarnState(appId, SUBMITTED, UNDEFINED) == State.STARTING)
         assert(app.mapYarnState(appId, ACCEPTED, UNDEFINED) == State.STARTING)
         assert(app.mapYarnState(appId, RUNNING, UNDEFINED) == State.RUNNING)
+        // this combination below exists since final state and yarn state would switch sequentially.
+        assert(app.mapYarnState(appId, RUNNING, FinalApplicationStatus.SUCCEEDED) == State.RUNNING)
         assert(
           app.mapYarnState(appId, FINISHED, FinalApplicationStatus.SUCCEEDED) == State.FINISHED)
         assert(app.mapYarnState(appId, FAILED, FinalApplicationStatus.FAILED) == State.FAILED)
