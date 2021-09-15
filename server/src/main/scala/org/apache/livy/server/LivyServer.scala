@@ -281,6 +281,9 @@ class LivyServer extends Logging {
         Option(livyConf.get(LivyConf.AUTH_LDAP_BASE_DN)).foreach { baseDN =>
           holder.setInitParameter(LdapAuthenticationHandlerImpl.BASE_DN, baseDN)
         }
+        Option(livyConf.get(LivyConf.AUTH_LDAP_USER_DN_PATTERN)).foreach { userDNPattern =>
+          holder.setInitParameter(LdapAuthenticationHandlerImpl.USER_DN_PATTERN, userDNPattern)
+        }
         holder.setInitParameter(LdapAuthenticationHandlerImpl.SECURITY_AUTHENTICATION,
           livyConf.get(LivyConf.AUTH_LDAP_SECURITY_AUTH))
         holder.setInitParameter(LdapAuthenticationHandlerImpl.ENABLE_START_TLS,

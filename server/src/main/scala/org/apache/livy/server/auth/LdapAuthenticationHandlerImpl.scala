@@ -41,14 +41,16 @@ object LdapAuthenticationHandlerImpl {
   val SECURITY_AUTHENTICATION = "simple"
   val PROVIDER_URL = "ldap.providerurl"
   val BASE_DN = "ldap.basedn"
+  val USER_DN_PATTERN = "ldap.userdnpattern"
   val LDAP_BIND_DOMAIN = "ldap.binddomain"
   val ENABLE_START_TLS = "ldap.enablestarttls"
 }
 
 class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
-  private var ldapDomain = "null"
-  private var baseDN = "null"
   private var providerUrl = "null"
+  private var baseDN = "null"
+  private var userDNPattern = "null"
+  private var ldapDomain = "null"
   private var enableStartTls = false
   private var disableHostNameVerification = false
 
@@ -56,12 +58,17 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
 
   @throws[ServletException]
   def init(config: Properties): Unit = {
-    this.baseDN = config.getProperty(LdapAuthenticationHandlerImpl.BASE_DN)
     this.providerUrl = config.getProperty(LdapAuthenticationHandlerImpl.PROVIDER_URL)
+    this.baseDN = config.getProperty(LdapAuthenticationHandlerImpl.BASE_DN)
+    this.userDNPattern = config.getProperty(LdapAuthenticationHandlerImpl.USER_DN_PATTERN)
     this.ldapDomain = config.getProperty(LdapAuthenticationHandlerImpl.LDAP_BIND_DOMAIN)
     this.enableStartTls = config.getProperty(
       LdapAuthenticationHandlerImpl.ENABLE_START_TLS, "false").toBoolean
     require(this.providerUrl != null, "The LDAP URI can not be null")
+    require(this.baseDN == null || this.userDNPattern == null, "You can't specify both base-dn and user-dn-pattern")
+    if (this.userDNPattern != null) {
+      require(this.userDNPattern.contains("%s"), "User DN Pattern should contain '%s' in it")
+    }
 
     if (enableStartTls) {
       require(!this.providerUrl.toLowerCase.startsWith("ldaps"),
@@ -127,7 +134,9 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
     if (!LdapUtils.hasDomain(userName) && ldapDomain != null) {
       principle = userName + "@" + ldapDomain
     }
-    val bindDN = if (baseDN != null) {
+    val bindDN = if (userDNPattern != null) {
+      userDNPattern.replace("%s", principle)
+    } else if (baseDN != null) {
       "uid=" + principle + "," + baseDN
     } else {
       principle
