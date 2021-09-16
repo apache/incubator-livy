@@ -70,7 +70,9 @@ object LdapUtils {
    */
   def createCandidatePrincipal(conf: LivyConf, user: String): String = {
     val ldapDomain = conf.get(LivyConf.AUTH_LDAP_USERNAME_DOMAIN)
-    val ldapBaseDN = conf.get(LivyConf.AUTH_LDAP_BASE_DN )
+    val ldapBaseDN = conf.get(LivyConf.AUTH_LDAP_BASE_DN)
+    val userAttribute = conf.get(LivyConf.AUTH_LDAP_USER_ATTRIBUTE)
+
     val principle = if (!hasDomain(user) && ldapDomain != null) {
       user + "@" + ldapDomain
     } else {
@@ -78,7 +80,7 @@ object LdapUtils {
     }
 
     if (ldapBaseDN != null) {
-      "uid=" + principle + "," + ldapBaseDN
+      userAttribute + "=" + principle + "," + ldapBaseDN
     } else {
       principle
     }
