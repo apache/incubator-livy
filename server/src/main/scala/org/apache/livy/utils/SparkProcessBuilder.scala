@@ -17,11 +17,20 @@
 
 package org.apache.livy.utils
 
+import java.io.{FileInputStream, OutputStreamWriter, Writer, FileOutputStream, Reader, InputStreamReader, File}
+import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.Files
+import java.nio.file.attribute.PosixFilePermission.{OWNER_READ, OWNER_WRITE}
+import java.util
+import java.util.{EnumSet, Properties}
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.livy.{LivyConf, Logging}
+
+import org.apache.commons.lang.SystemUtils
 
 class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
 
@@ -175,15 +184,27 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
     addOpt("--deploy-mode", _deployMode)
     addOpt("--name", _name)
     addOpt("--class", _className)
+
+    // Load default configs from spark-defaults.conf and add them to Properties.
+    val sparkProperties = getDefaultSparkConfig()
+
     _conf.foreach { case (key, value) =>
       if (key == "spark.submit.pyFiles") {
          arguments += "--py-files"
          arguments += f"$value"
       } else {
-         arguments += "--conf"
-         arguments += f"$key=$value"
+        sparkProperties.setProperty(f"$key", f"$value")
       }
     }
+
+    // Write the consolidated Spark configs to a properties file and add that
+    // as an opt for spark-submit.
+    val sparkConfigPropertiesFile =
+    writeSparkConfigToFile(sparkProperties).getAbsolutePath
+    info(s"Merged Spark config and generated file: " +
+      s"${sparkConfigPropertiesFile}")
+    addOpt("--properties-file", Some(sparkConfigPropertiesFile))
+
     addList("--driver-class-path", _driverClassPath)
 
     if (livyConf.getBoolean(LivyConf.IMPERSONATION_ENABLED)) {
@@ -213,6 +234,58 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
     _redirectErrorStream.foreach(pb.redirectErrorStream)
 
     new LineBufferedProcess(pb.start(), livyConf.getInt(LivyConf.SPARK_LOGS_SIZE))
+  }
+
+  /**
+   * This method loads the default Spark configuration form spark-defaults
+   * .conf present in SPARK_CONF_DIR. If SPARK_CONF_DIR is not set, it tries
+   * to load spark-defaults.conf from {SPARK_HOME}/conf folder
+   */
+  private def getDefaultSparkConfig(): Properties ={
+    val sparkConf = new Properties
+    var confDir = System.getenv("SPARK_CONF_DIR")
+    if (confDir == null && System.getenv("SPARK_HOME") != null) {
+      confDir = System.getenv("SPARK_HOME") + File.separator + "conf"
+    }
+    if (confDir != null) {
+      val sparkDefaults = new File(confDir + File.separator + "spark-defaults.conf")
+      if (sparkDefaults.isFile) {
+        val reader = new InputStreamReader(new FileInputStream(sparkDefaults),
+          UTF_8)
+        try {
+          sparkConf.load(reader)
+        }
+        finally {
+          reader.close()
+        }
+      }
+    }
+    sparkConf
+  }
+
+  /** This method writes the provided properties to a temporary properties
+   * file in current working directory.This file can be passed as
+   * --properties-file to spark-submit to avoid long command line issues in
+   * Windows.
+   */
+  private def writeSparkConfigToFile(properties: Properties): File ={
+    val currDir: File = new File(System.getProperty("user.dir"))
+    val sparkConfigFile: File = File.createTempFile("sparkConfig",
+      ".properties", currDir)
+    // Windows does not support POSIX compliant file system semantics
+    if (!SystemUtils.IS_OS_WINDOWS) {
+      Files.setPosixFilePermissions(
+        sparkConfigFile.toPath,
+        util.EnumSet.of(OWNER_READ, OWNER_WRITE))
+    }
+    val writer: Writer =
+      new OutputStreamWriter(new FileOutputStream(sparkConfigFile), UTF_8)
+    try {
+      properties.store(writer, "Spark Configuration from Livy.")
+    } finally {
+      writer.close()
+    }
+    sparkConfigFile
   }
 
 }
