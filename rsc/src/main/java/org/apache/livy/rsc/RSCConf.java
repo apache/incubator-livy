@@ -82,7 +82,10 @@ public class RSCConf extends ClientConf<RSCConf> {
     RETAINED_SHARE_VARIABLES("retained.share-variables", 100),
 
     // Number of result rows to get for SQL Interpreters.
-    SQL_NUM_ROWS("sql.num-rows", 1000);
+    SQL_NUM_ROWS("sql.num-rows", 1000),
+
+    // Sort fields of table magic
+    TABLE_MAGIC_SORT_FIELDS("table-magic.sort-fields", true);
 
     private final String key;
     private final Object dflt;
