@@ -29,6 +29,8 @@ import org.json4s.JsonAST._
 import org.json4s.JsonDSL._
 
 import org.apache.livy.Logging
+import org.apache.livy.rsc.RSCConf
+import org.apache.livy.rsc.RSCConf.Entry.TABLE_MAGIC_SORT_FIELDS
 import org.apache.livy.rsc.driver.SparkEntries
 
 object AbstractSparkInterpreter {
@@ -60,6 +62,8 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
   protected def bind(name: String, tpe: String, value: Object, modifier: List[String]): Unit
 
   protected def conf: SparkConf
+
+  protected def livyConf: RSCConf
 
   protected def postStart(): Unit = {
     entries = new SparkEntries(conf)
@@ -193,14 +197,17 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
       case _ => List(value)
     }
 
-    try {
-      val headers = scala.collection.mutable.Map[String, Map[String, String]]()
+    val sortFields = livyConf.getBoolean(TABLE_MAGIC_SORT_FIELDS)
 
-      val data = rows.map { case row =>
+    try {
+      val headers = scala.collection.mutable.LinkedHashMap[String, Map[String, String]]()
+
+      val data = rows.map { row =>
         val cols: List[JField] = row match {
           case JArray(arr: List[JValue]) =>
             arr.zipWithIndex.map { case (v, index) => JField(index.toString, v) }
-          case JObject(obj) => obj.sortBy(_._1)
+          case JObject(obj) if sortFields => obj.sortBy(_._1)
+          case JObject(obj) => obj
           case value: JValue => List(JField("0", value))
         }
 
@@ -223,9 +230,15 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
         }
       }
 
+      val headersData = if (sortFields) {
+        headers.toSeq.sortBy(_._1).map(_._2)
+      } else {
+        headers.toSeq.map(_._2)
+      }
+
       Interpreter.ExecuteSuccess(
         APPLICATION_LIVY_TABLE_JSON -> (
-          ("headers" -> headers.toSeq.sortBy(_._1).map(_._2)) ~ ("data" -> data)
+          ("headers" -> headersData) ~ ("data" -> data)
         ))
     } catch {
       case _: TypesDoNotMatch =>
