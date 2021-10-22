@@ -23,7 +23,7 @@ import org.apache.livy.LivyBaseUnitTestSuite
 
 class SparkInterpreterSpec extends FunSpec with Matchers with LivyBaseUnitTestSuite {
   describe("SparkInterpreter") {
-    val interpreter = new SparkInterpreter(null)
+    val interpreter = new SparkInterpreter(null, null)
 
     it("should parse Scala compile error.") {
       // Regression test for LIVY-.
