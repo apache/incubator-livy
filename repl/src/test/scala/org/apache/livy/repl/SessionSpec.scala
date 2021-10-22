@@ -68,7 +68,7 @@ class SessionSpec extends FunSpec with Eventually with LivyBaseUnitTestSuite wit
       val actualStateTransitions = new ConcurrentLinkedQueue[String]()
 
       val blockFirstExecuteCall = new CountDownLatch(1)
-      val interpreter = new SparkInterpreter(new SparkConf()) {
+      val interpreter = new SparkInterpreter(new SparkConf(), new RSCConf()) {
         override def execute(code: String): ExecuteResponse = {
           blockFirstExecuteCall.await(10, TimeUnit.SECONDS)
           super.execute(code)
