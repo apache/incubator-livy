@@ -30,7 +30,6 @@ matrix:
     env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipITs'
   - name: "Spark 3.0 ITs"
     env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipTests'
-
 jdk:
   - openjdk8
 
