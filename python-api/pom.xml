@@ -46,7 +46,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-            <executable>python</executable>
+            <executable>python3</executable>
               <arguments>
                 <argument>setup.py</argument>
                 <argument>sdist</argument>
@@ -60,7 +60,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <executable>python</executable>
+              <executable>python3</executable>
               <skip>${skipTests}</skip>
               <arguments>
                 <argument>setup.py</argument>
