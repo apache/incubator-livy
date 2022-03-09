@@ -61,6 +61,13 @@ class JdbcIT extends BaseThriftIntegrationTestSuite {
           assert(resultSet.getString(3) == "{1:\"a\",2:\"b\"}")
           assert(!resultSet.next())
       }
+
+      checkQuery(c, "DESC LIVY SESSION") { resultSet =>
+        resultSet.next()
+        assert(resultSet.getString(1).toInt >= 0)
+        assert(resultSet.getString(2).startsWith("application_"))
+        assert(resultSet.getString(4).contains(resultSet.getString(2)))
+      }
     }
   }
 }

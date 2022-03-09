@@ -18,7 +18,7 @@
 package org.apache.livy.thriftserver
 
 import java.util
-import java.util.{Map => JMap}
+import java.util.{Locale, Map => JMap}
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable
@@ -106,6 +106,14 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
     op
   }
 
+  def newDescLivySessionOperation(sessionHandle: SessionHandle,
+      statement: String, sessionManager: LivyThriftSessionManager): Operation = {
+    val op = new DescLivySessionOperation(sessionHandle, sessionManager)
+    addOperation(op, sessionHandle)
+    debug(s"Create DescLivySessionOperation for $statement with session=$sessionHandle")
+    op
+  }
+
   def getOperationLogRowSet(
       opHandle: OperationHandle,
       orientation: FetchOrientation,
@@ -136,9 +144,15 @@ class LivyOperationManager(val livyThriftSessionManager: LivyThriftSessionManage
       confOverlay: util.Map[String, String],
       runAsync: Boolean,
       queryTimeout: Long): OperationHandle = {
-    executeOperation(sessionHandle, {
-      newExecuteStatementOperation(sessionHandle, statement, confOverlay, runAsync, queryTimeout)
-    })
+    info(s"execute statement $statement")
+    val descLivySessionRegex = "^(DESC|DESCRIBE)\\s+LIVY\\s+SESSION$".r
+    val operationCreator = statement.trim.toUpperCase(Locale.ENGLISH) match {
+      case descLivySessionRegex(_*) =>
+        newDescLivySessionOperation(sessionHandle, statement, livyThriftSessionManager)
+      case _ =>
+        newExecuteStatementOperation(sessionHandle, statement, confOverlay, runAsync, queryTimeout)
+    }
+    executeOperation(sessionHandle, operationCreator)
   }
 
   @throws[HiveSQLException]
