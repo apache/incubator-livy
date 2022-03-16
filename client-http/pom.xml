@@ -142,7 +142,7 @@
               <relocations>
                 <relocation>
                   <pattern>com.esotericsoftware</pattern>
-                  <shadedPattern>org.apache.livy.shaded.kryo</shadedPattern>
+                  <shadedPattern>org.apache.livy.shaded.esotericsoftware</shadedPattern>
                 </relocation>
                 <relocation>
                   <pattern>com.fasterxml.jackson</pattern>

@@ -182,11 +182,6 @@
       <scope>compile</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.scalatra</groupId>
-      <artifactId>scalatra-test_${scala.binary.version}</artifactId>
-    </dependency>
-
     <!-- hadoop-common in test scope needs curator-client, but we want to use the proper version -->
     <dependency>
       <groupId>org.apache.curator</groupId>
