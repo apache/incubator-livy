@@ -79,35 +79,34 @@
 
   <properties>
     <asynchttpclient.version>2.10.1</asynchttpclient.version>
-    <hadoop.version>2.7.3</hadoop.version>
+    <hadoop.version>3.2.2</hadoop.version>
     <hadoop.scope>compile</hadoop.scope>
-    <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version>
-    <spark.scala-2.12.version>2.4.5</spark.scala-2.12.version>
-    <spark.version>${spark.scala-2.11.version}</spark.version>
-    <hive.version>3.0.0</hive.version>
+    <spark.scala-2.11.version>2.4.8</spark.scala-2.11.version>
+    <spark.scala-2.12.version>3.2.1</spark.scala-2.12.version>
+    <spark.version>${spark.scala-2.12.version}</spark.version>
+    <hive.version>3.1.2</hive.version>
     <commons-codec.version>1.9</commons-codec.version>
     <httpclient.version>4.5.3</httpclient.version>
     <httpcore.version>4.4.4</httpcore.version>
     <jackson.version>2.10.1</jackson.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
     <jetty.version>9.3.24.v20180605</jetty.version>
-    <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
-    <json4s.spark-2.12.version>3.5.3</json4s.spark-2.12.version>
-    <json4s.version>${json4s.spark-2.11.version}</json4s.version>
+    <json4s.spark-2.11.version>3.5.5</json4s.spark-2.11.version>
+    <json4s.spark-2.12.version>3.5.5</json4s.spark-2.12.version>
+    <json4s.version>${json4s.spark-2.12.version}</json4s.version>
     <junit.version>4.11</junit.version>
     <libthrift.version>0.9.3</libthrift.version>
     <kryo.version>4.0.2</kryo.version>
+    <reflectasm.version>1.11.9</reflectasm.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.10.19</mockito.version>
-    <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
-    <netty.spark-2.12.version>4.1.17.Final</netty.spark-2.12.version>
-    <netty.version>${netty.spark-2.11.version}</netty.version>
+    <netty.version>4.1.68.Final</netty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <py4j.version>0.10.7</py4j.version>
+    <py4j.version>0.10.9</py4j.version>
     <scala-2.11.version>2.11.12</scala-2.11.version>
-    <scala-2.12.version>2.12.10</scala-2.12.version>
-    <scala.binary.version>2.11</scala.binary.version>
-    <scala.version>${scala-2.11.version}</scala.version>
+    <scala-2.12.version>2.12.15</scala-2.12.version>
+    <scala.binary.version>2.12</scala.binary.version>
+    <scala.version>${scala-2.12.version}</scala.version>
     <scalatest.version>3.0.8</scalatest.version>
     <scalatra.version>2.6.5</scalatra.version>
     <java.version>1.8</java.version>
@@ -115,9 +114,9 @@
     <execution.root>${user.dir}</execution.root>
     <spark.home>${execution.root}/dev/spark</spark.home>
     <spark.bin.download.url>
-      https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
+      https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz
     </spark.bin.download.url>
-    <spark.bin.name>spark-2.4.5-bin-hadoop2.7</spark.bin.name>
+    <spark.bin.name>spark-2.4.8-bin-hadoop2.7</spark.bin.name>
     <!--  used for testing, NCSARequestLog use it for access log  -->
     <livy.log.dir>${basedir}/target</livy.log.dir>
 
@@ -275,6 +274,12 @@
       </dependency>
 
       <dependency>
+        <groupId>com.esotericsoftware</groupId>
+        <artifactId>reflectasm</artifactId>
+        <version>${reflectasm.version}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
         <version>${jackson.version}</version>
@@ -338,12 +343,6 @@
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-common</artifactId>
         <version>${hadoop.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -407,12 +406,6 @@
         <groupId>org.apache.spark</groupId>
         <artifactId>spark-core_${scala.binary.version}</artifactId>
         <version>${spark.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -427,8 +420,8 @@
         <version>${spark.version}</version>
         <exclusions>
           <exclusion>
-            <groupId>org.spark-project.spark</groupId>
-            <artifactId>unused</artifactId>
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -567,12 +560,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.scalatra</groupId>
-        <artifactId>scalatra-test_${scala.binary.version}</artifactId>
-        <version>${scalatra.version}</version>
-      </dependency>
-
-      <dependency>
         <groupId>net.sf.py4j</groupId>
         <artifactId>py4j</artifactId>
         <version>${py4j.version}</version>
@@ -638,7 +625,7 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>4.2.0</version>
+          <version>4.5.6</version>
           <executions>
             <execution>
               <goals>
@@ -960,7 +947,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.10</version>
+        <version>3.3.0</version>
         <configuration>
           <outputDirectory>${project.build.directory}/jars</outputDirectory>
           <useSubDirectoryPerType>false</useSubDirectoryPerType>
@@ -1053,28 +1040,18 @@
     </profile>
 
     <profile>
-      <id>spark-3.0</id>
+      <id>spark-2.4</id>
       <activation>
         <property>
-          <name>spark-3.0</name>
+          <name>spark-2.4</name>
         </property>
       </activation>
       <properties>
-        <spark.scala-2.12.version>3.0.0</spark.scala-2.12.version>
-        <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version>
-        <spark.version>${spark.scala-2.11.version}</spark.version>
-        <netty.spark-2.12.version>4.1.47.Final</netty.spark-2.12.version>
-        <netty.spark-2.11.version>4.1.47.Final</netty.spark-2.11.version>
-        <netty.version>${netty.spark-2.11.version}</netty.version>
-        <java.version>1.8</java.version>
-        <py4j.version>0.10.9</py4j.version>
-        <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
-        <json4s.spark-2.12.version>3.6.6</json4s.spark-2.12.version>
-        <json4s.version>${json4s.spark-2.11.version}</json4s.version>
+        <py4j.version>0.10.7</py4j.version>
         <spark.bin.download.url>
-          https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop2.7.tgz
+          https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz
         </spark.bin.download.url>
-        <spark.bin.name>spark-3.0.0-bin-hadoop2.7</spark.bin.name>
+        <spark.bin.name>spark-2.4.8-bin-hadoop2.7</spark.bin.name>
       </properties>
     </profile>
 
