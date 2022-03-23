@@ -16,20 +16,20 @@
 #
 
 sudo: required
-dist: xenial
+dist: bonic
 language: scala
-  - 2.11.12
+  - 2.12.15
 
 matrix:
   include:
-  - name: "Spark 2.4 Unit Tests"
+  - name: "Spark 3.2 Unit Tests"
     env: MVN_FLAG='-Pthriftserver -DskipITs'
-  - name: "Spark 2.4 ITs"
+  - name: "Spark 3.2 ITs"
     env: MVN_FLAG='-Pthriftserver -DskipTests'
-  - name: "Spark 3.0 Unit Tests"
-    env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipITs'
-  - name: "Spark 3.0 ITs"
-    env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipTests'
+  - name: "Spark 2.4 Unit Tests"
+    env: MVN_FLAG='-Pthriftserver -Pspark-2.4 -DskipITs'
+  - name: "Spark 2.4 ITs"
+    env: MVN_FLAG='-Pthriftserver -Pspark-2.4 -DskipTests'
 
 jdk:
   - openjdk8
@@ -40,7 +40,7 @@ cache:
     - $HOME/.m2
 
 install:
-  - sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu xenial-cran35/'
+  - sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bonic-cran35/'
   - sudo apt-get update
   - sudo apt-get -qq --allow-unauthenticated install r-base
   - sudo apt-get -qq install python3-pip python-dev

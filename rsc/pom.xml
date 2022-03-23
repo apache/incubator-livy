@@ -68,16 +68,6 @@
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-launcher_${scala.binary.version}</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scalatest</groupId>
-          <artifactId>scalatest_${scala.binary.version}</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.spark</groupId>
-          <artifactId>spark-tags_${scala.binary.version}</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- Needed by Spark but excluded in the Livy root pom. -->
@@ -141,8 +131,9 @@
                 <includes>
                   <include>org.apache.livy:livy-client-common</include>
                   <include>com.esotericsoftware:kryo</include>
-                  <include>com.esotericsoftware:minlog</include>
                   <include>com.esotericsoftware:reflectasm</include>
+                  <include>com.esotericsoftware:minlog</include>
+                  <include>org.objenesis:objenesis</include>
                 </includes>
               </artifactSet>
               <filters>
@@ -158,7 +149,7 @@
               <relocations>
                 <relocation>
                   <pattern>com.esotericsoftware</pattern>
-                  <shadedPattern>org.apache.livy.shaded.kryo</shadedPattern>
+                  <shadedPattern>org.apache.livy.shaded.esotericsoftware</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
@@ -178,6 +169,10 @@
               <excludeArtifactIds>
                 livy-client-common,
                 kryo,
+                reflectasm,
+                minlog,
+                objenesis,
+                netty-all,
                 spark-launcher_${scala.binary.version},
               </excludeArtifactIds>
               <outputDirectory>${project.build.directory}/jars</outputDirectory>
