@@ -51,14 +51,26 @@ class DescLivySessionOperation(sessionHandle: SessionHandle,
 
   override def getNextRowSet(orientation: FetchOrientation,
       maxRows: Long): ThriftResultSet = {
-
     validateFetchOrientation(orientation)
     assertState(Seq(OperationState.FINISHED))
     setHasResultSet(true)
 
     val sessionVar = ThriftResultSet(this.getResultSetSchema,
       sessionManager.getSessionInfo(sessionHandle).protocolVersion)
-    val session = sessionManager.getLivySession(sessionHandle)
+
+    val session = try {
+      sessionManager.getLivySession(sessionHandle)
+    } catch {
+      case e: Exception =>
+        val sessionInfo = sessionManager.getSessionInfo(sessionHandle)
+        if (sessionManager.server.livySessionManager.get(sessionInfo.sessionId).isDefined) {
+          sessionManager.server.livySessionManager.get(sessionInfo.sessionId).get
+        } else {
+          error(s"Can't find session which id is ${sessionInfo.sessionId} in sessionManager.")
+          throw e
+        }
+    }
+
     if (hasNext) {
       sessionVar.addRow(
         Array(

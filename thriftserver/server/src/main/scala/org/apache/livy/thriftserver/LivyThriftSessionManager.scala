@@ -221,14 +221,15 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
       delegationToken: String): SessionHandle = {
     val sessionHandle = new SessionHandle(protocol)
     incrementConnections(username, ipAddress, SessionInfo.getForwardedAddresses)
+    val nextId = server.livySessionManager.nextId()
     sessionInfo.put(sessionHandle,
-      new SessionInfo(username, ipAddress, SessionInfo.getForwardedAddresses, protocol))
+      new SessionInfo(nextId, username, ipAddress, SessionInfo.getForwardedAddresses, protocol))
     val (initStatements, createInteractiveRequest, sessionId) =
       LivyThriftSessionManager.processSessionConf(sessionConf, supportUseDatabase)
     val createLivySession = () => {
       createInteractiveRequest.kind = Spark
       val newSession = InteractiveSession.create(
-        server.livySessionManager.nextId(),
+        nextId,
         createInteractiveRequest.name,
         username,
         None,
