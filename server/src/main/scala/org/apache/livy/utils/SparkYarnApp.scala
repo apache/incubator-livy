@@ -155,7 +155,7 @@ class SparkYarnApp private[utils] (
         // We cannot kill the YARN app without the app id.
         // There's a chance the YARN app hasn't been submitted during a livy-server failure.
         // We don't want a stuck session that can't be deleted. Emit a warning and move on.
-        case _: TimeoutException | _: InterruptedException =>
+        case _: TimeoutException | _: InterruptedException | _: IllegalStateException =>
           warn("Deleting a session while its YARN application is not found.")
           yarnAppMonitorThread.interrupt()
       } finally {
