@@ -20,6 +20,15 @@ import java.io.Serializable;
  */
 public class Level  implements Serializable {
 
+    public final static int OFF_INT = Integer.MAX_VALUE;
+    public final static int FATAL_INT = 50000;
+    public final static int ERROR_INT = 40000;
+    public final static int WARN_INT  = 30000;
+    public final static int INFO_INT  = 20000;
+    public final static int DEBUG_INT = 10000;
+    //public final static int FINE_INT = DEBUG_INT;
+    public final static int ALL_INT = Integer.MIN_VALUE;
+
     /**
      * TRACE level integer value.
      * @since 1.2.12
@@ -82,7 +91,7 @@ public class Level  implements Serializable {
      */
     protected
     Level(int level, String levelStr, int syslogEquivalent) {
-        super(level, levelStr, syslogEquivalent);
+        //super(level, levelStr, syslogEquivalent);
     }
 
 
@@ -155,33 +164,33 @@ public class Level  implements Serializable {
         return defaultLevel;
     }
 
-    /**
-     * Custom deserialization of Level.
-     * @param s serialization stream.
-     * @throws IOException if IO exception.
-     * @throws ClassNotFoundException if class not found.
-     */
-    private void readObject(final ObjectInputStream s) throws IOException, ClassNotFoundException {
-        s.defaultReadObject();
-        level = s.readInt();
-        syslogEquivalent = s.readInt();
-        levelStr = s.readUTF();
-        if (levelStr == null) {
-            levelStr = "";
-        }
-    }
-
-    /**
-     * Serialize level.
-     * @param s serialization stream.
-     * @throws IOException if exception during serialization.
-     */
-    private void writeObject(final ObjectOutputStream s) throws IOException {
-        s.defaultWriteObject();
-        s.writeInt(level);
-        s.writeInt(syslogEquivalent);
-        s.writeUTF(levelStr);
-    }
+//    /**
+//     * Custom deserialization of Level.
+//     * @param s serialization stream.
+//     * @throws IOException if IO exception.
+//     * @throws ClassNotFoundException if class not found.
+//     */
+//    private void readObject(final ObjectInputStream s) throws IOException, ClassNotFoundException {
+//        s.defaultReadObject();
+//        level = s.readInt();
+//        syslogEquivalent = s.readInt();
+//        levelStr = s.readUTF();
+//        if (levelStr == null) {
+//            levelStr = "";
+//        }
+//    }
+//
+//    /**
+//     * Serialize level.
+//     * @param s serialization stream.
+//     * @throws IOException if exception during serialization.
+//     */
+//    private void writeObject(final ObjectOutputStream s) throws IOException {
+//        s.defaultWriteObject();
+//        s.writeInt(level);
+//        s.writeInt(syslogEquivalent);
+//        s.writeUTF(levelStr);
+//    }
 
     /**
      * Resolved deserialized level to one of the stock instances.
@@ -193,10 +202,10 @@ public class Level  implements Serializable {
         //
         //  if the deserizalized object is exactly an instance of Level
         //
-        if (getClass() == Level.class) {
-            return toLevel(level);
-        }
-        //
+//        if (getClass() == Level.class) {
+//            return toLevel(level);
+//        }
+//        //
         //   extension of Level can't substitute stock item
         //
         return this;
