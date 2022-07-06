@@ -24,16 +24,13 @@ import java.util.concurrent.{Future => JFuture, _}
 import java.util.concurrent.atomic.AtomicLong
 import javax.servlet.ServletContext
 import javax.servlet.http.HttpServletRequest
-
 import scala.concurrent.{ExecutionContext, Future}
-
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{eq => meq, _}
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike}
 import org.scalatra.LifeCycle
 import org.scalatra.servlet.ScalatraListener
-
 import org.apache.livy._
 import org.apache.livy.client.common.{BufferUtils, Serializer}
 import org.apache.livy.client.common.HttpMessages._
@@ -43,6 +40,7 @@ import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{InteractiveSessionManager, SessionState, Spark}
 import org.apache.livy.test.jobs.Echo
 import org.apache.livy.utils.AppInfo
+import org.mockito.stubbing.OngoingStubbing
 
 /**
  * The test for the HTTP client is written in Scala so we can reuse the code in the livy-server
@@ -181,6 +179,34 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
       testJob(false, response = Some(null))
     }
 
+    withClient("should retrieve session id and sessionAppID") {
+      var id = client.getSessionId()
+      Console.println("SESSION ID: " + id)
+      assert(id === sessionId)
+
+      var appId = client.getSessionAppId()
+      Console.println("SESSION APP ID: " + appId)
+      assert(Some(appId) === session.appId)
+
+    }
+
+    withClient("should retrieve session id when reconnecting to  a session") {
+      var sid = client.asInstanceOf[HttpClient].getSessionId()
+      val uri = s"http://${InetAddress.getLocalHost.getHostAddress}:${server.port}" +
+        s"${LivyConnection.SESSIONS_URI}/$sid"
+      val newClient = new LivyClientBuilder(false).setURI(new URI(uri)).build()
+      newClient.stop(false)
+
+      var id = client.getSessionId()
+      Console.println("SESSION ID: " + id)
+      assert(id === sessionId)
+
+      var appId = client.getSessionAppId()
+      Console.println("SESSION APP ID: " + appId)
+      assert(Some(appId) === session.appId)
+
+    }
+
     withClient("should connect to existing sessions") {
       var sid = client.asInstanceOf[HttpClient].getSessionId()
       val uri = s"http://${InetAddress.getLocalHost.getHostAddress}:${server.port}" +
@@ -256,6 +282,7 @@ private object HttpClientSpec {
   // Hack warning: keep the session object available so that individual tests can mock
   // the desired behavior before making requests to the server.
   var session: InteractiveSession = _
+  var sessionId: Int = _
 
 }
 
@@ -272,9 +299,10 @@ private class HttpClientTestBootstrap extends LifeCycle {
       override protected def createSession(req: HttpServletRequest): InteractiveSession = {
         val session = mock(classOf[InteractiveSession])
         val id = sessionManager.nextId()
+        val sessionAppId: String = "ASD"
         when(session.id).thenReturn(id)
         when(session.name).thenReturn(None)
-        when(session.appId).thenReturn(None)
+        when(session.appId).thenReturn(Some(sessionAppId))
         when(session.appInfo).thenReturn(AppInfo())
         when(session.state).thenReturn(SessionState.Idle)
         when(session.proxyUser).thenReturn(None)
@@ -282,6 +310,7 @@ private class HttpClientTestBootstrap extends LifeCycle {
         when(session.stop()).thenReturn(Future.successful(()))
         require(HttpClientSpec.session == null, "Session already created?")
         HttpClientSpec.session = session
+        HttpClientSpec.sessionId = id
         session
       }
     }
