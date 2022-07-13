@@ -17,6 +17,23 @@
 
 package org.apache.livy.rsc;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
+import io.netty.util.concurrent.Promise;
+import org.apache.livy.Job;
+import org.apache.livy.JobHandle;
+import org.apache.livy.LivyClient;
+import org.apache.livy.client.common.BufferUtils;
+import org.apache.livy.rsc.driver.AddFileJob;
+import org.apache.livy.rsc.driver.AddJarJob;
+import org.apache.livy.rsc.rpc.Rpc;
+import org.apache.livy.sessions.SessionState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -28,25 +45,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.concurrent.GenericFutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.livy.Job;
-import org.apache.livy.JobHandle;
-import org.apache.livy.LivyClient;
-import org.apache.livy.client.common.BufferUtils;
-import org.apache.livy.rsc.driver.AddFileJob;
-import org.apache.livy.rsc.driver.AddJarJob;
-import org.apache.livy.rsc.rpc.Rpc;
-import org.apache.livy.sessions.SessionState;
-
-import static org.apache.livy.rsc.RSCConf.Entry.*;
+import static org.apache.livy.rsc.RSCConf.Entry.CLIENT_SHUTDOWN_TIMEOUT;
+import static org.apache.livy.rsc.RSCConf.Entry.RPC_MAX_THREADS;
 
 public class RSCClient implements LivyClient {
   private static final Logger LOG = LoggerFactory.getLogger(RSCClient.class);
@@ -431,5 +431,9 @@ public class RSCClient implements LivyClient {
       }
       replState = msg.state;
     }
+  }
+  @Override
+  public <T> JobHandle<T> submitStatement(String code, String kind){
+    throw new UnsupportedOperationException();
   }
 }
