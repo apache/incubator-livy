@@ -170,7 +170,17 @@ abstract class PythonSessionSpec extends BaseSessionSpec(PySpark) {
   }
 }
 
-class Python2SessionSpec extends PythonSessionSpec
+class Python2SessionSpec extends PythonSessionSpec with BeforeAndAfterAll {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    sys.props.put("__pyspark.python__", "python2")
+  }
+
+  override def afterAll(): Unit = {
+    sys.props.remove("__pyspark.python__")
+    super.afterAll()
+  }
+}
 
 class Python3SessionSpec extends PythonSessionSpec with BeforeAndAfterAll {
 
@@ -181,11 +191,11 @@ class Python3SessionSpec extends PythonSessionSpec with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    sys.props.put("pyspark.python", "python3")
+    sys.props.put("__pyspark.python__", "python3")
   }
 
   override def afterAll(): Unit = {
-    sys.props.remove("pyspark.python")
+    sys.props.remove("__pyspark.python__")
     super.afterAll()
   }
 

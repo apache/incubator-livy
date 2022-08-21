@@ -47,8 +47,8 @@ object PythonInterpreter extends Logging {
 
   def apply(conf: SparkConf, sparkEntries: SparkEntries): Interpreter = {
     val pythonExec = conf.getOption("spark.pyspark.python")
+      .orElse(sys.props.get("__pyspark.python__")) // Only used for internal UT.
       .orElse(sys.env.get("PYSPARK_PYTHON"))
-      .orElse(sys.props.get("pyspark.python")) // This java property is only used for internal UT.
       .getOrElse("python")
 
     val secretKey = Utils.createSecret(256)
