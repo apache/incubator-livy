@@ -1079,6 +1079,37 @@
     </profile>
 
     <profile>
+      <id>spark-2.4.8</id>
+      <activation>
+        <property>
+          <name>spark-2.4.8</name>
+        </property>
+      </activation>
+      <properties>
+        <hadoop.version>2.10.2</hadoop.version>
+        <scala-2.11.version>2.11.12</scala-2.11.version>
+        <scala-2.12.version>2.12.10</scala-2.12.version>
+        <scala.binary.version>2.12</scala.binary.version>
+        <scala.version>${scala-2.12.version}</scala.version>
+        <spark.scala-2.12.version>2.4.8</spark.scala-2.12.version>
+        <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version>
+        <spark.version>${spark.scala-2.12.version}</spark.version>
+        <netty.spark-2.12.version>4.1.47.Final</netty.spark-2.12.version>
+        <netty.spark-2.11.version>4.1.47.Final</netty.spark-2.11.version>
+        <netty.version>${netty.spark-2.12.version}</netty.version>
+        <java.version>1.8</java.version>
+        <py4j.version>0.10.9</py4j.version>
+        <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
+        <json4s.spark-2.12.version>3.6.6</json4s.spark-2.12.version>
+        <json4s.version>${json4s.spark-2.12.version}</json4s.version>
+        <spark.bin.download.url>
+          https://spark-jimmy.s3.us-west-2.amazonaws.com/spark-2.4.8-bin-spark-2.4.8-hadoop-2.10.2.tgz
+        </spark.bin.download.url>
+        <spark.bin.name>spark-2.4.8-bin-spark-2.4.8-hadoop-2.10.2</spark.bin.name>
+      </properties>
+    </profile>
+
+    <profile>
       <id>skip-parent-modules</id>
       <activation>
         <file>
