@@ -240,7 +240,7 @@
     <module>scala-api/scala-${scala.binary.version}</module>
     <module>server</module>
     <module>test-lib</module>
-    <module>integration-test</module>
+<!--    <module>integration-test</module>-->
   </modules>
 
   <dependencies>
@@ -953,7 +953,7 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>4.6.1</version>
+          <version>4.7.2</version>
           <executions>
             <execution>
               <goals>
