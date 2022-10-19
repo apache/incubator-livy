@@ -47,7 +47,7 @@ else
   LIVY_VERSION_OLD=$(grep '<version>' pom.xml | head -n 1 | awk -F '>' '{print $2}' | awk -F '<' '{print $1}')
   mvn versions:set $MAVEN_ARGS -DnewVersion="$LIVY_VERSION"
 fi
-mvn clean package install -B -V -e $MAVEN_ARGS -DskipTests -Dmaven.javadoc.skip=true
+mvn clean package install -B -V -e $MAVEN_ARGS -Pthriftserver -DskipTests -Dmaven.javadoc.skip=true
 rm -rf ./apache-livy*zip
 cp "assembly/target/apache-livy-${LIVY_VERSION}-bin.zip" ./
 IMAGE=133450206866.dkr.ecr.us-west-1.amazonaws.com/livy:v${LIVY_VERSION}-${IMAGE_SPARK_SUFFIX}
