@@ -61,6 +61,8 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
 
   protected def conf: SparkConf
 
+  private var currentThread: Thread = _
+
   protected def postStart(): Unit = {
     entries = new SparkEntries(conf)
 
@@ -106,10 +108,14 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
   override protected[repl] def execute(code: String): Interpreter.ExecuteResponse =
     restoreContextClassLoader {
       require(isStarted())
-
-      executeLines(code.trim.split("\n").toList, Interpreter.ExecuteSuccess(JObject(
-        (TEXT_PLAIN, JString(""))
-      )))
+      try {
+        currentThread = Thread.currentThread()
+        executeLines(code.trim.split("\n").toList, Interpreter.ExecuteSuccess(JObject(
+          (TEXT_PLAIN, JString(""))
+        )))
+      } finally {
+      currentThread = null
+    }
   }
 
   override protected[repl] def complete(code: String, cursor: Int): Array[String] = {
@@ -348,5 +354,11 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
     outputStream.reset()
 
     output
+  }
+
+  override def cancel(): Unit = {
+    if (currentThread != null) {
+      currentThread.interrupt()
+    }
   }
 }

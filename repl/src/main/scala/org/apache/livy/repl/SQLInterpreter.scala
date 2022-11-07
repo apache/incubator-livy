@@ -121,4 +121,6 @@ class SQLInterpreter(
   }
 
   override def close(): Unit = { }
+
+  override def cancel(): Unit = {}
 }
