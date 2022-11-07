@@ -19,17 +19,28 @@ package org.apache.livy.utils
 
 import scala.collection.JavaConverters._
 
+import com.fasterxml.jackson.core.`type`.TypeReference
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
+
 import org.apache.livy.LivyConf
+import org.apache.livy.utils.SparkApp.StateTypeReference
 
 object AppInfo {
   val DRIVER_LOG_URL_NAME = "driverLogUrl"
   val SPARK_UI_URL_NAME = "sparkUiUrl"
+  val APP_STATE_NAME = "appState"
 }
 
-case class AppInfo(var driverLogUrl: Option[String] = None, var sparkUiUrl: Option[String] = None) {
+case class AppInfo(
+    var driverLogUrl: Option[String] = None,
+    var sparkUiUrl: Option[String] = None,
+    @JsonScalaEnumeration(classOf[StateTypeReference])
+    var appState: Option[SparkApp.State] = None) {
   import AppInfo._
   def asJavaMap: java.util.Map[String, String] =
-    Map(DRIVER_LOG_URL_NAME -> driverLogUrl.orNull, SPARK_UI_URL_NAME -> sparkUiUrl.orNull).asJava
+    Map(DRIVER_LOG_URL_NAME -> driverLogUrl.orNull,
+      SPARK_UI_URL_NAME -> sparkUiUrl.orNull,
+      APP_STATE_NAME -> appState.map(_.toString).orNull).asJava
 }
 
 trait SparkAppListener {
@@ -53,6 +64,8 @@ object SparkApp {
     val STARTING, RUNNING, FINISHED, FAILED, KILLED = Value
   }
   type State = State.Value
+
+  class StateTypeReference extends TypeReference[State.type]
 
   /**
    * Return cluster manager dependent SparkConf.

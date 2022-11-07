@@ -33,8 +33,8 @@ import org.apache.hadoop.yarn.util.ConverterUtils
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.concurrent.Eventually
 import org.scalatest.FunSpec
+import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar.mock
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf, Utils}
@@ -322,7 +322,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
       }
     }
 
-    it("should expose driver log url and Spark UI url") {
+    it("should expose driver log url, Spark UI url, and app state") {
       Clock.withSleepMethod(mockSleep) {
         val mockYarnClient = mock[YarnClient]
         val driverLogUrl = "DRIVER LOG URL"
@@ -380,7 +380,8 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
           verify(mockAppReport, atLeast(1)).getTrackingUrl()
           verify(mockContainerReport, atLeast(1)).getLogUrl()
           verify(mockListener).appIdKnown(appId.toString)
-          verify(mockListener).infoChanged(AppInfo(Some(driverLogUrl), Some(sparkUiUrl)))
+          verify(mockListener).infoChanged(
+            AppInfo(Some(driverLogUrl), Some(sparkUiUrl), Some(SparkApp.State.FINISHED)))
         }
       }
     }

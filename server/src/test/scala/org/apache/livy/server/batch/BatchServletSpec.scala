@@ -32,7 +32,7 @@ import org.apache.livy.{LivyConf, Utils}
 import org.apache.livy.server.{AccessManager, BaseSessionServletSpec}
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{BatchSessionManager, SessionState}
-import org.apache.livy.utils.AppInfo
+import org.apache.livy.utils.{AppInfo, SparkApp}
 
 class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecoveryMetadata] {
 
@@ -68,7 +68,10 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
     val appId = "appid"
     val owner = "owner"
     val proxyUser = "proxyUser"
-    val appInfo = AppInfo(Some("DRIVER LOG URL"), Some("SPARK UI URL"))
+    val appInfo = AppInfo(
+      Some("DRIVER LOG URL"),
+      Some("SPARK UI URL"),
+      Some(SparkApp.State.RUNNING))
     val log = IndexedSeq[String]("log1", "log2")
 
     val session = mock[BatchSession]
