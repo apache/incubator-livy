@@ -25,13 +25,19 @@ RUN apt-get update && apt-get install -yq --no-install-recommends --force-yes \
     python3 python3-setuptools \
     r-base \
     r-base-core \
+    make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev llvm libncurses5-dev  libncursesw5-dev xz-utils tk-dev \
+    libffi-dev \
     procps wget curl telnet vim && \
     rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.5 3
+RUN curl -LJO https://www.python.org/ftp/python/3.7.3/Python-3.7.3.tar.xz && tar -xf Python-3.7.3.tar.xz
+#WORKDIR Python-3.7.3
+RUN cd Python-3.7.3 && ./configure --enable-optimizations && make -j 8 && make altinstall
 
-# Install pip for Python3.5
-RUN curl https://bootstrap.pypa.io/pip/3.5/get-pip.py -o get-pip.py
+RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python3.7 3
+
+# Install pip for Python3.7.3
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 RUN python get-pip.py
 RUN python -m pip install py4j
 #RUN python3 -m pip install --upgrade setuptools
