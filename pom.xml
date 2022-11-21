@@ -224,6 +224,13 @@
 
   <dependencies>
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.7</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
@@ -867,6 +874,22 @@
               <target>
                 <mkdir dir="${project.build.directory}/tmp" />
               </target>
+            </configuration>
+          </execution>
+          <!-- Copy custom htrace-core-3.1.0-incubating.jar. -->
+          <execution>
+            <id>copy-htrace</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <exec executable="bash" failonerror="true" dir="${project.build.directory}/server/target/jars">
+                  <arg value="-c"/>
+                  <arg value="wget -O htrace-core-3.1.0-incubating.jar https://prophecy-dependencies.s3.us-west-1.amazonaws.com/htrace-core-3.1.0-incubating.jar"/>
+                </exec>
+              </tasks>
             </configuration>
           </execution>
           <!--
