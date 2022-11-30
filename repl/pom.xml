@@ -84,12 +84,6 @@
     </dependency>
 
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-repl_${scala.binary.version}</artifactId>
       <scope>provided</scope>
