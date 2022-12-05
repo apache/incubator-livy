@@ -40,6 +40,14 @@ else:
     import cStringIO
     import StringIO
 
+if sys.version_info > (3,8):
+    from ast import Module
+else :
+    # mock the new API, ignore second argument
+    # see https://github.com/ipython/ipython/issues/11590
+    from ast import Module as OriginalModule
+    Module = lambda nodelist, type_ignores: OriginalModule(nodelist)
+
 logging.basicConfig()
 LOG = logging.getLogger('fake_shell')
 
@@ -219,7 +227,7 @@ class NormalNode(object):
 
         try:
             for node in to_run_exec:
-                mod = ast.Module([node])
+                mod = Module([node], [])
                 code = compile(mod, '<stdin>', 'exec')
                 exec(code, global_dict)
 

@@ -269,6 +269,92 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
       }
     }
 
+    // LIVY-896
+    it("should end with state failed when spark submit failed but Yarn reports SUCCESS") {
+      Clock.withSleepMethod(mockSleep) {
+        val diag = "DIAG"
+        val mockYarnClient = mock[YarnClient]
+
+        val mockAppReport = mock[ApplicationReport]
+        when(mockAppReport.getApplicationId).thenReturn(appId)
+        when(mockAppReport.getDiagnostics).thenReturn(diag)
+        when(mockAppReport.getFinalApplicationStatus).thenReturn(FinalApplicationStatus.SUCCEEDED)
+        when(mockAppReport.getYarnApplicationState).thenReturn(YarnApplicationState.FINISHED)
+        when(mockYarnClient.getApplicationReport(appId)).thenReturn(mockAppReport)
+
+        val mockSparkSubmit = mock[LineBufferedProcess]
+        when(mockSparkSubmit.isAlive).thenReturn(false)
+        when(mockSparkSubmit.exitValue).thenReturn(-1)
+
+        val listener = new SparkAppListener {
+          var nStateChanged = 0
+          override def stateChanged(oldState: SparkApp.State, newState: SparkApp.State): Unit = {
+            nStateChanged += 1
+          }
+
+        }
+        val app = new SparkYarnApp(
+          appTag,
+          None,
+          Some(mockSparkSubmit),
+          Some(listener),
+          livyConf,
+          mockYarnClient)
+
+        cleanupThread(app.yarnAppMonitorThread) {
+          app.yarnAppMonitorThread.join(TEST_TIMEOUT.toMillis)
+          assert(!app.yarnAppMonitorThread.isAlive,
+            "YarnAppMonitorThread should terminate after YARN app is finished.")
+          assert(app.state == SparkApp.State.FAILED,
+            "SparkYarnApp should end with state failed when spark submit failed")
+          assert(listener.nStateChanged == 1,
+            "SparkYarnApp should make state change only once.")
+        }
+      }
+    }
+
+    // LIVY-896
+    it("should never change state if spark submit not finished") {
+      Clock.withSleepMethod(mockSleep) {
+        val diag = "DIAG"
+        val mockYarnClient = mock[YarnClient]
+
+        val mockAppReport = mock[ApplicationReport]
+        when(mockAppReport.getApplicationId).thenReturn(appId)
+        when(mockAppReport.getDiagnostics).thenReturn(diag)
+        when(mockAppReport.getFinalApplicationStatus).thenReturn(FinalApplicationStatus.SUCCEEDED)
+        when(mockAppReport.getYarnApplicationState).thenReturn(YarnApplicationState.FINISHED)
+        when(mockYarnClient.getApplicationReport(appId)).thenReturn(mockAppReport)
+
+        val mockSparkSubmit = mock[LineBufferedProcess]
+        when(mockSparkSubmit.isAlive).thenReturn(true)
+
+        val listener = new SparkAppListener {
+          var nStateChanged = 0
+          override def stateChanged(oldState: SparkApp.State, newState: SparkApp.State): Unit = {
+            nStateChanged += 1
+          }
+
+        }
+        val app = new SparkYarnApp(
+          appTag,
+          None,
+          Some(mockSparkSubmit),
+          Some(listener),
+          livyConf,
+          mockYarnClient)
+
+        cleanupThread(app.yarnAppMonitorThread) {
+          // 2 seconds is sufficient - yarn poll interval should be 200ms
+          app.yarnAppMonitorThread.join((2 seconds).toMillis)
+          assert(app.yarnAppMonitorThread.isAlive,
+            "YarnAppMonitorThread should not terminate if spark-submit is still alive.")
+          assert(listener.nStateChanged == 0,
+            "SparkYarnApp should not make state change.")
+        }
+      }
+    }
+
     it("should map YARN state to SparkApp.State correctly") {
       val app = new SparkYarnApp(appTag, appIdOption, None, None, livyConf)
       cleanupThread(app.yarnAppMonitorThread) {
