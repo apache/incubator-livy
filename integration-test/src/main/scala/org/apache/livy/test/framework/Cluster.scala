@@ -32,7 +32,6 @@ import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 
 import org.apache.livy.Logging
-import org.apache.livy.utils.YarnClientExt
 
 /**
  * An common interface to run test on real cluster and mini cluster.
@@ -101,7 +100,7 @@ trait Cluster {
   }
 
   lazy val yarnClient = doAsClusterUser {
-    val c = new YarnClientExt
+    val c = YarnClient.createYarnClient()
     c.init(yarnConf)
     c.start()
     c
