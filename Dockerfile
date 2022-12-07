@@ -30,10 +30,21 @@ RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu xenial-
 # - First we upgrade pip because that makes a lot of things better
 # - Then we remove the provided version of setuptools and install a different version
 # - Then we install additional dependencies
-RUN python -m pip install -U "pip < 21.0"
-RUN apt-get remove -y python-setuptools
-RUN python -m pip install "setuptools < 36"
-RUN python -m pip install "requests >= 2.10.0" "responses >= 0.5.1" "futures>=3.0.5" "future>=0.15.2" pytest pytest-runner flaky flake8 requests-kerberos install codecov cloudpickle
+RUN python -m pip install -U "pip < 21.0" && \
+	apt-get remove -y python-setuptools && \
+	python -m pip install "setuptools < 36" && \
+	python -m pip install \
+        cloudpickle \
+        codecov \
+        flake8 \
+        flaky \
+        "future>=0.15.2" \
+        "futures>=3.0.5" \
+        pytest \
+        pytest-runner \
+        requests-kerberos \
+        "requests >= 2.10.0" \
+        "responses >= 0.5.1"
 
 # Now do the same for python3
 RUN python3 -m pip install -U pip
