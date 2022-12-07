@@ -1,5 +1,13 @@
 FROM ubuntu:xenial
 
+# configure locale
+RUN apt update -qq > /dev/null && apt install -qq --yes --no-install-recommends \
+    locales && \
+    locale-gen en_US.UTF-8
+ENV LANG="en_US.UTF-8" \
+    LANGUAGE="en_US.UTF-8" \
+    LC_ALL="en_US.UTF-8"
+
 # Install necessary dependencies for build/test
 RUN apt update && \
     apt install -y \
