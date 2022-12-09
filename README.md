@@ -75,9 +75,9 @@ You can also use the provided [Dockerfile](./Dockerfile):
 
 ```
 git clone https://github.com/apache/incubator-livy.git
-cd incubator-livy
-docker built -t livy .
-docker run --rm -it -v $(pwd):/workspace -v $HOME/.m2:/root/.m2 mvn package
+cd incubator-livy/dev/docker
+docker build -t livy .
+docker run --rm -it -v $(pwd)/../../:/workspace -v $HOME/.m2:/root/.m2 livy mvn package
 ```
 
 > **Note**: The `docker run` command maps the maven repository to your host machine's maven cache so subsequent runs will not need to download dependencies.

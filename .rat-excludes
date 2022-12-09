@@ -29,5 +29,3 @@ logs/*
 docs/**/*.html
 docs/**/JB/**
 venv/*
-Dockerfile
-.dockerignore
