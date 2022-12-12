@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,6 +69,10 @@ public class RSCClient implements LivyClient {
   private volatile String replState;
   // Record the last activity timestamp of the repl
   private volatile long replLastActivity = System.nanoTime();
+
+  // Used for unit test.
+  private boolean isTest = false;
+  private final List<String> replStateChangedHistoryInTest = new ArrayList<>();
 
   RSCClient(RSCConf conf, Promise<ContextInfo> ctx, Process driverProcess) throws IOException {
     this.conf = conf;
@@ -332,6 +338,14 @@ public class RSCClient implements LivyClient {
     return replLastActivity;
   }
 
+  public List<String> getReplStateChangedHistoryInTest() {
+    return replStateChangedHistoryInTest;
+  }
+
+  public void setTest(boolean test) {
+    isTest = test;
+  }
+
   private class ClientProtocol extends BaseProtocol {
 
     <T> JobHandleImpl<T> submit(Job<T> job) {
@@ -434,6 +448,9 @@ public class RSCClient implements LivyClient {
         replLastActivity = System.nanoTime();
       }
       replState = msg.state;
+      if (isTest) {
+        replStateChangedHistoryInTest.add(replState);
+      }
     }
   }
 }

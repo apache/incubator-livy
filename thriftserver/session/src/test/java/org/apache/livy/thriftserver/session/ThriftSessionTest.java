@@ -19,21 +19,21 @@ package org.apache.livy.thriftserver.session;
 
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
+import static java.util.concurrent.TimeUnit.*;
 
 import org.apache.spark.launcher.SparkLauncher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
 
 import org.apache.livy.Job;
 import org.apache.livy.LivyClient;
 import org.apache.livy.LivyClientBuilder;
+import org.apache.livy.rsc.RSCClient;
 import static org.apache.livy.rsc.RSCConf.Entry.*;
 
 public class ThriftSessionTest {
@@ -192,6 +192,27 @@ public class ThriftSessionTest {
     waitFor(new UnregisterSessionJob(s3));
   }
 
+  @Test
+  public void testSessionState() throws Exception {
+
+    RSCClient rscClient = (RSCClient)livy;
+    rscClient.setTest(true);
+    String s1 = nextSession();
+    String st1 = nextStatement();
+    waitFor(new RegisterSessionJob(s1));
+    await().atMost(10, SECONDS).pollInterval(100, MILLISECONDS)
+        .until(() -> rscClient.getReplStateChangedHistoryInTest()
+            .equals(Arrays.asList("busy", "idle")));
+
+    waitFor(newSqlJob(s1, st1, "select 1"));
+    await().atMost(10, SECONDS).pollInterval(100, MILLISECONDS)
+        .until(() -> rscClient.getReplStateChangedHistoryInTest()
+            .equals(Arrays.asList("busy", "idle", "busy", "idle")));
+    // Tear down the session.
+    waitFor(new UnregisterSessionJob(s1));
+    rscClient.setTest(false);
+  }
+
   private String nextSession() {
     return "session" + SESSION_ID++;
   }
@@ -214,7 +235,7 @@ public class ThriftSessionTest {
    */
   private Exception expectError(Job<?> job, String expected) throws TimeoutException {
     try {
-      livy.submit(job).get(10, TimeUnit.SECONDS);
+      livy.submit(job).get(10, SECONDS);
       fail("No exception was thrown.");
       return null;
     } catch (TimeoutException te) {
@@ -226,7 +247,7 @@ public class ThriftSessionTest {
   }
 
   private <T> T waitFor(Job<T> job) throws Exception {
-    return livy.submit(job).get(10, TimeUnit.SECONDS);
+    return livy.submit(job).get(10, SECONDS);
   }
 
 }
