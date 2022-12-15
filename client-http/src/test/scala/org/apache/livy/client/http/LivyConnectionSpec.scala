@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import org.apache.http.client.utils.URIBuilder
 import org.eclipse.jetty.security._
+import org.eclipse.jetty.security.UserStore
 import org.eclipse.jetty.security.authentication.BasicAuthenticator
 import org.eclipse.jetty.util.security._
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike}
@@ -38,7 +39,9 @@ class LivyConnectionSpec extends FunSpecLike with BeforeAndAfterAll with LivyBas
       val roles = Array("user")
 
       val l = new HashLoginService()
-      l.putUser(username, Credential.getCredential(password), roles)
+      val userStore = new UserStore()
+      userStore.addUser(username, Credential.getCredential(password), roles)
+      l.setUserStore(userStore)
       l.setName(realm)
 
       val constraint = new Constraint()

@@ -91,7 +91,7 @@
     <jackson.version>2.12.7</jackson.version>
     <jackson-databind.version>2.12.7.1</jackson-databind.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
-    <jetty.version>9.3.24.v20180605</jetty.version>
+    <jetty.version>9.4.50.v20221201</jetty.version>
     <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
     <json4s.spark-2.12.version>3.5.3</json4s.spark-2.12.version>
     <json4s.version>${json4s.spark-2.11.version}</json4s.version>
@@ -100,8 +100,8 @@
     <kryo.version>4.0.2</kryo.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.10.19</mockito.version>
-    <netty.spark-2.11.version>4.1.71.Final</netty.spark-2.11.version>
-    <netty.spark-2.12.version>4.1.71.Final</netty.spark-2.12.version>
+    <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
+    <netty.spark-2.12.version>4.1.17.Final</netty.spark-2.12.version>
     <netty.version>${netty.spark-2.11.version}</netty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <py4j.version>0.10.7</py4j.version>
