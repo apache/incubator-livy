@@ -31,10 +31,14 @@ import scala.tools.nsc.interpreter.Results.Result
 import org.apache.spark.SparkConf
 import org.apache.spark.repl.SparkILoop
 
+import org.apache.livy.rsc.RSCConf
+
 /**
  * This represents a Spark interpreter. It is not thread safe.
  */
-class SparkInterpreter(protected override val conf: SparkConf) extends AbstractSparkInterpreter {
+class SparkInterpreter(
+    protected override val conf: SparkConf,
+    protected override val livyConf: RSCConf) extends AbstractSparkInterpreter {
 
   private var sparkILoop: SparkILoop = _
 

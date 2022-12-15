@@ -20,15 +20,24 @@ package org.apache.livy.repl
 import org.apache.spark.SparkConf
 import org.json4s.{DefaultFormats, JValue}
 import org.json4s.JsonDSL._
+import org.scalatest.BeforeAndAfterEach
 
 import org.apache.livy.rsc.RSCConf
+import org.apache.livy.rsc.RSCConf.Entry.TABLE_MAGIC_SORT_FIELDS
 
-class ScalaInterpreterSpec extends BaseInterpreterSpec {
+class ScalaInterpreterSpec extends BaseInterpreterSpec with BeforeAndAfterEach {
 
   implicit val formats = DefaultFormats
 
+  private val livyConf = new RSCConf()
+
   override def createInterpreter(): Interpreter =
-    new SparkInterpreter(new SparkConf())
+    new SparkInterpreter(new SparkConf(), livyConf)
+
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    livyConf.set(TABLE_MAGIC_SORT_FIELDS, null)
+  }
 
   it should "execute `1 + 2` == 3" in withInterpreter { interpreter =>
     val response = interpreter.execute("1 + 2")
@@ -83,6 +92,51 @@ class ScalaInterpreterSpec extends BaseInterpreterSpec {
           ("data" -> List(
             List[JValue](1, "a"),
             List[JValue](3, "b")
+          ))
+        )
+    ))
+  }
+
+  it should "do table magic when sort-fields is enabled" in withInterpreter { interpreter =>
+    val response = interpreter.execute(
+      """case class TestBean(b: Int, a: String)
+        |val x = Array(TestBean(1, "1"), TestBean(2, "2"))
+        |%table x
+      """.stripMargin)
+
+    response should equal(Interpreter.ExecuteSuccess(
+      APPLICATION_LIVY_TABLE_JSON -> (
+        ("headers" -> List(
+          ("type" -> "STRING_TYPE") ~ ("name" -> "a"),
+          ("type" -> "BIGINT_TYPE") ~ ("name" -> "b")
+        )) ~
+          ("data" -> List(
+            List[JValue]("1", 1),
+            List[JValue]("2", 2)
+          ))
+        )
+    ))
+  }
+
+  it should "do table magic when sort-fields is disabled" in withInterpreter { interpreter =>
+
+    livyConf.set(TABLE_MAGIC_SORT_FIELDS, false)
+
+    val response = interpreter.execute(
+      """case class TestBean(b: Int, a: String)
+        |val x = Array(TestBean(1, "1"), TestBean(2, "2"))
+        |%table x
+      """.stripMargin)
+
+    response should equal(Interpreter.ExecuteSuccess(
+      APPLICATION_LIVY_TABLE_JSON -> (
+        ("headers" -> List(
+          ("type" -> "BIGINT_TYPE") ~ ("name" -> "b"),
+          ("type" -> "STRING_TYPE") ~ ("name" -> "a")
+        )) ~
+          ("data" -> List(
+            List[JValue](1, "1"),
+            List[JValue](2, "2")
           ))
         )
     ))

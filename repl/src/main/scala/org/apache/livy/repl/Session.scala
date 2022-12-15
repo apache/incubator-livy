@@ -124,7 +124,7 @@ class Session(
 
       // Always start SparkInterpreter after beginning, because we rely on SparkInterpreter to
       // initialize SparkContext and create SparkEntries.
-      val sparkInterp = mockSparkInterpreter.getOrElse(new SparkInterpreter(sparkConf))
+      val sparkInterp = mockSparkInterpreter.getOrElse(new SparkInterpreter(sparkConf, livyConf))
       sparkInterp.start()
 
       entries = sparkInterp.sparkEntries()
