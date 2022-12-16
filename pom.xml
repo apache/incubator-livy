@@ -91,7 +91,7 @@
     <jackson.version>2.12.7</jackson.version>
     <jackson-databind.version>2.12.7.1</jackson-databind.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
-    <jetty.version>9.3.24.v20180605</jetty.version>
+    <jetty.version>9.4.50.v20221201</jetty.version>
     <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
     <json4s.spark-2.12.version>3.5.3</json4s.spark-2.12.version>
     <json4s.version>${json4s.spark-2.12.version}</json4s.version>
@@ -129,8 +129,8 @@
     <skipPySpark3Tests>true</skipPySpark3Tests>
 
     <!-- Required for testing LDAP integration -->
-    <apacheds.version>2.0.0-M21</apacheds.version>
-    <ldap-api.version>1.0.0-M33</ldap-api.version>
+    <apacheds.version>2.0.0.AM26</apacheds.version>
+    <ldap-api.version>2.1.2</ldap-api.version>
 
     <curator.version>2.7.1</curator.version>
     <zookeeper.version>3.4.6</zookeeper.version>
