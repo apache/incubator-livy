@@ -129,8 +129,8 @@
     <skipPySpark3Tests>false</skipPySpark3Tests>
 
     <!-- Required for testing LDAP integration -->
-    <apacheds.version>2.0.0-M21</apacheds.version>
-    <ldap-api.version>1.0.0-M33</ldap-api.version>
+    <apacheds.version>2.0.0.AM26</apacheds.version>
+    <ldap-api.version>2.1.2</ldap-api.version>
 
     <curator.version>2.7.1</curator.version>
     <zookeeper.version>3.4.6</zookeeper.version>
