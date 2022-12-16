@@ -95,7 +95,7 @@
     <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
     <json4s.spark-2.12.version>3.5.3</json4s.spark-2.12.version>
     <json4s.version>${json4s.spark-2.11.version}</json4s.version>
-    <junit.version>4.11</junit.version>
+    <junit.version>4.13.1</junit.version>
     <libthrift.version>0.9.3</libthrift.version>
     <kryo.version>4.0.2</kryo.version>
     <metrics.version>3.1.0</metrics.version>
