@@ -68,6 +68,12 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.livy</groupId>
+      <artifactId>livy-core_${scala.binary.version}</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
     <!-- https://mvnrepository.com/artifact/org.awaitility/awaitility -->
     <dependency>
       <groupId>org.awaitility</groupId>
