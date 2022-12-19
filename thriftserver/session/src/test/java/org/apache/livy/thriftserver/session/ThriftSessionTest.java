@@ -19,9 +19,12 @@ package org.apache.livy.thriftserver.session;
 
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import static java.util.concurrent.TimeUnit.*;
 
 import org.apache.spark.launcher.SparkLauncher;
 import org.junit.AfterClass;
@@ -194,18 +197,17 @@ public class ThriftSessionTest {
 
   @Test
   public void testSessionState() throws Exception {
-
     RSCClient rscClient = (RSCClient)livy;
     rscClient.setTest(true);
     String s1 = nextSession();
     String st1 = nextStatement();
     waitFor(new RegisterSessionJob(s1));
-    await().atMost(10, SECONDS).pollInterval(100, MILLISECONDS)
+    await().atMost(10, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS)
         .until(() -> rscClient.getReplStateChangedHistoryInTest()
             .equals(Arrays.asList("busy", "idle")));
 
     waitFor(newSqlJob(s1, st1, "select 1"));
-    await().atMost(10, SECONDS).pollInterval(100, MILLISECONDS)
+    await().atMost(10, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS)
         .until(() -> rscClient.getReplStateChangedHistoryInTest()
             .equals(Arrays.asList("busy", "idle", "busy", "idle")));
     // Tear down the session.
@@ -235,7 +237,7 @@ public class ThriftSessionTest {
    */
   private Exception expectError(Job<?> job, String expected) throws TimeoutException {
     try {
-      livy.submit(job).get(10, SECONDS);
+      livy.submit(job).get(10, TimeUnit.SECONDS);
       fail("No exception was thrown.");
       return null;
     } catch (TimeoutException te) {
@@ -247,7 +249,7 @@ public class ThriftSessionTest {
   }
 
   private <T> T waitFor(Job<T> job) throws Exception {
-    return livy.submit(job).get(10, SECONDS);
+    return livy.submit(job).get(10, TimeUnit.SECONDS);
   }
 
 }

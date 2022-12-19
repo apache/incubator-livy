@@ -396,7 +396,7 @@ public class RSCDriver extends BaseProtocol {
     broadcast(new ReplState(SessionState.Busy$.MODULE$.state()));
   }
 
-  public void idleIfActiveJobsEmpty(){
+  public void idleIfActiveJobsEmpty() {
     if (activeJobs.isEmpty()) {
       broadcast(new BaseProtocol.ReplState(SessionState.Idle$.MODULE$.state()));
     }
