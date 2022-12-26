@@ -482,11 +482,12 @@ public class RSCDriver extends BaseProtocol {
     jc.sc().addFile(path);
   }
 
-  protected void addJarOrPyFile(String path) throws Exception {
+  protected String addJarOrPyFile(String path) throws Exception {
     File localCopyDir = new File(jc.getLocalTmpDir(), "__livy__");
     File localCopy = copyFileToLocal(localCopyDir, path, jc.sc().sc());
     addLocalFileToClassLoader(localCopy);
     jc.sc().addJar(path);
+    return localCopy.getPath();
   }
 
   public void addLocalFileToClassLoader(File localCopy) throws MalformedURLException {

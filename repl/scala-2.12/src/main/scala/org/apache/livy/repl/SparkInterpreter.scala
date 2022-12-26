@@ -18,7 +18,7 @@
 package org.apache.livy.repl
 
 import java.io.File
-import java.net.URLClassLoader
+import java.net.{URL, URLClassLoader}
 import java.nio.file.{Files, Paths}
 
 import scala.tools.nsc.Settings
@@ -93,6 +93,10 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
       sparkILoop.closeInterpreter()
       sparkILoop = null
     }
+  }
+
+  override def addJar(jar: String): Unit = {
+    sparkILoop.addUrlsToClassPath(new URL(jar))
   }
 
   override protected def isStarted(): Boolean = {
