@@ -510,8 +510,9 @@ public class RSCDriver extends BaseProtocol {
     File localCopy = new File(localCopyDir, name);
 
     if (localCopy.exists()) {
-      throw new IOException(String.format("A file with name %s has " +
-              "already been uploaded.", name));
+      LOG.warn(String.format("A file with name %s has " +
+              "already been uploaded, and hence will not be replaced.", name));
+      return localCopy;
     }
     Configuration conf = sc.hadoopConfiguration();
     FileSystem fs = FileSystem.get(uri, conf);
