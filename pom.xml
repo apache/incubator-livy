@@ -97,6 +97,7 @@
     <json4s.version>${json4s.spark-2.11.version}</json4s.version>
     <junit.version>4.11</junit.version>
     <libthrift.version>0.9.3</libthrift.version>
+    <log4j.version>2.19.0</log4j.version>
     <kryo.version>4.0.2</kryo.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.10.19</mockito.version>
@@ -264,9 +265,10 @@
     <dependencies>
 
       <dependency>
-        <groupId>log4j</groupId>
-        <artifactId>log4j</artifactId>
-        <version>1.2.16</version>
+        <!-- API bridge between log4j 1 and 2 -->
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-1.2-api</artifactId>
+        <version>${log4j.version}</version>
       </dependency>
 
       <dependency>
