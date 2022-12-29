@@ -117,6 +117,10 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
 
   def get(sessionName: String): Option[S] = sessionsByName.get(sessionName)
 
+  def contains(id: Int): Boolean = sessions.contains(id)
+
+  def contains(sessionName: String): Boolean = sessionName.contains(sessionName)
+
   def size(): Int = sessions.size
 
   def all(): Iterable[S] = sessions.values

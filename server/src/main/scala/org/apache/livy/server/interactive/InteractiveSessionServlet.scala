@@ -88,6 +88,11 @@ class InteractiveSessionServlet(
       session.appInfo.asJavaMap, logs.asJava)
   }
 
+  override protected def sessionName(req: HttpServletRequest): Option[String] = {
+    val createRequest = bodyAs[CreateInteractiveRequest](req)
+    createRequest.name
+  }
+
   post("/:id/stop") {
     withModifyAccessSession { session =>
       Await.ready(session.stop(), Duration.Inf)
