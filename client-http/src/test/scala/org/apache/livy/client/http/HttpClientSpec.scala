@@ -24,13 +24,16 @@ import java.util.concurrent.{Future => JFuture, _}
 import java.util.concurrent.atomic.AtomicLong
 import javax.servlet.ServletContext
 import javax.servlet.http.HttpServletRequest
+
 import scala.concurrent.{ExecutionContext, Future}
+
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{eq => meq, _}
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike}
 import org.scalatra.LifeCycle
 import org.scalatra.servlet.ScalatraListener
+
 import org.apache.livy._
 import org.apache.livy.client.common.{BufferUtils, Serializer}
 import org.apache.livy.client.common.HttpMessages._
@@ -40,7 +43,6 @@ import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{InteractiveSessionManager, SessionState, Spark}
 import org.apache.livy.test.jobs.Echo
 import org.apache.livy.utils.AppInfo
-import org.mockito.stubbing.OngoingStubbing
 
 /**
  * The test for the HTTP client is written in Scala so we can reuse the code in the livy-server
