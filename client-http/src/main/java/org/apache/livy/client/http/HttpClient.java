@@ -17,24 +17,23 @@
 
 package org.apache.livy.client.http;
 
-import org.apache.livy.Job;
-import org.apache.livy.JobHandle;
-import org.apache.livy.LivyClient;
-import org.apache.livy.client.common.Serializer;
-
 import java.io.File;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.livy.Job;
+import org.apache.livy.JobHandle;
+import org.apache.livy.LivyClient;
+import org.apache.livy.client.common.Serializer;
 import static org.apache.livy.client.common.HttpMessages.*;
 
 /**
