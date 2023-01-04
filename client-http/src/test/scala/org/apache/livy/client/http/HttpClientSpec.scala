@@ -181,11 +181,9 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
 
     withClient("should retrieve session id and sessionAppID") {
       var id = client.getSessionId()
-      Console.println("SESSION ID: " + id)
       assert(id === sessionId)
 
       var appId = client.getSessionAppId()
-      Console.println("SESSION APP ID: " + appId)
       assert(Some(appId) === session.appId)
 
     }
@@ -198,11 +196,9 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
       newClient.stop(false)
 
       var id = client.getSessionId()
-      Console.println("SESSION ID: " + id)
       assert(id === sessionId)
 
       var appId = client.getSessionAppId()
-      Console.println("SESSION APP ID: " + appId)
       assert(Some(appId) === session.appId)
 
     }
