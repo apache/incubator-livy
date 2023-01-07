@@ -15,6 +15,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -82,31 +83,31 @@
     <hadoop.version>2.7.3</hadoop.version>
     <hadoop.scope>compile</hadoop.scope>
     <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version>
-    <spark.scala-2.12.version>2.4.5</spark.scala-2.12.version>
+    <spark.scala-2.12.version>3.3.0</spark.scala-2.12.version>
     <spark.version>${spark.scala-2.11.version}</spark.version>
-    <hive.version>3.0.0</hive.version>
+    <hive.version>3.1.1</hive.version>
     <commons-codec.version>1.9</commons-codec.version>
-    <httpclient.version>4.5.13</httpclient.version>
+    <httpclient.version>4.5.3</httpclient.version>
     <httpcore.version>4.4.4</httpcore.version>
-    <jackson.version>2.12.7</jackson.version>
-    <jackson-databind.version>2.12.7.1</jackson-databind.version>
+    <jackson.version>2.10.1</jackson.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
-    <jetty.version>9.4.50.v20221201</jetty.version>
+    <jetty.version>9.3.24.v20180605</jetty.version>
     <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
     <json4s.spark-2.12.version>3.5.3</json4s.spark-2.12.version>
     <json4s.version>${json4s.spark-2.11.version}</json4s.version>
-    <junit.version>4.13.1</junit.version>
+    <junit.version>4.11</junit.version>
     <libthrift.version>0.9.3</libthrift.version>
     <kryo.version>4.0.2</kryo.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.10.19</mockito.version>
-    <netty.spark-2.11.version>4.1.86.Final</netty.spark-2.11.version>
-    <netty.spark-2.12.version>4.1.86.Final</netty.spark-2.12.version>
+    <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
+    <netty.spark-2.12.version>4.1.63.Final</netty.spark-2.12.version>
     <netty.version>${netty.spark-2.11.version}</netty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <py4j.version>0.10.7</py4j.version>
     <scala-2.11.version>2.11.12</scala-2.11.version>
-    <scala-2.12.version>2.12.10</scala-2.12.version>
+    <scala-2.12.version>2.12.15</scala-2.12.version>
+    <kubernetes.client.version>4.6.4</kubernetes.client.version>
     <scala.binary.version>2.11</scala.binary.version>
     <scala.version>${scala-2.11.version}</scala.version>
     <scalatest.version>3.0.8</scalatest.version>
@@ -116,9 +117,11 @@
     <execution.root>${user.dir}</execution.root>
     <spark.home>${execution.root}/dev/spark</spark.home>
     <spark.bin.download.url>
-      https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
+      https://archive.apache.org/dist/spark/spark-3.3.0/spark-3.3.0-bin-hadoop3.tgz
     </spark.bin.download.url>
-    <spark.bin.name>spark-2.4.5-bin-hadoop2.7</spark.bin.name>
+    <spark.bin.name>spark-3.3.0-bin-hadoop3</spark.bin.name>
+    <kubernetes.client.version>4.9.2</kubernetes.client.version>
+    <jackson.version>2.10.3</jackson.version>
     <!--  used for testing, NCSARequestLog use it for access log  -->
     <livy.log.dir>${basedir}/target</livy.log.dir>
 
@@ -129,8 +132,8 @@
     <skipPySpark3Tests>false</skipPySpark3Tests>
 
     <!-- Required for testing LDAP integration -->
-    <apacheds.version>2.0.0.AM26</apacheds.version>
-    <ldap-api.version>2.1.2</ldap-api.version>
+    <apacheds.version>2.0.0-M21</apacheds.version>
+    <ldap-api.version>1.0.0-M33</ldap-api.version>
 
     <curator.version>2.7.1</curator.version>
     <zookeeper.version>3.4.6</zookeeper.version>
@@ -271,7 +274,7 @@
 
       <dependency>
         <groupId>com.esotericsoftware</groupId>
-        <artifactId>kryo-shaded</artifactId>
+        <artifactId>kryo</artifactId>
         <version>${kryo.version}</version>
       </dependency>
 
@@ -290,7 +293,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>${jackson-databind.version}</version>
+        <version>${jackson.version}</version>
       </dependency>
 
       <dependency>
@@ -321,6 +324,18 @@
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
         <version>${netty.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.fabric8</groupId>
+        <artifactId>kubernetes-client</artifactId>
+        <version>${kubernetes.client.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -357,6 +372,16 @@
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-client</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-core</artifactId>
+          </exclusion>
+        </exclusions>
         <version>${hadoop.version}</version>
       </dependency>
 
@@ -591,7 +616,16 @@
         <artifactId>slf4j-api</artifactId>
         <version>1.7.25</version>
       </dependency>
-
+      <dependency>
+        <groupId>javax.ws.rs</groupId>
+        <artifactId>jsr311-api</artifactId>
+        <version>1.1.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.jersey</groupId>
+        <artifactId>jersey-core</artifactId>
+        <version>1.19</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -639,7 +673,7 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>4.2.0</version>
+          <version>4.6.1</version>
           <executions>
             <execution>
               <goals>
@@ -1061,11 +1095,11 @@
         </property>
       </activation>
       <properties>
-        <spark.scala-2.12.version>3.0.0</spark.scala-2.12.version>
+        <spark.scala-2.12.version>3.3.0</spark.scala-2.12.version>
         <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version>
         <spark.version>${spark.scala-2.11.version}</spark.version>
-        <netty.spark-2.12.version>4.1.86.Final</netty.spark-2.12.version>
-        <netty.spark-2.11.version>4.1.86.Final</netty.spark-2.11.version>
+        <netty.spark-2.12.version>4.1.63.Final</netty.spark-2.12.version>
+        <netty.spark-2.11.version>4.1.47.Final</netty.spark-2.11.version>
         <netty.version>${netty.spark-2.11.version}</netty.version>
         <java.version>1.8</java.version>
         <py4j.version>0.10.9</py4j.version>
@@ -1073,9 +1107,9 @@
         <json4s.spark-2.12.version>3.6.6</json4s.spark-2.12.version>
         <json4s.version>${json4s.spark-2.11.version}</json4s.version>
         <spark.bin.download.url>
-          https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop2.7.tgz
+          https://archive.apache.org/dist/spark/spark-3.3.0/spark-3.3.0-bin-hadoop3.tgz
         </spark.bin.download.url>
-        <spark.bin.name>spark-3.0.0-bin-hadoop2.7</spark.bin.name>
+        <spark.bin.name>spark-3.3.0-bin-hadoop3</spark.bin.name>
       </properties>
     </profile>
 

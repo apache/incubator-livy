@@ -61,8 +61,6 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
 
   protected def conf: SparkConf
 
-  protected def addJar(jar: String): Unit
-
   protected def postStart(): Unit = {
     entries = new SparkEntries(conf)
 

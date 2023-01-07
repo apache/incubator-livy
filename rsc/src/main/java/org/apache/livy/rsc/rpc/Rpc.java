@@ -222,7 +222,7 @@ public class Rpc implements Closeable {
 
   private final Map<Class<?>, Method> handlers = new ConcurrentHashMap<>();
   private final Collection<OutstandingRpc> rpcCalls = new ConcurrentLinkedQueue<OutstandingRpc>();
-  private volatile Rpc.MessageHeader lastHeader;
+  private volatile MessageHeader lastHeader;
 
   private Rpc(RSCConf config, Channel channel, EventExecutorGroup egroup) {
     Utils.checkArgument(channel != null);
@@ -445,7 +445,7 @@ public class Rpc implements Closeable {
       channel.eventLoop().submit(new Runnable() {
         @Override
         public void run() {
-          channel.write(new MessageHeader(id, Rpc.MessageType.CALL)).addListener(listener);
+          channel.write(new MessageHeader(id, MessageType.CALL)).addListener(listener);
           channel.writeAndFlush(msg).addListener(listener);
         }
       });

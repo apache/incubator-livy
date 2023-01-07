@@ -290,14 +290,13 @@ private class PythonInterpreter(
     pysparkJobProcessor.addFile(path)
   }
 
-  def addPyFile(driver: ReplDriver, conf: SparkConf, path: String): String = {
+  def addPyFile(driver: ReplDriver, conf: SparkConf, path: String): Unit = {
     val localCopyDir = new File(pysparkJobProcessor.getLocalTmpDirPath)
     val localCopyFile = driver.copyFileToLocal(localCopyDir, path, SparkContext.getOrCreate(conf))
     pysparkJobProcessor.addPyFile(localCopyFile.getPath)
     if (path.endsWith(".jar")) {
       driver.addLocalFileToClassLoader(localCopyFile)
     }
-    localCopyFile.getPath
   }
 
   private def updatePythonGatewayPort(port: Int): Unit = {
