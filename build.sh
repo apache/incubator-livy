@@ -23,21 +23,30 @@ if [[ -z "$SPARK_VERSION" ]]; then
     SPARK_VERSION=$1
   fi
 fi
-if [[ "$SPARK_VERSION" =~ ^2.* ]]; then
+if [[ "$SPARK_VERSION" =~ ^2.3.* ]]; then
+	SPARK_VERSION="2.3.0"
+	# option to overwrite scala version from command line
+  if [[ -z "$SCALA_VERSION" ]]; then
+    SCALA_VERSION="2.11"
+  fi
+  MAVEN_ARGS=""
+  IMAGE_SPARK_SUFFIX="spark230"
+elif [[ "$SPARK_VERSION" =~ ^2.* ]]; then
   SPARK_VERSION="2.4.5"
   # option to overwrite scala version from command line
   if [[ -z "$SCALA_VERSION" ]]; then
     SCALA_VERSION="2.11"
   fi
   MAVEN_ARGS=""
-  IMAGE_SPARK_SUFFIX="spark2"
+  IMAGE_SPARK_SUFFIX="spark245"
 else
   SPARK_VERSION="3.0.0"
   SCALA_VERSION="2.12"
   MAVEN_ARGS="-Pspark-3.0"
-  IMAGE_SPARK_SUFFIX="spark3"
+  IMAGE_SPARK_SUFFIX="spark300"
 fi
 echo "Using spark version $SPARK_VERSION. Scala version $SCALA_VERSION MAVEN_ARGS: $MAVEN_ARGS"
+
 # todo add support for taking in LIVY_VERSION
 if [[ -z "$LIVY_VERSION" ]]; then
   echo "livy version: $LIVY_VERSION"
