@@ -916,21 +916,21 @@
             </configuration>
           </execution>
           <!-- Copy custom htrace-core-3.1.0-incubating.jar. -->
-          <execution>
-            <id>copy-htrace</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <exec executable="bash" failonerror="true" dir="${project.build.directory}/server/target/jars">
-                  <arg value="-c"/>
-                  <arg value="wget -O htrace-core-3.1.0-incubating.jar https://prophecy-dependencies.s3.us-west-1.amazonaws.com/htrace-core-3.1.0-incubating.jar"/>
-                </exec>
-              </tasks>
-            </configuration>
-          </execution>
+<!--          <execution>-->
+<!--            <id>copy-htrace</id>-->
+<!--            <phase>verify</phase>-->
+<!--            <goals>-->
+<!--              <goal>run</goal>-->
+<!--            </goals>-->
+<!--            <configuration>-->
+<!--              <tasks>-->
+<!--                <exec executable="bash" failonerror="true" dir="${project.build.directory}/server/target/jars">-->
+<!--                  <arg value="-c"/>-->
+<!--                  <arg value="wget -O htrace-core-3.1.0-incubating.jar https://prophecy-dependencies.s3.us-west-1.amazonaws.com/htrace-core-3.1.0-incubating.jar"/>-->
+<!--                </exec>-->
+<!--              </tasks>-->
+<!--            </configuration>-->
+<!--          </execution>-->
           <!--
             Copy the template scalastyle / checkstyle configuration and replace the copyright
             header.
