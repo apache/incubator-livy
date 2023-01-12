@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "livy.fullname" . }}
+  {{- if .Values.ownerReference.overRide }}
+  {{- with  .Values.ownerReference.ownerReferences }}
+  ownerReferences: {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- end }}
+  labels:
+    {{- include "livy.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "livy.fullname" . }}-http
+  selector:
+    matchLabels:
+      {{- include "livy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "livy.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "livy.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8998
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - "-c"
+                - |
+                  {{- if .Values.security.https }}
+                  url="https://localhost:8998/metrics/ping"
+                  {{- else }}
+                  url="http://localhost:8998/metrics/ping"
+                  {{- end }}
+                  http_code=$(curl -k -s -o /dev/null -w '%{http_code}' "$url")
+                  test "$http_code" -eq 200 || test "$http_code" -eq 401
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - "-c"
+                - |
+                  {{- if .Values.security.https }}
+                  url="https://localhost:8998/metrics/ping"
+                  {{- else }}
+                  url="http://localhost:8998/metrics/ping"
+                  {{- end }}
+                  http_code=$(curl -k -s -o /dev/null -w '%{http_code}' "$url")
+                  test "$http_code" -eq 200 || test "$http_code" -eq 401
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.env }}
+          env:
+            {{- toYaml .Values.env | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: configfiles
+              mountPath: /opt/configfiles
+            {{- if eq .Values.sessionrecovery.kind "pvc" }}
+            - name: livy-sessionstore
+              mountPath: /opt/livy/sessionstore
+            {{- end }}
+            {{- if .Values.security.https }}
+            - name: livy-certs
+              mountPath: /opt/livy/certs
+            {{- end }}
+      volumes:
+        - configMap:
+            name: {{ include "livy.fullname" . }}
+          name: configfiles
+        {{- if eq .Values.sessionrecovery.kind "pvc" }}
+        - persistentVolumeClaim:
+            claimName: {{ .Values.sessionrecovery.pvcname }}
+          name: livy-sessionstore
+        {{- end }}
+        {{- if .Values.security.https }}
+        - secret:
+            secretName: {{ include "livy.fullname" . }}-certs
+          name: livy-certs
+        {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,97 @@
+nameOverride: "livy"
+fullnameOverride: "livy"
+
+image:
+  repository: armadik/livy
+  pullPolicy: Always
+  tag: "dev"
+
+
+
+imagePullSecrets: {}
+
+createDefaultPullSecret: true
+
+defaultPullSecret: ""
+
+serviceAccounts:
+  livy:
+    create: true
+    annotations: {}
+    name: ""
+  spark:
+    # ServiceAccount for Spark Applications
+    create: true
+    annotations: {}
+    name: ""
+
+ownerReference:
+  overRide: false
+  ownerReferences: {}
+
+rbac:
+  create: true
+
+podAnnotations: {}
+
+service:
+  type: NodePort
+  port: 8998
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Configuration of Livy Session Recovery
+sessionrecovery:
+  kind: disabled
+# sessionrecovery:
+#   kind: pvc
+#   pvcname: livy-sessions
+
+pvc:
+  enablePVC: false
+  existingClaimName: ""
+  storageClass: ""
+  storageSize: 2Gi
+
+
+security:
+  https: false
+
+env:
+  - name: SPARK_CONF_spark_kubernetes_container_image
+    value: armadik/livy-spark:dev
+  - name: SPARK_CONF_spark_kubernetes_container_image_pullPolicy
+    value: Always
+  - name: SPARK_CONF_spark_kubernetes_container_image_pullSecrets
+    value: registry-analytics-dev
+  - name: SPARK_CONF_spark_kubernetes_driver_request_cores
+    value: "1"
+  - name: SPARK_CONF_spark_kubernetes_driver_limit_cores
+    value: "1"
+  - name: SPARK_CONF_spark_kubernetes_executor_request_cores
+    value: "1"
+  - name: SPARK_CONF_spark_kubernetes_executor_limit_cores
+    value: "2"
+
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+  hosts:
+    - host: localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific

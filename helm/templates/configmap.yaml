@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "livy.fullname" . }}
+  {{- if .Values.ownerReference.overRide }}
+  {{- with  .Values.ownerReference.ownerReferences }}
+  ownerReferences: {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- end }}
+  labels:
+    {{- include "livy.labels" . | nindent 4 }}
+data:
+  livy.conf: |
+    livy.spark.master = k8s://https://kubernetes.default.svc.cluster.local:443
+    livy.spark.deploy-mode = cluster
+    livy.impersonation.enabled = true
+    livy.rsc.jars = local:///opt/livy/rsc-jars/asm-5.0.4.jar,local:///opt/livy/rsc-jars/livy-api-0.8.0-incubating-SNAPSHOT.jar,local:///opt/livy/rsc-jars/livy-rsc-0.8.0-incubating-SNAPSHOT.jar,local:///opt/livy/rsc-jars/minlog-1.3.0.jar,local:///opt/livy/rsc-jars/netty-all-4.1.47.Final.jar,local:///opt/livy/rsc-jars/objenesis-2.5.1.jar,local:///opt/livy/rsc-jars/reflectasm-1.11.3.jar
+    livy.repl.jars = local:///opt/livy/repl_2.12-jars/commons-codec-1.9.jar,local:///opt/livy/repl_2.12-jars/livy-core_2.12-0.8.0-incubating-SNAPSHOT.jar,local:///opt/livy/repl_2.12-jars/livy-repl_2.12-0.8.0-incubating-SNAPSHOT.jar
+    livy.server.kubernetes.allowedNamespaces = {{ .Release.Namespace }}
+    livy.server.kubernetes.defaultNamespace = {{ .Release.Namespace }}
+    {{ if eq .Values.sessionrecovery.kind "pvc" }}
+    livy.server.recovery.mode = recovery
+    livy.server.recovery.state-store = filesystem
+    livy.server.recovery.state-store.url = file:///opt/livy/sessionstore
+    {{ end }}
+    {{ if .Values.security.https }}
+    livy.keystore = /opt/livy/certs/ssl_keystore
+    livy.keystore.password = password123
+    {{ end }}
+  livy-client.conf: |
+    livy.rsc.server.connect.timeout = 600s
+    livy.rsc.client.connect.timeout = 600s
+    livy.rsc.launcher.port.range = 10020~10030
+  spark-blacklist.conf: |
+    # Disallow overriding the master and the deploy mode.
+    spark.master
+    spark.submit.deployMode
+
+    # Don't allow users to override the RSC timeout.
+    livy.rsc.server.idle-timeout
+  livy-env.sh: |
+    #
+  spark-defaults.conf: |
+    spark.kubernetes.namespace {{ .Release.Namespace }}
+    spark.kubernetes.authenticate.driver.serviceAccountName {{ include "livy.sparkServiceAccountName" . }}
+    spark.pyspark.python python3
+    spark.kubernetes.file.upload.path = /tmp/
+    spark.eventLog.enabled = false
+    #spark.eventLog.dir = /tmp/logs
+    spark.ssl.enabled false
+  spark-env.sh: |
+    #

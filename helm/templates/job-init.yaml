@@ -1,0 +1,31 @@
+{{ if .Values.security.https }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "livy.fullname" . }}-init
+  labels:
+    {{- include "livy.labels" . | nindent 4 }}
+spec:
+  template:
+    metadata:
+      name: {{ include "livy.fullname" . }}-init
+    spec:
+      serviceAccountName: {{ include "livy.serviceAccountName" . }}
+      restartPolicy: OnFailure
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: init
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        command: ["/opt/livy/bin/gencerts.sh", "-n", "{{ .Release.Namespace }}", "-s", "{{ include "livy.fullname" . }}-http", "-e", "{{ include "livy.fullname" . }}-certs", "-p", "-o", "{{ include "livy.fullname" . }}"]
+{{ end }}

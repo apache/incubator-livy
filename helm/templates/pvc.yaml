@@ -1,0 +1,21 @@
+{{- if and .Values.pvc.enablePVC (not .Values.pvc.existingClaimName) }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: livy-sessions
+  labels:
+    {{- include "livy.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.pvc.storageSize | quote }}
+  {{- if .Values.pvc.storageClass }}
+  {{- if (eq "-" .Values.pvc.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: "{{ .Values.pvc.storageClass }}"
+  {{- end }}
+  {{- end }}
+{{- end }}
