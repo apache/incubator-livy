@@ -27,6 +27,7 @@ import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.client.common.ClientConf
 import org.apache.livy.server.batch.{BatchRecoveryMetadata, BatchSession}
 import org.apache.livy.server.interactive.{InteractiveRecoveryMetadata, InteractiveSession, SessionHeartbeatWatchdog}
 import org.apache.livy.server.recovery.SessionStore
@@ -168,7 +169,9 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
             false
           } else {
             val currentTime = System.nanoTime()
-            currentTime - session.lastActivity > sessionTimeout
+            val calculatedTimeout =
+              ClientConf.getTimeAsNanos(session.ttl.orNull, session.id, sessionTimeout)
+            currentTime - session.lastActivity > calculatedTimeout
           }
       }
     }

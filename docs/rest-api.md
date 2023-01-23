@@ -151,6 +151,11 @@ Creates a new interactive Scala, Python, or R shell in the cluster.
     <td>Timeout in second to which session be orphaned</td>
     <td>int</td>
   </tr>
+  <tr>
+    <td>ttl</td>
+    <td>The timeout for this inactive session</td>
+    <td>string</td>
+  </tr>
 </table>
 
 <a id="footnote1">1</a>: Starting with version 0.5.0-incubating this field is not required. To be
@@ -609,6 +614,11 @@ A session represents an interactive shell.
     <td>appInfo</td>
     <td>The detailed application info</td>
     <td>Map of key=val</td>
+  </tr>
+  <tr>
+    <td>ttl</td>
+    <td>The timeout for this inactive session</td>
+    <td>string</td>
   </tr>
 </table>
 

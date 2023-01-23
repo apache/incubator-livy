@@ -36,7 +36,7 @@ import org.apache.livy.annotations.Private;
 public abstract class ClientConf<T extends ClientConf>
   implements Iterable<Map.Entry<String, String>> {
 
-  protected Logger LOG = LoggerFactory.getLogger(getClass());
+  protected static Logger LOG = LoggerFactory.getLogger(ClientConf.class);
 
   public static interface ConfEntry {
 
@@ -263,6 +263,29 @@ public abstract class ClientConf<T extends ClientConf>
       }
     }
     return altToNewKeyMap;
+  }
+
+  public static long getTimeAsNanos(String time, int sessionId, long defaultVale) {
+    if (time == null) {
+      return defaultVale;
+    }
+
+    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(time.toLowerCase());
+    if (!m.matches()) {
+      LOG.error("Invalid time string: " + time + " for session ID: " + sessionId);
+      return defaultVale;
+    }
+
+    long val = Long.parseLong(m.group(1));
+    String suffix = m.group(2);
+
+    if (suffix != null && !TIME_SUFFIXES.containsKey(suffix)) {
+      LOG.error("Invalid suffix: " + time + " for session ID: " + sessionId);
+      return defaultVale;
+    }
+
+    return TimeUnit.NANOSECONDS.convert(val,
+            suffix != null ? TIME_SUFFIXES.get(suffix) : TimeUnit.MILLISECONDS);
   }
 
   public static interface DeprecatedConf {

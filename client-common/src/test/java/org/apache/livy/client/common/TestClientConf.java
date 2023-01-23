@@ -37,6 +37,9 @@ public class TestClientConf {
     assertEquals(42, conf.getInt(TestConf.Entry.INT));
     assertEquals(84L, conf.getLong(TestConf.Entry.LONG));
     assertEquals(168L, conf.getTimeAsMs(TestConf.Entry.TIME));
+    assertEquals(168000000L, TestConf.getTimeAsNanos("168ms", 1, 10L));
+    assertEquals(10L, TestConf.getTimeAsNanos(null, 1, 10L));
+    assertEquals(10L, TestConf.getTimeAsNanos("invalid", 1, 10L));
 
     try {
       conf.get(TestConf.Entry.INT);

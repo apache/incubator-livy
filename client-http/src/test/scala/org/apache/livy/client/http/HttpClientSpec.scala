@@ -280,6 +280,7 @@ private class HttpClientTestBootstrap extends LifeCycle {
         when(session.proxyUser).thenReturn(None)
         when(session.kind).thenReturn(Spark)
         when(session.stop()).thenReturn(Future.successful(()))
+        when(session.ttl).thenReturn(None)
         require(HttpClientSpec.session == null, "Session already created?")
         HttpClientSpec.session = session
         session

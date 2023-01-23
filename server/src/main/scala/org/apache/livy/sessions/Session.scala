@@ -138,6 +138,7 @@ abstract class Session(
     val id: Int,
     val name: Option[String],
     val owner: String,
+    val ttl: Option[String],
     val livyConf: LivyConf)
   extends Logging {
 

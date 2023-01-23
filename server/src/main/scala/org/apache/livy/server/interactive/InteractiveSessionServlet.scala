@@ -60,7 +60,8 @@ class InteractiveSessionServlet(
       livyConf,
       accessManager,
       createRequest,
-      sessionStore)
+      sessionStore,
+      createRequest.ttl)
   }
 
   override protected[interactive] def clientSessionView(
@@ -85,7 +86,7 @@ class InteractiveSessionServlet(
 
     new SessionInfo(session.id, session.name.orNull, session.appId.orNull, session.owner,
       session.proxyUser.orNull, session.state.toString, session.kind.toString,
-      session.appInfo.asJavaMap, logs.asJava)
+      session.appInfo.asJavaMap, logs.asJava, session.ttl.orNull)
   }
 
   post("/:id/stop") {

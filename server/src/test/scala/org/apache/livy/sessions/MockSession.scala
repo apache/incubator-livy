@@ -19,8 +19,9 @@ package org.apache.livy.sessions
 
 import org.apache.livy.LivyConf
 
-class MockSession(id: Int, owner: String, conf: LivyConf, name: Option[String] = None)
-  extends Session(id, name, owner, conf) {
+class MockSession(id: Int, owner: String, conf: LivyConf, name: Option[String] = None,
+                  ttl: Option[String] = None)
+  extends Session(id, name, owner, ttl, conf) {
   case class RecoveryMetadata(id: Int) extends Session.RecoveryMetadata()
 
   override val proxyUser = None
