@@ -23,11 +23,11 @@
     <groupId>org.apache.livy</groupId>
     <artifactId>multi-scala-project-root</artifactId>
     <relativePath>../scala/pom.xml</relativePath>
-    <version>0.8.0-incubating-onedot</version>
+    <version>0.8.2-incubating-onedot</version>
   </parent>
 
   <artifactId>livy-repl-parent</artifactId>
-  <version>0.8.0-incubating-onedot</version>
+  <version>0.8.2-incubating-onedot</version>
   <packaging>pom</packaging>
 
   <dependencies>
@@ -124,6 +124,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.esotericsoftware</groupId>
+      <artifactId>kryo-shaded</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-compiler</artifactId>
       <scope>provided</scope>
@@ -176,6 +181,7 @@
                   <include>org.json4s:json4s-core_${scala.binary.version}</include>
                   <include>org.json4s:json4s-jackson_${scala.binary.version}</include>
                   <include>org.json4s:json4s-scalap_${scala.binary.version}</include>
+                  <include>com.esotericsoftware:kryo-shaded</include>
                 </includes>
               </artifactSet>
               <filters>
@@ -191,6 +197,10 @@
                 <relocation>
                   <pattern>org.json4s</pattern>
                   <shadedPattern>org.apache.livy.shaded.json4s</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.esotericsoftware</pattern>
+                  <shadedPattern>org.apache.livy.shaded.kryo</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>

@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.8.0-incubating-onedot</version>
+    <version>0.8.2-incubating-onedot</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -146,10 +146,10 @@
               <artifactSet>
                 <includes>
                   <include>org.apache.livy:livy-client-common</include>
-                  <include>com.esotericsoftware:kryo</include>
+                  <include>com.esotericsoftware:kryo-shaded</include>
+                  <include>com.esotericsoftware:kryo-shaded</include>
                   <include>com.esotericsoftware:kryo-shaded</include>
                   <include>com.esotericsoftware:minlog</include>
-                  <include>com.esotericsoftware:reflectasm</include>
                 </includes>
               </artifactSet>
               <filters>

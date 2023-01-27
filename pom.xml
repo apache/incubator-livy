@@ -22,7 +22,7 @@
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-main</artifactId>
-  <version>0.8.0-incubating-onedot</version>
+  <version>0.8.2-incubating-onedot</version>
   <packaging>pom</packaging>
   <name>Livy Project Parent POM</name>
   <description>Livy Project</description>
@@ -81,31 +81,32 @@
     <asynchttpclient.version>2.10.1</asynchttpclient.version>
     <hadoop.version>2.7.3</hadoop.version>
     <hadoop.scope>compile</hadoop.scope>
-    <spark.scala-2.11.version>2.4.6</spark.scala-2.11.version>
+<!--    <spark.scala-2.11.version>2.4.6</spark.scala-2.11.version>-->
     <spark.scala-2.12.version>2.4.6</spark.scala-2.12.version>
     <spark.version>${spark.scala-2.12.version}</spark.version>
     <hive.version>3.0.0</hive.version>
     <commons-codec.version>1.9</commons-codec.version>
-    <httpclient.version>4.5.3</httpclient.version>
+    <httpclient.version>4.5.13</httpclient.version>
     <httpcore.version>4.4.4</httpcore.version>
-    <jackson.version>2.10.1</jackson.version>
+    <jackson.version>2.12.7</jackson.version>
+    <jackson-databind.version>2.12.7.1</jackson-databind.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
-    <jetty.version>9.3.24.v20180605</jetty.version>
-    <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
+    <jetty.version>9.4.50.v20221201</jetty.version>
+<!--    <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>-->
     <json4s.spark-2.12.version>3.5.3</json4s.spark-2.12.version>
     <json4s.version>${json4s.spark-2.12.version}</json4s.version>
-    <junit.version>4.11</junit.version>
+    <junit.version>4.13.1</junit.version>
     <libthrift.version>0.9.3</libthrift.version>
     <kryo.version>4.0.2</kryo.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.10.19</mockito.version>
-    <netty.spark-2.11.version>4.1.17.Final</netty.spark-2.11.version>
-    <netty.spark-2.12.version>4.1.17.Final</netty.spark-2.12.version>
+<!--    <netty.spark-2.11.version>4.1.86.Final</netty.spark-2.11.version>-->
+    <netty.spark-2.12.version>4.1.86.Final</netty.spark-2.12.version>
     <netty.version>${netty.spark-2.12.version}</netty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <py4j.version>0.10.7</py4j.version>
-    <scala-2.11.version>2.11.12</scala-2.11.version>
-    <scala-2.12.version>2.12.12</scala-2.12.version>
+<!--    <scala-2.11.version>2.11.12</scala-2.11.version>-->
+    <scala-2.12.version>2.12.15</scala-2.12.version>
     <scala.binary.version>2.12</scala.binary.version>
     <scala.version>${scala-2.12.version}</scala.version>
     <scalatest.version>3.0.8</scalatest.version>
@@ -128,8 +129,8 @@
     <skipPySpark3Tests>true</skipPySpark3Tests>
 
     <!-- Required for testing LDAP integration -->
-    <apacheds.version>2.0.0-M21</apacheds.version>
-    <ldap-api.version>1.0.0-M33</ldap-api.version>
+    <apacheds.version>2.0.0.AM26</apacheds.version>
+    <ldap-api.version>2.1.2</ldap-api.version>
 
     <curator.version>2.7.1</curator.version>
     <zookeeper.version>3.4.6</zookeeper.version>
@@ -204,22 +205,22 @@
     <module>client-common</module>
     <module>client-http</module>
     <module>core</module>
-    <module>core/scala-2.11</module>
+<!--    <module>core/scala-2.11</module>-->
     <module>core/scala-2.12</module>
-    <module>coverage</module>
+<!--    <module>coverage</module>-->
     <module>examples</module>
-    <module>python-api</module>
+<!--    <module>python-api</module>-->
     <module>repl</module>
-    <module>repl/scala-2.11</module>
+<!--    <module>repl/scala-2.11</module>-->
     <module>repl/scala-2.12</module>
     <module>rsc</module>
     <module>scala</module>
     <module>scala-api</module>
-    <module>scala-api/scala-2.11</module>
+<!--    <module>scala-api/scala-2.11</module>-->
     <module>scala-api/scala-2.12</module>
     <module>server</module>
     <module>test-lib</module>
-    <module>integration-test</module>
+<!--    <module>integration-test</module>-->
   </modules>
 
   <dependencies>
@@ -289,7 +290,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>${jackson.version}</version>
+        <version>${jackson-databind.version}</version>
       </dependency>
 
       <dependency>
@@ -638,7 +639,7 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>4.2.0</version>
+          <version>4.2.4</version>
           <executions>
             <execution>
               <goals>
@@ -1061,14 +1062,14 @@
       </activation>
       <properties>
         <spark.scala-2.12.version>3.0.0</spark.scala-2.12.version>
-        <spark.scala-2.11.version>2.4.6</spark.scala-2.11.version>
-        <spark.version>${spark.scala-2.11.version}</spark.version>
-        <netty.spark-2.12.version>4.1.47.Final</netty.spark-2.12.version>
-        <netty.spark-2.11.version>4.1.47.Final</netty.spark-2.11.version>
-        <netty.version>${netty.spark-2.11.version}</netty.version>
+<!--        <spark.scala-2.11.version>2.4.6</spark.scala-2.11.version>-->
+<!--        <spark.version>${spark.scala-2.11.version}</spark.version>-->
+        <netty.spark-2.12.version>4.1.86.Final</netty.spark-2.12.version>
+<!--        <netty.spark-2.11.version>4.1.86.Final</netty.spark-2.11.version>-->
+<!--        <netty.version>${netty.spark-2.11.version}</netty.version>-->
         <java.version>1.8</java.version>
         <py4j.version>0.10.9</py4j.version>
-        <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
+<!--        <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>-->
         <json4s.spark-2.12.version>3.6.6</json4s.spark-2.12.version>
         <json4s.version>${json4s.spark-2.12.version}</json4s.version>
         <spark.bin.download.url>
