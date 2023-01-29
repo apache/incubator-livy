@@ -205,19 +205,16 @@
     <module>client-common</module>
     <module>client-http</module>
     <module>core</module>
-    <module>core/scala-2.11</module>
-    <module>core/scala-2.12</module>
+    <module>core/scala-${scala.binary.version}</module>
     <module>coverage</module>
     <module>examples</module>
     <module>python-api</module>
     <module>repl</module>
-    <module>repl/scala-2.11</module>
-    <module>repl/scala-2.12</module>
+    <module>repl/scala-${scala.binary.version}</module>
     <module>rsc</module>
     <module>scala</module>
     <module>scala-api</module>
-    <module>scala-api/scala-2.11</module>
-    <module>scala-api/scala-2.12</module>
+    <module>scala-api/scala-${scala.binary.version}</module>
     <module>server</module>
     <module>test-lib</module>
     <module>integration-test</module>
@@ -639,7 +636,7 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>4.2.0</version>
+          <version>4.3.0</version>
           <executions>
             <execution>
               <goals>
