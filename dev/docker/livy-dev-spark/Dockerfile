@@ -36,9 +36,6 @@ RUN gunzip ${HADOOP_PACKAGE}.tar.gz \
  && chown -R root:root ${HADOOP_HOME} \
  && rm ${HADOOP_PACKAGE}.tar
 
-# Uncomment following line or add more such lines to replace the default jars with private builds.
-# COPY hadoop-streaming-3.3.1.jar ${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-streaming-3.3.1.jar
-
 ENV SPARK_HOME=${ROOT_PATH}/spark
 ENV SPARK_DIST_CLASSPATH="${HADOOP_HOME}/etc/hadoop/*:${HADOOP_HOME}/share/hadoop/common/lib/*:${HADOOP_HOME}/share/hadoop/common/*:${HADOOP_HOME}/share/hadoop/hdfs/*:${HADOOP_HOME}/share/hadoop/hdfs/lib/*:${HADOOP_HOME}/share/hadoop/hdfs/*:${HADOOP_HOME}/share/hadoop/yarn/lib/*:${HADOOP_HOME}/share/hadoop/yarn/*:${HADOOP_HOME}/share/hadoop/mapreduce/lib/*:${HADOOP_HOME}/share/hadoop/mapreduce/*:${HADOOP_HOME}/share/hadoop/tools/lib/*"
 ENV PATH=${PATH}:${SPARK_HOME}/bin
@@ -51,6 +48,9 @@ RUN gunzip ${SPARK_PACKAGE}.tgz \
  && ln -s ${ROOT_PATH}/${SPARK_PACKAGE} ${SPARK_HOME} \
  && chown -R root:root ${SPARK_HOME} \
  && rm ${SPARK_PACKAGE}.tar
+
+# Uncomment following line or add more such lines to replace the default jars with private builds.
+# COPY hadoop-streaming-3.3.1.jar ${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-streaming-3.3.1.jar
 
 # Uncomment following line or add more such lines to replace the default jars with private builds.
 # COPY spark-repl_2.12-3.2.3.jar ${SPARK_HOME}/jars/spark-repl_2.12-3.2.3.jar
