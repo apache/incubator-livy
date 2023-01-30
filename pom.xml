@@ -205,16 +205,19 @@
     <module>client-common</module>
     <module>client-http</module>
     <module>core</module>
-    <module>core/scala-${scala.binary.version}</module>
+    <module>core/scala-2.11</module>
+    <module>core/scala-2.12</module>
     <module>coverage</module>
     <module>examples</module>
     <module>python-api</module>
     <module>repl</module>
-    <module>repl/scala-${scala.binary.version}</module>
+    <module>repl/scala-2.11</module>
+    <module>repl/scala-2.12</module>
     <module>rsc</module>
     <module>scala</module>
     <module>scala-api</module>
-    <module>scala-api/scala-${scala.binary.version}</module>
+    <module>scala-api/scala-2.11</module>
+    <module>scala-api/scala-2.12</module>
     <module>server</module>
     <module>test-lib</module>
     <module>integration-test</module>
