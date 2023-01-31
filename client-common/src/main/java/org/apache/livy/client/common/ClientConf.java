@@ -36,7 +36,7 @@ import org.apache.livy.annotations.Private;
 public abstract class ClientConf<T extends ClientConf>
   implements Iterable<Map.Entry<String, String>> {
 
-  protected static Logger LOG = LoggerFactory.getLogger(ClientConf.class);
+  protected static final Logger LOG = LoggerFactory.getLogger(ClientConf.class);
 
   public static interface ConfEntry {
 
@@ -265,12 +265,34 @@ public abstract class ClientConf<T extends ClientConf>
     return altToNewKeyMap;
   }
 
+  public static boolean validateTtl(String ttl) {
+    if (ttl == null || ttl.trim().isEmpty()) {
+      return true;
+    }
+    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(ttl.trim().toLowerCase());
+    if (!m.matches()) {
+      LOG.error("Invalid ttl string: " + ttl);
+      return false;
+    }
+    long val = Long.parseLong(m.group(1));
+    if (val <= 0L) {
+      LOG.error("Invalid ttl value: " + val);
+      return false;
+    }
+    String suffix = m.group(2);
+    if (suffix != null && !TIME_SUFFIXES.containsKey(suffix)) {
+      LOG.error("Invalid ttl suffix: " + suffix);
+      return false;
+    }
+    return true;
+  }
+
   public static long getTimeAsNanos(String time, int sessionId, long defaultVale) {
-    if (time == null) {
+    if (time == null || time.trim().isEmpty()) {
       return defaultVale;
     }
 
-    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(time.toLowerCase());
+    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(time.trim().toLowerCase());
     if (!m.matches()) {
       LOG.error("Invalid time string: " + time + " for session ID: " + sessionId);
       return defaultVale;
@@ -285,7 +307,7 @@ public abstract class ClientConf<T extends ClientConf>
     }
 
     return TimeUnit.NANOSECONDS.convert(val,
-            suffix != null ? TIME_SUFFIXES.get(suffix) : TimeUnit.MILLISECONDS);
+            suffix != null ? TIME_SUFFIXES.get(suffix) : TimeUnit.SECONDS);
   }
 
   public static interface DeprecatedConf {

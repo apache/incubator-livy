@@ -142,6 +142,13 @@ abstract class Session(
     val livyConf: LivyConf)
   extends Logging {
 
+  def this(id: Int,
+   name: Option[String],
+   owner: String,
+   livyConf: LivyConf) {
+    this(id, name, owner, None, livyConf)
+  }
+
   import Session._
 
   protected implicit val executionContext = ExecutionContext.global
@@ -164,6 +171,7 @@ abstract class Session(
   def appId: Option[String] = _appId
 
   var appInfo: AppInfo = AppInfo()
+
 
   def lastActivity: Long = state match {
     case SessionState.Error(time) => time

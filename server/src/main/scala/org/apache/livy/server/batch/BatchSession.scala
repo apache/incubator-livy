@@ -153,7 +153,7 @@ class BatchSession(
     override val proxyUser: Option[String],
     sessionStore: SessionStore,
     sparkApp: BatchSession => SparkApp)
-  extends Session(id, name, owner, None, livyConf) with SparkAppListener {
+  extends Session(id, name, owner, livyConf) with SparkAppListener {
   import BatchSession._
 
   protected implicit def executor: ExecutionContextExecutor = ExecutionContext.global

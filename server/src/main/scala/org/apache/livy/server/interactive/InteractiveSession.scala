@@ -54,8 +54,8 @@ case class InteractiveRecoveryMetadata(
     kind: Kind,
     heartbeatTimeoutS: Int,
     owner: String,
-    proxyUser: Option[String],
     ttl: Option[String],
+    proxyUser: Option[String],
     rscDriverUri: Option[URI],
     version: Int = 1)
   extends RecoveryMetadata
@@ -469,7 +469,7 @@ class InteractiveSession(
 
   override def recoveryMetadata: RecoveryMetadata =
     InteractiveRecoveryMetadata(id, name, appId, appTag, kind,
-      heartbeatTimeout.toSeconds.toInt, owner, ttl, proxyUser, rscDriverUri)
+      heartbeatTimeout.toSeconds.toInt, owner, None, proxyUser, rscDriverUri)
 
   override def state: SessionState = {
     if (serverSideState == SessionState.Running) {

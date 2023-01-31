@@ -31,9 +31,8 @@ object SessionServletSpec {
 
   val PROXY_USER = "proxyUser"
 
-  class MockSession(id: Int, owner: String, ttl: Option[String], val proxyUser: Option[String],
-                    livyConf: LivyConf)
-    extends Session(id, None, owner, ttl, livyConf) {
+  class MockSession(id: Int, owner: String, val proxyUser: Option[String], livyConf: LivyConf)
+    extends Session(id, None, owner, livyConf) {
 
     case class MockRecoveryMetadata(id: Int) extends RecoveryMetadata()
 
@@ -65,7 +64,7 @@ object SessionServletSpec {
         val owner = remoteUser(req)
         val impersonatedUser = accessManager.checkImpersonation(
           proxyUser(req, params.get(PROXY_USER)), owner)
-        new MockSession(sessionManager.nextId(), owner, None, impersonatedUser, conf)
+        new MockSession(sessionManager.nextId(), owner, impersonatedUser, conf)
       }
 
       override protected def clientSessionView(

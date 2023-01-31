@@ -29,6 +29,7 @@ import org.scalatra._
 import org.scalatra.servlet.FileUploadSupport
 
 import org.apache.livy.{CompletionRequest, ExecuteRequest, JobHandle, LivyConf, Logging}
+import org.apache.livy.client.common.ClientConf
 import org.apache.livy.client.common.HttpMessages
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.server.{AccessManager, SessionServlet}
@@ -52,16 +53,20 @@ class InteractiveSessionServlet(
 
   override protected def createSession(req: HttpServletRequest): InteractiveSession = {
     val createRequest = bodyAs[CreateInteractiveRequest](req)
-    InteractiveSession.create(
-      sessionManager.nextId(),
-      createRequest.name,
-      remoteUser(req),
-      proxyUser(req, createRequest.proxyUser),
-      livyConf,
-      accessManager,
-      createRequest,
-      sessionStore,
-      createRequest.ttl)
+    if (ClientConf.validateTtl(createRequest.ttl.orNull)) {
+      InteractiveSession.create(
+        sessionManager.nextId(),
+        createRequest.name,
+        remoteUser(req),
+        proxyUser(req, createRequest.proxyUser),
+        livyConf,
+        accessManager,
+        createRequest,
+        sessionStore,
+        createRequest.ttl)
+    } else {
+      null
+    }
   }
 
   override protected[interactive] def clientSessionView(

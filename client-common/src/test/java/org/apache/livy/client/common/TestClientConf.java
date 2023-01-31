@@ -40,6 +40,17 @@ public class TestClientConf {
     assertEquals(168000000L, TestConf.getTimeAsNanos("168ms", 1, 10L));
     assertEquals(10L, TestConf.getTimeAsNanos(null, 1, 10L));
     assertEquals(10L, TestConf.getTimeAsNanos("invalid", 1, 10L));
+    assertEquals(10L, TestConf.getTimeAsNanos("30b", 1, 10L));
+    assertTrue(ClientConf.validateTtl(""));
+    assertTrue(ClientConf.validateTtl("     "));
+    assertTrue(ClientConf.validateTtl(null));
+    assertTrue(ClientConf.validateTtl("30s"));
+    assertTrue(ClientConf.validateTtl("30m"));
+    assertFalse(ClientConf.validateTtl("testing"));
+    assertFalse(ClientConf.validateTtl("30b"));
+    assertFalse(ClientConf.validateTtl("-30m"));
+    assertTrue(ClientConf.validateTtl("30"));
+    assertTrue(ClientConf.validateTtl("  30  "));
 
     try {
       conf.get(TestConf.Entry.INT);

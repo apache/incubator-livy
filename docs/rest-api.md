@@ -153,7 +153,7 @@ Creates a new interactive Scala, Python, or R shell in the cluster.
   </tr>
   <tr>
     <td>ttl</td>
-    <td>The timeout for this inactive session</td>
+    <td>The timeout for this inactive session, example: 10m (10 minutes)</td>
     <td>string</td>
   </tr>
 </table>
@@ -615,11 +615,6 @@ A session represents an interactive shell.
     <td>The detailed application info</td>
     <td>Map of key=val</td>
   </tr>
-  <tr>
-    <td>ttl</td>
-    <td>The timeout for this inactive session</td>
-    <td>string</td>
-  </tr>
 </table>
 
 
@@ -825,6 +820,11 @@ A statement represents the result of an execution statement.
     <td>appInfo</td>
     <td>The detailed application info</td>
     <td>Map of key=val</td>
+  </tr>
+  <tr>
+    <td>ttl</td>
+    <td>The timeout for this inactive session, example: 10m (10 minutes)</td>
+    <td>string</td>
   </tr>
   <tr>
     <td>log</td>
