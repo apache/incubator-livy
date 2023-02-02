@@ -52,6 +52,6 @@ class CreateInteractiveRequest {
       (if (name.isDefined) s"name: ${name.get}, " else "") +
       (if (conf.nonEmpty) s"conf: ${conf.mkString(",")}, " else "") +
       s"heartbeatTimeoutInSecond: $heartbeatTimeoutInSecond, " +
-      (if (ttl.isDefined) s"driverMemory: ${ttl.get}]" else "]")
+      (if (ttl.isDefined) s"ttl: ${ttl.get}]" else "]")
   }
 }

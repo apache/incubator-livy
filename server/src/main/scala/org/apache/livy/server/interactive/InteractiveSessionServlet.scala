@@ -53,20 +53,18 @@ class InteractiveSessionServlet(
 
   override protected def createSession(req: HttpServletRequest): InteractiveSession = {
     val createRequest = bodyAs[CreateInteractiveRequest](req)
-    if (ClientConf.validateTtl(createRequest.ttl.orNull)) {
-      InteractiveSession.create(
-        sessionManager.nextId(),
-        createRequest.name,
-        remoteUser(req),
-        proxyUser(req, createRequest.proxyUser),
-        livyConf,
-        accessManager,
-        createRequest,
-        sessionStore,
-        createRequest.ttl)
-    } else {
-      null
-    }
+    val sessionId = sessionManager.nextId();
+    ClientConf.getTimeAsNanos(createRequest.ttl.orNull, sessionId, 0L);
+    InteractiveSession.create(
+      sessionId,
+      createRequest.name,
+      remoteUser(req),
+      proxyUser(req, createRequest.proxyUser),
+      livyConf,
+      accessManager,
+      createRequest,
+      sessionStore,
+      createRequest.ttl)
   }
 
   override protected[interactive] def clientSessionView(

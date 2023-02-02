@@ -265,28 +265,6 @@ public abstract class ClientConf<T extends ClientConf>
     return altToNewKeyMap;
   }
 
-  public static boolean validateTtl(String ttl) {
-    if (ttl == null || ttl.trim().isEmpty()) {
-      return true;
-    }
-    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(ttl.trim().toLowerCase());
-    if (!m.matches()) {
-      LOG.error("Invalid ttl string: " + ttl);
-      return false;
-    }
-    long val = Long.parseLong(m.group(1));
-    if (val <= 0L) {
-      LOG.error("Invalid ttl value: " + val);
-      return false;
-    }
-    String suffix = m.group(2);
-    if (suffix != null && !TIME_SUFFIXES.containsKey(suffix)) {
-      LOG.error("Invalid ttl suffix: " + suffix);
-      return false;
-    }
-    return true;
-  }
-
   public static long getTimeAsNanos(String time, int sessionId, long defaultVale) {
     if (time == null || time.trim().isEmpty()) {
       return defaultVale;
@@ -294,16 +272,21 @@ public abstract class ClientConf<T extends ClientConf>
 
     Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(time.trim().toLowerCase());
     if (!m.matches()) {
-      LOG.error("Invalid time string: " + time + " for session ID: " + sessionId);
-      return defaultVale;
+      throw new IllegalArgumentException("Invalid ttl string: " + time +
+              " for session: " + sessionId);
     }
 
     long val = Long.parseLong(m.group(1));
+    if (val <= 0L) {
+      throw new IllegalArgumentException("Invalid ttl value: " + val +
+              " for session: " + sessionId);
+    }
+
     String suffix = m.group(2);
 
     if (suffix != null && !TIME_SUFFIXES.containsKey(suffix)) {
-      LOG.error("Invalid suffix: " + time + " for session ID: " + sessionId);
-      return defaultVale;
+      throw new IllegalArgumentException("Invalid ttl suffix: " + time +
+              " for session: " + sessionId);
     }
 
     return TimeUnit.NANOSECONDS.convert(val,

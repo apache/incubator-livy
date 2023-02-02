@@ -131,17 +131,17 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
       if (tooManySessions) {
         BadRequest(ResponseMessage("Rejected, too many sessions are being created!"))
       } else {
-        val input = createSession(request)
-        if(input == null) {
-          BadRequest(ResponseMessage("Rejected, invalid value for ttl field!"))
-        } else {
-          val session = sessionManager.register(input)
+        try {
+          val session = sessionManager.register(createSession(request))
           // Because it may take some time to establish the session, update the last activity
           // time before returning the session info to the client.
           session.recordActivity()
           Created(clientSessionView(session, request),
             headers = Map("Location" ->
               (getRequestPathInfo(request) + url(getSession, "id" -> session.id.toString))))
+        } catch {
+          case e: IllegalArgumentException =>
+            BadRequest(ResponseMessage("Rejected, " + e.getMessage))
         }
       }
     }
