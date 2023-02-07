@@ -152,11 +152,15 @@ public abstract class ClientConf<T extends ClientConf>
     String time = get(e, String.class);
     if (time == null) {
       check(e.dflt() != null,
-        "ConfEntry %s doesn't have a default value, cannot convert to time value.", e.key());
+              "ConfEntry %s doesn't have a default value, cannot convert to time value.", e.key());
       time = (String) e.dflt();
     }
+    return getTimeAsMs(time);
+  }
 
-    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(time.toLowerCase());
+  public static long getTimeAsMs(String time) {
+    check(time != null && !time.trim().isEmpty(), "Invalid time string: %s", time);
+    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(time.trim().toLowerCase());
     if (!m.matches()) {
       throw new IllegalArgumentException("Invalid time string: " + time);
     }
@@ -168,8 +172,12 @@ public abstract class ClientConf<T extends ClientConf>
       throw new IllegalArgumentException("Invalid suffix: \"" + suffix + "\"");
     }
 
+    if (val < 0L) {
+      throw new IllegalArgumentException("Invalid value: " + val);
+    }
+
     return TimeUnit.MILLISECONDS.convert(val,
-      suffix != null ? TIME_SUFFIXES.get(suffix) : TimeUnit.MILLISECONDS);
+            suffix != null ? TIME_SUFFIXES.get(suffix) : TimeUnit.MILLISECONDS);
   }
 
   @SuppressWarnings("unchecked")
@@ -204,7 +212,7 @@ public abstract class ClientConf<T extends ClientConf>
     return (o != null) ? o.getClass() : String.class;
   }
 
-  private void check(boolean test, String message, Object... args) {
+  private static void check(boolean test, String message, Object... args) {
     if (!test) {
       throw new IllegalArgumentException(String.format(message, args));
     }
@@ -263,34 +271,6 @@ public abstract class ClientConf<T extends ClientConf>
       }
     }
     return altToNewKeyMap;
-  }
-
-  public static long getTimeAsNanos(String time, int sessionId, long defaultVale) {
-    if (time == null || time.trim().isEmpty()) {
-      return defaultVale;
-    }
-
-    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(time.trim().toLowerCase());
-    if (!m.matches()) {
-      throw new IllegalArgumentException("Invalid ttl string: " + time +
-              " for session: " + sessionId);
-    }
-
-    long val = Long.parseLong(m.group(1));
-    if (val <= 0L) {
-      throw new IllegalArgumentException("Invalid ttl value: " + val +
-              " for session: " + sessionId);
-    }
-
-    String suffix = m.group(2);
-
-    if (suffix != null && !TIME_SUFFIXES.containsKey(suffix)) {
-      throw new IllegalArgumentException("Invalid ttl suffix: " + time +
-              " for session: " + sessionId);
-    }
-
-    return TimeUnit.NANOSECONDS.convert(val,
-            suffix != null ? TIME_SUFFIXES.get(suffix) : TimeUnit.SECONDS);
   }
 
   public static interface DeprecatedConf {

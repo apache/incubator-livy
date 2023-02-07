@@ -80,8 +80,9 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   private[this] final val sessionTimeoutCheck = livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK)
   private[this] final val sessionTimeoutCheckSkipBusy =
     livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK_SKIP_BUSY)
-  private[this] final val sessionTimeout =
-    TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_TIMEOUT))
+
+  private[this] final val sessionTimeout = livyConf.getTimeAsMs(LivyConf.SESSION_TIMEOUT)
+
   private[this] final val sessionStateRetainedInSec =
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_STATE_RETAIN_TIME))
 
@@ -169,8 +170,11 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
             false
           } else {
             val currentTime = System.nanoTime()
-            val calculatedTimeout =
-              ClientConf.getTimeAsNanos(session.ttl.orNull, session.id, sessionTimeout)
+            var calculatedTimeout = sessionTimeout;
+            if (session.ttl.isDefined) {
+              calculatedTimeout = ClientConf.getTimeAsMs(session.ttl.orNull)
+            }
+            calculatedTimeout = TimeUnit.MILLISECONDS.toNanos(calculatedTimeout)
             currentTime - session.lastActivity > calculatedTimeout
           }
       }

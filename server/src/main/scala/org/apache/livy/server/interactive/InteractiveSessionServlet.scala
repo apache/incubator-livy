@@ -54,7 +54,12 @@ class InteractiveSessionServlet(
   override protected def createSession(req: HttpServletRequest): InteractiveSession = {
     val createRequest = bodyAs[CreateInteractiveRequest](req)
     val sessionId = sessionManager.nextId();
-    ClientConf.getTimeAsNanos(createRequest.ttl.orNull, sessionId, 0L);
+
+    // Calling getTimeAsMs just to validate the ttl value
+    if (createRequest.ttl.isDefined) {
+      ClientConf.getTimeAsMs(createRequest.ttl.orNull);
+    }
+
     InteractiveSession.create(
       sessionId,
       createRequest.name,

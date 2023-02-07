@@ -37,26 +37,23 @@ public class TestClientConf {
     assertEquals(42, conf.getInt(TestConf.Entry.INT));
     assertEquals(84L, conf.getLong(TestConf.Entry.LONG));
     assertEquals(168L, conf.getTimeAsMs(TestConf.Entry.TIME));
-    assertEquals(60000000000L, TestConf.getTimeAsNanos("1m", 1, 10L));
-    assertEquals(10L, TestConf.getTimeAsNanos(null, 1, 10L));
-    assertEquals(10L, TestConf.getTimeAsNanos("", 1, 10L));
-    assertEquals(10L, TestConf.getTimeAsNanos("     ", 1, 10L));
-    assertEquals(80000000000L, TestConf.getTimeAsNanos("  80    ", 1, 10L));
+    assertEquals(60000L, TestConf.getTimeAsMs("1m"));
+    assertEquals(80L, TestConf.getTimeAsMs("  80    "));
     try {
-      TestConf.getTimeAsNanos("invalid", 1, 10L);
-      fail("Should have failed to getTimeAsNanos for invalid ttl.");
+      TestConf.getTimeAsMs("invalid");
+      fail("Should have failed to getTimeAsMs for invalid ttl.");
     } catch (IllegalArgumentException ie) {
       // Expected.
     }
     try {
-      TestConf.getTimeAsNanos("30b", 1, 10L);
-      fail("Should have failed to getTimeAsNanos for invalid ttl suffix.");
+      TestConf.getTimeAsMs("30b");
+      fail("Should have failed to getTimeAsMs for invalid ttl suffix.");
     } catch (IllegalArgumentException ie) {
       // Expected.
     }
     try {
-      TestConf.getTimeAsNanos("-1m", 1, 10L);
-      fail("Should have failed to getTimeAsNanos for invalid ttl value.");
+      TestConf.getTimeAsMs("-1m");
+      fail("Should have failed to getTimeAsMs for invalid ttl value.");
     } catch (IllegalArgumentException ie) {
       // Expected.
     }
