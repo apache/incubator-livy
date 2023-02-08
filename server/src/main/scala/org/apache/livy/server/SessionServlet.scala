@@ -141,7 +141,7 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
               (getRequestPathInfo(request) + url(getSession, "id" -> session.id.toString))))
         } catch {
           case e: IllegalArgumentException =>
-            BadRequest(ResponseMessage("Rejected, Invalid ttl field: " + e.getMessage))
+            BadRequest(ResponseMessage("Rejected, Reason: " + e.getMessage))
         }
       }
     }

@@ -172,7 +172,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
             val currentTime = System.nanoTime()
             var calculatedTimeout = sessionTimeout;
             if (session.ttl.isDefined) {
-              calculatedTimeout = ClientConf.getTimeAsMs(session.ttl.orNull)
+              calculatedTimeout = ClientConf.getTimeAsMs(session.ttl.get)
             }
             calculatedTimeout = TimeUnit.MILLISECONDS.toNanos(calculatedTimeout)
             currentTime - session.lastActivity > calculatedTimeout

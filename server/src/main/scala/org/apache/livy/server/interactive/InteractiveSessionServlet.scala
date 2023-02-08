@@ -57,7 +57,7 @@ class InteractiveSessionServlet(
 
     // Calling getTimeAsMs just to validate the ttl value
     if (createRequest.ttl.isDefined) {
-      ClientConf.getTimeAsMs(createRequest.ttl.orNull);
+      ClientConf.getTimeAsMs(createRequest.ttl.get);
     }
 
     InteractiveSession.create(
