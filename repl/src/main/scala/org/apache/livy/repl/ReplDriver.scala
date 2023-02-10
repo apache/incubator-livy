@@ -37,6 +37,8 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
 
   private[repl] var session: Session = _
 
+  private val kind = Kind(livyConf.get(RSCConf.Entry.SESSION_KIND))
+
   override protected def initializeSparkEntries(): SparkEntries = {
     session = new Session(livyConf = livyConf,
       sparkConf = conf,
@@ -103,17 +105,40 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
 
   override protected def addFile(path: String): Unit = {
     if (!ClientConf.TEST_MODE) {
-      session.interpreter(PySpark).foreach { _.asInstanceOf[PythonInterpreter].addFile(path) }
+      require(kind != null)
+      session.interpreter(kind) match {
+        case Some(interpreter) => {
+          interpreter match {
+            case pi: PythonInterpreter => pi.addFile(path)
+            case _ => super.addFile(path)
+          }
+        }
+        case None => super.addFile(path)
+      }
     }
     super.addFile(path)
   }
 
-  override protected def addJarOrPyFile(path: String): Unit = {
+  override protected def addJarOrPyFile(path: String): String = {
     if (!ClientConf.TEST_MODE) {
-      session.interpreter(PySpark)
-        .foreach { _.asInstanceOf[PythonInterpreter].addPyFile(this, conf, path) }
+      require(kind != null)
+      session.interpreter(kind) match {
+        case Some(interpreter) => {
+          interpreter match {
+            case pi: PythonInterpreter => pi.addPyFile(this, conf, path)
+            case si: SparkInterpreter => {
+              val localCopy = s"file://${super.addJarOrPyFile(path)}"
+              si.addJar(localCopy)
+              localCopy
+            }
+            case _ => super.addJarOrPyFile(path)
+          }
+        }
+        case None => super.addJarOrPyFile(path)
+      }
+    } else {
+      super.addJarOrPyFile(path)
     }
-    super.addJarOrPyFile(path)
   }
 
   override protected def onClientAuthenticated(client: Rpc): Unit = {

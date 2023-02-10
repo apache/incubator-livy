@@ -45,6 +45,9 @@ public class HttpClient implements LivyClient {
   private final HttpConf config;
   private final LivyConnection conn;
   private final int sessionId;
+
+  public final SessionInfo session;
+
   private final ScheduledExecutorService executor;
   private final Serializer serializer;
 
@@ -67,7 +70,7 @@ public class HttpClient implements LivyClient {
 
         this.conn = new LivyConnection(base, httpConf);
         this.sessionId = Integer.parseInt(m.group(2));
-        conn.post(null, SessionInfo.class, "/%d/connect", sessionId);
+        this.session = conn.post(null, SessionInfo.class, "/%d/connect", sessionId);
       } else {
         Map<String, String> sessionConf = new HashMap<>();
         for (Map.Entry<String, String> e : config) {
@@ -76,7 +79,8 @@ public class HttpClient implements LivyClient {
 
         ClientMessage create = new CreateClientRequest(sessionConf);
         this.conn = new LivyConnection(uri, httpConf);
-        this.sessionId = conn.post(create, SessionInfo.class, "/").id;
+        this.session = conn.post(create, SessionInfo.class, "/");
+        this.sessionId = session.id;
       }
     } catch (Exception e) {
       throw propagate(e);

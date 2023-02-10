@@ -240,6 +240,11 @@ public class TestSparkClient {
           client.addJar(new URI("file:" + jar.getAbsolutePath()))
             .get(TIMEOUT, TimeUnit.SECONDS);
 
+          // Attempting to add a duplicate jar file to LivyClient. This add operation will be
+          // skipped and an appropriate warning logged
+          client.addJar(new URI("file:" + jar.getAbsolutePath()))
+            .get(TIMEOUT, TimeUnit.SECONDS);
+
           // Need to run a Spark job to make sure the jar is added to the class loader. Monitoring
           // SparkContext#addJar() doesn't mean much, we can only be sure jars have been distributed
           // when we run a task after the jar has been added.
