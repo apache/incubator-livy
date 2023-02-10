@@ -23,13 +23,13 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.8.2-incubating-onedot</version>
+    <version>0.8.3-incubating-onedot</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-python-api</artifactId>
-  <version>0.8.2-incubating-onedot</version>
+  <version>0.8.3-incubating-onedot</version>
   <packaging>pom</packaging>
 
   <build>

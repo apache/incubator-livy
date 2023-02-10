@@ -21,13 +21,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.livy</groupId>
   <artifactId>multi-scala-project-root</artifactId>
-  <version>0.8.2-incubating-onedot</version>
+  <version>0.8.3-incubating-onedot</version>
   <packaging>pom</packaging>
 
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.8.2-incubating-onedot</version>
+    <version>0.8.3-incubating-onedot</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
