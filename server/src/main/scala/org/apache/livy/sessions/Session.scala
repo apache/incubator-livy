@@ -138,8 +138,16 @@ abstract class Session(
     val id: Int,
     val name: Option[String],
     val owner: String,
+    val ttl: Option[String],
     val livyConf: LivyConf)
   extends Logging {
+
+  def this(id: Int,
+   name: Option[String],
+   owner: String,
+   livyConf: LivyConf) {
+    this(id, name, owner, None, livyConf)
+  }
 
   import Session._
 
@@ -163,6 +171,7 @@ abstract class Session(
   def appId: Option[String] = _appId
 
   var appInfo: AppInfo = AppInfo()
+
 
   def lastActivity: Long = state match {
     case SessionState.Error(time) => time

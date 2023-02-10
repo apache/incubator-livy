@@ -59,6 +59,17 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       }
     }
 
+    it("should garbage collect old sessions with ttl") {
+      val (livyConf, manager) = createSessionManager()
+      val session = manager.register(new MockSession(manager.nextId(), null, livyConf,
+        None, Some("4s")))
+      manager.get(session.id).isDefined should be(true)
+      eventually(timeout(5 seconds), interval(100 millis)) {
+        Await.result(manager.collectGarbage(), Duration.Inf)
+        manager.get(session.id) should be(None)
+      }
+    }
+
     it("should not garbage collect busy sessions if skip-busy configured") {
       val lc = new LivyConf()
       lc.set(LivyConf.SESSION_TIMEOUT_CHECK_SKIP_BUSY, true)

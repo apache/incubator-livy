@@ -29,6 +29,7 @@ import org.scalatra._
 import org.scalatra.servlet.FileUploadSupport
 
 import org.apache.livy.{CompletionRequest, ExecuteRequest, JobHandle, LivyConf, Logging}
+import org.apache.livy.client.common.ClientConf
 import org.apache.livy.client.common.HttpMessages
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.server.{AccessManager, SessionServlet}
@@ -52,15 +53,23 @@ class InteractiveSessionServlet(
 
   override protected def createSession(req: HttpServletRequest): InteractiveSession = {
     val createRequest = bodyAs[CreateInteractiveRequest](req)
+    val sessionId = sessionManager.nextId();
+
+    // Calling getTimeAsMs just to validate the ttl value
+    if (createRequest.ttl.isDefined) {
+      ClientConf.getTimeAsMs(createRequest.ttl.get);
+    }
+
     InteractiveSession.create(
-      sessionManager.nextId(),
+      sessionId,
       createRequest.name,
       remoteUser(req),
       proxyUser(req, createRequest.proxyUser),
       livyConf,
       accessManager,
       createRequest,
-      sessionStore)
+      sessionStore,
+      createRequest.ttl)
   }
 
   override protected[interactive] def clientSessionView(
@@ -85,7 +94,7 @@ class InteractiveSessionServlet(
 
     new SessionInfo(session.id, session.name.orNull, session.appId.orNull, session.owner,
       session.proxyUser.orNull, session.state.toString, session.kind.toString,
-      session.appInfo.asJavaMap, logs.asJava)
+      session.appInfo.asJavaMap, logs.asJava, session.ttl.orNull)
   }
 
   post("/:id/stop") {
