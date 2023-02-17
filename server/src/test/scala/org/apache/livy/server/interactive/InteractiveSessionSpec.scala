@@ -278,7 +278,8 @@ class InteractiveSessionSpec extends FunSpec
       when(mockClient.submit(any(classOf[PingJob]))).thenReturn(mock[JobHandle[Void]])
       val m = InteractiveRecoveryMetadata(
           78, Some("Test session"), None, "appTag", Spark, 0, null, None, None,
-          Some(URI.create("")))
+          None, None, None, Map.empty[String, String], List.empty[String], List.empty[String],
+          List.empty[String], None, List.empty[String], None, None, Some(URI.create("")))
       val s = InteractiveSession.recover(m, conf, sessionStore, None, Some(mockClient))
       s.start()
 
@@ -295,7 +296,9 @@ class InteractiveSessionSpec extends FunSpec
       val mockClient = mock[RSCClient]
       when(mockClient.submit(any(classOf[PingJob]))).thenReturn(mock[JobHandle[Void]])
       val m = InteractiveRecoveryMetadata(
-          78, None, None, "appTag", Spark, 0, null, None, None, Some(URI.create("")))
+          78, None, None, "appTag", Spark, 0, null, None, None,
+          None, None, None, Map.empty[String, String], List.empty[String], List.empty[String],
+          List.empty[String], None, List.empty[String], None, None, Some(URI.create("")))
       val s = InteractiveSession.recover(m, conf, sessionStore, None, Some(mockClient))
       s.start()
 
@@ -310,7 +313,9 @@ class InteractiveSessionSpec extends FunSpec
       val conf = new LivyConf()
       val sessionStore = mock[SessionStore]
       val m = InteractiveRecoveryMetadata(
-        78, None, Some("appId"), "appTag", Spark, 0, null, None, None, None)
+        78, None, Some("appId"), "appTag", Spark, 0, null, None, None,
+          None, None, None, Map.empty[String, String], List.empty[String], List.empty[String],
+          List.empty[String], None, List.empty[String], None, None, None)
       val s = InteractiveSession.recover(m, conf, sessionStore, None)
       s.start()
       s.state shouldBe a[SessionState.Dead]

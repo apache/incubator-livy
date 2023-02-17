@@ -62,9 +62,25 @@ public class HttpMessages {
     public final Map<String, String> appInfo;
     public final List<String> log;
     public final String ttl;
+    public final String driverMemory;
+    public final int driverCores;
+    public final String executorMemory;
+    public final int executorCores;
+    public final Map<String, String> conf;
+    public final List<String> archives;
+    public final List<String> files;
+    public final int heartbeatTimeoutInSecond;
+    public final List<String> jars;
+    public final int numExecutors;
+    public final List<String> pyFiles;
+    public final String queue;
 
-    public SessionInfo(int id, String name, String appId, String owner, String proxyUser,
-        String state, String kind, Map<String, String> appInfo, List<String> log, String ttl) {
+    public SessionInfo(int id, String name, String appId, String owner, String state,
+        String kind, Map<String, String> appInfo, List<String> log,
+        String ttl, String driverMemory,
+        int driverCores, String executorMemory,  int executorCores, Map<String, String> conf,
+        List<String> archives, List<String> files, int heartbeatTimeoutInSecond, List<String> jars,
+        int numExecutors, String proxyUser, List<String> pyFiles, String queue) {
       this.id = id;
       this.name = name;
       this.appId = appId;
@@ -75,10 +91,23 @@ public class HttpMessages {
       this.appInfo = appInfo;
       this.log = log;
       this.ttl = ttl;
+      this.driverMemory = driverMemory;
+      this.driverCores = driverCores;
+      this.executorMemory = executorMemory;
+      this.executorCores = executorCores;
+      this.conf = conf;
+      this.archives = archives;
+      this.files = files;
+      this.heartbeatTimeoutInSecond = heartbeatTimeoutInSecond;
+      this.jars = jars;
+      this.numExecutors = numExecutors;
+      this.pyFiles = pyFiles;
+      this.queue = queue;
     }
 
     private SessionInfo() {
-      this(-1, null, null, null, null, null, null, null, null, null);
+      this(-1, null, null, null, null, null, null, null, null, null, 0, null, 0, null, null,
+              null, 0, null, 0, null, null, null);
     }
 
   }

@@ -92,9 +92,15 @@ class InteractiveSessionServlet(
         Nil
       }
 
-    new SessionInfo(session.id, session.name.orNull, session.appId.orNull, session.owner,
-      session.proxyUser.orNull, session.state.toString, session.kind.toString,
-      session.appInfo.asJavaMap, logs.asJava, session.ttl.orNull)
+    new SessionInfo(session.id, session.name.orNull, session.appId.orNull,
+      session.owner, session.state.toString, session.kind.toString,
+      session.appInfo.asJavaMap, logs.asJava,
+      session.proxyUser.orNull, session.driverMemory.orNull,
+      session.driverCores.getOrElse(0), session.executorMemory.orNull,
+      session.executorCores.getOrElse(0), session.conf.asJava, session.archives.asJava,
+      session.files.asJava, session.heartbeatTimeoutS, session.jars.asJava,
+      session.numExecutors.getOrElse(0), session.proxyUser.orNull, session.pyFiles.asJava,
+      session.queue.orNull)
   }
 
   post("/:id/stop") {
