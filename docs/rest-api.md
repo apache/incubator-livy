@@ -251,6 +251,27 @@ Gets the log lines from this session.
 
 Returns all the statements in a session.
 
+#### Request Parameters
+
+<table class="table">
+  <tr><th>Name</th><th>Description</th><th>Type</th></tr>
+  <tr>
+    <td>from</td>
+    <td>The start index to fetch sessions</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>size</td>
+    <td>Number of sessions to fetch</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>order</td>
+    <td>Provide value as "latest" to get latest statement first </td>
+    <td>string</td>
+  </tr>
+</table>
+
 #### Response Body
 
 <table class="table">
