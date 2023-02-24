@@ -41,6 +41,7 @@ import org.apache.livy.{Logging, Utils}
 import org.apache.livy.client.common.ClientConf
 import org.apache.livy.rsc.driver.SparkEntries
 import org.apache.livy.sessions._
+import org.apache.livy.Utils.usingResource
 
 // scalastyle:off println
 object PythonInterpreter extends Logging {
@@ -86,10 +87,10 @@ object PythonInterpreter extends Logging {
           require(pyArchivesFile.exists(),
             "pyspark.zip not found; cannot start pyspark interpreter.")
 
-          val py4jFile = Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
-            .iterator()
-            .next()
-            .toFile
+          val py4jFile = usingResource(
+            Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")) { ds =>
+              ds.iterator().next().toFile
+          }
 
           require(py4jFile.exists(),
             "py4j-*-src.zip not found; cannot start pyspark interpreter.")

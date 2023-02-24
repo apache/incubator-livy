@@ -44,6 +44,7 @@ import org.apache.livy.sessions._
 import org.apache.livy.sessions.Session._
 import org.apache.livy.sessions.SessionState.Dead
 import org.apache.livy.utils._
+import org.apache.livy.Utils.usingResource
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class InteractiveRecoveryMetadata(
@@ -260,10 +261,10 @@ object InteractiveSession extends Logging {
             val pyLibPath = Seq(sparkHome, "python", "lib").mkString(File.separator)
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
             val py4jFile = Try {
-              Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
-                .iterator()
-                .next()
-                .toFile
+              usingResource(
+                Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")) { ds =>
+                ds.iterator().next().toFile
+              }
             }.toOption
 
             if (!pyArchivesFile.exists()) {
