@@ -68,7 +68,7 @@ class JdbcIT extends BaseThriftIntegrationTestSuite {
         assert(resultSet.getString("id").toInt >= 0)
         assert(resultSet.getString("appId").startsWith("application_"))
         assert(resultSet.getString("state").nonEmpty)
-        assert(resultSet.getString("stderr").contains(resultSet.getString("appId")))
+        assert(resultSet.getString("logs").contains(resultSet.getString("appId")))
       }
     }
   }
