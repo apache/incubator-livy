@@ -81,4 +81,4 @@ COPY conf/log4j.properties.template /opt/livy/server/conf/log4j.properties
 # Install Livy
 WORKDIR /workspace
 # https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
-ENTRYPOINT ['/opt/livy/server/bin/livy-server', 'start']
+ENTRYPOINT ['/bin/bash','/opt/livy/server/bin/livy-server', 'start']
