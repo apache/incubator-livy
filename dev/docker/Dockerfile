@@ -72,12 +72,12 @@ RUN curl -L -o /opt/livy.zip https://dlcdn.apache.org/incubator/livy/${APACHE_LI
 
 RUN mv /opt/livy/apache-livy-${APACHE_LIVY}-incubating-bin /opt/livy/${APACHE_LIVY}
 
-RUN mv /opt/livy/${APACHE_LIVY}/conf/livy.conf.template /opt/livy/${APACHE_LIVY}/conf/livy.conf && \
-    mv /opt/livy/${APACHE_LIVY}/conf/livy-env.conf.template /opt/livy/${APACHE_LIVY}/conf/livy-env.conf && \
-    mv /opt/livy/${APACHE_LIVY}/conf/spark-blacklist.conf.template /opt/livy/${APACHE_LIVY}/conf/spark-blacklist.conf && \
-    mv /opt/livy/${APACHE_LIVY}/conf/livy-client.conf.template /opt/livy/${APACHE_LIVY}/conf/livy-client.conf && \
-    mv /opt/livy/${APACHE_LIVY}/conf/log4j.properties.template /opt/livy/${APACHE_LIVY}/conf/log4j.properties
-    
+COPY conf/livy.conf.template /opt/livy/${APACHE_LIVY}/conf/livy.conf
+COPY conf/livy-env.conf.template /opt/livy/${APACHE_LIVY}/conf/livy-env.conf
+COPY conf/spark-blacklist.conf.template /opt/livy/${APACHE_LIVY}/conf/spark-blacklist.conf
+COPY conf/livy-client.conf.template /opt/livy/${APACHE_LIVY}/conf/livy-client.conf
+COPY conf/log4j.properties.template /opt/livy/${APACHE_LIVY}/conf/log4j.properties
+
 # Install Livy
 WORKDIR /workspace
 # https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
