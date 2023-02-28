@@ -15,7 +15,11 @@
 # limitations under the License.
 #
 
-FROM ubuntu:xenial
+FROM openjdk:11-jdk-bullseye
+
+ARG SPARK_VERSION=3.3.2
+ARG HADOOP_VERSION=3
+ARG APACHE_LIVY=0.7.1
 
 # configure locale
 RUN apt-get update -qq > /dev/null && apt-get install -qq --yes --no-install-recommends \
@@ -32,28 +36,20 @@ RUN apt-get install -qq \
     git \
     libkrb5-dev \
     maven \
-    openjdk-8-jdk \
-    python-dev \
-    python-pip \
+    python3-dev \
+    python3-setuptools \
     python3-pip \
     software-properties-common \
-    vim \
-    wget
+    wget \
+    unzip
 
 # R 3.x install - ensure to add the signing key per https://cran.r-project.org/bin/linux/ubuntu/olderreleasesREADME.html
-RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu xenial-cran35/' && \
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 && \
-    apt-get update && \
-    apt-get -qq install r-base
+RUN apt-get update && \
+    apt-get -qq install -y r-base
 
-# Add build dependencies for python2
-# - First we upgrade pip because that makes a lot of things better
-# - Then we remove the provided version of setuptools and install a different version
-# - Then we install additional dependencies
-RUN python -m pip install -U "pip < 21.0" && \
-	apt-get remove -y python-setuptools && \
-	python -m pip install "setuptools < 36" && \
-	python -m pip install \
+# Now do the same for python3
+RUN python3 -m pip install -U pip
+RUN python3 -m pip install \
         cloudpickle \
         codecov \
         flake8 \
@@ -65,9 +61,16 @@ RUN python -m pip install -U "pip < 21.0" && \
         requests-kerberos \
         "requests >= 2.10.0" \
         "responses >= 0.5.1"
+# Install spark
+RUN mkdir -p /opt/spark &&  mkdir -p /opt/livy \
+RUN curl -L -o /opt/spark.tgz http://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz && \
+    tar -xvzf /opt/spark.tgz -C /opt/spark --strip-components 1
+RUN export SPARK_HOME=/opt/spark
 
-# Now do the same for python3
-RUN python3 -m pip install -U pip
+RUN curl -L -o /opt/livy.zip https://dlcdn.apache.org/incubator/livy/${APACHE_LIVY}-incubating/apache-livy-${APACHE_LIVY}-incubating-bin.zip && \
+    unzip -d /opt/livy 
 
+# Install Livy
 WORKDIR /workspace
 # https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
+ENTRYPOINT ['/opt/livy/bin/livyserver', 'start']
