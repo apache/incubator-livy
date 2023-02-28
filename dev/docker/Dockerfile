@@ -79,7 +79,7 @@ COPY conf/livy-client.conf.template /opt/livy/server/conf/livy-client.conf
 COPY conf/log4j.properties.template /opt/livy/server/conf/log4j.properties
 COPY dev/docker/start_server.sh /start_server.sh
 
-RUN chown +x /start_server.sh
+RUN chmod 755 /start_server.sh
 
 # Install Livy
 WORKDIR /workspace
