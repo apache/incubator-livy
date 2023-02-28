@@ -77,6 +77,9 @@ COPY conf/livy-env.sh.template /opt/livy/server/conf/livy-env.sh
 COPY conf/spark-blacklist.conf.template /opt/livy/server/conf/spark-blacklist.conf
 COPY conf/livy-client.conf.template /opt/livy/server/conf/livy-client.conf
 COPY conf/log4j.properties.template /opt/livy/server/conf/log4j.properties
+COPY dev/docker/start_server.sh /start_server.sh
+
+RUN chown +x /start_server.sh
 
 # Install Livy
 WORKDIR /workspace
@@ -84,4 +87,4 @@ WORKDIR /workspace
 EXPOSE 8998
 RUN ls -l /opt/livy/server
 # https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
-CMD ["/opt/livy/server/bin/livy-server start"]
+ENTRYPOINT ["/start_server.sh"]
