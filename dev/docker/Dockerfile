@@ -68,8 +68,11 @@ RUN curl -L -o /opt/spark.tgz http://archive.apache.org/dist/spark/spark-${SPARK
 RUN export SPARK_HOME=/opt/spark
 
 RUN curl -L -o /opt/livy.zip https://dlcdn.apache.org/incubator/livy/${APACHE_LIVY}-incubating/apache-livy-${APACHE_LIVY}-incubating-bin.zip && \
-    unzip  -d /opt/livy /opt/livy.zip \
-    mv /opt/livy/apache-livy-${APACHE_LIVY}-incubating-bin /opt/livy/${APACHE_LIVY}
+    unzip  -d /opt/livy /opt/livy.zip
+
+RUN mv /opt/livy/apache-livy-${APACHE_LIVY}-incubating-bin /opt/livy/${APACHE_LIVY}
+
+RUN ls -l /opt/livy/${APACHE_LIVY}
 
 COPY /opt/livy/${APACHE_LIVY}/conf/livy.conf.template /opt/livy/${APACHE_LIVY}/conf/livy.conf
 COPY /opt/livy/${APACHE_LIVY}/conf/livy-env.conf.template /opt/livy/${APACHE_LIVY}/conf/livy-env.conf
