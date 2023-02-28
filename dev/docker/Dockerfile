@@ -65,7 +65,7 @@ RUN python3 -m pip install \
 RUN mkdir -p /opt/spark &&  mkdir -p /opt/livy
 RUN curl -L -o /opt/spark.tgz http://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz && \
     tar -xvzf /opt/spark.tgz -C /opt/spark --strip-components 1
-RUN export SPARK_HOME=/opt/spark
+
 
 RUN curl -L -o /opt/livy.zip https://dlcdn.apache.org/incubator/livy/${APACHE_LIVY}-incubating/apache-livy-${APACHE_LIVY}-incubating-bin.zip && \
     unzip  -d /opt/livy /opt/livy.zip
