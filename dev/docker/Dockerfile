@@ -68,9 +68,15 @@ RUN curl -L -o /opt/spark.tgz http://archive.apache.org/dist/spark/spark-${SPARK
 RUN export SPARK_HOME=/opt/spark
 
 RUN curl -L -o /opt/livy.zip https://dlcdn.apache.org/incubator/livy/${APACHE_LIVY}-incubating/apache-livy-${APACHE_LIVY}-incubating-bin.zip && \
-    unzip  -d /opt/livy /opt/livy.zip
+    unzip  -d /opt/livy /opt/livy.zip \
+    mv /opt/livy/apache-livy-${APACHE_LIVY}-incubating-bin /opt/livy/${APACHE_LIVY}
 
+COPY /opt/livy/${APACHE_LIVY}/livy.conf.template /opt/livy/${APACHE_LIVY}/livy.conf
+COPY /opt/livy/${APACHE_LIVY}/livy-env.conf.template /opt/livy/${APACHE_LIVY}/livy-env.conf
+COPY /opt/livy/${APACHE_LIVY}/spark-blacklist.conf.template /opt/livy/${APACHE_LIVY}/spark-blacklist.conf
+COPY /opt/livy/${APACHE_LIVY}/livy-client.conf.template /opt/livy/${APACHE_LIVY}/livy-client.conf
+COPY /opt/livy/${APACHE_LIVY}/log4j.properties.template /opt/livy/${APACHE_LIVY}/log4j.properties
 # Install Livy
 WORKDIR /workspace
 # https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
-ENTRYPOINT ['/opt/livy/bin/livyserver', 'start']
+ENTRYPOINT ['/opt/livy/${APACHE_LIVY}/bin/livy-server', 'start']
