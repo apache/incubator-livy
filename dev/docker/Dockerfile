@@ -68,7 +68,7 @@ RUN curl -L -o /opt/spark.tgz http://archive.apache.org/dist/spark/spark-${SPARK
 RUN export SPARK_HOME=/opt/spark
 
 RUN curl -L -o /opt/livy.zip https://dlcdn.apache.org/incubator/livy/${APACHE_LIVY}-incubating/apache-livy-${APACHE_LIVY}-incubating-bin.zip && \
-    unzip -d /opt/livy 
+    unzip  -d /opt/livy /opt/livy.zip
 
 # Install Livy
 WORKDIR /workspace
