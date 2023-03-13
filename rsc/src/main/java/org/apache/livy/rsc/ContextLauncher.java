@@ -251,6 +251,10 @@ class ContextLauncher {
       launcher.setAppResource(SparkLauncher.NO_RESOURCE);
       launcher.setPropertiesFile(confFile.getAbsolutePath());
       launcher.setMainClass(RSCDriverBootstrapper.class.getName());
+      String[] jarList = conf.get(SPARK_JARS_KEY).split(",");
+      for (String jar : jarList) {
+        launcher.addJar(jar);
+      }
       // launcher.addJar("s3://allxu-test/rapids-4-spark_2.12-23.02.0-SNAPSHOT-cuda11.jar");
 
       if (conf.get(PROXY_USER) != null) {
