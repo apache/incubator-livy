@@ -193,6 +193,10 @@ class ContextLauncher {
       livyJars = Utils.join(jars, ",");
     }
     merge(conf, SPARK_JARS_KEY, livyJars, ",");
+    System.out.println("============== livyJars ================");
+    System.out.println("livyJars: " + livyJars);
+    System.out.println("============== rsc_conf.get(jars) ================");
+    System.out.println("rsc_conf.get(jars): " + conf.get(SPARK_JARS_KEY));
 
     merge(conf, SPARK_ARCHIVES_KEY, conf.get(RSCConf.Entry.SPARKR_PACKAGE), ",");
     merge(conf, "spark.submit.pyFiles", conf.get(RSCConf.Entry.PYSPARK_ARCHIVES), ",");
@@ -204,6 +208,10 @@ class ContextLauncher {
     // Let the launcher go away when launcher in yarn cluster mode. This avoids keeping lots
     // of "small" Java processes lingering on the Livy server node.
     conf.set("spark.yarn.submit.waitAppCompletion", "false");
+
+    conf.set("spark.jars", conf.get(SPARK_JARS_KEY)+ ",s3://allxu-test/rapids-4-spark_2.12-23.02.0-SNAPSHOT-cuda11.jar");
+    System.out.println("============== spark.jars ================");
+    System.out.println("spark.jars: " + conf.get("spark.jars"));
 
     if (!conf.getBoolean(CLIENT_IN_PROCESS) &&
         // For tests which doesn't shutdown RscDriver gracefully, JaCoCo exec isn't dumped properly.
@@ -243,6 +251,7 @@ class ContextLauncher {
       launcher.setAppResource(SparkLauncher.NO_RESOURCE);
       launcher.setPropertiesFile(confFile.getAbsolutePath());
       launcher.setMainClass(RSCDriverBootstrapper.class.getName());
+      // launcher.addJar("s3://allxu-test/rapids-4-spark_2.12-23.02.0-SNAPSHOT-cuda11.jar");
 
       if (conf.get(PROXY_USER) != null) {
         launcher.addSparkArg("--proxy-user", conf.get(PROXY_USER));

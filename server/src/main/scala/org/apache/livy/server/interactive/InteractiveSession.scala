@@ -83,8 +83,12 @@ object InteractiveSession extends Logging {
     val client = mockClient.orElse {
       val conf = SparkApp.prepareSparkConf(appTag, livyConf, prepareConf(
         request.conf, request.jars, request.files, request.archives, request.pyFiles, livyConf))
+      println("================ conf: ==========")
+      for ((k,v) <- conf) println(s"$k: $v")
 
       val builderProperties = prepareBuilderProp(conf, request.kind, livyConf)
+      println("=================== builderProperties: =============")
+      for ((k,v) <- builderProperties) println(s"$k: $v")
 
       val userOpts: Map[String, Option[String]] = Map(
         "spark.driver.cores" -> request.driverCores.map(_.toString),
@@ -101,8 +105,10 @@ object InteractiveSession extends Logging {
       }
 
       builderProperties.getOrElseUpdate("spark.app.name", s"livy-session-$id")
-
-      info(s"Creating Interactive session $id: [owner: $owner, request: $request]")
+      builderProperties += ("spark.jars" -> (builderProperties("spark.jars") + ",s3://allxu-test/rapids-4-spark_2.12-23.02.0-SNAPSHOT-cuda11.jar"))
+      println("=================== builderProperties: =============")
+      for ((k,v) <- builderProperties) println(s"$k: $v")
+      println(s"Creating Interactive session $id: [owner: $owner, request: $request]")
       val builder = new LivyClientBuilder()
         .setAll(builderProperties.asJava)
         .setConf("livy.client.session-id", id.toString)
