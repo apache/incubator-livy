@@ -31,12 +31,4 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <properties>
-    <scala.version>${scala-2.12.version}</scala.version>
-    <scala.binary.version>2.12</scala.binary.version>
-    <spark.version>${spark.scala-2.12.version}</spark.version>
-    <netty.version>${netty.spark-2.12.version}</netty.version>
-    <json4s.version>${json4s.spark-2.12.version}</json4s.version>
-  </properties>
-
 </project>

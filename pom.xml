@@ -79,11 +79,7 @@
 
   <properties>
     <asynchttpclient.version>2.10.1</asynchttpclient.version>
-    <hadoop.version>2.7.3</hadoop.version>
     <hadoop.scope>compile</hadoop.scope>
-    <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version>
-    <spark.scala-2.12.version>2.4.5</spark.scala-2.12.version>
-    <spark.version>${spark.scala-2.11.version}</spark.version>
     <hive.version>3.0.0</hive.version>
     <commons-codec.version>1.9</commons-codec.version>
     <httpclient.version>4.5.13</httpclient.version>
@@ -92,33 +88,37 @@
     <jackson-databind.version>2.12.7.1</jackson-databind.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
     <jetty.version>9.4.50.v20221201</jetty.version>
-    <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
-    <json4s.spark-2.12.version>3.5.3</json4s.spark-2.12.version>
-    <json4s.version>${json4s.spark-2.11.version}</json4s.version>
     <junit.version>4.13.1</junit.version>
     <libthrift.version>0.9.3</libthrift.version>
     <kryo.version>4.0.2</kryo.version>
     <metrics.version>3.1.0</metrics.version>
     <mockito.version>1.10.19</mockito.version>
-    <netty.spark-2.11.version>4.1.86.Final</netty.spark-2.11.version>
-    <netty.spark-2.12.version>4.1.86.Final</netty.spark-2.12.version>
-    <netty.version>${netty.spark-2.11.version}</netty.version>
+    <netty.version>4.1.86.Final</netty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <py4j.version>0.10.7</py4j.version>
-    <scala-2.11.version>2.11.12</scala-2.11.version>
-    <scala-2.12.version>2.12.10</scala-2.12.version>
-    <scala.binary.version>2.11</scala.binary.version>
-    <scala.version>${scala-2.11.version}</scala.version>
     <scalatest.version>3.0.8</scalatest.version>
     <scalatra.version>2.6.5</scalatra.version>
     <java.version>1.8</java.version>
     <test.redirectToFile>true</test.redirectToFile>
     <execution.root>${user.dir}</execution.root>
     <spark.home>${execution.root}/dev/spark</spark.home>
+    <!-- profile controlled parameters, we are setting the defaults here so we can run "mvn package" with default profile values -->
+    <!-- hadoop2 -->
+    <hadoop.major-minor.version>2.7</hadoop.major-minor.version>
+    <hadoop.version>2.7.3</hadoop.version>
+    <!-- scala2.11 -->
+    <scala.binary.version>2.11</scala.binary.version>
+    <scala.version>2.11.12</scala.version>
+    <!-- spark2 -->
+    <spark.version>2.4.5</spark.version>
+    <java.version>1.8</java.version>
+    <py4j.version>0.10.9</py4j.version>
+    <json4s.version>3.5.3</json4s.version>
+    <spark.bin.name>spark-${spark.version}-bin-hadoop${hadoop.major-minor.version}</spark.bin.name>
     <spark.bin.download.url>
-      https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
+      https://archive.apache.org/dist/spark/spark-${spark.version}/${spark.bin.name}.tgz
     </spark.bin.download.url>
-    <spark.bin.name>spark-2.4.5-bin-hadoop2.7</spark.bin.name>
+
     <!--  used for testing, NCSARequestLog use it for access log  -->
     <livy.log.dir>${basedir}/target</livy.log.dir>
 
@@ -205,19 +205,16 @@
     <module>client-common</module>
     <module>client-http</module>
     <module>core</module>
-    <module>core/scala-2.11</module>
-    <module>core/scala-2.12</module>
+    <module>core/scala-${scala.binary.version}</module>
     <module>coverage</module>
     <module>examples</module>
     <module>python-api</module>
     <module>repl</module>
-    <module>repl/scala-2.11</module>
-    <module>repl/scala-2.12</module>
+    <module>repl/scala-${scala.binary.version}</module>
     <module>rsc</module>
     <module>scala</module>
     <module>scala-api</module>
-    <module>scala-api/scala-2.11</module>
-    <module>scala-api/scala-2.12</module>
+    <module>scala-api/scala-${scala.binary.version}</module>
     <module>server</module>
     <module>test-lib</module>
     <module>integration-test</module>
@@ -882,6 +879,7 @@
             </goals>
             <configuration>
               <target>
+                <echo message="execRoot: ${execution.root}, buildDir: ${project.build.directory}"/>
                 <copy file="${execution.root}/scalastyle.xml"
                   tofile="${project.build.directory}/scalastyle.xml" />
                 <replace file="${project.build.directory}/scalastyle.xml"
@@ -930,13 +928,12 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>2.17</version>
         <configuration>
-          <verbose>false</verbose>
           <failOnViolation>true</failOnViolation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          <failOnWarning>false</failOnWarning>
           <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
           <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
           <configLocation>${project.build.directory}/checkstyle.xml</configLocation>
+          <headerLocation>${project.build.directory}/checkstyle.header</headerLocation>
           <outputFile>${basedir}/target/checkstyle-output.xml</outputFile>
           <inputEncoding>${project.build.sourceEncoding}</inputEncoding>
           <outputEncoding>${project.reporting.outputEncoding}</outputEncoding>
@@ -1045,6 +1042,28 @@
 
   <profiles>
     <profile>
+      <id>hadoop2</id>
+      <properties>
+        <hadoop.major-minor.version>2.7</hadoop.major-minor.version>
+        <hadoop.version>2.7.3</hadoop.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>scala-2.11</id>
+      <properties>
+        <scala.binary.version>2.11</scala.binary.version>
+        <scala.version>2.11.12</scala.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>scala-2.12</id>
+      <properties>
+        <scala.binary.version>2.12</scala.binary.version>
+        <scala.version>2.12.10</scala.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>thriftserver</id>
       <modules>
         <module>thriftserver/server</module>
@@ -1052,30 +1071,31 @@
         <module>thriftserver/client</module>
       </modules>
     </profile>
-
     <profile>
-      <id>spark-3.0</id>
-      <activation>
-        <property>
-          <name>spark-3.0</name>
-        </property>
-      </activation>
+      <id>spark2</id>
       <properties>
-        <spark.scala-2.12.version>3.0.0</spark.scala-2.12.version>
-        <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version>
-        <spark.version>${spark.scala-2.11.version}</spark.version>
-        <netty.spark-2.12.version>4.1.86.Final</netty.spark-2.12.version>
-        <netty.spark-2.11.version>4.1.86.Final</netty.spark-2.11.version>
-        <netty.version>${netty.spark-2.11.version}</netty.version>
+        <spark.version>2.4.5</spark.version>
         <java.version>1.8</java.version>
         <py4j.version>0.10.9</py4j.version>
-        <json4s.spark-2.11.version>3.5.3</json4s.spark-2.11.version>
-        <json4s.spark-2.12.version>3.6.6</json4s.spark-2.12.version>
-        <json4s.version>${json4s.spark-2.11.version}</json4s.version>
+        <json4s.version>3.5.3</json4s.version>
+        <spark.bin.name>spark-${spark.version}-bin-hadoop${hadoop.major-minor.version}</spark.bin.name>
         <spark.bin.download.url>
-          https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop2.7.tgz
+          https://archive.apache.org/dist/spark/spark-${spark.version}/${spark.bin.name}.tgz
         </spark.bin.download.url>
-        <spark.bin.name>spark-3.0.0-bin-hadoop2.7</spark.bin.name>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>spark3</id>
+      <properties>
+        <spark.version>3.0.0</spark.version>
+        <java.version>1.8</java.version>
+        <py4j.version>0.10.9</py4j.version>
+        <json4s.version>3.6.6</json4s.version>
+        <spark.bin.name>spark-${spark.version}-bin-hadoop${hadoop.major-minor.version}</spark.bin.name>
+        <spark.bin.download.url>
+          https://archive.apache.org/dist/spark/spark-${spark.version}/${spark.bin.name}.tgz
+        </spark.bin.download.url>
       </properties>
     </profile>
 
