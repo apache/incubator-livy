@@ -23,7 +23,7 @@ jobs:
     container: ghcr.io/${{ github.repository_owner }}/livy-ci:latest
     strategy:
       matrix:
-        spark_version: [2.4, 3.0]
+        spark_version: ["2.4", "3.0"]
     steps:
     - 
       name: Checkout
