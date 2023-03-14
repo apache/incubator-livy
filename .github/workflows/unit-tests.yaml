@@ -19,11 +19,19 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-20.04
+    # TODO: Possibly point to the ./build-ci-image.yaml with the "uses" key
     container: ghcr.io/${{ github.repository_owner }}/livy-ci:latest
+    strategy:
+      matrix:
+        spark_version: [2.4, 3.0]
     steps:
     - 
       name: Checkout
       uses: actions/checkout@v3
+    -
+      name: Set profile based on matrix
+      run: |
+        if [ "${{ matrix.spark_version }}" == "3.0" ]; then echo "mvn_profile=-Pspark-3.0" >> $GITHUB_ENV; fi
     - 
       name: Build with Maven
-      run: mvn -Pthriftserver -DskipITs -Dmaven.javadoc.skip=true -B -V -e verify
+      run: mvn -Pthriftserver ${{ env.mvn_profile }} -DskipITs -Dmaven.javadoc.skip=true -B -V -e verify

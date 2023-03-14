@@ -18,6 +18,9 @@ name: 'Build CI images'
 on: 
   push:
     branches: ["main", "feature/github-actions"]
+    # Commented out until PR is ready
+    # paths:
+    # - 'dev/docker/Dockerfile'
 jobs:
   docker-build:
     runs-on: ubuntu-latest
