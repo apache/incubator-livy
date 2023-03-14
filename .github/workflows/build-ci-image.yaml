@@ -38,10 +38,9 @@ jobs:
       - 
         name: Build and push image
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           push: true
           context: ./dev/docker
-          file: ./Dockerfile
           tags: |
             ghcr.io/${{ github.repository_owner }}/livy-ci:latest
