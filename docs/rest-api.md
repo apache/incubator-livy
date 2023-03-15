@@ -267,7 +267,7 @@ Returns all the statements in a session.
   </tr>
   <tr>
     <td>order</td>
-    <td>Provide value as "latest" to get latest statement first </td>
+    <td>Provide value as "desc" to get statements in descending order (By default, the list is in ascending order)</td>
     <td>string</td>
   </tr>
 </table>

@@ -114,7 +114,7 @@ class InteractiveSessionServlet(
   get("/:id/statements") {
     withViewAccessSession { session =>
       val order = params.get("order")
-      val statements = if (order.map(_.trim).exists(_.equalsIgnoreCase("latest"))) {
+      val statements = if (order.map(_.trim).exists(_.equalsIgnoreCase("desc"))) {
         session.statements.reverse
       } else {
         session.statements
