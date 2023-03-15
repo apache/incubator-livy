@@ -35,8 +35,8 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          ~/.m2/repository
-          !~/.m2/repository/org/apache/livy
+          /root/.m2/repository
+          !/root/.m2/repository/org/apache/livy
         key: ${{ runner.os }}-maven-${{ hashFiles('pom.xml', '*/pom.xml', 'thriftserver/*/pom.xml', 'core/*/pom.xml', 'repl/*/pom.xml', 'scala-api/*/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
