@@ -15,7 +15,9 @@
 # limitations under the License.
 #
 name: Build and test
-on: [push]
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
 jobs:
   build:
     runs-on: ubuntu-20.04
@@ -41,4 +43,4 @@ jobs:
         if [ "${{ matrix.spark_version }}" = "3.0" ]; then echo "mvn_profile=-Pspark-3.0" >> $GITHUB_ENV; fi
     - 
       name: Build with Maven
-      run: mvn -Pthriftserver ${{ env.mvn_profile }} -DskipITs -Dmaven.javadoc.skip=true -B -V -e verify
+      run: mvn -Pthriftserver ${{ env.mvn_profile }} -DskipTests -Dmaven.javadoc.skip=true -B -V -e verify
