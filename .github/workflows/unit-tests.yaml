@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-name: Build and test
+name: Unit Tests
 on: [push]
 jobs:
   build:
@@ -28,13 +28,14 @@ jobs:
     - 
       name: Checkout
       uses: actions/checkout@v3
-    -
-      name: Setup maven cache
-      uses: actions/setup-java@v3
+    - 
+      name: Cache local Maven repository
+      uses: actions/cache@v3
       with:
-        distribution: 'temurin'
-        java-version: '8'
-        cache: 'maven'
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
     -
       name: Set profile based on matrix
       run: |
