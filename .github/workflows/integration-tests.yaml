@@ -18,6 +18,8 @@ name: Integration Tests
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+env:
+  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
 jobs:
   build:
     runs-on: ubuntu-20.04
@@ -34,7 +36,9 @@ jobs:
       name: Cache local Maven repository
       uses: actions/cache@v3
       with:
-        path: ~/.m2/repository
+        path: |
+          ~/.m2/repository
+          !~/.m2/repository/org/apache/livy
         key: ${{ runner.os }}-maven-${{ hashFiles('pom.xml', '*/pom.xml', 'thriftserver/*/pom.xml', 'core/*/pom.xml', 'repl/*/pom.xml', 'scala-api/*/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
