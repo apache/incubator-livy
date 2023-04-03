@@ -258,7 +258,7 @@ object InteractiveSession extends Logging {
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
             var py4jZip : DirectoryStream[java.nio.file.Path] = null;
             var py4jFile : File = null;
-            try{
+            try {
               py4jZip = Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
               py4jFile = py4jZip.iterator()
                 .next()
