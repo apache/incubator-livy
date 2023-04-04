@@ -23,14 +23,17 @@ import java.nio.ByteBuffer
 import java.nio.file.{DirectoryStream, Files, Paths}
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Random, Try}
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.apache.hadoop.fs.Path
 import org.apache.spark.launcher.SparkLauncher
+
 import org.apache.livy._
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.rsc.{PingJob, RSCClient, RSCConf}
