@@ -256,8 +256,8 @@ object InteractiveSession extends Logging {
           sys.env.get("SPARK_HOME") .map { case sparkHome =>
             val pyLibPath = Seq(sparkHome, "python", "lib").mkString(File.separator)
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
-            var py4jZip : DirectoryStream[java.nio.file.Path] = null;
-            var py4jFile : File = null;
+            var py4jZip: DirectoryStream[java.nio.file.Path] = null;
+            var py4jFile: File = null;
             try {
               py4jZip = Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
               py4jFile = py4jZip.iterator()
