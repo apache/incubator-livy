@@ -243,7 +243,7 @@ public class RSCClient implements LivyClient {
           LOG.info("Failing pending job {} due to shutdown.", e.getKey());
           try {
             e.getValue().setFailure(new IOException("RSCClient instance stopped."));
-          } catch (Exception e2){
+          } catch (Exception e2) {
             LOG.info("Job " + e.getKey() + " already failed.", e2);
           }
         }
