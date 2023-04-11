@@ -113,7 +113,12 @@ class InteractiveSessionServlet(
 
   get("/:id/statements") {
     withViewAccessSession { session =>
-      val statements = session.statements
+      val order = params.get("order")
+      val statements = if (order.map(_.trim).exists(_.equalsIgnoreCase("desc"))) {
+        session.statements.reverse
+      } else {
+        session.statements
+      }
       val from = params.get("from").map(_.toInt).getOrElse(0)
       val size = params.get("size").map(_.toInt).getOrElse(statements.length)
 
