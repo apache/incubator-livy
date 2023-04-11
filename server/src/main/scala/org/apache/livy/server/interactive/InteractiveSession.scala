@@ -20,7 +20,7 @@ package org.apache.livy.server.interactive
 import java.io.{File, InputStream}
 import java.net.URI
 import java.nio.ByteBuffer
-import java.nio.file.{Files, Paths}
+import java.nio.file.{DirectoryStream, Files, Paths}
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
@@ -259,21 +259,27 @@ object InteractiveSession extends Logging {
           sys.env.get("SPARK_HOME") .map { case sparkHome =>
             val pyLibPath = Seq(sparkHome, "python", "lib").mkString(File.separator)
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
-            val py4jFile = Try {
-              Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
-                .iterator()
+            var py4jZip: DirectoryStream[java.nio.file.Path] = null;
+            var py4jFile: File = null;
+            try {
+              py4jZip = Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
+              py4jFile = py4jZip.iterator()
                 .next()
                 .toFile
-            }.toOption
-
+            }
+            finally {
+              if (py4jZip != null) {
+                py4jZip.close()
+              }
+            }
             if (!pyArchivesFile.exists()) {
               warn("pyspark.zip not found; cannot start pyspark interpreter.")
               Seq.empty
-            } else if (py4jFile.isEmpty || !py4jFile.get.exists()) {
+            } else if (!py4jFile.exists()) {
               warn("py4j-*-src.zip not found; can start pyspark interpreter.")
               Seq.empty
             } else {
-              Seq(pyArchivesFile.getAbsolutePath, py4jFile.get.getAbsolutePath)
+              Seq(pyArchivesFile.getAbsolutePath, py4jFile.getAbsolutePath)
             }
           }.getOrElse(Seq())
         }
