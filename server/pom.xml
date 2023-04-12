@@ -106,10 +106,6 @@
           <groupId>org.apache.zookeeper</groupId>
           <artifactId>zookeeper</artifactId>
         </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
 
@@ -124,10 +120,6 @@
         <exclusion>
           <groupId>com.sun.jersey</groupId>
           <artifactId>jersey-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
         </exclusion>
       </exclusions>
       <scope>${hadoop.scope}</scope>
