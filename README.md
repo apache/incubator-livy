@@ -88,3 +88,15 @@ between different Spark versions.
 
 The Livy package itself does not contain a Spark distribution. It will work with any supported
 version of Spark without needing to rebuild.
+
+## Run Livy
+
+To start, stop and see server status, 
+```
+    ./bin/livy-server (start|stop|status)
+```
+
+* On Windows: ./bin/livy-server.cmd script is used. Alternatively, one can type livy-server.cmd (start|stop|status).
+
+* On Unix: ./bin/livy-server bash script is used.
+
