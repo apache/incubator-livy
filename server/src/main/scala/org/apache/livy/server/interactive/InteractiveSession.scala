@@ -411,7 +411,7 @@ class InteractiveSession(
     heartbeat()
     app = mockApp.orElse {
       val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
-        .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
+        .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE), Some(id)))
 
       if (livyConf.isRunningOnYarn() || driverProcess.isDefined) {
         Some(SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)))

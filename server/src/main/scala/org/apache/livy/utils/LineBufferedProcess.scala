@@ -19,10 +19,15 @@ package org.apache.livy.utils
 
 import org.apache.livy.{Logging, Utils}
 
-class LineBufferedProcess(process: Process, logSize: Int) extends Logging {
+class LineBufferedProcess(
+    process: Process,
+    logSize: Int,
+    sessionId: Option[Int] = None) extends Logging {
 
-  private[this] val _inputStream = new LineBufferedStream(process.getInputStream, logSize)
-  private[this] val _errorStream = new LineBufferedStream(process.getErrorStream, logSize)
+  private[this] val _inputStream =
+    new LineBufferedStream(process.getInputStream, logSize, sessionId)
+  private[this] val _errorStream =
+    new LineBufferedStream(process.getErrorStream, logSize, sessionId)
 
   def inputLines: IndexedSeq[String] = _inputStream.lines
   def errorLines: IndexedSeq[String] = _errorStream.lines
