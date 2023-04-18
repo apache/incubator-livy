@@ -636,6 +636,61 @@ A session represents an interactive shell.
     <td>The detailed application info</td>
     <td>Map of key=val</td>
   </tr>
+  <tr>
+    <td>jars</td>
+    <td>jars to be used in this session</td>
+    <td>list of strings</td>
+  </tr>
+  <tr>
+    <td>pyFiles</td>
+    <td>Python files to be used in this session</td>
+    <td>list of strings</td>
+  </tr>
+  <tr>
+    <td>files</td>
+    <td>files to be used in this session</td>
+    <td>list of strings</td>
+  </tr>
+  <tr>
+    <td>driverMemory</td>
+    <td>Amount of memory to use for the driver process</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>driverCores</td>
+    <td>Number of cores to use for the driver process</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>executorMemory</td>
+    <td>Amount of memory to use per executor process</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>executorCores</td>
+    <td>Number of cores to use for each executor</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>numExecutors</td>
+    <td>Number of executors to launch for this session</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>archives</td>
+    <td>Archives to be used in this session</td>
+    <td>List of string</td>
+  </tr>
+  <tr>
+    <td>queue</td>
+    <td>The name of the YARN queue to which submitted</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>conf</td>
+    <td>Spark configuration properties</td>
+    <td>Map of key=val</td>
+  </tr>
 </table>
 
 

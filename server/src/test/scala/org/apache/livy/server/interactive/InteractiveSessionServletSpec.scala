@@ -70,6 +70,17 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
       when(session.proxyUser).thenReturn(None)
       when(session.heartbeatExpired).thenReturn(false)
       when(session.ttl).thenReturn(None)
+      when(session.driverMemory).thenReturn(None)
+      when(session.driverCores).thenReturn(None)
+      when(session.executorMemory).thenReturn(None)
+      when(session.executorCores).thenReturn(None)
+      when(session.numExecutors).thenReturn(None)
+      when(session.queue).thenReturn(None)
+      when(session.conf).thenReturn(Map.empty[String, String])
+      when(session.archives).thenReturn(List())
+      when(session.files).thenReturn(List())
+      when(session.jars).thenReturn(List())
+      when(session.pyFiles).thenReturn(List())
       when(session.statements).thenAnswer(
         new Answer[IndexedSeq[Statement]]() {
           override def answer(args: InvocationOnMock): IndexedSeq[Statement] = statements
@@ -184,6 +195,17 @@ class InteractiveSessionServletSpec extends BaseInteractiveServletSpec {
     when(session.logLines()).thenReturn(log)
     when(session.heartbeatExpired).thenReturn(false)
     when(session.ttl).thenReturn(None)
+    when(session.driverMemory).thenReturn(None)
+    when(session.driverCores).thenReturn(None)
+    when(session.executorMemory).thenReturn(None)
+    when(session.executorCores).thenReturn(None)
+    when(session.numExecutors).thenReturn(None)
+    when(session.queue).thenReturn(None)
+    when(session.conf).thenReturn(Map.empty[String, String])
+    when(session.archives).thenReturn(List())
+    when(session.files).thenReturn(List())
+    when(session.jars).thenReturn(List())
+    when(session.pyFiles).thenReturn(List())
 
     val req = mock[HttpServletRequest]
 
