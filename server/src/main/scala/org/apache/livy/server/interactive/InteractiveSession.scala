@@ -20,7 +20,7 @@ package org.apache.livy.server.interactive
 import java.io.{File, InputStream}
 import java.net.URI
 import java.nio.ByteBuffer
-import java.nio.file.{Files, Paths}
+import java.nio.file.{DirectoryStream, Files, Paths}
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
@@ -55,6 +55,18 @@ case class InteractiveRecoveryMetadata(
     heartbeatTimeoutS: Int,
     owner: String,
     ttl: Option[String],
+    driverMemory: Option[String],
+    driverCores: Option[Int],
+    executorMemory: Option[String],
+    executorCores: Option[Int],
+    conf: Map[String, String],
+    archives: List[String],
+    files: List[String],
+    jars: List[String],
+    numExecutors: Option[Int],
+    pyFiles: List[String],
+    queue: Option[String],
+    // proxyUser is deprecated. It is available here only for backward compatibility
     proxyUser: Option[String],
     rscDriverUri: Option[URI],
     version: Int = 1)
@@ -127,6 +139,17 @@ object InteractiveSession extends Logging {
       impersonatedUser,
       ttl,
       sessionStore,
+      request.driverMemory,
+      request.driverCores,
+      request.executorMemory,
+      request.executorCores,
+      request.conf,
+      request.archives,
+      request.files,
+      request.jars,
+      request.numExecutors,
+      request.pyFiles,
+      request.queue,
       mockApp)
   }
 
@@ -155,6 +178,17 @@ object InteractiveSession extends Logging {
       metadata.proxyUser,
       metadata.ttl,
       sessionStore,
+      metadata.driverMemory,
+      metadata.driverCores,
+      metadata.executorMemory,
+      metadata.executorCores,
+      metadata.conf,
+      metadata.archives,
+      metadata.files,
+      metadata.jars,
+      metadata.numExecutors,
+      metadata.pyFiles,
+      metadata.queue,
       mockApp)
   }
 
@@ -259,21 +293,27 @@ object InteractiveSession extends Logging {
           sys.env.get("SPARK_HOME") .map { case sparkHome =>
             val pyLibPath = Seq(sparkHome, "python", "lib").mkString(File.separator)
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
-            val py4jFile = Try {
-              Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
-                .iterator()
+            var py4jZip: DirectoryStream[java.nio.file.Path] = null;
+            var py4jFile: File = null;
+            try {
+              py4jZip = Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
+              py4jFile = py4jZip.iterator()
                 .next()
                 .toFile
-            }.toOption
-
+            }
+            finally {
+              if (py4jZip != null) {
+                py4jZip.close()
+              }
+            }
             if (!pyArchivesFile.exists()) {
               warn("pyspark.zip not found; cannot start pyspark interpreter.")
               Seq.empty
-            } else if (py4jFile.isEmpty || !py4jFile.get.exists()) {
+            } else if (!py4jFile.exists()) {
               warn("py4j-*-src.zip not found; can start pyspark interpreter.")
               Seq.empty
             } else {
-              Seq(pyArchivesFile.getAbsolutePath, py4jFile.get.getAbsolutePath)
+              Seq(pyArchivesFile.getAbsolutePath, py4jFile.getAbsolutePath)
             }
           }.getOrElse(Seq())
         }
@@ -371,12 +411,23 @@ class InteractiveSession(
     val client: Option[RSCClient],
     initialState: SessionState,
     val kind: Kind,
-    heartbeatTimeoutS: Int,
+    val heartbeatTimeoutS: Int,
     livyConf: LivyConf,
     owner: String,
     override val proxyUser: Option[String],
     ttl: Option[String],
     sessionStore: SessionStore,
+    val driverMemory: Option[String],
+    val driverCores: Option[Int],
+    val executorMemory: Option[String],
+    val executorCores: Option[Int],
+    val conf: Map[String, String],
+    val archives: List[String],
+    val files: List[String],
+    val jars: List[String],
+    val numExecutors: Option[Int],
+    val pyFiles: List[String],
+    val queue: Option[String],
     mockApp: Option[SparkApp]) // For unit test.
   extends Session(id, name, owner, ttl, livyConf)
   with SessionHeartbeat
@@ -469,7 +520,10 @@ class InteractiveSession(
 
   override def recoveryMetadata: RecoveryMetadata =
     InteractiveRecoveryMetadata(id, name, appId, appTag, kind,
-      heartbeatTimeout.toSeconds.toInt, owner, None, proxyUser, rscDriverUri)
+      heartbeatTimeout.toSeconds.toInt, owner, None,
+      driverMemory, driverCores, executorMemory, executorCores, conf,
+      archives, files, jars, numExecutors, pyFiles, queue,
+      proxyUser, rscDriverUri)
 
   override def state: SessionState = {
     if (serverSideState == SessionState.Running) {
