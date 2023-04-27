@@ -458,7 +458,9 @@ class InteractiveSession(
       val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
         .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
 
-      if (livyConf.isRunningOnYarn() || driverProcess.isDefined) {
+      if (!livyConf.isRunningOnKubernetes()){
+        driverProcess.map(_ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)))
+      } else if (livyConf.isRunningOnYarn() || driverProcess.isDefined) {
         Some(SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)))
       } else {
         None
@@ -540,6 +542,7 @@ class InteractiveSession(
       transition(SessionState.ShuttingDown)
       sessionStore.remove(RECOVERY_SESSION_TYPE, id)
       client.foreach { _.stop(true) }
+      if(livyConf.isRunningOnKubernetes()) app.foreach(_.kill())
     } catch {
       case _: Exception =>
         app.foreach {
