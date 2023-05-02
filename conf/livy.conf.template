@@ -48,6 +48,9 @@
 # livy.server.request-header.size = 131072
 # livy.server.response-header.size = 131072
 
+# Whether or not to send server version in http response.
+# livy.server.send-server-version = false
+
 # Enabled to check whether timeout Livy sessions should be stopped.
 # livy.server.session.timeout-check = true
 #
