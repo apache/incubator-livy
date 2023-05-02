@@ -34,6 +34,9 @@ import org.apache.livy.utils.AppInfo
 object Session {
   trait RecoveryMetadata { val id: Int }
 
+  val BLACKLIST_CUSTOM_CLASSPATH: Set[String] = Set("spark.submit.deployMode",
+    "spark.submit.proxyUser.allowCustomClasspathInClusterMode")
+
   lazy val configBlackList: Set[String] = {
     val url = getClass.getResource("/spark-blacklist.conf")
     if (url != null) Utils.loadProperties(url).keySet else Set()
@@ -58,7 +61,11 @@ object Session {
       return Map()
     }
 
-    val errors = conf.keySet.filter(configBlackList.contains)
+    val errors = if (livyConf.getBoolean(LivyConf.SESSION_ALLOW_CUSTOM_CLASSPATH)) {
+      conf.keySet.filter(configBlackList.contains)
+    } else {
+      conf.keySet.filter((configBlackList ++ BLACKLIST_CUSTOM_CLASSPATH).contains)
+    }
     if (errors.nonEmpty) {
       throw new IllegalArgumentException(
         "Blacklisted configuration values in session config: " + errors.mkString(", "))
