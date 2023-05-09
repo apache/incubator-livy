@@ -67,6 +67,8 @@ object LivyConf {
   val REQUEST_HEADER_SIZE = Entry("livy.server.request-header.size", 131072)
   val RESPONSE_HEADER_SIZE = Entry("livy.server.response-header.size", 131072)
 
+  val SEND_SERVER_VERSION = Entry("livy.server.send-server-version", false)
+
   val CSRF_PROTECTION = Entry("livy.server.csrf-protection.enabled", false)
 
   val IMPERSONATION_ENABLED = Entry("livy.impersonation.enabled", false)
