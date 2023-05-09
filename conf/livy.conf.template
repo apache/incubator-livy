@@ -188,3 +188,7 @@
 # livy.server.auth.<custom>.class = <class of custom auth filter>
 # livy.server.auth.<custom>.param.<foo1> = <bar1>
 # livy.server.auth.<custom>.param.<foo2> = <bar2>
+
+# Enable to allow custom classpath by proxy user in cluster mode
+# The below configuration parameter is disabled by default.
+# livy.server.session.allow-custom-classpath = true

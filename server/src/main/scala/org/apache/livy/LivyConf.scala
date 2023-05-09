@@ -264,6 +264,8 @@ object LivyConf {
   // Max creating session in livyServer
   val SESSION_MAX_CREATION = Entry("livy.server.session.max-creation", 100)
 
+  val SESSION_ALLOW_CUSTOM_CLASSPATH = Entry("livy.server.session.allow-custom-classpath", false)
+
   val SPARK_MASTER = "spark.master"
   val SPARK_DEPLOY_MODE = "spark.submit.deployMode"
   val SPARK_JARS = "spark.jars"
