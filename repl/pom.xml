@@ -84,8 +84,8 @@
     </dependency>
 
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
+      <groupId>ch.qos.reload4j</groupId>
+      <artifactId>reload4j</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -100,6 +100,16 @@
       <artifactId>spark-core_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -124,6 +134,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.esotericsoftware</groupId>
+      <artifactId>kryo-shaded</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-compiler</artifactId>
       <scope>provided</scope>
@@ -143,7 +158,7 @@
 
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <artifactId>slf4j-reload4j</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -176,6 +191,7 @@
                   <include>org.json4s:json4s-core_${scala.binary.version}</include>
                   <include>org.json4s:json4s-jackson_${scala.binary.version}</include>
                   <include>org.json4s:json4s-scalap_${scala.binary.version}</include>
+                  <include>com.esotericsoftware:kryo-shaded</include>
                 </includes>
               </artifactSet>
               <filters>
@@ -191,6 +207,10 @@
                 <relocation>
                   <pattern>org.json4s</pattern>
                   <shadedPattern>org.apache.livy.shaded.json4s</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.esotericsoftware</pattern>
+                  <shadedPattern>org.apache.livy.shaded.kryo</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>

@@ -71,6 +71,17 @@ cd incubator-livy
 mvn package
 ```
 
+You can also use the provided [Dockerfile](./Dockerfile):
+
+```
+git clone https://github.com/apache/incubator-livy.git
+cd incubator-livy/dev/docker
+docker build -t livy .
+docker run --rm -it -v $(pwd)/../../:/workspace -v $HOME/.m2:/root/.m2 livy mvn package
+```
+
+> **Note**: The `docker run` command maps the maven repository to your host machine's maven cache so subsequent runs will not need to download dependencies.
+
 By default Livy is built against Apache Spark 2.4.5, but the version of Spark used when running
 Livy does not need to match the version used to build Livy. Livy internally handles the differences
 between different Spark versions.

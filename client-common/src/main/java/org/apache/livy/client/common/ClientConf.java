@@ -36,7 +36,7 @@ import org.apache.livy.annotations.Private;
 public abstract class ClientConf<T extends ClientConf>
   implements Iterable<Map.Entry<String, String>> {
 
-  protected Logger LOG = LoggerFactory.getLogger(getClass());
+  protected static final Logger LOG = LoggerFactory.getLogger(ClientConf.class);
 
   public static interface ConfEntry {
 
@@ -152,11 +152,15 @@ public abstract class ClientConf<T extends ClientConf>
     String time = get(e, String.class);
     if (time == null) {
       check(e.dflt() != null,
-        "ConfEntry %s doesn't have a default value, cannot convert to time value.", e.key());
+              "ConfEntry %s doesn't have a default value, cannot convert to time value.", e.key());
       time = (String) e.dflt();
     }
+    return getTimeAsMs(time);
+  }
 
-    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(time.toLowerCase());
+  public static long getTimeAsMs(String time) {
+    check(time != null && !time.trim().isEmpty(), "Invalid time string: %s", time);
+    Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(time.trim().toLowerCase());
     if (!m.matches()) {
       throw new IllegalArgumentException("Invalid time string: " + time);
     }
@@ -168,8 +172,12 @@ public abstract class ClientConf<T extends ClientConf>
       throw new IllegalArgumentException("Invalid suffix: \"" + suffix + "\"");
     }
 
+    if (val < 0L) {
+      throw new IllegalArgumentException("Invalid value: " + val);
+    }
+
     return TimeUnit.MILLISECONDS.convert(val,
-      suffix != null ? TIME_SUFFIXES.get(suffix) : TimeUnit.MILLISECONDS);
+            suffix != null ? TIME_SUFFIXES.get(suffix) : TimeUnit.MILLISECONDS);
   }
 
   @SuppressWarnings("unchecked")
@@ -204,7 +212,7 @@ public abstract class ClientConf<T extends ClientConf>
     return (o != null) ? o.getClass() : String.class;
   }
 
-  private void check(boolean test, String message, Object... args) {
+  private static void check(boolean test, String message, Object... args) {
     if (!test) {
       throw new IllegalArgumentException(String.format(message, args));
     }

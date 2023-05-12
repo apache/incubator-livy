@@ -29,6 +29,7 @@ import org.scalatra._
 import org.scalatra.servlet.FileUploadSupport
 
 import org.apache.livy.{CompletionRequest, ExecuteRequest, JobHandle, LivyConf, Logging}
+import org.apache.livy.client.common.ClientConf
 import org.apache.livy.client.common.HttpMessages
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.server.{AccessManager, SessionServlet}
@@ -52,15 +53,23 @@ class InteractiveSessionServlet(
 
   override protected def createSession(req: HttpServletRequest): InteractiveSession = {
     val createRequest = bodyAs[CreateInteractiveRequest](req)
+    val sessionId = sessionManager.nextId();
+
+    // Calling getTimeAsMs just to validate the ttl value
+    if (createRequest.ttl.isDefined) {
+      ClientConf.getTimeAsMs(createRequest.ttl.get);
+    }
+
     InteractiveSession.create(
-      sessionManager.nextId(),
+      sessionId,
       createRequest.name,
       remoteUser(req),
       proxyUser(req, createRequest.proxyUser),
       livyConf,
       accessManager,
       createRequest,
-      sessionStore)
+      sessionStore,
+      createRequest.ttl)
   }
 
   override protected[interactive] def clientSessionView(
@@ -83,9 +92,15 @@ class InteractiveSessionServlet(
         Nil
       }
 
-    new SessionInfo(session.id, session.name.orNull, session.appId.orNull, session.owner,
-      session.proxyUser.orNull, session.state.toString, session.kind.toString,
-      session.appInfo.asJavaMap, logs.asJava)
+    new SessionInfo(session.id, session.name.orNull, session.appId.orNull,
+      session.owner, session.state.toString, session.kind.toString,
+      session.appInfo.asJavaMap, logs.asJava,
+      session.proxyUser.orNull, session.driverMemory.orNull,
+      session.driverCores.getOrElse(0), session.executorMemory.orNull,
+      session.executorCores.getOrElse(0), session.conf.asJava, session.archives.asJava,
+      session.files.asJava, session.heartbeatTimeoutS, session.jars.asJava,
+      session.numExecutors.getOrElse(0), session.proxyUser.orNull, session.pyFiles.asJava,
+      session.queue.orNull)
   }
 
   post("/:id/stop") {
@@ -104,7 +119,12 @@ class InteractiveSessionServlet(
 
   get("/:id/statements") {
     withViewAccessSession { session =>
-      val statements = session.statements
+      val order = params.get("order")
+      val statements = if (order.map(_.trim).exists(_.equalsIgnoreCase("desc"))) {
+        session.statements.reverse
+      } else {
+        session.statements
+      }
       val from = params.get("from").map(_.toInt).getOrElse(0)
       val size = params.get("size").map(_.toInt).getOrElse(statements.length)
 

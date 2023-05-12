@@ -67,6 +67,8 @@ object LivyConf {
   val REQUEST_HEADER_SIZE = Entry("livy.server.request-header.size", 131072)
   val RESPONSE_HEADER_SIZE = Entry("livy.server.response-header.size", 131072)
 
+  val SEND_SERVER_VERSION = Entry("livy.server.send-server-version", false)
+
   val CSRF_PROTECTION = Entry("livy.server.csrf-protection.enabled", false)
 
   val IMPERSONATION_ENABLED = Entry("livy.impersonation.enabled", false)
@@ -290,6 +292,8 @@ object LivyConf {
   val SESSION_STATE_RETAIN_TIME = Entry("livy.server.session.state-retain.sec", "600s")
   // Max creating session in livyServer
   val SESSION_MAX_CREATION = Entry("livy.server.session.max-creation", 100)
+
+  val SESSION_ALLOW_CUSTOM_CLASSPATH = Entry("livy.server.session.allow-custom-classpath", false)
 
   val SPARK_MASTER = "spark.master"
   val SPARK_DEPLOY_MODE = "spark.submit.deployMode"

@@ -59,7 +59,7 @@
 
     <dependency>
       <groupId>com.esotericsoftware</groupId>
-      <artifactId>kryo</artifactId>
+      <artifactId>kryo-shaded</artifactId>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -87,8 +87,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
+      <groupId>ch.qos.reload4j</groupId>
+      <artifactId>reload4j</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -118,7 +118,7 @@
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <artifactId>slf4j-reload4j</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -140,9 +140,8 @@
               <artifactSet>
                 <includes>
                   <include>org.apache.livy:livy-client-common</include>
-                  <include>com.esotericsoftware:kryo</include>
+                  <include>com.esotericsoftware:kryo-shaded</include>
                   <include>com.esotericsoftware:minlog</include>
-                  <include>com.esotericsoftware:reflectasm</include>
                 </includes>
               </artifactSet>
               <filters>
