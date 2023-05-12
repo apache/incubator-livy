@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import javax.security.sasl.Sasl;
 
@@ -149,6 +150,12 @@ public class RSCConf extends ClientConf<RSCConf> {
     LOG.warn("Set {} if you need to bind to another address.",
       Entry.RPC_SERVER_ADDRESS.key);
     return address.getCanonicalHostName();
+  }
+
+  public boolean isRunningOnKubernetes() {
+    return Optional.ofNullable(get("livy.spark.master"))
+            .filter(s -> s.startsWith("k8s"))
+            .isPresent();
   }
 
   private static final Map<String, DeprecatedConf> configsWithAlternatives
