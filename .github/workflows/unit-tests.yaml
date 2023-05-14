@@ -26,6 +26,7 @@ jobs:
     strategy:
       matrix:
         spark_version: ["2.4", "3.0"]
+        scala_version: ["2.11.12", "2.12.10"]
     steps:
     - 
       name: Checkout
@@ -43,7 +44,9 @@ jobs:
     -
       name: Set profile based on matrix
       run: |
-        if [ "${{ matrix.spark_version }}" = "3.0" ]; then echo "mvn_profile=-Pspark-3.0" >> $GITHUB_ENV; fi
+        SCALA_PROFILE_SUFFIX=$(echo "${{ matrix.scala_version }}" | cut -f1-2 -d\.)
+        SPARK_PROFILE_SUFFIX=$(echo "${{ matrix.spark_version }}" | cut -f1 -d\.)
+        echo "mvn_profile=-Pspark${SPARK_PROFILE_SUFFIX} -Pscala-${SCALA_PROFILE_SUFFIX}" >> $GITHUB_ENV
     - 
       name: Build with Maven
       run: mvn -Pthriftserver ${{ env.mvn_profile }} -DskipITs -Dmaven.javadoc.skip=true -B -V -e verify
