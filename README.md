@@ -88,3 +88,13 @@ between different Spark versions.
 
 The Livy package itself does not contain a Spark distribution. It will work with any supported
 version of Spark without needing to rebuild.
+
+### Build Profiles
+
+| Flag         | Purpose                                                            |
+|--------------|--------------------------------------------------------------------|
+| -Phadoop2    | Choose Hadoop2 based build dependencies (default configuration)    |
+| -Pspark2     | Choose Spark 2.x based build dependencies (default configuration)  |
+| -Pspark3     | Choose Spark 3.x based build dependencies                          |
+| -Pscala-2.11 | Choose Scala 2.11 based build dependencies (default configuration) |        
+| -Pscala-2.12 | Choose scala 2.12 based build dependencies                         |

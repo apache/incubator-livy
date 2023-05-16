@@ -25,7 +25,10 @@ jobs:
     container: ghcr.io/${{ github.repository_owner }}/livy-ci:latest
     strategy:
       matrix:
-        spark_version: ["2.4", "3.0"]
+        maven_profile:
+        - "-Pscala-2.11 -Pspark2"
+        - "-Pscala-2.12 -Pspark2"
+        - "-Pscala-2.12 -Pspark3"
     steps:
     - 
       name: Checkout
@@ -40,13 +43,9 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('pom.xml', '*/pom.xml', 'thriftserver/*/pom.xml', 'core/*/pom.xml', 'repl/*/pom.xml', 'scala-api/*/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
-    -
-      name: Set profile based on matrix
-      run: |
-        if [ "${{ matrix.spark_version }}" = "3.0" ]; then echo "mvn_profile=-Pspark-3.0" >> $GITHUB_ENV; fi
     - 
       name: Build with Maven
-      run: mvn -Pthriftserver ${{ env.mvn_profile }} -DskipITs -Dmaven.javadoc.skip=true -B -V -e verify
+      run: mvn -Pthriftserver ${{ matrix.mvn_profile }} -DskipITs -Dmaven.javadoc.skip=true -B -V -e verify
     -
       name: Upload coverage to codecov
       uses: codecov/codecov-action@v3

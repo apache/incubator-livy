@@ -18,18 +18,28 @@
 sudo: required
 dist: xenial
 language: scala
-  - 2.11.12
 
 matrix:
   include:
-  - name: "Spark 2.4 Unit Tests"
-    env: MVN_FLAG='-Pthriftserver -DskipITs'
-  - name: "Spark 2.4 ITs"
-    env: MVN_FLAG='-Pthriftserver -DskipTests'
-  - name: "Spark 3.0 Unit Tests"
-    env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipITs'
-  - name: "Spark 3.0 ITs"
-    env: MVN_FLAG='-Pthriftserver -Pspark-3.0 -DskipTests'
+  - name: "Spark 2.4 Unit Tests (Scala 2.11)"
+    scala: 2.11.12
+    env: MVN_FLAG='-Pscala-2.11 -Pspark2 -Pthriftserver -DskipITs'
+  - name: "Spark 2.4 ITs (Scala 2.11)"
+    scala: 2.11.12
+    env: MVN_FLAG='-Pscala-2.11 -Pspark2 -Pthriftserver -DskipTests'
+  - name: "Spark 2.4 Unit Tests (Scala 2.12)"
+    scala: 2.12.10
+    env: MVN_FLAG='-Pscala-2.12 -Pspark2 -Pthriftserver -DskipITs'
+  - name: "Spark 2.4 ITs (Scala 2.12)"
+    scala: 2.12.10
+    env: MVN_FLAG='-Pscala-2.12 -Pspark2 -Pthriftserver -DskipTests'
+# No scala 2.11.x build for spark3
+  - name: "Spark 3.0 Unit Tests (Scala 2.12)"
+    scala: 2.12.10
+    env: MVN_FLAG='-Pscala-2.12 -Pspark3 -Pthriftserver -DskipITs'
+  - name: "Spark 3.0 ITs (Scala 2.12)"
+    scala: 2.12.10
+    env: MVN_FLAG='-Pscala-2.12 -Pspark3 -Pthriftserver -DskipITs'
 
 jdk:
   - openjdk8
