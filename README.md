@@ -76,8 +76,8 @@ You can also use the provided [Dockerfile](./dev/docker/livy-dev-base/Dockerfile
 ```
 git clone https://github.com/apache/incubator-livy.git
 cd incubator-livy
-docker build -t livy-dev-base dev/docker/livy-dev-vase/
-docker run --rm -it -v $(pwd):/workspace -v $HOME/.m2:/root/.m2 livy-dev-base mvn package
+docker build -t livy-ci dev/docker/livy-dev-base/
+docker run --rm -it -v $(pwd):/workspace -v $HOME/.m2:/root/.m2 livy-ci mvn package
 ```
 
 > **Note**: The `docker run` command maps the maven repository to your host machine's maven cache so subsequent runs will not need to download dependencies.

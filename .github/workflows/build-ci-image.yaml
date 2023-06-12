@@ -19,7 +19,7 @@ on:
   push:
     branches: ["main"]
     paths:
-    - 'dev/docker/Dockerfile'
+    - 'dev/docker/livy-dev-base/Dockerfile'
 jobs:
   docker-build:
     runs-on: ubuntu-latest
