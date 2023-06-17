@@ -25,7 +25,8 @@ ENV LANG="en_US.UTF-8" \
     LANGUAGE="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8"
 
-# Install necessary dependencies for build/test
+# Install necessary dependencies for build/test/debug
+# Use `lsof -i -P -n` to find open ports
 RUN apt-get install -qq \
     apt-transport-https \
     curl \
@@ -38,7 +39,9 @@ RUN apt-get install -qq \
     python3-pip \
     software-properties-common \
     vim \
-    wget
+    wget \
+    telnet \
+    lsof
 
 # R 3.x install - ensure to add the signing key per https://cran.r-project.org/bin/linux/ubuntu/olderreleasesREADME.html
 RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu xenial-cran35/' && \
@@ -70,4 +73,4 @@ RUN python -m pip install -U "pip < 21.0" && \
 RUN python3 -m pip install -U pip
 
 WORKDIR /workspace
-# https://archive.apache.org/dist/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
+
