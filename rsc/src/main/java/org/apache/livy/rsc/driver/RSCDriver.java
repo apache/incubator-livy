@@ -393,7 +393,6 @@ public class RSCDriver extends BaseProtocol {
 
   void jobStarted(String jobId) {
     broadcast(new JobStarted(jobId));
-    broadcast(new ReplState(SessionState.Busy$.MODULE$.state()));
   }
 
   public void idleIfActiveJobsEmpty() {

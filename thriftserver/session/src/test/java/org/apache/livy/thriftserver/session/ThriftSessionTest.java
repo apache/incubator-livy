@@ -21,6 +21,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -204,12 +205,13 @@ public class ThriftSessionTest {
     waitFor(new RegisterSessionJob(s1));
     await().atMost(10, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS)
         .until(() -> rscClient.getReplStateChangedHistoryInTest()
-            .equals(Arrays.asList("busy", "idle")));
+            .equals(Collections.singletonList("idle")));
 
     waitFor(newSqlJob(s1, st1, "select 1"));
     await().atMost(10, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS)
         .until(() -> rscClient.getReplStateChangedHistoryInTest()
-            .equals(Arrays.asList("busy", "idle", "busy", "idle")));
+            .equals(Arrays.asList("idle", "busy", "idle")));
+
     // Tear down the session.
     waitFor(new UnregisterSessionJob(s1));
     rscClient.setTest(false);
