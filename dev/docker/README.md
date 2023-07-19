@@ -10,7 +10,8 @@ Following steps use Ubuntu as development environment but most of the instructio
 ```
 $ mvn clean package -Pscala-2.12 -Pspark3 -DskipITs -DskipTests
 ```
-This generates a zip file for livy similar to `assembly/target/apache-livy-0.8.0-incubating-SNAPSHOT_2.12-bin.zip`. It's useful to use the `clean` target to avoid mixing with previously built dependencies/versions.
+
+This generates a zip file for livy similar to `assembly/target/apache-livy-0.8.0-incubating_2.12-bin.zip`. It's useful to use the `clean` target to avoid mixing with previously built dependencies/versions.
 
 ### Build container images locally
 * Build livy-dev-base, livy-dev-spark, livy-dev-server container images using provided script `build-images.sh`

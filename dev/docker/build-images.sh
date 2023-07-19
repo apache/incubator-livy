@@ -29,7 +29,7 @@ HIVE_PACKAGE="apache-hive-${HIVE_VERSION}-bin.tar.gz"
 SPARK_VERSION=3.2.3
 SPARK_PACKAGE="spark-${SPARK_VERSION}-bin-without-hadoop.tgz"
 SCALA_VERSION=2.12
-LIVY_VERSION="0.8.0-incubating-SNAPSHOT_${SCALA_VERSION}"
+LIVY_VERSION="0.8.0-incubating_${SCALA_VERSION}"
 LIVY_PACKAGE="apache-livy-${LIVY_VERSION}-bin.zip"
 LOCALLY_BUILT_LIVY_PACKAGE="${SCRIPT_DIR}/../../assembly/target/${LIVY_PACKAGE}"
 
