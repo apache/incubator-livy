@@ -20,12 +20,12 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.8.0-incubating-SNAPSHOT</version>
+    <version>0.9.0-incubating-SNAPSHOT</version>
   </parent>
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-client-common</artifactId>
-  <version>0.8.0-incubating-SNAPSHOT</version>
+  <version>0.9.0-incubating-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <dependencies>
@@ -46,7 +46,7 @@
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <artifactId>slf4j-reload4j</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>

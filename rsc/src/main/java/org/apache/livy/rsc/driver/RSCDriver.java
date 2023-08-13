@@ -482,11 +482,12 @@ public class RSCDriver extends BaseProtocol {
     jc.sc().addFile(path);
   }
 
-  protected void addJarOrPyFile(String path) throws Exception {
+  protected String addJarOrPyFile(String path) throws Exception {
     File localCopyDir = new File(jc.getLocalTmpDir(), "__livy__");
     File localCopy = copyFileToLocal(localCopyDir, path, jc.sc().sc());
     addLocalFileToClassLoader(localCopy);
     jc.sc().addJar(path);
+    return localCopy.getPath();
   }
 
   public void addLocalFileToClassLoader(File localCopy) throws MalformedURLException {
@@ -509,8 +510,9 @@ public class RSCDriver extends BaseProtocol {
     File localCopy = new File(localCopyDir, name);
 
     if (localCopy.exists()) {
-      throw new IOException(String.format("A file with name %s has " +
-              "already been uploaded.", name));
+      LOG.warn(String.format("A file with name %s has " +
+              "already been uploaded, and hence will not be replaced.", name));
+      return localCopy;
     }
     Configuration conf = sc.hadoopConfiguration();
     FileSystem fs = FileSystem.get(uri, conf);

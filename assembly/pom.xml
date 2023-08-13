@@ -20,16 +20,16 @@
   <parent>
     <groupId>org.apache.livy</groupId>
     <artifactId>livy-main</artifactId>
-    <version>0.8.0-incubating-SNAPSHOT</version>
+    <version>0.9.0-incubating-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>livy-assembly</artifactId>
-  <version>0.8.0-incubating-SNAPSHOT</version>
+  <version>0.9.0-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>
-    <assembly.name>apache-livy-${project.version}-bin</assembly.name>
+    <assembly.name>apache-livy-${project.version}_${scala.binary.version}-bin</assembly.name>
     <assembly.format>zip</assembly.format>
     <skipDeploy>true</skipDeploy>
   </properties>
@@ -43,13 +43,7 @@
 
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>livy-repl_2.11</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>livy-repl_2.12</artifactId>
+      <artifactId>livy-repl_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
     </dependency>
 
