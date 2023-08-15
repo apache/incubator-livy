@@ -121,6 +121,10 @@
           <groupId>com.sun.jersey</groupId>
           <artifactId>jersey-core</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>javax.xml.bind</groupId>
+          <artifactId>jaxb-api</artifactId>
+        </exclusion>
       </exclusions>
       <scope>${hadoop.scope}</scope>
     </dependency>
