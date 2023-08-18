@@ -71,6 +71,9 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
       keyStorePassword.foreach(sslContextFactory.setKeyStorePassword)
       keyPassword.foreach(sslContextFactory.setKeyManagerPassword)
 
+      val keystoreType = livyConf.get(LivyConf.SSL_KEYSTORE_TYPE)
+      sslContextFactory.setKeyStoreType(keystoreType)
+
       (new ServerConnector(server,
         new SslConnectionFactory(sslContextFactory, "http/1.1"),
         new HttpConnectionFactory(https)), "https")
