@@ -436,6 +436,7 @@ class InteractiveSession(
   import InteractiveSession._
 
   private var serverSideState: SessionState = initialState
+  private val statementStore = new StatementStore(livyConf)
 
   override protected val heartbeatTimeout: FiniteDuration = {
     val heartbeatTimeoutInSecond = heartbeatTimeoutS
@@ -537,6 +538,10 @@ class InteractiveSession(
 
   override def stopSession(): Unit = {
     try {
+      statementStore.save(appTag + "_statements", Map(
+        "total_statements" -> statements.length,
+        "statements" -> statements
+      ))
       transition(SessionState.ShuttingDown)
       sessionStore.remove(RECOVERY_SESSION_TYPE, id)
       client.foreach { _.stop(true) }
