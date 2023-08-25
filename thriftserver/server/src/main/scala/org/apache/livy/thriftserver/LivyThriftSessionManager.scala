@@ -95,7 +95,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     if (!future.isCompleted) {
       Try(Await.result(future, maxSessionWait)) match {
         case Success(session) => session
-        case Failure(e) => throw e.getCause
+        case Failure(e) => throw Option(e.getCause).getOrElse(e)
       }
     } else {
       future.value match {
