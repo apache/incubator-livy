@@ -267,6 +267,10 @@ object LivyConf {
 
   val SESSION_ALLOW_CUSTOM_CLASSPATH = Entry("livy.server.session.allow-custom-classpath", false)
 
+  // Escape backticks for spark-submit arguments in SparkProcessBuilder
+  // https://github.com/apache/incubator-livy/issues/415
+  val SPARK_SUBMIT_ESCAPE_BACKTICKS = Entry("livy.server.escapeBackTicks", false)
+
   val SPARK_MASTER = "spark.master"
   val SPARK_DEPLOY_MODE = "spark.submit.deployMode"
   val SPARK_JARS = "spark.jars"
