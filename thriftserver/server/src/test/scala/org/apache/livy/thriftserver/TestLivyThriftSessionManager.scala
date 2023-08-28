@@ -17,8 +17,8 @@
 
 package org.apache.livy.thriftserver
 
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.TimeUnit
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
