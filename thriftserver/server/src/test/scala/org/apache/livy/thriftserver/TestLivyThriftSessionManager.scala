@@ -170,7 +170,7 @@ class TestLivyThriftSessionManager {
     val thriftSessionMgr = createThriftSessionManager(None)
     val sessionHandle = mock(classOf[SessionHandle])
     val future = Future[InteractiveSession] {
-      throw new TimeoutException("")
+      throw new TimeoutException("Actively throw TimeoutException in Future.")
     }
     thriftSessionMgr._mockLivySession(sessionHandle, future)
     Await.ready(future, Duration(30, TimeUnit.SECONDS))
