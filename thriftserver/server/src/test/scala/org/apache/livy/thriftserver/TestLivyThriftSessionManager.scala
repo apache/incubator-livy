@@ -17,11 +17,12 @@
 
 package org.apache.livy.thriftserver
 
-import java.util.concurrent.{TimeUnit, TimeoutException}
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 import org.apache.hive.service.cli.{HiveSQLException, SessionHandle}
 import org.junit.Assert._
