@@ -100,7 +100,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     } else {
       future.value match {
         case Some(Success(session)) => session
-        case Some(Failure(e)) => throw e.getCause
+        case Some(Failure(e)) => throw Option(e.getCause).getOrElse(e)
         case None => throw new RuntimeException("Future cannot be None when it is completed")
       }
     }
@@ -548,6 +548,11 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
 
   def getSessionInfo(sessionHandle: SessionHandle): SessionInfo = {
     sessionInfo.get(sessionHandle)
+  }
+
+  private[thriftserver] def _mockLivySession(
+      sessionHandle: SessionHandle, future: Future[InteractiveSession]) = {
+    this.sessionHandleToLivySession.put(sessionHandle, future)
   }
 }
 
