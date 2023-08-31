@@ -50,7 +50,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   extends ThriftService(classOf[LivyThriftSessionManager].getName) with Logging {
 
   private[thriftserver] val operationManager = new LivyOperationManager(this)
-  private val sessionHandleToLivySession =
+  private[thriftserver] val sessionHandleToLivySession =
     new ConcurrentHashMap[SessionHandle, Future[InteractiveSession]]()
   // A map which returns how many incoming connections are open for a Livy session.
   // This map tracks only the sessions created by the Livy thriftserver and not those which have
@@ -548,11 +548,6 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
 
   def getSessionInfo(sessionHandle: SessionHandle): SessionInfo = {
     sessionInfo.get(sessionHandle)
-  }
-
-  private[thriftserver] def _mockLivySession(
-      sessionHandle: SessionHandle, future: Future[InteractiveSession]) = {
-    this.sessionHandleToLivySession.put(sessionHandle, future)
   }
 }
 

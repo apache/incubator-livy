@@ -45,12 +45,11 @@ class TestLivyThriftSessionManager {
 
   import ConnectionLimitType._
 
-  private def createThriftSessionManager(maxSessionWait: Option[String],
+  private def createThriftSessionManager(
       limitTypes: ConnectionLimitType*): LivyThriftSessionManager = {
     val conf = new LivyConf()
     conf.set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
     val limit = 3
-    maxSessionWait.foreach(conf.set(LivyConf.THRIFT_SESSION_CREATION_TIMEOUT, _))
     limitTypes.foreach { limitType =>
       val entry = limitType match {
         case User => LivyConf.THRIFT_LIMIT_CONNECTIONS_PER_USER
@@ -59,6 +58,17 @@ class TestLivyThriftSessionManager {
       }
       conf.set(entry, limit)
     }
+    this.createThriftSessionManager(conf)
+  }
+  private def createThriftSessionManager(
+      maxSessionWait: Option[String]): LivyThriftSessionManager = {
+    val conf = new LivyConf()
+    conf.set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
+    maxSessionWait.foreach(conf.set(LivyConf.THRIFT_SESSION_CREATION_TIMEOUT, _))
+    this.createThriftSessionManager(conf)
+  }
+
+  private def createThriftSessionManager(conf: LivyConf): LivyThriftSessionManager = {
     val server = new LivyThriftServer(
       conf,
       mock(classOf[InteractiveSessionManager]),
@@ -88,7 +98,7 @@ class TestLivyThriftSessionManager {
 
   @Test
   def testLimitConnectionsByUser(): Unit = {
-    val thriftSessionMgr = createThriftSessionManager(None, User)
+    val thriftSessionMgr = createThriftSessionManager(User)
     val user = "alice"
     val forwardedAddresses = new java.util.ArrayList[String]()
     thriftSessionMgr.incrementConnections(user, "10.20.30.40", forwardedAddresses)
@@ -100,7 +110,7 @@ class TestLivyThriftSessionManager {
 
   @Test
   def testLimitConnectionsByIpAddress(): Unit = {
-    val thriftSessionMgr = createThriftSessionManager(None, IpAddress)
+    val thriftSessionMgr = createThriftSessionManager(IpAddress)
     val ipAddress = "10.20.30.40"
     val forwardedAddresses = new java.util.ArrayList[String]()
     thriftSessionMgr.incrementConnections("alice", ipAddress, forwardedAddresses)
@@ -112,7 +122,7 @@ class TestLivyThriftSessionManager {
 
   @Test
   def testLimitConnectionsByUserAndIpAddress(): Unit = {
-    val thriftSessionMgr = createThriftSessionManager(None, UserIpAddress)
+    val thriftSessionMgr = createThriftSessionManager(UserIpAddress)
     val user = "alice"
     val ipAddress = "10.20.30.40"
     val userAndAddress = user + ":" + ipAddress
@@ -138,7 +148,7 @@ class TestLivyThriftSessionManager {
 
   @Test
   def testMultipleConnectionLimits(): Unit = {
-    val thriftSessionMgr = createThriftSessionManager(None, User, IpAddress)
+    val thriftSessionMgr = createThriftSessionManager(User, IpAddress)
     val user = "alice"
     val ipAddress = "10.20.30.40"
     val forwardedAddresses = new java.util.ArrayList[String]()
@@ -161,7 +171,7 @@ class TestLivyThriftSessionManager {
       sleep(100)
       mock(classOf[InteractiveSession])
     }
-    thriftSessionMgr._mockLivySession(sessionHandle, future)
+    thriftSessionMgr.sessionHandleToLivySession.put(sessionHandle, future)
     thriftSessionMgr.getLivySession(sessionHandle)
   }
 
@@ -172,7 +182,7 @@ class TestLivyThriftSessionManager {
     val future = Future[InteractiveSession] {
       throw new TimeoutException("Actively throw TimeoutException in Future.")
     }
-    thriftSessionMgr._mockLivySession(sessionHandle, future)
+    thriftSessionMgr.sessionHandleToLivySession.put(sessionHandle, future)
     Await.ready(future, Duration(30, TimeUnit.SECONDS))
     thriftSessionMgr.getLivySession(sessionHandle)
   }
