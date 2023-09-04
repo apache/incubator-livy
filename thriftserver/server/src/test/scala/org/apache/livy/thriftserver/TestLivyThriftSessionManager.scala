@@ -60,6 +60,7 @@ class TestLivyThriftSessionManager {
     }
     this.createThriftSessionManager(conf)
   }
+
   private def createThriftSessionManager(
       maxSessionWait: Option[String]): LivyThriftSessionManager = {
     val conf = new LivyConf()
