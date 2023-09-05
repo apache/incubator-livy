@@ -17,15 +17,24 @@
 
 package org.apache.livy.thriftserver
 
-import org.apache.hive.service.cli.HiveSQLException
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+
+import org.apache.hive.service.cli.{HiveSQLException, SessionHandle}
 import org.junit.Assert._
 import org.junit.Test
 import org.mockito.Mockito.mock
 
 import org.apache.livy.LivyConf
 import org.apache.livy.server.AccessManager
+import org.apache.livy.server.interactive.InteractiveSession
 import org.apache.livy.server.recovery.{SessionStore, StateStore}
 import org.apache.livy.sessions.InteractiveSessionManager
+import org.apache.livy.utils.Clock.sleep
 
 object ConnectionLimitType extends Enumeration {
   type ConnectionLimitType = Value
@@ -49,6 +58,18 @@ class TestLivyThriftSessionManager {
       }
       conf.set(entry, limit)
     }
+    this.createThriftSessionManager(conf)
+  }
+
+  private def createThriftSessionManager(
+      maxSessionWait: Option[String]): LivyThriftSessionManager = {
+    val conf = new LivyConf()
+    conf.set(LivyConf.LIVY_SPARK_VERSION, sys.env("LIVY_SPARK_VERSION"))
+    maxSessionWait.foreach(conf.set(LivyConf.THRIFT_SESSION_CREATION_TIMEOUT, _))
+    this.createThriftSessionManager(conf)
+  }
+
+  private def createThriftSessionManager(conf: LivyConf): LivyThriftSessionManager = {
     val server = new LivyThriftServer(
       conf,
       mock(classOf[InteractiveSessionManager]),
@@ -141,5 +162,29 @@ class TestLivyThriftSessionManager {
     // If the limit for both are exceeded at the same time, the error message is for user.
     val msg = s"Connection limit per user reached (user: $user limit: 3)"
     testLimit(thriftSessionMgr, user, ipAddress, forwardedAddresses, msg)
+  }
+
+  @Test(expected = classOf[TimeoutException])
+  def testGetLivySessionWaitForTimeout(): Unit = {
+    val thriftSessionMgr = createThriftSessionManager(Some("10ms"))
+    val sessionHandle = mock(classOf[SessionHandle])
+    val future = Future[InteractiveSession] {
+      sleep(100)
+      mock(classOf[InteractiveSession])
+    }
+    thriftSessionMgr.sessionHandleToLivySession.put(sessionHandle, future)
+    thriftSessionMgr.getLivySession(sessionHandle)
+  }
+
+  @Test(expected = classOf[TimeoutException])
+  def testGetLivySessionWithTimeoutException(): Unit = {
+    val thriftSessionMgr = createThriftSessionManager(None)
+    val sessionHandle = mock(classOf[SessionHandle])
+    val future = Future[InteractiveSession] {
+      throw new TimeoutException("Actively throw TimeoutException in Future.")
+    }
+    thriftSessionMgr.sessionHandleToLivySession.put(sessionHandle, future)
+    Await.ready(future, Duration(30, TimeUnit.SECONDS))
+    thriftSessionMgr.getLivySession(sessionHandle)
   }
 }

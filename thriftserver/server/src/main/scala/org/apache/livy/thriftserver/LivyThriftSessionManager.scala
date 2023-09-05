@@ -50,7 +50,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   extends ThriftService(classOf[LivyThriftSessionManager].getName) with Logging {
 
   private[thriftserver] val operationManager = new LivyOperationManager(this)
-  private val sessionHandleToLivySession =
+  private[thriftserver] val sessionHandleToLivySession =
     new ConcurrentHashMap[SessionHandle, Future[InteractiveSession]]()
   // A map which returns how many incoming connections are open for a Livy session.
   // This map tracks only the sessions created by the Livy thriftserver and not those which have
@@ -95,12 +95,12 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     if (!future.isCompleted) {
       Try(Await.result(future, maxSessionWait)) match {
         case Success(session) => session
-        case Failure(e) => throw e.getCause
+        case Failure(e) => throw Option(e.getCause).getOrElse(e)
       }
     } else {
       future.value match {
         case Some(Success(session)) => session
-        case Some(Failure(e)) => throw e.getCause
+        case Some(Failure(e)) => throw Option(e.getCause).getOrElse(e)
         case None => throw new RuntimeException("Future cannot be None when it is completed")
       }
     }
