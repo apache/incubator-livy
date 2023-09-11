@@ -591,6 +591,7 @@ def main():
             java_import(gateway.jvm, "org.apache.spark.api.python.*")
             java_import(gateway.jvm, "org.apache.spark.mllib.api.python.*")
             java_import(gateway.jvm, "org.apache.spark.sql.*")
+            java_import(gateway.jvm, "org.apache.spark.sql.api.python.*")
             java_import(gateway.jvm, "org.apache.spark.sql.hive.*")
             java_import(gateway.jvm, "scala.Tuple2")
 
