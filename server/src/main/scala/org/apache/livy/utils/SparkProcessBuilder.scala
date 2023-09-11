@@ -154,10 +154,14 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
     this
   }
 
+  /**
+   * Return the arg after escaping backticks, it also unescape the backticks first
+   * then escape it again to avoid double escaping
+   * @param arg
+   */
   def escapeBackTicks(arg: String): String = {
-    // Unescape the args first then escape it again to avoid double escaping
-    val tmp = arg.replace("\\`", "`")
-    tmp.replace("`", "\\`")
+    val unescapedArg = arg.replace("\\`", "`")
+    unescapedArg.replace("`", "\\`")
   }
 
   def start(file: Option[String], args: Traversable[String]): LineBufferedProcess = {

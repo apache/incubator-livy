@@ -18,6 +18,7 @@
 package org.apache.livy.utils
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
+
 import org.scalatest.{BeforeAndAfter, FunSpec}
 
 class SparkProcessBuildSuite
@@ -26,6 +27,7 @@ class SparkProcessBuildSuite
     with org.scalatest.Matchers
     with LivyBaseUnitTestSuite {
 
+  // LIVY-998: Escape backtick from spark-submit arguments
   it("should only escape unescaped backticks") {
     val livyConf = new LivyConf
     livyConf.set(LivyConf.SPARK_SUBMIT_ESCAPE_BACKTICKS, true)
