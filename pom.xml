@@ -363,6 +363,10 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>javax.xml.stream</groupId>
+            <artifactId>stax-api</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
 
@@ -396,6 +400,10 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>javax.xml.stream</groupId>
+            <artifactId>stax-api</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
 
@@ -426,6 +434,10 @@
           <exclusion>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.xml.stream</groupId>
+            <artifactId>stax-api</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -1234,6 +1246,10 @@
               <fileTemplate>${execution.root}/dev/third-party-file.ftl</fileTemplate>
               <useMissingFile>true</useMissingFile>
               <missingFile>${execution.root}/dev/third-party-missing-license.properties</missingFile>
+              <licenseMerges>
+                  <licenseMerge>The Apache Software License, Version 2.0|Apache License, Version 2.0|The Apache License, Version 2.0|Apache 2|Apache 2.0 License|Apache License (v2.0)|Apache License 2.0|Apache Software License - Version 2.0|Apache v2|Apache-2.0</licenseMerge>
+                </licenseMerges>
+              <!-- <overrideFile>${execution.root}/dev/third-party-missing-override.properties</overrideFile> -->
             </configuration>
             <executions>
               <execution>
