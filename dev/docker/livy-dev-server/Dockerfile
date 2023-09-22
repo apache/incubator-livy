@@ -17,7 +17,7 @@
 
 FROM livy-dev-spark:latest
 
-ARG LIVY_VERSION=0.8.0-incubating
+ARG LIVY_VERSION=0.8.1-incubating-SNAPSHOT
 ARG ROOT_PATH=/opt
 
 RUN apt-get update \

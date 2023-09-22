@@ -15,14 +15,12 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.apache.livy</groupId>
   <artifactId>livy-main</artifactId>
-  <version>0.8.0-incubating</version>
+  <version>0.8.1-incubating-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Livy Project Parent POM</name>
   <description>Livy Project</description>
@@ -1104,19 +1102,12 @@
             </goals>
             <configuration>
               <target>
-                <echo message="execRoot: ${execution.root}, buildDir: ${project.build.directory}"/>
-                <copy file="${execution.root}/scalastyle.xml"
-                  tofile="${project.build.directory}/scalastyle.xml" />
-                <replace file="${project.build.directory}/scalastyle.xml"
-                  token="{{COPYRIGHT_HEADER}}"
-                  value="${copyright.header}" />
-                <copy file="${execution.root}/checkstyle.xml"
-                  tofile="${project.build.directory}/checkstyle.xml" />
-                <echo file="${project.build.directory}/checkstyle.header"
-                  message="${copyright.header}" />
-                <replace file="${project.build.directory}/checkstyle.xml"
-                  token="{{HEADER_FILE}}"
-                  value="${project.build.directory}/checkstyle.header" />
+                <echo message="execRoot: ${execution.root}, buildDir: ${project.build.directory}" />
+                <copy file="${execution.root}/scalastyle.xml" tofile="${project.build.directory}/scalastyle.xml" />
+                <replace file="${project.build.directory}/scalastyle.xml" token="{{COPYRIGHT_HEADER}}" value="${copyright.header}" />
+                <copy file="${execution.root}/checkstyle.xml" tofile="${project.build.directory}/checkstyle.xml" />
+                <echo file="${project.build.directory}/checkstyle.header" message="${copyright.header}" />
+                <replace file="${project.build.directory}/checkstyle.xml" token="{{HEADER_FILE}}" value="${project.build.directory}/checkstyle.header" />
               </target>
             </configuration>
           </execution>
