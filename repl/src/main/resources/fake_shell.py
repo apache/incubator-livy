@@ -576,14 +576,15 @@ def main():
             from pyspark.context import SparkContext
             from pyspark.sql import SQLContext, HiveContext, Row
             # Connect to the gateway
+            gateway_host = os.environ["PYSPARK_GATEWAY_HOST"]
             gateway_port = int(os.environ["PYSPARK_GATEWAY_PORT"])
             try:
                 from py4j.java_gateway import GatewayParameters
                 gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
                 gateway = JavaGateway(gateway_parameters=GatewayParameters(
-                    port=gateway_port, auth_token=gateway_secret, auto_convert=True))
+                    address=gateway_host, port=gateway_port, auth_token=gateway_secret, auto_convert=True))
             except:
-                gateway = JavaGateway(GatewayClient(port=gateway_port), auto_convert=True)
+                gateway = JavaGateway(GatewayClient(address=gateway_host, port=gateway_port), auto_convert=True)
 
             # Import the classes used by PySpark
             java_import(gateway.jvm, "org.apache.spark.SparkConf")
