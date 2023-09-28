@@ -43,7 +43,7 @@ class BatchServletSpec extends BaseSessionServletSpec[BatchSession, BatchRecover
     try {
       writer.write(
         """
-          |print "hello world"
+          |print("hello world")
         """.stripMargin)
     } finally {
       writer.close()
