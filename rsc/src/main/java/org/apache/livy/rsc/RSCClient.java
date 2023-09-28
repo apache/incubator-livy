@@ -200,6 +200,11 @@ public class RSCClient implements LivyClient {
   }
 
   @Override
+  public int getSessionId() {
+    return -1;
+  }
+
+  @Override
   public <T> JobHandle<T> submit(Job<T> job) {
     return protocol.submit(job);
   }
