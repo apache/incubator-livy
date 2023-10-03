@@ -146,6 +146,7 @@ abstract class Session(
     val name: Option[String],
     val owner: String,
     val ttl: Option[String],
+    val idleTimeout: Option[String],
     val livyConf: LivyConf)
   extends Logging {
 
@@ -153,7 +154,7 @@ abstract class Session(
    name: Option[String],
    owner: String,
    livyConf: LivyConf) {
-    this(id, name, owner, None, livyConf)
+    this(id, name, owner, None, None, livyConf)
   }
 
   import Session._
@@ -170,6 +171,8 @@ abstract class Session(
   protected var _appId: Option[String] = None
 
   private var _lastActivity = System.nanoTime()
+
+  var startedOn : Option[Long] = None
 
   // Directory where the session's staging files are created. The directory is only accessible
   // to the session's effective user.

@@ -55,9 +55,12 @@ class InteractiveSessionServlet(
     val createRequest = bodyAs[CreateInteractiveRequest](req)
     val sessionId = sessionManager.nextId();
 
-    // Calling getTimeAsMs just to validate the ttl value
+    // Calling getTimeAsMs just to validate the ttl and idleTimeout values
     if (createRequest.ttl.isDefined) {
       ClientConf.getTimeAsMs(createRequest.ttl.get);
+    }
+    if (createRequest.idleTimeout.isDefined) {
+      ClientConf.getTimeAsMs(createRequest.idleTimeout.get);
     }
 
     InteractiveSession.create(
@@ -69,7 +72,8 @@ class InteractiveSessionServlet(
       accessManager,
       createRequest,
       sessionStore,
-      createRequest.ttl)
+      createRequest.ttl,
+      createRequest.idleTimeout)
   }
 
   override protected[interactive] def clientSessionView(
@@ -114,8 +118,8 @@ class InteractiveSessionServlet(
 
     new SessionInfo(session.id, session.name.orNull, session.appId.orNull,
       session.owner, session.state.toString, session.kind.toString,
-      session.appInfo.asJavaMap, logs.asJava,
-      session.proxyUser.orNull, session.driverMemory.orNull,
+      session.appInfo.asJavaMap, logs.asJava, session.ttl.orNull,
+      session.idleTimeout.orNull, session.driverMemory.orNull,
       session.driverCores.getOrElse(0), session.executorMemory.orNull,
       session.executorCores.getOrElse(0), conf, archives,
       files, session.heartbeatTimeoutS, jars,

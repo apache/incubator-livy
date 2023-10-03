@@ -55,6 +55,7 @@ case class InteractiveRecoveryMetadata(
     heartbeatTimeoutS: Int,
     owner: String,
     ttl: Option[String],
+    idleTimeout: Option[String],
     driverMemory: Option[String],
     driverCores: Option[Int],
     executorMemory: Option[String],
@@ -87,6 +88,7 @@ object InteractiveSession extends Logging {
       request: CreateInteractiveRequest,
       sessionStore: SessionStore,
       ttl: Option[String],
+      idleTimeout: Option[String],
       mockApp: Option[SparkApp] = None,
       mockClient: Option[RSCClient] = None): InteractiveSession = {
     val appTag = s"livy-session-$id-${Random.alphanumeric.take(8).mkString}".toLowerCase()
@@ -138,6 +140,7 @@ object InteractiveSession extends Logging {
       owner,
       impersonatedUser,
       ttl,
+      idleTimeout,
       sessionStore,
       request.driverMemory,
       request.driverCores,
@@ -177,6 +180,7 @@ object InteractiveSession extends Logging {
       metadata.owner,
       metadata.proxyUser,
       metadata.ttl,
+      metadata.idleTimeout,
       sessionStore,
       metadata.driverMemory,
       metadata.driverCores,
@@ -416,6 +420,7 @@ class InteractiveSession(
     owner: String,
     override val proxyUser: Option[String],
     ttl: Option[String],
+    idleTimeout: Option[String],
     sessionStore: SessionStore,
     val driverMemory: Option[String],
     val driverCores: Option[Int],
@@ -429,7 +434,7 @@ class InteractiveSession(
     val pyFiles: List[String],
     val queue: Option[String],
     mockApp: Option[SparkApp]) // For unit test.
-  extends Session(id, name, owner, ttl, livyConf)
+  extends Session(id, name, owner, ttl, idleTimeout, livyConf)
   with SessionHeartbeat
   with SparkAppListener {
 
@@ -514,13 +519,15 @@ class InteractiveSession(
         }
       })
     }
+    startedOn = Some(System.nanoTime())
+    info(s"Started $this")
   }
 
   override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(sessionLog)
 
   override def recoveryMetadata: RecoveryMetadata =
     InteractiveRecoveryMetadata(id, name, appId, appTag, kind,
-      heartbeatTimeout.toSeconds.toInt, owner, None,
+      heartbeatTimeout.toSeconds.toInt, owner, ttl, idleTimeout,
       driverMemory, driverCores, executorMemory, executorCores, conf,
       archives, files, jars, numExecutors, pyFiles, queue,
       proxyUser, rscDriverUri)

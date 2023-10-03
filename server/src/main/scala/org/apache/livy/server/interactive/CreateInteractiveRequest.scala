@@ -36,6 +36,7 @@ class CreateInteractiveRequest {
   var conf: Map[String, String] = Map()
   var heartbeatTimeoutInSecond: Int = 0
   var ttl: Option[String] = None
+  var idleTimeout: Option[String] = None
 
   override def toString: String = {
     s"[kind: $kind, proxyUser: $proxyUser, " +
@@ -52,6 +53,7 @@ class CreateInteractiveRequest {
       (if (name.isDefined) s"name: ${name.get}, " else "") +
       (if (conf.nonEmpty) s"conf: ${conf.mkString(",")}, " else "") +
       s"heartbeatTimeoutInSecond: $heartbeatTimeoutInSecond, " +
-      (if (ttl.isDefined) s"ttl: ${ttl.get}]" else "]")
+      (if (ttl.isDefined) s"ttl: ${ttl.get}, " else "") +
+      (if (idleTimeout.isDefined) s"idleTimeout: ${idleTimeout.get}]" else "]")
   }
 }

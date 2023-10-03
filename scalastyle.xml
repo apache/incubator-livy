@@ -57,7 +57,7 @@
 
   <check level="error" class="org.scalastyle.scalariform.ParameterNumberChecker" enabled="true">
     <parameters>
-      <parameter name="maxParameters"><![CDATA[11]]></parameter>
+      <parameter name="maxParameters"><![CDATA[12]]></parameter>
     </parameters>
   </check>
 
