@@ -58,8 +58,9 @@ RUN mvn dependency:get -DgroupId=com.microsoft.azure -DartifactId=azure-storage 
 
 #RUN pip3 install matplotlib pandas
 ARG SPARK_VERSION
+ARG HADOOP_VERSION=hadoop2.7
 ENV SPARK_BUILD_VERSION=$SPARK_VERSION
-ENV HADOOP_ASSOCIATION hadoop2.7
+ENV HADOOP_ASSOCIATION=$HADOOP_VERSION
 ENV SPARK_HOME /apps/spark-${SPARK_BUILD_VERSION}-bin-${HADOOP_ASSOCIATION}
 ENV SPARK_BUILD_PATH /apps/build/spark
 
@@ -74,7 +75,8 @@ rm -rf spark-${SPARK_BUILD_VERSION}-bin-${HADOOP_ASSOCIATION}.tgz
 ARG LIVY_VERSION
 ENV LIVY_BUILD_VERSION=$LIVY_VERSION
 ENV LIVY_APP_PATH /apps/apache-livy-$LIVY_BUILD_VERSION-bin
-
+ENV SPARK_HOME=/apps/spark-${SPARK_BUILD_VERSION}-bin-${HADOOP_ASSOCIATION}
+ENV PATH="${PATH}:/apps/spark-${SPARK_BUILD_VERSION}-bin-${HADOOP_ASSOCIATION}/bin/"
 
 COPY assembly/target/apache-livy-${LIVY_BUILD_VERSION}-bin.zip apache-livy-${LIVY_BUILD_VERSION}-bin.zip
 RUN unzip apache-livy-${LIVY_BUILD_VERSION}-bin.zip -d /apps && \
