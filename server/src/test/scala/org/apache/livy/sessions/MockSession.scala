@@ -20,13 +20,15 @@ package org.apache.livy.sessions
 import org.apache.livy.LivyConf
 
 class MockSession(id: Int, owner: String, conf: LivyConf, name: Option[String] = None,
-                  ttl: Option[String] = None)
-  extends Session(id, name, owner, ttl, conf) {
+                  ttl: Option[String] = None, idleTimeout: Option[String] = None)
+  extends Session(id, name, owner, ttl, idleTimeout, conf) {
   case class RecoveryMetadata(id: Int) extends Session.RecoveryMetadata()
 
   override val proxyUser = None
 
-  override def start(): Unit = ()
+  override def start(): Unit = {
+    startedOn = Some(System.nanoTime())
+  }
 
   var stopped = false
   override protected def stopSession(): Unit = {

@@ -62,6 +62,7 @@ public class HttpMessages {
     public final Map<String, String> appInfo;
     public final List<String> log;
     public final String ttl;
+    public final String idleTimeout;
     public final String driverMemory;
     public final int driverCores;
     public final String executorMemory;
@@ -77,7 +78,7 @@ public class HttpMessages {
 
     public SessionInfo(int id, String name, String appId, String owner, String state,
         String kind, Map<String, String> appInfo, List<String> log,
-        String ttl, String driverMemory,
+        String ttl, String idleTimeout, String driverMemory,
         int driverCores, String executorMemory,  int executorCores, Map<String, String> conf,
         List<String> archives, List<String> files, int heartbeatTimeoutInSecond, List<String> jars,
         int numExecutors, String proxyUser, List<String> pyFiles, String queue) {
@@ -91,6 +92,7 @@ public class HttpMessages {
       this.appInfo = appInfo;
       this.log = log;
       this.ttl = ttl;
+      this.idleTimeout = idleTimeout;
       this.driverMemory = driverMemory;
       this.driverCores = driverCores;
       this.executorMemory = executorMemory;
@@ -106,7 +108,7 @@ public class HttpMessages {
     }
 
     private SessionInfo() {
-      this(-1, null, null, null, null, null, null, null, null, null, 0, null, 0, null, null,
+      this(-1, null, null, null, null, null, null, null, null, null, null, 0, null, 0, null, null,
               null, 0, null, 0, null, null, null);
     }
 

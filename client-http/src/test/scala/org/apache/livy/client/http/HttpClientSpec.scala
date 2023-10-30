@@ -293,6 +293,7 @@ private class HttpClientTestBootstrap extends LifeCycle {
         when(session.pyFiles).thenReturn(List())
         when(session.stop()).thenReturn(Future.successful(()))
         when(session.ttl).thenReturn(None)
+        when(session.idleTimeout).thenReturn(None)
         require(HttpClientSpec.session == null, "Session already created?")
         HttpClientSpec.session = session
         session

@@ -236,6 +236,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
         server.accessManager,
         createInteractiveRequest,
         server.sessionStore,
+        None,
         None)
       onLivySessionOpened(newSession)
       newSession

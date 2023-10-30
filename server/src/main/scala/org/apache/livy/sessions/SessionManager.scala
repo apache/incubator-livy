@@ -171,17 +171,32 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
           } else {
             val currentTime = System.nanoTime()
             var calculatedTimeout = sessionTimeout;
-            if (session.ttl.isDefined) {
-              calculatedTimeout = ClientConf.getTimeAsMs(session.ttl.get)
+            if (session.idleTimeout.isDefined) {
+              calculatedTimeout = ClientConf.getTimeAsMs(session.idleTimeout.get)
             }
             calculatedTimeout = TimeUnit.MILLISECONDS.toNanos(calculatedTimeout)
-            currentTime - session.lastActivity > calculatedTimeout
+            if (currentTime - session.lastActivity > calculatedTimeout) {
+              return true
+            }
+            if (session.ttl.isDefined && session.startedOn.isDefined) {
+              calculatedTimeout = TimeUnit.MILLISECONDS.toNanos(
+                ClientConf.getTimeAsMs(session.ttl.get))
+              if (currentTime - session.startedOn.get > calculatedTimeout) {
+                return true
+              }
+            }
+            false
           }
       }
     }
 
     Future.sequence(all().filter(expired).map { s =>
-      info(s"Deleting $s because it was inactive for more than ${sessionTimeout / 1e6} ms.")
+      s.state match {
+        case st: FinishedSessionState =>
+          info(s"Deleting $s because it finished before ${sessionStateRetainedInSec / 1e9} secs.")
+        case _ =>
+          info(s"Deleting $s because it was inactive or the time to leave the period is over.")
+      }
       delete(s)
     })
   }
