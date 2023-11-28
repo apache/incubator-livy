@@ -361,27 +361,33 @@ class LivyServer extends Logging {
     executor.schedule(
       new Runnable() {
         override def run(): Unit = {
-          if (runKinit(keytab, principal)) {
-            // The current UGI should never change. If that happens, it is an error condition and
-            // relogin the original UGI would not update the current UGI. So the server will fail
-            // due to no valid credentials. The assert here allows to fast detect this error
-            // condition and fail immediately with a meaningful error.
-            assert(ugi.equals(UserGroupInformation.getCurrentUser), "Current UGI has changed.")
-            ugi.reloginFromTicketCache()
-            // schedule another kinit run with a fixed delay.
-            executor.schedule(this, refreshInterval, TimeUnit.MILLISECONDS)
-          } else {
-            // schedule another retry at once or fail the livy server if too many times kinit fail
-            if (kinitFailCount >= kinitFailThreshold) {
-              error(s"Exit LivyServer after ${kinitFailThreshold} times failures running kinit.")
-              if (server.server.isStarted()) {
-                stop()
-              } else {
-                sys.exit(1)
-              }
+          try {
+            if (runKinit(keytab, principal)) {
+              // The current UGI should never change. If that happens, it is an error condition and
+              // relogin the original UGI would not update the current UGI. So the server will fail
+              // due to no valid credentials. The assert here allows to fast detect this error
+              // condition and fail immediately with a meaningful error.
+              assert(ugi.equals(UserGroupInformation.getCurrentUser), "Current UGI has changed.")
+              ugi.reloginFromTicketCache()
+              // schedule another kinit run with a fixed delay.
+              executor.schedule(this, refreshInterval, TimeUnit.MILLISECONDS)
             } else {
-              executor.submit(this)
+              // schedule another retry at once or fail the livy server if too many times kinit fail
+              if (kinitFailCount >= kinitFailThreshold) {
+                error(s"Exit LivyServer after ${kinitFailThreshold} times failures running kinit.")
+                if (server.server.isStarted()) {
+                  stop()
+                } else {
+                  sys.exit(1)
+                }
+              } else {
+                executor.submit(this)
+              }
             }
+          } catch {
+            case e: Throwable =>
+              error("Exception thrown in kinit thread", e)
+              executor.submit(this)
           }
         }
       }, refreshInterval, TimeUnit.MILLISECONDS)
