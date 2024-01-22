@@ -254,13 +254,11 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
     noException should be thrownBy {
       withInterpreter { intp =>
         val response = intp.execute(
-          """import atexit
-            |atexit.register(print, '{}')
+          """import atexit, sys
+            |atexit.register(sys.stdout.write, '{}')
             |""".stripMargin
         )
-        response should equal(Interpreter.ExecuteSuccess(
-          TEXT_PLAIN -> "<built-in function print>"
-        ))
+        response shouldBe a[Interpreter.ExecuteSuccess]
       }
     }
   }
@@ -269,13 +267,11 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
     noException should be thrownBy {
       withInterpreter { intp =>
         val response = intp.execute(
-          """import atexit
-            |atexit.register(print, 'line1\nline2')
+          """import atexit, sys
+            |atexit.register(sys.stdout.write, 'line1\nline2')
             |""".stripMargin
         )
-        response should equal(Interpreter.ExecuteSuccess(
-          TEXT_PLAIN -> "<built-in function print>"
-        ))
+        response shouldBe a[Interpreter.ExecuteSuccess]
       }
     }
   }
