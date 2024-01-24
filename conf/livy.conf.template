@@ -195,3 +195,8 @@
 # Enable to allow custom classpath by proxy user in cluster mode
 # The below configuration parameter is disabled by default.
 # livy.server.session.allow-custom-classpath = true
+
+# value specifies interval to check safe mode in hdfs filesystem
+# livy.server.hdfs.safe-mode.interval = 5
+# value specifies max attempts to retry when safe mode is ON in hdfs filesystem
+# livy.server.hdfs.safe-mode.max.retry.attempts = 10

@@ -20,6 +20,7 @@ package org.apache.livy.server.recovery
 import java.io.{FileNotFoundException, IOException}
 import java.net.URI
 import java.util
+import java.util.concurrent.TimeUnit
 
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
@@ -28,6 +29,8 @@ import org.apache.commons.io.IOUtils
 import org.apache.hadoop.fs._
 import org.apache.hadoop.fs.Options.{CreateOpts, Rename}
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
+import org.apache.hadoop.hdfs.DistributedFileSystem
+import org.apache.hadoop.hdfs.protocol.HdfsConstants
 
 import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.Utils.usingResource
@@ -41,6 +44,8 @@ class FileSystemStateStore(
   def this(livyConf: LivyConf) {
     this(livyConf, None)
   }
+
+  private val fs = FileSystem.newInstance(livyConf.hadoopConf)
 
   private val fsUri = {
     val fsPath = livyConf.get(LivyConf.RECOVERY_STATE_STORE_URL)
@@ -56,6 +61,8 @@ class FileSystemStateStore(
   {
     // Only Livy user should have access to state files.
     fileContext.setUMask(new FsPermission("077"))
+
+    startSafeModeCheck()
 
     // Create state store dir if it doesn't exist.
     val stateStorePath = absPath(".")
@@ -134,4 +141,42 @@ class FileSystemStateStore(
   }
 
   private def absPath(key: String): Path = new Path(fsUri.getPath(), key)
+
+  /**
+   * Checks whether HDFS is in safe mode.
+   *
+   * Note that DistributedFileSystem is a `@LimitedPrivate` class, which for all practical reasons
+   * makes it more public than not.
+   */
+  def isFsInSafeMode(): Boolean = fs match {
+    case dfs: DistributedFileSystem =>
+      isFsInSafeMode(dfs)
+    case _ =>
+      false
+  }
+
+  def isFsInSafeMode(dfs: DistributedFileSystem): Boolean = {
+    /* true to check only for Active NNs status */
+    dfs.setSafeMode(HdfsConstants.SafeModeAction.SAFEMODE_GET, true)
+  }
+
+  def startSafeModeCheck(): Unit = {
+    // Cannot probe anything while the FS is in safe mode,
+    // so wait for seconds which is configurable
+    val safeModeInterval = livyConf.getInt(LivyConf.HDFS_SAFE_MODE_INTERVAL_IN_SECONDS)
+    val safeModeMaxRetryAttempts = livyConf.getInt(LivyConf.HDFS_SAFE_MODE_MAX_RETRY_ATTEMPTS)
+    for (retryAttempts <- 0 to safeModeMaxRetryAttempts if isFsInSafeMode()) {
+      info("HDFS is still in safe mode. Waiting...")
+      Thread.sleep(TimeUnit.SECONDS.toMillis(safeModeInterval))
+    }
+
+    // if hdfs is still in safe mode
+    // even after max retry attempts
+    // then throw IllegalStateException
+    if (isFsInSafeMode()) {
+      throw new IllegalStateException("Reached max retry attempts for safe mode check " +
+        "in hdfs file system")
+    }
+  }
+
 }
