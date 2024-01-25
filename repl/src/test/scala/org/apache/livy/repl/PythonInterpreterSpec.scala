@@ -249,6 +249,32 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
       )
     ))
   }
+
+  it should "work when interpreter exit with json stdout" in {
+    noException should be thrownBy {
+      withInterpreter { intp =>
+        val response = intp.execute(
+          """import atexit, sys
+            |atexit.register(sys.stdout.write, '{}')
+            |""".stripMargin
+        )
+        response shouldBe a[Interpreter.ExecuteSuccess]
+      }
+    }
+  }
+
+  it should "work when interpreter exit with non-json stdout" in {
+    noException should be thrownBy {
+      withInterpreter { intp =>
+        val response = intp.execute(
+          """import atexit, sys
+            |atexit.register(sys.stdout.write, 'line1\nline2')
+            |""".stripMargin
+        )
+        response shouldBe a[Interpreter.ExecuteSuccess]
+      }
+    }
+  }
 }
 
 class Python2InterpreterSpec extends PythonBaseInterpreterSpec {
