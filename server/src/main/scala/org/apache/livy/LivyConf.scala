@@ -267,6 +267,10 @@ object LivyConf {
 
   val SESSION_ALLOW_CUSTOM_CLASSPATH = Entry("livy.server.session.allow-custom-classpath", false)
 
+  val STATEMENTS_PERSISTENT_ENABLED = Entry("livy.server.statements.persistent.enabled", false)
+  val STATEMENTS_PERSISTENT_PATH = Entry("livy.server.statements.persistent.path",
+          "/tmp/livy/statements")
+
   val SPARK_MASTER = "spark.master"
   val SPARK_DEPLOY_MODE = "spark.submit.deployMode"
   val SPARK_JARS = "spark.jars"

@@ -195,3 +195,6 @@
 # Enable to allow custom classpath by proxy user in cluster mode
 # The below configuration parameter is disabled by default.
 # livy.server.session.allow-custom-classpath = true
+
+# livy.server.statements.persistent.enabled = false
+# livy.server.statements.persistent.path = /tmp/livy/statements
