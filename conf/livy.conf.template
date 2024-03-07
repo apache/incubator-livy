@@ -37,9 +37,9 @@
 # What port to start the server on.
 # livy.server.port = 8998
 
-# What base path ui should work on. By default UI is mounted on "/".
-# E.g.: livy.ui.basePath = /my_livy - result in mounting UI on /my_livy/
-# livy.ui.basePath = ""
+# What base path the server should use. By default the server is mounted on "/".
+# E.g.: livy.server.basePath = /my_livy - result in mounting on /my_livy/
+# livy.server.basePath =
 
 # What spark master Livy sessions should use.
 # livy.spark.master = local
