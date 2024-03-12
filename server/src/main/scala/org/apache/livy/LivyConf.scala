@@ -252,6 +252,12 @@ object LivyConf {
   // how often to check livy session leakage
   val YARN_APP_LEAKAGE_CHECK_INTERVAL = Entry("livy.server.yarn.app-leakage.check-interval", "60s")
 
+  // value specifies interval to check safe mode in hdfs filesystem
+  val HDFS_SAFE_MODE_INTERVAL_IN_SECONDS = Entry("livy.server.hdfs.safe-mode.interval", 5)
+
+  // value specifies max attempts to retry when safe mode is ON in hdfs filesystem
+  val HDFS_SAFE_MODE_MAX_RETRY_ATTEMPTS = Entry("livy.server.hdfs.safe-mode.max.retry.attempts", 12)
+
   // Whether session timeout should be checked, by default it will be checked, which means inactive
   // session will be stopped after "livy.server.session.timeout"
   val SESSION_TIMEOUT_CHECK = Entry("livy.server.session.timeout-check", true)

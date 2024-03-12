@@ -23,10 +23,11 @@ import java.util
 import org.apache.hadoop.fs._
 import org.apache.hadoop.fs.Options.{CreateOpts, Rename}
 import org.apache.hadoop.fs.permission.FsPermission
+import org.apache.hadoop.hdfs.DistributedFileSystem
 import org.hamcrest.Description
 import org.mockito.ArgumentMatcher
 import org.mockito.Matchers.{any, anyInt, argThat, eq => equal}
-import org.mockito.Mockito.{atLeastOnce, verify, when}
+import org.mockito.Mockito.{atLeastOnce, spy, verify, when}
 import org.mockito.internal.matchers.Equals
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -50,6 +51,14 @@ class FileSystemStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       val conf = new LivyConf()
       conf.set(LivyConf.RECOVERY_STATE_STORE_URL, "file://tmp/")
 
+      conf
+    }
+
+    def makeConfWithTwoSeconds(): LivyConf = {
+      val conf = new LivyConf()
+      conf.set(LivyConf.RECOVERY_STATE_STORE_URL, "file://tmp/")
+      conf.set(LivyConf.HDFS_SAFE_MODE_INTERVAL_IN_SECONDS, new Integer(2))
+      conf.set(LivyConf.HDFS_SAFE_MODE_MAX_RETRY_ATTEMPTS, new Integer(2))
       conf
     }
 
@@ -188,5 +197,29 @@ class FileSystemStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
 
       verify(fileContext).delete(pathEq("/key"), equal(false))
     }
+
+    it("set safe mode ON and wait") {
+      val fileContext = mockFileContext("700")
+      val provider = spy(new FileSystemStateStore(makeConf(), Some(fileContext)))
+      val dfs = mock[DistributedFileSystem]
+      provider.isFsInSafeMode()
+      assert(!provider.isFsInSafeMode(dfs))
+    }
+
+    it("provider throws IllegalStateException when reaches 'N' " +
+      "max attempts to access HDFS file system") {
+      val provider = new SafeModeTestProvider(makeConfWithTwoSeconds(),
+        Some(mockFileContext("700")))
+      provider.inSafeMode = true
+      intercept[IllegalStateException](provider.startSafeModeCheck())
+    }
   }
+
+  private class SafeModeTestProvider(conf: LivyConf, context: Option[FileContext])
+    extends FileSystemStateStore(conf, context) {
+    var inSafeMode = true
+
+    override def isFsInSafeMode(): Boolean = inSafeMode
+  }
+
 }
