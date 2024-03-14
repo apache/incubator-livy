@@ -102,6 +102,10 @@ start_livy_server() {
     LIVY_CLASSPATH="$LIVY_CLASSPATH:$YARN_CONF_DIR"
   fi
 
+  if [ -n "$LIVY_LOG_DIR" ]; then
+    LIVY_SERVER_JAVA_OPTS="-DLIVY_LOG_DIR=$LIVY_LOG_DIR $LIVY_SERVER_JAVA_OPTS"
+  fi
+
   command="$RUNNER $LIVY_SERVER_JAVA_OPTS -cp $LIVY_CLASSPATH:$CLASSPATH org.apache.livy.server.LivyServer"
 
   if [ $1 = "old" ]; then
