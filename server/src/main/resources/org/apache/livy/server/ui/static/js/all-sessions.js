@@ -52,35 +52,66 @@ function loadBatchesTable(sessions) {
   });
 }
 
+function getWithPagination(path, from, size){
+    return new Promise((resolve, reject) =>{
+    $.getJSON(`${path}?size=${size}&from=${from}`, function(response, error){
+        if (error != "success"){
+            reject(error)
+        }
+        resolve(response.sessions)
+    })
+})
+
+}
+
 var numSessions = 0;
 var numBatches = 0;
 
-$(document).ready(function () {
-  var sessionsReq = $.getJSON(location.origin + prependBasePath("/sessions"), function(response) {
-    if (response && response.total > 0) {
-      $("#interactive-sessions").load(prependBasePath("/static/html/sessions-table.html .sessions-template"), function() {
-        loadSessionsTable(response.sessions);
-        $("#interactive-sessions-table").DataTable();
-        $('#interactive-sessions [data-toggle="tooltip"]').tooltip();
-      });
-    }
-    numSessions = response.total;
-  });
+$(document).ready(async function () {
+    var sessions = []
+    var batches = []
+    var sessionsTmpRes = []
+    do {
+        try{
+            sessionsTmpRes = await getWithPagination(location.origin + prependBasePath("/sessions"), sessions.length, 100)
+            sessions = [...sessions,...sessionsTmpRes]
+        } catch(error){
+            console.error(error)
+        }
+    } while(sessionsTmpRes.length < 1)
+    var batchesTmpRes = []
+    do {
+        try{
+            batchesTmpRes = await getWithPagination(location.origin + prependBasePath("/batches"), batches.length, 100)
+            batches = [...batches,...batchesTmpRes]
+            if(batchesTmpRes.length < 1){
+                break
+            }
+        } catch(error){
+            console.error(error)
+        }
+    } while(batchesTmpRes.length < 1)
 
-  var batchesReq = $.getJSON(location.origin + prependBasePath("/batches"), function(response) {
-    if (response && response.total > 0) {
-      $("#batches").load(prependBasePath("/static/html/batches-table.html .sessions-template"), function() {
-        loadBatchesTable(response.sessions);
-        $("#batches-table").DataTable();
-        $('#batches [data-toggle="tooltip"]').tooltip();
-      });
-    }
-    numBatches = response.total;
-  });
+    if (sessions && sessions.length > 0) {
+       $("#interactive-sessions").load(prependBasePath("/static/html/sessions-table.html .sessions-template"), function() {
+         loadSessionsTable(sessions);
+         $("#interactive-sessions-table").DataTable();
+         $('#interactive-sessions [data-toggle="tooltip"]').tooltip();
+       });
+        numSessions = sessions.length;
 
-  $.when(sessionsReq, batchesReq).done(function () {
+    }
+    if (batches && batches.length > 0) {
+       $("#batches").load(prependBasePath("/static/html/batches-table.html .sessions-template"), function() {
+         loadBatchesTable(batches);
+         $("#batches-table").DataTable();
+         $('#batches [data-toggle="tooltip"]').tooltip();
+       });
+        numBatches = batches.length;
+
+  }
     if (numSessions + numBatches == 0) {
       $("#all-sessions").append('<h4>No Sessions or Batches have been created yet.</h4>');
     }
   });
-});
+  
