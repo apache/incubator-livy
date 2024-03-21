@@ -193,9 +193,9 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     Future.sequence(all().filter(expired).map { s =>
       s.state match {
         case st: FinishedSessionState =>
-          info(s"Deleting $s because it finished before ${sessionStateRetainedInSec / 1e9} secs.")
+          info(s"Deleting $s because session state retained time is expired in ${sessionStateRetainedInSec / 1e9} secs.")
         case _ =>
-          info(s"Deleting $s because it was inactive or the time to leave the period is over.")
+          info(s"Deleting $s because either session timed out or ttl expired.")
       }
       delete(s)
     })
