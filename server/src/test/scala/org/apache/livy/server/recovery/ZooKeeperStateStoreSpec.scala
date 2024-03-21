@@ -22,6 +22,7 @@ import scala.collection.JavaConverters._
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api._
 import org.apache.curator.framework.listen.Listenable
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 import org.apache.zookeeper.data.Stat
 import org.mockito.Mockito._
 import org.scalatest.FunSpec

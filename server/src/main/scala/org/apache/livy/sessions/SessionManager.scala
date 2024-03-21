@@ -30,30 +30,34 @@ import org.apache.livy.{LivyConf, Logging}
 import org.apache.livy.client.common.ClientConf
 import org.apache.livy.server.batch.{BatchRecoveryMetadata, BatchSession}
 import org.apache.livy.server.interactive.{InteractiveRecoveryMetadata, InteractiveSession, SessionHeartbeatWatchdog}
-import org.apache.livy.server.recovery.SessionStore
+import org.apache.livy.server.LivyServer
+import org.apache.livy.server.recovery.{SessionStore, ZooKeeperManager}
 import org.apache.livy.sessions.Session.RecoveryMetadata
-
-object SessionManager {
-  val SESSION_RECOVERY_MODE_OFF = "off"
-  val SESSION_RECOVERY_MODE_RECOVERY = "recovery"
-}
 
 class BatchSessionManager(
     livyConf: LivyConf,
     sessionStore: SessionStore,
+    zkManager: Option[ZooKeeperManager] = None,
     mockSessions: Option[Seq[BatchSession]] = None)
   extends SessionManager[BatchSession, BatchRecoveryMetadata] (
-    livyConf, BatchSession.recover(_, livyConf, sessionStore), sessionStore, "batch", mockSessions)
+    livyConf,
+    BatchSession.recover(_, livyConf, sessionStore),
+    sessionStore,
+    "batch",
+    zkManager,
+    mockSessions)
 
 class InteractiveSessionManager(
   livyConf: LivyConf,
   sessionStore: SessionStore,
+  zkManager: Option[ZooKeeperManager] = None,
   mockSessions: Option[Seq[InteractiveSession]] = None)
   extends SessionManager[InteractiveSession, InteractiveRecoveryMetadata] (
     livyConf,
     InteractiveSession.recover(_, livyConf, sessionStore),
     sessionStore,
     "interactive",
+    zkManager,
     mockSessions)
   with SessionHeartbeatWatchdog[InteractiveSession, InteractiveRecoveryMetadata]
   {
@@ -65,10 +69,9 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     sessionRecovery: R => S,
     sessionStore: SessionStore,
     sessionType: String,
+    zkManager: Option[ZooKeeperManager] = None,
     mockSessions: Option[Seq[S]] = None)
   extends Logging {
-
-  import SessionManager._
 
   protected implicit def executor: ExecutionContext = ExecutionContext.global
 
@@ -86,13 +89,22 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   private[this] final val sessionStateRetainedInSec =
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_STATE_RETAIN_TIME))
 
+  private final val sessionIdGenerator = {
+    if (livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
+      require(zkManager != None, "Please config livy.server.zookeeper.url")
+      new DistributedSessionIdGenerator(sessionType, sessionStore, zkManager.get)
+    } else {
+      new LocalSessionIdGenerator(sessionType, sessionStore)
+    }
+  }
+
+  def getSessionIdGenerator: SessionIdGenerator = sessionIdGenerator
+
   mockSessions.getOrElse(recover()).foreach(register)
   new GarbageCollector().start()
 
   def nextId(): Int = synchronized {
-    val id = idCounter.getAndIncrement()
-    sessionStore.saveNextSessionId(sessionType, idCounter.get())
-    id
+    sessionIdGenerator.getNextSessionId()
   }
 
   def register(session: S): S = {
@@ -147,7 +159,8 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   def shutdown(): Unit = {
-    val recoveryEnabled = livyConf.get(LivyConf.RECOVERY_MODE) != SESSION_RECOVERY_MODE_OFF
+    val haMode = LivyServer.getHAMode(livyConf)
+    val recoveryEnabled = haMode != LivyConf.HA_MODE_OFF
     if (!recoveryEnabled) {
       sessions.values.map(_.stop).foreach { future =>
         Await.ready(future, Duration.Inf)
@@ -202,17 +215,11 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   private def recover(): Seq[S] = {
-    // Recover next session id from state store and create SessionManager.
-    idCounter.set(sessionStore.getNextSessionId(sessionType))
-
     // Retrieve session recovery metadata from state store.
     val sessionMetadata = sessionStore.getAllSessions[R](sessionType)
 
     // Recover session from session recovery metadata.
     val recoveredSessions = sessionMetadata.flatMap(_.toOption).map(sessionRecovery)
-
-    info(s"Recovered ${recoveredSessions.length} $sessionType sessions." +
-      s" Next session id: $idCounter")
 
     // Print recovery error.
     val recoveryFailure = sessionMetadata.filter(_.isFailure).map(_.failed.get)

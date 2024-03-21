@@ -180,7 +180,10 @@ object LivyConf {
   val THRIFT_LDAP_AUTHENTICATION_USERFILTER =
     Entry("livy.server.thrift.ldap.authentication.userfilter", null)
   /**
-   * Recovery mode of Livy. Possible values:
+   * Recovery mode of Livy. Please use the new config: livy.server.ha.mode.
+   * Keep this config for back-compatibility. If both this config and livy.server.ha.mode exist,
+   * livy uses livy.server.ha.mode first.
+   * Possible values:
    * off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
    * recovery: Livy persists session info to the state store. When Livy restarts, it recovers
    *   previous sessions from the state store.
@@ -188,6 +191,21 @@ object LivyConf {
    * configure the state store.
    */
   val RECOVERY_MODE = Entry("livy.server.recovery.mode", "off")
+
+  /**
+    * HA mode of Livy. Possible values:
+    * 1. null: Default. livy will use the value of livy.server.recovery.mode
+    * 2. off: Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
+    * 3. recovery: Livy persists session info to the state store. When Livy restarts, it recovers
+    *              previous sessions from the state store.
+    *              Must set livy.server.recovery.state-store and
+    *              livy.server.recovery.state-store.url to configure the state store.
+    * 4. multi-active: HA with multi-active mode.
+    */
+  val HA_MODE = Entry("livy.server.ha.mode", null)
+  val HA_MODE_OFF = "off"
+  val HA_MODE_RECOVERY = "recovery"
+  val HA_MODE_MULTI_ACTIVE = "multi-active"
 
   // Zookeeper address used for HA and state store. e.g. host1:port1, host2:port2
   val ZOOKEEPER_URL = Entry("livy.server.zookeeper.url", null)

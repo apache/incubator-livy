@@ -44,6 +44,8 @@ class ZooKeeperStateStore(
     zkManager.remove(prefixKey(key))
   }
 
+  override def isDistributed(): Boolean = true
+
   def getZooKeeperManager(): ZooKeeperManager = {
     zkManager
   }
