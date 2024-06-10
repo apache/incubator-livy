@@ -155,12 +155,13 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   }
 
   /**
-   * If the user specified an existing sessionId to use, the corresponding session is returned,
-   * otherwise a new session is created and returned.
+   * If the user specified an existing sessionId or session name to use, the corresponding session
+   * is returned, otherwise a new session is created and returned.
    */
-  private def getOrCreateLivySession(
+  def getOrCreateLivySession(
       sessionHandle: SessionHandle,
       sessionId: Option[Int],
+      sessionName: Option[String],
       username: String,
       createLivySession: () => InteractiveSession): InteractiveSession = {
     sessionId match {
@@ -183,7 +184,27 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
             }
         }
       case None =>
-        createLivySession()
+        sessionName match {
+          case Some(name) =>
+            server.livySessionManager.get(name) match {
+              case None =>
+                createLivySession()
+              case Some(session) if !server.isAllowedToUse(username, session) =>
+                warn(s"$username has no modify permissions to InteractiveSession $name.")
+                throw new IllegalAccessException(
+                  s"$username is not allowed to use InteractiveSession $name.")
+              case Some(session) =>
+                if (session.state.isActive) {
+                  info(s"Reusing Session $name for $sessionHandle.")
+                  session
+                } else {
+                  warn(s"InteractiveSession $name is not active anymore.")
+                  throw new IllegalArgumentException(s"Session $name is not active anymore.")
+                }
+            }
+          case None =>
+            createLivySession()
+        }
     }
   }
 
@@ -248,7 +269,8 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
         livyServiceUGI.doAs(new PrivilegedExceptionAction[InteractiveSession] {
           override def run(): InteractiveSession = {
             livySession =
-              getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
+              getOrCreateLivySession(sessionHandle, sessionId, createInteractiveRequest.name,
+                username, createLivySession)
             synchronized {
               managedLivySessionActiveUsers.get(livySession.id).foreach { numUsers =>
                 managedLivySessionActiveUsers(livySession.id) = numUsers + 1
