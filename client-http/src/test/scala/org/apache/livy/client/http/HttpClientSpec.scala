@@ -24,19 +24,18 @@ import java.util.concurrent.{Future => JFuture, _}
 import java.util.concurrent.atomic.AtomicLong
 import javax.servlet.ServletContext
 import javax.servlet.http.HttpServletRequest
-
 import scala.concurrent.{ExecutionContext, Future}
-
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{eq => meq, _}
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike}
 import org.scalatra.LifeCycle
 import org.scalatra.servlet.ScalatraListener
-
 import org.apache.livy._
 import org.apache.livy.client.common.{BufferUtils, Serializer}
 import org.apache.livy.client.common.HttpMessages._
+import org.apache.livy.rsc.driver.StatementState
+import org.apache.livy.rsc.driver.Statement
 import org.apache.livy.server.{AccessManager, WebServer}
 import org.apache.livy.server.interactive.{InteractiveSession, InteractiveSessionServlet}
 import org.apache.livy.server.recovery.SessionStore
@@ -96,6 +95,12 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
 
     withClient("should run and monitor asynchronous jobs") {
       testJob(false)
+    }
+
+    withClient("should run and monitor asynchronous statements") {
+      val output = "{\"status\": \"ok\"}"
+
+      testStatement(Some(output))
     }
 
     withClient("should propagate errors from jobs") {
@@ -228,6 +233,33 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
     val handle = if (sync) client.run(job) else client.submit(job)
     (jobId, handle)
   }
+
+  private def runStatement(code:String, genStatusFn: Long => Seq[Some[Statement]]): (Long, JobHandle[Nothing]) = {
+    val jobId = java.lang.Long.valueOf(ID_GENERATOR.incrementAndGet())
+    val statuses = genStatusFn(jobId)
+    val first = statuses.head
+
+    when(session.executeStatement(any(classOf[ExecuteRequest]))).thenReturn(first.get);
+//    when(session.submitJob(any(classOf[Array[Byte]]), anyString())).thenReturn(jobId)
+    val remaining = statuses.drop(1)
+
+    when(session.getStatement(meq(Integer.valueOf(jobId.toInt)))).thenReturn(first, remaining: _*)
+
+    val handle =client.submitStatement(code, "spark")
+    (jobId, handle)
+  }
+
+  private def testStatement(response: Option[String] = None): Unit ={
+    val code = "val rdd=spark.sparkContext.parallelize(Seq((\"Java\", 20000),(\"Python\", 100000), (\"Scala\", 3000))); rdd.foreach(println);"
+    val jobIdLong = java.lang.Long.valueOf(ID_GENERATOR.incrementAndGet())
+    val (jobId, handle) = runStatement(code, { jobIdLong: Long => Seq(
+      Some(new Statement(Integer.valueOf(jobIdLong.toInt), code, StatementState.Running, null)),
+      Some(new Statement(Integer.valueOf(jobIdLong.toInt), code, StatementState.Available, response.get)))
+    })
+    assert(handle.get(TIMEOUT_S, TimeUnit.SECONDS).toString === response.get)
+    verify(session, times(2)).jobStatus(meq(jobId))
+  }
+
 
   private def testJob(sync: Boolean, response: Option[Any] = None): Unit = {
     val (jobId, handle) = runJob(sync, { id => Seq(
