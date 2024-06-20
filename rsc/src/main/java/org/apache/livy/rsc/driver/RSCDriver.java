@@ -17,20 +17,13 @@
 
 package org.apache.livy.rsc.driver;
 
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Files;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import static java.nio.file.attribute.PosixFilePermission.*;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -52,6 +46,7 @@ import org.apache.spark.SparkContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.livy.client.common.OperatingSystemUtils;
 import org.apache.livy.client.common.Serializer;
 import org.apache.livy.rsc.BaseProtocol;
 import org.apache.livy.rsc.BypassJobStatus;
@@ -61,7 +56,6 @@ import org.apache.livy.rsc.Utils;
 import org.apache.livy.rsc.rpc.Rpc;
 import org.apache.livy.rsc.rpc.RpcDispatcher;
 import org.apache.livy.rsc.rpc.RpcServer;
-
 import static org.apache.livy.rsc.RSCConf.Entry.*;
 
 /**
@@ -96,9 +90,12 @@ public class RSCDriver extends BaseProtocol {
   private final AtomicBoolean inShutdown;
 
   public RSCDriver(SparkConf conf, RSCConf livyConf) throws Exception {
-    Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwx------");
-    this.localTmpDir = Files.createTempDirectory("rsc-tmp",
-      PosixFilePermissions.asFileAttribute(perms)).toFile();
+
+    this.localTmpDir = Files.createTempDirectory("rsc-tmp").toFile();
+    OperatingSystemUtils.setOSAgnosticFilePermissions(this.localTmpDir, EnumSet.of(OWNER_READ,
+                                                                                   OWNER_WRITE,
+                                                                                   OWNER_EXECUTE));
+
     this.executor = Executors.newCachedThreadPool();
     this.jobQueue = new LinkedList<>();
     this.clients = new ConcurrentLinkedDeque<>();
