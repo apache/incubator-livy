@@ -90,6 +90,9 @@ class HttpClient(object):
         self._stopped = False
         self.lock = threading.Lock()
 
+    def session_id(self):
+        return self._session_id
+
     def submit(self, job):
         """
         Submits a job for execution to the spark cluster.
