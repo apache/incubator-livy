@@ -42,16 +42,22 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
     require(sparkILoop == null)
 
     val rootDir = conf.get("spark.repl.classdir", System.getProperty("java.io.tmpdir"))
-    val outputDir = Files.createTempDirectory(Paths.get(rootDir), "spark").toFile
-    outputDir.deleteOnExit()
-    conf.set("spark.repl.class.outputDir", outputDir.getAbsolutePath)
+    SparkInterpreter.sharedInterpreterLock.synchronized {
+      if (SparkInterpreter.outputDir == null) {
+        SparkInterpreter.outputDir = Files.createTempDirectory(Paths.get(rootDir), "spark").toFile
+        SparkInterpreter.outputDir.deleteOnExit()
+      }
+    }
 
+    val outputDir = SparkInterpreter.outputDir
     val settings = new Settings()
+    conf.set("spark.repl.class.outputDir", outputDir.getAbsolutePath)
     settings.processArguments(List("-Yrepl-class-based",
       "-Yrepl-outdir", s"${outputDir.getAbsolutePath}"), true)
     settings.usejavacp.value = true
     settings.embeddedDefaults(Thread.currentThread().getContextClassLoader())
 
+    System.setProperty("scala.repl.name.line", "$line" + this.hashCode().toString());
     sparkILoop = new SparkILoop(None, new JPrintWriter(outputStream, true))
     sparkILoop.settings = settings
     sparkILoop.createInterpreter()
@@ -133,4 +139,9 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
       sparkILoop.bind(name, tpe, value, modifier)
     }
   }
+}
+
+object SparkInterpreter {
+  var outputDir: File = null
+  val sharedInterpreterLock: Int = 0
 }
