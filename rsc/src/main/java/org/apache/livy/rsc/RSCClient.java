@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -55,8 +56,8 @@ public class RSCClient implements LivyClient {
   private final RSCConf conf;
   private final Promise<ContextInfo> contextInfoPromise;
   private final Map<String, JobHandleImpl<?>> jobs;
-  private final ClientProtocol protocol;
-  private final Promise<Rpc> driverRpc;
+  private volatile ClientProtocol protocol;
+  private volatile Promise<Rpc> driverRpc;
   private final int executorGroupId;
   private final EventLoopGroup eventLoopGroup;
   private final Promise<URI> serverUriPromise;
@@ -67,6 +68,8 @@ public class RSCClient implements LivyClient {
   private volatile String replState;
   // Record the last activity timestamp of the repl
   private volatile long replLastActivity = System.nanoTime();
+
+  private AtomicInteger retryTimes = new AtomicInteger(1);
 
   RSCClient(RSCConf conf, Promise<ContextInfo> ctx, Process driverProcess) throws IOException {
     this.conf = conf;
@@ -126,11 +129,54 @@ public class RSCClient implements LivyClient {
           Utils.addListener(rpc.getChannel().closeFuture(), new FutureListener<Void>() {
             @Override
             public void onSuccess(Void unused) {
-              if (isAlive) {
+              if (!isAlive) {
+                LOG.warn("RSCClient is already closed!");
+                return;
+              }
+              long initialWaitTime = conf.getTimeAsMs(RPC_CLIENT_RETRY_INITIAL_WAIT_TIME);
+              long maxRetryTimes = conf.getTimeAsMs(RPC_CLIENT_RETRY_MAX_TIMES);
+              Random random = new Random();
+              while (retryTimes.get() < maxRetryTimes) {
+                LOG.info("Try to connect context for the {} times !", retryTimes.get());
+                try {
+                  protocol = new ClientProtocol();
+                  Promise<Rpc> client = Rpc.createClient(conf,
+                          eventLoopGroup,
+                          info.remoteAddress,
+                          info.remotePort,
+                          info.clientId,
+                          info.secret,
+                          protocol);
+                  Rpc rpcRetry = client.get(conf.getTimeAsMs(RPC_CLIENT_CONNECT_TIMEOUT),
+                          TimeUnit.MILLISECONDS);
+                  driverRpc = ImmediateEventExecutor.INSTANCE.newPromise();
+                  driverRpc.setSuccess(rpcRetry);
+                  LOG.debug("Retry to connect context succeed !");
+                  break;
+                } catch (Exception e) {
+                  LOG.warn("Retry to connect context failed for the {} times wait {}ms retry!",
+                          retryTimes.get(), initialWaitTime, e);
+
+                  try {
+                    Thread.sleep(initialWaitTime);
+                  } catch (InterruptedException ex) {
+                    LOG.error("", ex);
+                  }
+
+                  retryTimes.addAndGet(1);
+                  initialWaitTime *= 2;
+                  initialWaitTime += random.nextInt(100000);
+                }
+              }
+
+              if (retryTimes.get() >= maxRetryTimes) {
                 LOG.warn("Client RPC channel closed unexpectedly.");
                 try {
                   stop(false);
-                } catch (Exception e) { /* stop() itself prints warning. */ }
+                } catch (Exception e) {
+                  /* stop() itself prints warning. */
+                  LOG.error("", e);
+                }
               }
             }
           });

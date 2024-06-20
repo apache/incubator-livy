@@ -63,6 +63,8 @@ public class RSCConf extends ClientConf<RSCConf> {
     RPC_SERVER_ADDRESS("rpc.server.address", null),
     RPC_CLIENT_HANDSHAKE_TIMEOUT("server.connect.timeout", "90s"),
     RPC_CLIENT_CONNECT_TIMEOUT("client.connect.timeout", "10s"),
+    RPC_CLIENT_RETRY_INITIAL_WAIT_TIME("client.connect.retry.initial.wait.time", "20s"),
+    RPC_CLIENT_RETRY_MAX_TIMES("client.connect.retry.max.times", "3"),
     RPC_CHANNEL_LOG_LEVEL("channel.log.level", null),
     RPC_MAX_MESSAGE_SIZE("rpc.max.size", 50 * 1024 * 1024),
     RPC_MAX_THREADS("rpc.threads", 8),
