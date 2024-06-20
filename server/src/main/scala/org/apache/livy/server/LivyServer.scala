@@ -42,7 +42,6 @@ import org.apache.livy.server.interactive.InteractiveSessionServlet
 import org.apache.livy.server.recovery.{SessionStore, StateStore, ZooKeeperManager}
 import org.apache.livy.server.ui.UIServlet
 import org.apache.livy.sessions.{BatchSessionManager, InteractiveSessionManager}
-import org.apache.livy.sessions.SessionManager.SESSION_RECOVERY_MODE_OFF
 import org.apache.livy.utils.LivySparkUtils._
 import org.apache.livy.utils.SparkYarnApp
 
@@ -148,15 +147,16 @@ class LivyServer extends Logging {
       Future { SparkYarnApp.yarnClient }
     }
 
-    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
+    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper" ||
+      livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
       zkManager = Some(new ZooKeeperManager(livyConf))
       zkManager.foreach(_.start())
     }
 
     StateStore.init(livyConf, zkManager)
     val sessionStore = new SessionStore(livyConf)
-    val batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
-    val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)
+    val batchSessionManager = new BatchSessionManager(livyConf, sessionStore, zkManager)
+    val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore, zkManager)
 
     server = new WebServer(livyConf, host, port)
     server.context.setResourceBase("src/main/org/apache/livy/server")
@@ -417,7 +417,8 @@ class LivyServer extends Logging {
   private[livy] def testRecovery(livyConf: LivyConf): Unit = {
     if (!livyConf.isRunningOnYarn()) {
       // If recovery is turned on but we are not running on YARN, quit.
-      require(livyConf.get(LivyConf.RECOVERY_MODE) == SESSION_RECOVERY_MODE_OFF,
+      val haMode = LivyServer.getHAMode(livyConf)
+      require(haMode == LivyConf.HA_MODE_OFF,
         "Session recovery requires YARN.")
     }
   }
@@ -435,4 +436,9 @@ object LivyServer {
     }
   }
 
+  def getHAMode(livyConf: LivyConf): String = {
+    Option(livyConf.get(LivyConf.HA_MODE))
+      .orElse(Option(livyConf.get(LivyConf.RECOVERY_MODE)))
+      .map(_.trim).orNull
+  }
 }

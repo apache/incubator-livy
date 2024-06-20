@@ -26,11 +26,13 @@ import org.apache.livy.LivyConf
  * Livy will use this when session recovery is disabled.
  */
 class BlackholeStateStore(livyConf: LivyConf) extends StateStore(livyConf) {
-  def set(key: String, value: Object): Unit = {}
+  override def set(key: String, value: Object): Unit = {}
 
-  def get[T: ClassTag](key: String): Option[T] = None
+  override def get[T: ClassTag](key: String): Option[T] = None
 
-  def getChildren(key: String): Seq[String] = List.empty[String]
+  override def getChildren(key: String): Seq[String] = List.empty[String]
 
-  def remove(key: String): Unit = {}
+  override def remove(key: String): Unit = {}
+
+  override def isDistributed(): Boolean = false
 }

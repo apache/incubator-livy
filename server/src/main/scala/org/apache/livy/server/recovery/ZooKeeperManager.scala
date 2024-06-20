@@ -23,6 +23,7 @@ import scala.reflect.ClassTag
 import org.apache.curator.framework.api.UnhandledErrorListener
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 import org.apache.curator.retry.RetryNTimes
 import org.apache.zookeeper.KeeperException.NoNodeException
 
@@ -114,5 +115,9 @@ class ZooKeeperManager(
     } catch {
       case _: NoNodeException => warn(s"Fail to remove non-existed zookeeper node: ${key}")
     }
+  }
+
+  def createLock(lockDir: String): InterProcessSemaphoreMutex = {
+    new InterProcessSemaphoreMutex(curatorClient, lockDir)
   }
 }
