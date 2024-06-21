@@ -85,7 +85,7 @@ public class SparkEntries {
               LOG.info("Created Spark session.");
             }
           } catch (Exception e) {
-            LOG.warn("SparkSession is not supported", e);
+            LOG.error("SparkSession is not supported", e);
             throw e;
           }
         }

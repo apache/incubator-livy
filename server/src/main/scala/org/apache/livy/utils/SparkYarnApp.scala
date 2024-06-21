@@ -272,6 +272,7 @@ class SparkYarnApp private[utils] (
         }
       } catch {
         case e: Exception =>
+          error("Get application info error ", e)
           appIdPromise.failure(e)
           throw e
       }
@@ -329,6 +330,7 @@ class SparkYarnApp private[utils] (
         } catch {
           // This exception might be thrown during app is starting up. It's transient.
           case e: ApplicationAttemptNotFoundException =>
+            debug("Encountered ApplicationAttemptNotFoundException. ", e)
           // Workaround YARN-4411: No enum constant FINAL_SAVING from getApplicationAttemptReport()
           case e: IllegalArgumentException =>
             if (e.getMessage.contains("FINAL_SAVING")) {

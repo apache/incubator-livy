@@ -100,7 +100,8 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     } else {
       future.value match {
         case Some(Success(session)) => session
-        case Some(Failure(e)) => throw Option(e.getCause).getOrElse(e)
+        // It can`t be e.getCause because we need know the specific reason!
+        case Some(Failure(e)) => e
         case None => throw new RuntimeException("Future cannot be None when it is completed")
       }
     }

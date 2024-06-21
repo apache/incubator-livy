@@ -315,7 +315,7 @@ public class Rpc implements Closeable {
       }
       writeMessage(MessageType.REPLY, payload);
     } catch (InvocationTargetException ite) {
-      LOG.debug(String.format("[%s] Error in RPC handler.", name()), ite.getCause());
+      LOG.warn(String.format("[%s] Error in RPC handler.", name()), ite.getCause());
       writeMessage(MessageType.ERROR, Utils.stackTraceAsString(ite.getCause()));
     }
   }
