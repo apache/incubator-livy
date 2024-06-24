@@ -17,6 +17,7 @@
 name: Unit Tests
 on: [push]
 env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
 jobs:
   build:

@@ -169,6 +169,13 @@ public class RSCDriver extends BaseProtocol {
     // on the cluster, it would be tricky to solve that problem in a generic way.
     livyConf.set(RPC_SERVER_ADDRESS, null);
 
+    // If we are running on Kubernetes, get RPC_SERVER_ADDRESS from "spark.driver.host" option
+    // this option is set in class org.apache.spark.deploy.k8s.features.DriverServiceFeatureStep:
+    // line 61: val driverHostname = s"$resolvedServiceName.${kubernetesConf.namespace()}.svc"
+    if (conf.get("spark.master").startsWith("k8s")) {
+      livyConf.set(RPC_SERVER_ADDRESS, conf.get("spark.driver.host"));
+    }
+
     if (livyConf.getBoolean(TEST_STUCK_START_DRIVER)) {
       // Test flag is turned on so we will just infinite loop here. It should cause
       // timeout and we should still see yarn application being cleaned up.
