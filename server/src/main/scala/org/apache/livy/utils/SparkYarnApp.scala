@@ -315,9 +315,12 @@ class SparkYarnApp private[utils] (
             val latestAppInfo = {
               val attempt =
                 yarnClient.getApplicationAttemptReport(appReport.getCurrentApplicationAttemptId)
-              val driverLogUrl =
+              val driverLogUrl = if (state == SparkApp.State.FINISHED) {
+                None
+              } else {
                 Try(yarnClient.getContainerReport(attempt.getAMContainerId).getLogUrl)
                   .toOption
+              }
               AppInfo(driverLogUrl, Option(appReport.getTrackingUrl))
             }
 
