@@ -23,6 +23,18 @@ function sumWrap(name, val) {
   }
 }
 
+function sumWrapWithClass(name, val, cl) {
+  var clVal = "";
+  if (cl != null) {
+    clVal = " class=\"" + cl + "\"";
+  }
+  if (val != null) {
+    return "<li" + clVal + "><strong>" + name + ": </strong>" + val + "</li>";
+  } else {
+    return "";
+  }
+}
+
 function formatError(output) {
   var errStr = output.evalue + "\n";
   var trace = output.traceback;
@@ -93,7 +105,7 @@ function appendSummary(session) {
       sumWrap("Proxy User", session.proxyUser) +
       sumWrap("Session Kind", session.kind) +
       sumWrap("State", session.state) +
-      sumWrap("Logs", logLinks(session, "session")) +
+      sumWrapWithClass("Logs", logLinks(session, "session"), "with-scroll-bar") +
     "</ul>"
   );
 }
