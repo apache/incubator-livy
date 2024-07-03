@@ -128,7 +128,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   def delete(session: S): Future[Unit] = {
-    info(s"Deleting session ${session.id}")
+    info(s"Deleting ${session}")
     session.stop().map { case _ =>
       try {
         sessionStore.remove(sessionType, session.id)
@@ -141,7 +141,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
           error("Exception was thrown during stop session:", e)
           throw e
       } finally {
-        info(s"Deleted session ${session.id}")
+        info(s"Deleted ${session}")
       }
     }
   }
