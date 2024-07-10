@@ -24,12 +24,20 @@ import org.apache.livy.LivyConf
 object AppInfo {
   val DRIVER_LOG_URL_NAME = "driverLogUrl"
   val SPARK_UI_URL_NAME = "sparkUiUrl"
+  val EXECUTORS_LOG_URLS_NAME = "executorLogUrls"
 }
 
-case class AppInfo(var driverLogUrl: Option[String] = None, var sparkUiUrl: Option[String] = None) {
+case class AppInfo(
+  var driverLogUrl: Option[String] = None,
+  var sparkUiUrl: Option[String] = None,
+  var executorLogUrls: Option[String] = None) {
   import AppInfo._
   def asJavaMap: java.util.Map[String, String] =
-    Map(DRIVER_LOG_URL_NAME -> driverLogUrl.orNull, SPARK_UI_URL_NAME -> sparkUiUrl.orNull).asJava
+    Map(
+      DRIVER_LOG_URL_NAME -> driverLogUrl.orNull,
+      SPARK_UI_URL_NAME -> sparkUiUrl.orNull,
+      EXECUTORS_LOG_URLS_NAME -> executorLogUrls.orNull
+    ).asJava
 }
 
 trait SparkAppListener {
@@ -71,13 +79,21 @@ object SparkApp {
       sparkConf ++ Map(
         SPARK_YARN_TAG_KEY -> mergedYarnTags,
         "spark.yarn.submit.waitAppCompletion" -> "false")
+    } else if (livyConf.isRunningOnKubernetes()) {
+      import KubernetesConstants._
+      sparkConf ++ Map(
+        s"spark.kubernetes.driver.label.$SPARK_APP_TAG_LABEL" -> uniqueAppTag,
+        s"spark.kubernetes.executor.label.$SPARK_APP_TAG_LABEL" -> uniqueAppTag,
+        "spark.kubernetes.submission.waitAppCompletion" -> "false",
+        "spark.ui.proxyBase" -> s"/$uniqueAppTag")
     } else {
       sparkConf
     }
   }
 
   /**
-   * Return a SparkApp object to control the underlying Spark application via YARN or spark-submit.
+   * Return a SparkApp object to control the underlying Spark application via YARN, Kubernetes
+   * or spark-submit.
    *
    * @param uniqueAppTag A tag that can uniquely identify the application.
    */
@@ -89,8 +105,11 @@ object SparkApp {
       listener: Option[SparkAppListener]): SparkApp = {
     if (livyConf.isRunningOnYarn()) {
       new SparkYarnApp(uniqueAppTag, appId, process, listener, livyConf)
+    } else if (livyConf.isRunningOnKubernetes()) {
+      new SparkKubernetesApp(uniqueAppTag, appId, process, listener, livyConf)
     } else {
-      require(process.isDefined, "process must not be None when Livy master is not YARN.")
+      require(process.isDefined, "process must not be None when Livy master is not YARN or" +
+        "Kubernetes.")
       new SparkProcApp(process.get, listener)
     }
   }

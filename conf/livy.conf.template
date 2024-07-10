@@ -200,3 +200,58 @@
 # livy.server.hdfs.safe-mode.interval = 5
 # value specifies max attempts to retry when safe mode is ON in hdfs filesystem
 # livy.server.hdfs.safe-mode.max.retry.attempts = 10
+
+# Manual authentication to KubeApiserver (by default configured with Kubernetes ServiceAccount
+# if deployed to Kubernetes cluster as a Pod)
+# Kubernetes oauth token file path
+# livy.server.kubernetes.oauthTokenFile =
+# Kubernetes oauth token string value
+# livy.server.kubernetes.oauthTokenValue =
+# Kubernetes CA cert file path
+# livy.server.kubernetes.caCertFile =
+# Kubernetes client key file path
+# livy.server.kubernetes.clientKeyFile =
+# Kubernetes client cert file path
+# livy.server.kubernetes.clientCertFile =
+
+# If Livy can't find the Kubernetes app within this time, consider it lost.
+# livy.server.kubernetes.app-lookup-timeout = 600s
+# When the cluster is busy, we may fail to launch yarn app in app-lookup-timeout, then it would
+# cause session leakage, so we need to check session leakage.
+# How long to check livy session leakage
+# livy.server.kubernetes.app-leakage.check-timeout = 600s
+# How often to check livy session leakage
+# livy.server.kubernetes.app-leakage.check-interval = 60s
+
+# How often Livy polls KubeApiServer to refresh KubernetesApp state (Pods state, logs, description
+# details, routes, etc...)
+# livy.server.kubernetes.poll-interval = 15s
+
+# Weather to create Kubernetes Nginx Ingress for Spark UI. If set to true, configure the desired
+# options below
+# livy.server.kubernetes.ingress.create = false
+# Kubernetes Nginx Ingress protocol. If set to https refer Ingress TLS section below
+# livy.server.kubernetes.ingress.protocol = http
+# Kubernetes Nginx Ingress host. Be sure to set it to the FQDN of your Nginx Ingress Controller
+# proxy server
+# livy.server.kubernetes.ingress.host = localhost
+# Kubernetes secret name for Nginx Ingress TLS. Is omitted if 'livy.server.kubernetes.ingress.protocol'
+# is not https
+# livy.server.kubernetes.ingress.tls.secretName = spark-cluster-tls
+# Kubernetes Nginx Ingress additional configuration snippet for specific config options
+# livy.server.kubernetes.ingress.additionalConfSnippet =
+# Kubernetes Nginx Ingress additional annotations for specific config options, eg. for configuring
+# basic auth of external oauth2 proxy. Format: annotation1=value1;annotation2=value2;...
+# livy.server.kubernetes.ingress.additionalAnnotations =
+
+# Set to true to enable Grafana Loki integration and configure options below
+livy.server.kubernetes.grafana.loki.enabled = false
+# Grafana UI root endpoint to build links based on
+# livy.server.kubernetes.grafana.url = http://localhost:3000
+# Grafana Datasource name for Loki
+# livy.server.kubernetes.grafana.loki.datasource = loki
+# Time range from now to past to get logs for
+# livy.server.kubernetes.grafana.timeRange = 6h
+
+# Used to build links to Spark History Server pages on Spark App completion (Kubernetes only)
+# livy.ui.history-server-url = http://spark-history-server
