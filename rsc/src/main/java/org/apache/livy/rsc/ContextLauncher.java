@@ -112,10 +112,9 @@ class ContextLauncher {
       Utils.addListener(promise, new FutureListener<ContextInfo>() {
         @Override
         public void onFailure(Throwable error) throws Exception {
-          // If promise is cancelled or failed, make sure spark-submit is not leaked.
-          if (child != null) {
-            child.kill();
-          }
+          // If promise is cancelled or failed,
+          // dispose spark submit and rpc server in case of leak problem.
+          dispose(true);
         }
       });
 
@@ -145,7 +144,9 @@ class ContextLauncher {
   }
 
   private void dispose(boolean forceKill) {
-    factory.getServer().unregisterClient(clientId);
+    if (factory.getServer() != null) {
+      factory.getServer().unregisterClient(clientId);
+    }
     try {
       if (child != null) {
         if (forceKill) {
