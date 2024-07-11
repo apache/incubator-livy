@@ -476,15 +476,20 @@ class InteractiveSession(
       info(msg)
       sessionLog = IndexedSeq(msg)
     } else {
-      val uriFuture = Future { client.get.getServerUri.get() }
+      val uriFuture = Future {
+        client.get.getServerUri.get()
+      }(sessionManageExecutors)
 
       uriFuture.onSuccess { case url =>
         rscDriverUri = Option(url)
         sessionSaveLock.synchronized {
           sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
         }
-      }
-      uriFuture.onFailure { case e => warn("Fail to get rsc uri", e) }
+      }(sessionManageExecutors)
+
+      uriFuture.onFailure {
+        case e => warn("Fail to get rsc uri", e)
+      }(sessionManageExecutors)
 
       // Send a dummy job that will return once the client is ready to be used, and set the
       // state to "idle" at that point.
@@ -576,7 +581,7 @@ class InteractiveSession(
     }
   }
 
-  def interrupt(): Future[Unit] = {
+  def interrupt(): Future[AnyVal] = {
     stop()
   }
 
