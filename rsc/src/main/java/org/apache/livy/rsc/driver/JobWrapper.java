@@ -27,6 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.livy.Job;
+import org.apache.livy.rsc.BaseProtocol;
+import org.apache.livy.sessions.SessionState;
 
 public class JobWrapper<T> implements Callable<Void> {
 
@@ -72,6 +74,7 @@ public class JobWrapper<T> implements Callable<Void> {
       throw new ExecutionException(t);
     } finally {
       driver.activeJobs.remove(jobId);
+      driver.idleIfActiveJobsEmpty();
     }
     return null;
   }
