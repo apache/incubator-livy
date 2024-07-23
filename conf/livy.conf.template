@@ -216,6 +216,10 @@
 
 # If Livy can't find the Kubernetes app within this time, consider it lost.
 # livy.server.kubernetes.app-lookup-timeout = 600s
+# If Livy can't find the Kubernetes app within this max times, consider it lost.
+# livy.server.kubernetes.app-lookup.max-failed.times = 120
+# The size of thread pool to monitor all Kubernetes apps.
+# livy.server.kubernetes.app-lookup.thread-pool.size = 4
 # When the cluster is busy, we may fail to launch yarn app in app-lookup-timeout, then it would
 # cause session leakage, so we need to check session leakage.
 # How long to check livy session leakage
