@@ -20,14 +20,32 @@ import java.util.Objects._
 
 import io.fabric8.kubernetes.api.model._
 import io.fabric8.kubernetes.api.model.networking.v1.{Ingress, IngressRule, IngressSpec}
+import io.fabric8.kubernetes.client.KubernetesClient
 import org.mockito.Mockito.when
-import org.scalatest.FunSpec
+import org.scalatest.{BeforeAndAfterAll, FunSpec}
 import org.scalatestplus.mockito.MockitoSugar._
 
 import org.apache.livy.{LivyBaseUnitTestSuite, LivyConf}
 import org.apache.livy.utils.KubernetesConstants.SPARK_APP_TAG_LABEL
 
-class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite {
+class SparkKubernetesAppSpec extends FunSpec with LivyBaseUnitTestSuite with BeforeAndAfterAll {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val livyConf = new LivyConf()
+    livyConf.set(LivyConf.KUBERNETES_POLL_INTERVAL, "500ms")
+    livyConf.set(LivyConf.KUBERNETES_APP_LEAKAGE_CHECK_INTERVAL, "100ms")
+    livyConf.set(LivyConf.KUBERNETES_APP_LEAKAGE_CHECK_TIMEOUT, "1000ms")
+
+    val client = mock[KubernetesClient]
+    SparkKubernetesApp.init(livyConf, Some(client))
+    SparkKubernetesApp.clearApps
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    assert(SparkKubernetesApp.getAppSize === 0)
+  }
 
   describe("KubernetesAppReport") {
     import scala.collection.JavaConverters._

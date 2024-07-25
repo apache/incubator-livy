@@ -271,6 +271,13 @@ object LivyConf {
 
   // If Livy can't find the Kubernetes app within this time, consider it lost.
   val KUBERNETES_APP_LOOKUP_TIMEOUT = Entry("livy.server.kubernetes.app-lookup-timeout", "600s")
+  // If Livy can't find the Kubernetes app within this max times, consider it lost.
+  val KUBERNETES_APP_LOOKUP_MAX_FAILED_TIMES =
+    Entry("livy.server.kubernetes.app-lookup.max-failed.times", 120)
+  // The size of thread pool to monitor all Kubernetes apps.
+  val KUBERNETES_APP_LOOKUP_THREAD_POOL_SIZE =
+    Entry("livy.server.kubernetes.app-lookup.thread-pool.size", 4)
+
   // How often Livy polls Kubernetes to refresh Kubernetes app state.
   val KUBERNETES_POLL_INTERVAL = Entry("livy.server.kubernetes.poll-interval", "15s")
 
