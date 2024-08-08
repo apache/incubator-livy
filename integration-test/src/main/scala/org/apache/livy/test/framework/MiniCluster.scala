@@ -154,6 +154,7 @@ object MiniLivyMain extends MiniClusterBase {
     saveProperties(livyConf, new File(configPath + "/livy.conf"))
 
     val server = new LivyServer()
+    server.init()
     server.start()
     server.livyConf.set(LivyConf.ENABLE_HIVE_CONTEXT, false)
     // Write a serverUrl.conf file to the conf directory with the location of the Livy
