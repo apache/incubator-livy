@@ -1,0 +1,29 @@
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ template "livycluster.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+{{- with .Values.persistence.annotations  }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  labels:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    helm.sh/chart: {{ include "livycluster.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | quote }}
+{{- with .Values.persistence.storageClass }}
+{{- if (eq "-" .) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ . }}"
+{{- end }}
+{{- end }}
+{{- end }}

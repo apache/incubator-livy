@@ -1,0 +1,95 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+image:
+  livy:
+    repository: your_repository/livy
+    tag: spark3.2.3
+    pullPolicy: IfNotPresent # pullPolicy can be Always or IfNotPresent or Never
+  spark:
+    repository: your_repository/spark-py
+    tag: v3.2.3
+    pullPolicy: IfNotPresent
+
+tags:
+  ingress: true
+
+clusterIssuers:
+  - name: selfsigning-issuer
+    spec:
+      selfSigned: {}
+
+defaultCertificate:
+  enabled: true
+  issuer: selfsigning-issuer
+  issuerKind: ClusterIssuer
+  secretName: ingress-default-tls
+  commonName: '*.my-cluster.example.com'
+  domains:
+    - my-cluster.example.com
+
+cert-manager:
+  enabled: true
+  ingressShim:
+    defaultIssuerName: selfsigning-issuer
+    defaultIssuerKind: ClusterIssuer
+
+ingress-nginx:
+  controller:
+    allowSnippetAnnotations: true
+    extraArgs:
+      default-ssl-certificate: kube-system/ingress-default-tls
+    service:
+      loadBalancerIP: 127.0.0.1 # my-cluster.example.com IP address (from /etc/hosts)
+      loadBalancerSourceRanges: [ ]
+
+nameOverride: ""
+fullnameOverride: ""
+
+rbac:
+  enabled: true
+  create: true
+  serviceAccounts: []
+  roles: []
+  bindings: []
+
+service:
+  type: ClusterIP
+  port: 80
+  # If not set, a name is generated using the fullname template
+  name:
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+  path: /livy/?(.*)
+  hosts:
+    - my-cluster.example.com
+  tls:
+    - secretName: spark-cluster-tls
+      hosts:
+        - my-cluster.example.com
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  annotations: {}
+
+global: {}
