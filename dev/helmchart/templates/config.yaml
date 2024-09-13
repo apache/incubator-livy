@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config
+  namespace: {{ .Release.Namespace }}
+data:
+  livy.conf: |-
+    livy.file.local-dir-whitelist=/
+    livy.server.kubernetes.ingress.className=nginx
+    livy.server.kubernetes.ingress.create=true
+    livy.server.kubernetes.ingress.host=my-cluster.example.com
+    livy.server.kubernetes.ingress.protocol=https
+    livy.server.port=8998
+    livy.server.recovery.mode=recovery
+    livy.server.recovery.state-store.url=/tmp/livy/store
+    livy.server.recovery.state-store=filesystem
+    livy.server.session.state-retain.sec = 4h
+    livy.spark.deploy-mode=cluster
+    livy.spark.master=k8s://kubernetes.default.svc.cluster.local:443
+    livy.ui.basePath=/livy
+    livy.ui.history-server-url=https://my-cluster.example.com/historyserver
+  livy-client.conf: |-
+    livy.rsc.client.connect.timeout=600s
+    livy.rsc.rpc.server.address={{ include "livycluster.fullname" . }}-0.{{ include "livycluster.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local
+    livy.rsc.server.connect.timeout=600s
+  log4j.properties: |-
+    log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
+    log4j.appender.console.layout=org.apache.log4j.PatternLayout
+    log4j.appender.console.target=System.err
+    log4j.appender.console=org.apache.log4j.ConsoleAppender
+    log4j.logger.org.eclipse.jetty=WARN
+    log4j.rootCategory=DEBUG, console
+  spark-defaults.conf: |-
+    spark.driver.extraJavaOptions=--add-opens java.base/jdk.internal.misc=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true
+    spark.eventLog.dir=file:///tmp/livy/store
+    spark.eventLog.enabled=true
+    spark.executor.extraJavaOptions=--add-opens java.base/jdk.internal.misc=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true
+    spark.kryo.registrationRequired=false
+    spark.kryo.unsafe=false
+    spark.kubernetes.authenticate.driver.serviceAccountName={{ include "livycluster.fullname" . }}-spark
+    spark.kubernetes.container.image.pullPolicy={{ .Values.image.spark.pullPolicy }}
+    spark.kubernetes.container.image={{ .Values.image.spark.repository }}:{{ .Values.image.spark.tag }}
+    spark.kubernetes.driver.label.name=driver
+    spark.kubernetes.driver.volumes.persistentVolumeClaim.datafiles.mount.path=/tmp/livy/store
+    spark.kubernetes.driver.volumes.persistentVolumeClaim.datafiles.options.claimName={{ include "livycluster.fullname" . }}
+    spark.kubernetes.executor.label.name=executor
+    spark.kubernetes.executor.volumes.persistentVolumeClaim.datafiles.mount.path=/tmp/livy/store
+    spark.kubernetes.executor.volumes.persistentVolumeClaim.datafiles.options.claimName={{ include "livycluster.fullname" . }}
+    spark.kubernetes.file.upload.path=file:///tmp/livy/store
+    spark.kubernetes.namespace={{ .Release.Namespace }}
+    spark.network.timeout=800
+    spark.serializer=org.apache.spark.serializer.KryoSerializer
+    spark.speculation=false
+    spark.sql.broadcastTimeout=1200
+    spark.sql.warehouse.dir=/opt/spark/spark-warehouse
