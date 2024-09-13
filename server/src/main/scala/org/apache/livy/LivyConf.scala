@@ -138,6 +138,10 @@ object LivyConf {
     Entry("livy.server.thrift.async.exec.wait.queue.size", 100)
   val THRIFT_ASYNC_EXEC_KEEPALIVE_TIME =
     Entry("livy.server.thrift.async.exec.keepalive.time", "10s")
+  val SESSION_MANAGE_THREADS = Entry("livy.server.session.manage.threads", 200)
+  val SESSION_MANAGE_SHUTDOWN_TIMEOUT = Entry("livy.server.session.manage.shutdown.timeout", "10s")
+  val SESSION_MANAGE_WAIT_QUEUE_SIZE = Entry("livy.server.session.manage.wait.queue.size", 100)
+  val SESSION_MANAGE_KEEPALIVE_TIME = Entry("livy.server.session.manage.keepalive.time", "10s")
   val THRIFT_BIND_HOST = Entry("livy.server.thrift.bind.host", null)
   val THRIFT_WORKER_KEEPALIVE_TIME = Entry("livy.server.thrift.worker.keepalive.time", "60s")
   val THRIFT_MIN_WORKER_THREADS = Entry("livy.server.thrift.min.worker.threads", 5)
