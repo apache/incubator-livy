@@ -286,11 +286,8 @@ class ContextLauncher {
       File sparkDefaults = new File(confDir + File.separator + "spark-defaults.conf");
       if (sparkDefaults.isFile()) {
         Properties sparkConf = new Properties();
-        Reader r = new InputStreamReader(new FileInputStream(sparkDefaults), UTF_8);
-        try {
+        try (Reader r = new InputStreamReader(new FileInputStream(sparkDefaults), UTF_8)) {
           sparkConf.load(r);
-        } finally {
-          r.close();
         }
 
         for (String key : sparkConf.stringPropertyNames()) {
@@ -305,11 +302,8 @@ class ContextLauncher {
     Files.setPosixFilePermissions(file.toPath(), EnumSet.of(OWNER_READ, OWNER_WRITE));
     //file.deleteOnExit();
 
-    Writer writer = new OutputStreamWriter(new FileOutputStream(file), UTF_8);
-    try {
+    try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), UTF_8)) {
       confView.store(writer, "Livy App Context Configuration");
-    } finally {
-      writer.close();
     }
 
     return file;

@@ -403,8 +403,7 @@ public class TestSparkClient {
   public void testKillServerWhileSparkSubmitIsRunning() throws Exception {
     Properties conf = createConf(true);
     LivyClient client = null;
-    PipedInputStream stubStream = new PipedInputStream(new PipedOutputStream());
-    try {
+    try (PipedInputStream stubStream = new PipedInputStream(new PipedOutputStream())) {
       Process mockSparkSubmit = mock(Process.class);
       when(mockSparkSubmit.getInputStream()).thenReturn(stubStream);
       when(mockSparkSubmit.getErrorStream()).thenReturn(stubStream);
@@ -446,7 +445,6 @@ public class TestSparkClient {
       throw e;
     } finally {
       ContextLauncher.mockSparkSubmit = null;
-      stubStream.close();
       if (client != null) {
         client.stop(true);
       }
