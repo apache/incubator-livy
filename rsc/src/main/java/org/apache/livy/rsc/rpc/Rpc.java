@@ -111,39 +111,28 @@ public class Rpc implements Closeable {
     final AtomicReference<Rpc> rpc = new AtomicReference<>();
 
     // Set up a timeout to undo everything.
-    final Runnable timeoutTask = new Runnable() {
-      @Override
-      public void run() {
-        promise.setFailure(new TimeoutException("Timed out waiting for RPC server connection."));
-      }
-    };
+    final Runnable timeoutTask = () -> promise.setFailure(new TimeoutException("Timed out waiting for RPC server connection."));
     final ScheduledFuture<?> timeoutFuture = eloop.schedule(timeoutTask,
         config.getTimeAsMs(RPC_CLIENT_HANDSHAKE_TIMEOUT), TimeUnit.MILLISECONDS);
 
     // The channel listener instantiates the Rpc instance when the connection is established,
     // and initiates the SASL handshake.
-    cf.addListener(new ChannelFutureListener() {
-      @Override
-      public void operationComplete(ChannelFuture cf) throws Exception {
-        if (cf.isSuccess()) {
-          SaslClientHandler saslHandler = new SaslClientHandler(config, clientId, promise,
-            timeoutFuture, secret, dispatcher);
-          Rpc rpc = createRpc(config, saslHandler, (SocketChannel) cf.channel(), eloop);
-          saslHandler.rpc = rpc;
-          saslHandler.sendHello(cf.channel());
-        } else {
-          promise.setFailure(cf.cause());
-        }
+    cf.addListener((ChannelFutureListener) cf1 -> {
+      if (cf1.isSuccess()) {
+        SaslClientHandler saslHandler = new SaslClientHandler(config, clientId, promise,
+          timeoutFuture, secret, dispatcher);
+        Rpc rpc1 = createRpc(config, saslHandler, (SocketChannel) cf1.channel(), eloop);
+        saslHandler.rpc = rpc1;
+        saslHandler.sendHello(cf1.channel());
+      } else {
+        promise.setFailure(cf1.cause());
       }
     });
 
     // Handle cancellation of the promise.
-    promise.addListener(new GenericFutureListener<Promise<Rpc>>() {
-      @Override
-      public void operationComplete(Promise<Rpc> p) {
-        if (p.isCancelled()) {
-          cf.cancel(true);
-        }
+    promise.addListener((GenericFutureListener<Promise<Rpc>>) p -> {
+      if (p.isCancelled()) {
+        cf.cancel(true);
       }
     });
 
@@ -429,25 +418,19 @@ public class Rpc implements Closeable {
     try {
       final long id = rpcId.getAndIncrement();
       final Promise<T> promise = egroup.next().newPromise();
-      final ChannelFutureListener listener = new ChannelFutureListener() {
-          @Override
-          public void operationComplete(ChannelFuture cf) {
-            if (!cf.isSuccess() && !promise.isDone()) {
-              LOG.warn("Failed to send RPC, closing connection.", cf.cause());
-              promise.setFailure(cf.cause());
-              discardRpcCall(id);
-              close();
-            }
-          }
+      final ChannelFutureListener listener = cf -> {
+        if (!cf.isSuccess() && !promise.isDone()) {
+          LOG.warn("Failed to send RPC, closing connection.", cf.cause());
+          promise.setFailure(cf.cause());
+          discardRpcCall(id);
+          close();
+        }
       };
 
       registerRpcCall(id, promise, msg.getClass().getName());
-      channel.eventLoop().submit(new Runnable() {
-        @Override
-        public void run() {
-          channel.write(new MessageHeader(id, Rpc.MessageType.CALL)).addListener(listener);
-          channel.writeAndFlush(msg).addListener(listener);
-        }
+      channel.eventLoop().submit(() -> {
+        channel.write(new MessageHeader(id, MessageType.CALL)).addListener(listener);
+        channel.writeAndFlush(msg).addListener(listener);
       });
 
       return promise;

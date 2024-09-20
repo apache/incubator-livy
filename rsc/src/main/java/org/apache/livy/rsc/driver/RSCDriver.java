@@ -242,12 +242,9 @@ public class RSCDriver extends BaseProtocol {
       return;
     }
 
-    Runnable timeoutTask = new Runnable() {
-      @Override
-      public void run() {
-        LOG.warn("Shutting down RSC due to idle timeout ({}).", livyConf.get(SERVER_IDLE_TIMEOUT));
-        shutdown();
-      }
+    Runnable timeoutTask = () -> {
+      LOG.warn("Shutting down RSC due to idle timeout ({}).", livyConf.get(SERVER_IDLE_TIMEOUT));
+      shutdown();
     };
     ScheduledFuture<?> timeout = server.getEventLoopGroup().schedule(timeoutTask,
       livyConf.getTimeAsMs(SERVER_IDLE_TIMEOUT), TimeUnit.MILLISECONDS);

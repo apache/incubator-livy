@@ -410,22 +410,16 @@ public class TestSparkClient {
 
       // Block waitFor until process.destroy() is called.
       final CountDownLatch waitForCalled = new CountDownLatch(1);
-      when(mockSparkSubmit.waitFor()).thenAnswer(new Answer<Integer>() {
-        @Override
-        public Integer answer(InvocationOnMock invocation) throws Throwable {
-          waitForCalled.await();
-          return 0;
-        }
+      when(mockSparkSubmit.waitFor()).thenAnswer((Answer<Integer>) invocation -> {
+        waitForCalled.await();
+        return 0;
       });
 
       // Verify process.destroy() is called.
       final CountDownLatch destroyCalled = new CountDownLatch(1);
-      doAnswer(new Answer<Void>() {
-        @Override
-        public Void answer(InvocationOnMock invocation) throws Throwable {
-          destroyCalled.countDown();
-          return null;
-        }
+      doAnswer((Answer<Void>) invocation -> {
+        destroyCalled.countDown();
+        return null;
       }).when(mockSparkSubmit).destroy();
 
       ContextLauncher.mockSparkSubmit = mockSparkSubmit;

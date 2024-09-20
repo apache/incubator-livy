@@ -123,12 +123,7 @@ class ContextLauncher {
 
       // Set up a timeout to fail the promise if we don't hear back from the context
       // after a configurable timeout.
-      Runnable timeoutTask = new Runnable() {
-        @Override
-        public void run() {
-          connectTimeout(handler);
-        }
-      };
+      Runnable timeoutTask = () -> connectTimeout(handler);
       this.timeout = factory.getServer().getEventLoopGroup().schedule(timeoutTask,
         conf.getTimeAsMs(RPC_CLIENT_HANDSHAKE_TIMEOUT), TimeUnit.MILLISECONDS);
     } catch (Exception e) {
@@ -226,14 +221,11 @@ class ContextLauncher {
     } else if (conf.getBoolean(CLIENT_IN_PROCESS)) {
       // Mostly for testing things quickly. Do not do this in production.
       LOG.warn("!!!! Running remote driver in-process. !!!!");
-      Runnable child = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            RSCDriverBootstrapper.main(new String[] { confFile.getAbsolutePath() });
-          } catch (Exception e) {
-            throw Utils.propagate(e);
-          }
+      Runnable child = () -> {
+        try {
+          RSCDriverBootstrapper.main(new String[] { confFile.getAbsolutePath() });
+        } catch (Exception e) {
+          throw Utils.propagate(e);
         }
       };
       return new ChildProcess(conf, promise, child, confFile);
@@ -346,12 +338,9 @@ class ContextLauncher {
         LOG.warn("Connection established but promise is already finalized.");
       }
 
-      ctx.executor().submit(new Runnable() {
-        @Override
-        public void run() {
-          dispose();
-          ContextLauncher.this.dispose(false);
-        }
+      ctx.executor().submit(() -> {
+        dispose();
+        ContextLauncher.this.dispose(false);
       });
     }
 
@@ -380,25 +369,22 @@ class ContextLauncher {
       this.child = childProc;
       this.confFile = confFile;
 
-      Runnable monitorTask = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            RSCClientFactory.childProcesses().incrementAndGet();
-            int exitCode = child.waitFor();
-            if (exitCode != 0) {
-              LOG.warn("Child process exited with code {}.", exitCode);
-              fail(new IOException(String.format("Child process exited with code %d.", exitCode)));
-            }
-          } catch (InterruptedException ie) {
-            LOG.warn("Waiting thread interrupted, killing child process.");
-            Thread.interrupted();
-            child.destroy();
-          } catch (Exception e) {
-            LOG.warn("Exception while waiting for child process.", e);
-          } finally {
-            RSCClientFactory.childProcesses().decrementAndGet();
+      Runnable monitorTask = () -> {
+        try {
+          RSCClientFactory.childProcesses().incrementAndGet();
+          int exitCode = child.waitFor();
+          if (exitCode != 0) {
+            LOG.warn("Child process exited with code {}.", exitCode);
+            fail(new IOException(String.format("Child process exited with code %d.", exitCode)));
           }
+        } catch (InterruptedException ie) {
+          LOG.warn("Waiting thread interrupted, killing child process.");
+          Thread.interrupted();
+          child.destroy();
+        } catch (Exception e) {
+          LOG.warn("Exception while waiting for child process.", e);
+        } finally {
+          RSCClientFactory.childProcesses().decrementAndGet();
         }
       };
       this.monitor = monitor(monitorTask, childId);
@@ -435,25 +421,19 @@ class ContextLauncher {
     }
 
     private Thread monitor(final Runnable task, int childId) {
-      Runnable wrappedTask = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            task.run();
-          } finally {
-            confFile.delete();
-          }
+      Runnable wrappedTask = () -> {
+        try {
+          task.run();
+        } finally {
+          confFile.delete();
         }
       };
       Thread thread = new Thread(wrappedTask);
       thread.setDaemon(true);
       thread.setName("ContextLauncher-" + childId);
-      thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-        @Override
-        public void uncaughtException(Thread t, Throwable e) {
-          LOG.warn("Child task threw exception.", e);
-          fail(e);
-        }
+      thread.setUncaughtExceptionHandler((t, e) -> {
+        LOG.warn("Child task threw exception.", e);
+        fail(e);
       });
       thread.start();
       return thread;
