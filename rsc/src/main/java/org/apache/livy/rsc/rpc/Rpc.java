@@ -108,7 +108,7 @@ public class Rpc implements Closeable {
         .connect(host, port);
 
     final Promise<Rpc> promise = eloop.next().newPromise();
-    final AtomicReference<Rpc> rpc = new AtomicReference<Rpc>();
+    final AtomicReference<Rpc> rpc = new AtomicReference<>();
 
     // Set up a timeout to undo everything.
     final Runnable timeoutTask = new Runnable() {
@@ -221,7 +221,7 @@ public class Rpc implements Closeable {
   private volatile RpcDispatcher dispatcher;
 
   private final Map<Class<?>, Method> handlers = new ConcurrentHashMap<>();
-  private final Collection<OutstandingRpc> rpcCalls = new ConcurrentLinkedQueue<OutstandingRpc>();
+  private final Collection<OutstandingRpc> rpcCalls = new ConcurrentLinkedQueue<>();
   private volatile Rpc.MessageHeader lastHeader;
 
   private Rpc(RSCConf config, Channel channel, EventExecutorGroup egroup) {

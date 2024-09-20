@@ -170,7 +170,7 @@ class HttpClient implements LivyClient {
 
   private <T> JobHandleImpl<T> sendJob(final String command, Job<T> job) {
     final ByteBuffer serializedJob = serializer.serialize(job);
-    JobHandleImpl<T> handle = new JobHandleImpl<T>(config, conn, sessionId, executor, serializer);
+    JobHandleImpl<T> handle = new JobHandleImpl<>(config, conn, sessionId, executor, serializer);
     handle.start(command, serializedJob);
     return handle;
   }

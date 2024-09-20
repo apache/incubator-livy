@@ -394,7 +394,7 @@ public class RSCDriver extends BaseProtocol {
 
   <T> void jobFinished(String jobId, T result, Throwable error) {
     LOG.debug("Send job({}) result to Client.", jobId);
-    broadcast(new JobResult<T>(jobId, result, error));
+    broadcast(new JobResult<>(jobId, result, error));
   }
 
   void jobStarted(String jobId) {
