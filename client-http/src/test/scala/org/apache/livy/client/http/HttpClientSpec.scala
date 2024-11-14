@@ -181,6 +181,30 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
       testJob(false, response = Some(null))
     }
 
+    withClient("should retrieve session id and sessionAppID") {
+      var id = client.getSessionId()
+      assert(id === sessionId)
+
+      var appId = client.getSessionAppId()
+      assert(Some(appId) === session.appId)
+
+    }
+
+    withClient("should retrieve session id when reconnecting to  a session") {
+      var sid = client.asInstanceOf[HttpClient].getSessionId()
+      val uri = s"http://${InetAddress.getLocalHost.getHostAddress}:${server.port}" +
+        s"${LivyConnection.SESSIONS_URI}/$sid"
+      val newClient = new LivyClientBuilder(false).setURI(new URI(uri)).build()
+      newClient.stop(false)
+
+      var id = client.getSessionId()
+      assert(id === sessionId)
+
+      var appId = client.getSessionAppId()
+      assert(Some(appId) === session.appId)
+
+    }
+
     withClient("should connect to existing sessions") {
       var sid = client.asInstanceOf[HttpClient].getSessionId()
       val uri = s"http://${InetAddress.getLocalHost.getHostAddress}:${server.port}" +
@@ -256,6 +280,7 @@ private object HttpClientSpec {
   // Hack warning: keep the session object available so that individual tests can mock
   // the desired behavior before making requests to the server.
   var session: InteractiveSession = _
+  var sessionId: Int = _
 
 }
 
@@ -272,9 +297,10 @@ private class HttpClientTestBootstrap extends LifeCycle {
       override protected def createSession(req: HttpServletRequest): InteractiveSession = {
         val session = mock(classOf[InteractiveSession])
         val id = sessionManager.nextId()
+        val sessionAppId: String = "ASD"
         when(session.id).thenReturn(id)
         when(session.name).thenReturn(None)
-        when(session.appId).thenReturn(None)
+        when(session.appId).thenReturn(Some(sessionAppId))
         when(session.appInfo).thenReturn(AppInfo())
         when(session.state).thenReturn(SessionState.Idle)
         when(session.proxyUser).thenReturn(None)
@@ -296,6 +322,7 @@ private class HttpClientTestBootstrap extends LifeCycle {
         when(session.idleTimeout).thenReturn(None)
         require(HttpClientSpec.session == null, "Session already created?")
         HttpClientSpec.session = session
+        HttpClientSpec.sessionId = id
         session
       }
     }
