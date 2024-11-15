@@ -403,30 +403,23 @@ public class TestSparkClient {
   public void testKillServerWhileSparkSubmitIsRunning() throws Exception {
     Properties conf = createConf(true);
     LivyClient client = null;
-    PipedInputStream stubStream = new PipedInputStream(new PipedOutputStream());
-    try {
+    try (PipedInputStream stubStream = new PipedInputStream(new PipedOutputStream())) {
       Process mockSparkSubmit = mock(Process.class);
       when(mockSparkSubmit.getInputStream()).thenReturn(stubStream);
       when(mockSparkSubmit.getErrorStream()).thenReturn(stubStream);
 
       // Block waitFor until process.destroy() is called.
       final CountDownLatch waitForCalled = new CountDownLatch(1);
-      when(mockSparkSubmit.waitFor()).thenAnswer(new Answer<Integer>() {
-        @Override
-        public Integer answer(InvocationOnMock invocation) throws Throwable {
-          waitForCalled.await();
-          return 0;
-        }
+      when(mockSparkSubmit.waitFor()).thenAnswer((Answer<Integer>) invocation -> {
+        waitForCalled.await();
+        return 0;
       });
 
       // Verify process.destroy() is called.
       final CountDownLatch destroyCalled = new CountDownLatch(1);
-      doAnswer(new Answer<Void>() {
-        @Override
-        public Void answer(InvocationOnMock invocation) throws Throwable {
-          destroyCalled.countDown();
-          return null;
-        }
+      doAnswer((Answer<Void>) invocation -> {
+        destroyCalled.countDown();
+        return null;
       }).when(mockSparkSubmit).destroy();
 
       ContextLauncher.mockSparkSubmit = mockSparkSubmit;
@@ -446,7 +439,6 @@ public class TestSparkClient {
       throw e;
     } finally {
       ContextLauncher.mockSparkSubmit = null;
-      stubStream.close();
       if (client != null) {
         client.stop(true);
       }

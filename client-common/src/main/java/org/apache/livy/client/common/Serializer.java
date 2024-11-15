@@ -18,6 +18,7 @@
 package org.apache.livy.client.common;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.invoke.SerializedLambda;
 import java.nio.ByteBuffer;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -41,23 +42,20 @@ public class Serializer {
   private final ThreadLocal<Kryo> kryos;
 
   public Serializer(final Class<?>... klasses) {
-    this.kryos = new ThreadLocal<Kryo>() {
-      @Override
-      protected Kryo initialValue() {
-        Kryo kryo = new Kryo();
-        int count = 0;
-        for (Class<?> klass : klasses) {
-          kryo.register(klass, REG_ID_BASE + count);
-          count++;
-        }
-        kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(
-          new StdInstantiatorStrategy()));
-        kryo.register(java.lang.invoke.SerializedLambda.class);
-        kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
-        kryo.setClassLoader(Thread.currentThread().getContextClassLoader());
-        return kryo;
+    this.kryos = ThreadLocal.withInitial(() -> {
+      Kryo kryo = new Kryo();
+      int count = 0;
+      for (Class<?> klass : klasses) {
+        kryo.register(klass, REG_ID_BASE + count);
+        count++;
       }
-    };
+      kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(
+        new StdInstantiatorStrategy()));
+      kryo.register(SerializedLambda.class);
+      kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
+      kryo.setClassLoader(Thread.currentThread().getContextClassLoader());
+      return kryo;
+    });
   }
 
   public Object deserialize(ByteBuffer data) {
