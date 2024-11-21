@@ -22,3 +22,12 @@ log4j.appender.console.layout=org.apache.log4j.PatternLayout
 log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
 
 log4j.logger.org.eclipse.jetty=WARN
+
+# log4j.appender.auditfile = org.apache.log4j.DailyRollingFileAppender
+# log4j.appender.auditfile.DatePattern=.yyyy-MM-dd
+# log4j.appender.auditfile.File = ${LIVY_LOG_DIR}/audit.log
+# log4j.appender.auditfile.layout = org.apache.log4j.PatternLayout
+# log4j.appender.auditfile.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
+
+# log4j.logger.org.apache.livy.server.interactive.InteractiveSessionAudit$=INFO, auditfile
+# log4j.additivity.org.apache.livy.server.interactive.InteractiveSessionAudit$=false
