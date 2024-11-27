@@ -27,6 +27,15 @@ import java.util.concurrent.Future;
 public interface LivyClient {
 
   /**
+   * Submits a code snippet passed in as a string for asynchronous execution.
+   * @param <T> The return type of the statement
+   * @param code The code to execute
+   * @param kind The code kind - can be one of (spark, pyspark sparkr, sql)
+   * @return A handle that can be used monitor the statement execution.
+   */
+  <T> JobHandle<T> submitStatement(String code, String kind);
+
+  /**
    * Submits a job for asynchronous execution.
    *
    * @param <T> The return type of the job
