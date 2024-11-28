@@ -589,7 +589,8 @@ class InteractiveSession(
     ensureRunning()
     recordActivity()
 
-    val id = client.get.submitReplCode(content.code, content.kind.orNull).get
+    val id = client.get.submitReplCode(content.code, content.kind.orNull,
+     content.interpreterGroup.orNull).get
     client.get.getReplJobResults(id, 1).get().statements(0)
   }
 
