@@ -237,24 +237,24 @@ class SparkYarnApp private[utils] (
       appId: ApplicationId,
       yarnAppState: YarnApplicationState,
       finalAppStatus: FinalApplicationStatus): SparkApp.State.Value = {
-    (yarnAppState, finalAppStatus) match {
-      case (YarnApplicationState.NEW, FinalApplicationStatus.UNDEFINED) |
-           (YarnApplicationState.NEW_SAVING, FinalApplicationStatus.UNDEFINED) |
-           (YarnApplicationState.SUBMITTED, FinalApplicationStatus.UNDEFINED) |
-           (YarnApplicationState.ACCEPTED, FinalApplicationStatus.UNDEFINED) =>
+    yarnAppState match {
+      case YarnApplicationState.NEW | YarnApplicationState.NEW_SAVING |
+           YarnApplicationState.SUBMITTED | YarnApplicationState.ACCEPTED =>
         SparkApp.State.STARTING
-      case (YarnApplicationState.RUNNING, FinalApplicationStatus.UNDEFINED) |
-           (YarnApplicationState.RUNNING, FinalApplicationStatus.SUCCEEDED) =>
+      case YarnApplicationState.RUNNING =>
         SparkApp.State.RUNNING
-      case (YarnApplicationState.FINISHED, FinalApplicationStatus.SUCCEEDED) =>
-        SparkApp.State.FINISHED
-      case (YarnApplicationState.FAILED, FinalApplicationStatus.FAILED) =>
-        SparkApp.State.FAILED
-      case (YarnApplicationState.KILLED, FinalApplicationStatus.KILLED) =>
-        SparkApp.State.KILLED
-      case (state, finalStatus) => // any other combination is invalid, so FAIL the application.
-        error(s"Unknown YARN state $state for app $appId with final status $finalStatus.")
-        SparkApp.State.FAILED
+      case _ =>
+        (yarnAppState, finalAppStatus) match {
+          case (YarnApplicationState.FAILED, FinalApplicationStatus.FAILED) =>
+            SparkApp.State.FAILED
+          case (YarnApplicationState.KILLED, FinalApplicationStatus.KILLED) =>
+            SparkApp.State.KILLED
+          case (YarnApplicationState.FINISHED, FinalApplicationStatus.SUCCEEDED) =>
+            SparkApp.State.FINISHED
+          case _ => // invalid combination, FAIL the application.
+            error(s"Unknown YARN state $yarnAppState for app $appId with final status $finalAppStatus.")
+            SparkApp.State.FAILED
+        }
     }
   }
 
