@@ -23,7 +23,10 @@ import scala.reflect.ClassTag
 import org.apache.curator.framework.api.UnhandledErrorListener
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
+import org.apache.curator.framework.recipes.cache.{PathChildrenCache, PathChildrenCacheEvent, PathChildrenCacheListener}
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent.Type
 import org.apache.curator.retry.RetryNTimes
+import org.apache.zookeeper.CreateMode
 import org.apache.zookeeper.KeeperException.NoNodeException
 
 import org.apache.livy.LivyConf
@@ -114,5 +117,49 @@ class ZooKeeperManager(
     } catch {
       case _: NoNodeException => warn(s"Fail to remove non-existed zookeeper node: ${key}")
     }
+  }
+
+  def watchAddNode[T: ClassTag](path: String, nodeAddHandler: (String, T) => Unit): Unit = {
+    watchNode(path, nodeAddHandler, Type.CHILD_ADDED)
+  }
+
+  def watchRemoveNode[T: ClassTag](path: String, nodeRemoveHandler: (String, T) => Unit): Unit = {
+    watchNode(path, nodeRemoveHandler, Type.CHILD_REMOVED)
+  }
+
+  def createEphemeralNode(path: String, value: Object): Unit = {
+    deleteNode(path)
+    val data = serializeToBytes(value)
+    curatorClient.create.creatingParentsIfNeeded.withMode(CreateMode.EPHEMERAL).forPath(path, data)
+  }
+
+  // For test
+  protected def getPathChildrenCache(path: String): PathChildrenCache = {
+    new PathChildrenCache(curatorClient, path, true)
+  }
+
+  private def deleteNode(path: String): Unit = {
+    if (curatorClient.checkExists().forPath(path) != null) {
+      curatorClient.delete().forPath(path)
+    }
+  }
+
+  private def watchNode[T: ClassTag](
+      path: String,
+      nodeEventHandler: (String, T) => Unit,
+      eventType: PathChildrenCacheEvent.Type): Unit = {
+    val cache = getPathChildrenCache(path)
+    cache.start()
+
+    val listener = new PathChildrenCacheListener() {
+      override def childEvent(client: CuratorFramework, event: PathChildrenCacheEvent): Unit = {
+        val data = event.getData
+        if (event.getType == eventType) {
+          nodeEventHandler(data.getPath, deserialize[T](data.getData))
+        }
+      }
+    }
+
+    cache.getListenable.addListener(listener)
   }
 }
