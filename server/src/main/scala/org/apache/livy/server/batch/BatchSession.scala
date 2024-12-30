@@ -19,18 +19,18 @@ package org.apache.livy.server.batch
 
 import java.lang.ProcessBuilder.Redirect
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.util.Random
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{FinishedSessionState, Session, SessionState}
 import org.apache.livy.sessions.Session._
 import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
+
+import java.io.{File, FileInputStream}
+import java.util.Properties
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class BatchRecoveryMetadata(
@@ -106,7 +106,18 @@ object BatchSession extends Logging {
           childProcesses.decrementAndGet()
         }
       }
-      SparkApp.create(appTag, None, Option(sparkSubmit), livyConf, Option(s))
+
+      var namespace:String = request.conf.getOrElse("spark.kubernetes.namespace", "")
+      if(namespace == "") {
+        val sparkHome = livyConf.sparkHome().get //SPARK_HOME is mandatory for Livy
+        val sparkDefaultsPath = sparkHome + File.separator + "conf" + File.separator + "spark-defaults.conf"
+        val properties = new Properties()
+        properties.load(new FileInputStream(sparkDefaultsPath))
+        info(s"Reading spark defaults from $sparkDefaultsPath")
+        namespace = properties.getProperty("spark.kubernetes.namespace","default")
+      }
+      val extrasMap: Map[String, String] = Map("spark.kubernetes.namespace" -> namespace)
+      SparkApp.create(appTag, None, Option(sparkSubmit), livyConf, Option(s), extrasMap)
     }
 
     info(s"Creating batch session $id: [owner: $owner, request: $request]")
@@ -138,7 +149,7 @@ object BatchSession extends Logging {
       m.proxyUser,
       sessionStore,
       mockApp.map { m => (_: BatchSession) => m }.getOrElse { s =>
-        SparkApp.create(m.appTag, m.appId, None, livyConf, Option(s))
+        SparkApp.create(m.appTag, m.appId, None, livyConf, Option(s), Map[String, String]())
       })
   }
 }

@@ -31,7 +31,7 @@ import scala.util.control.NonFatal
 import io.fabric8.kubernetes.api.model._
 import io.fabric8.kubernetes.api.model.networking.v1.{Ingress, IngressBuilder}
 import io.fabric8.kubernetes.client.{Config, ConfigBuilder, _}
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 
 import org.apache.livy.{LivyConf, Logging}
 
@@ -245,6 +245,7 @@ class SparkKubernetesApp private[utils] (
   process: Option[LineBufferedProcess],
   listener: Option[SparkAppListener],
   livyConf: LivyConf,
+  extrasMap: Map[String, String],
   kubernetesClient: => KubernetesClient = SparkKubernetesApp.kubernetesClient) // For unit test.
   extends SparkApp
     with Logging {
@@ -262,6 +263,7 @@ class SparkKubernetesApp private[utils] (
   private var kubernetesTagToAppIdFailedTimes: Int = _
   private var kubernetesAppMonitorFailedTimes: Int = _
 
+  private var namespace: String = extrasMap("spark.kubernetes.namespace")
   private def failToMonitor(): Unit = {
     changeState(SparkApp.State.FAILED)
     process.foreach(_.destroy())
@@ -292,10 +294,11 @@ class SparkKubernetesApp private[utils] (
       }
       // Get KubernetesApplication by appTag.
       val appOption: Option[KubernetesApplication] = try {
-        getAppFromTag(appTag, pollInterval, appLookupTimeout.fromNow)
+        getAppFromTag(appTag, pollInterval, appLookupTimeout.fromNow, namespace)
       } catch {
         case e: Exception =>
           failToGetAppId()
+          error(s"Exception getting app from tag $appTag in namespace $namespace with message: ", e)
           appPromise.failure(e)
           return
       }
@@ -440,10 +443,10 @@ class SparkKubernetesApp private[utils] (
   private def getAppFromTag(
     appTag: String,
     pollInterval: duration.Duration,
-    deadline: Deadline): Option[KubernetesApplication] = {
+    deadline: Deadline, namespace: String): Option[KubernetesApplication] = {
     import KubernetesExtensions._
-
-    withRetry(kubernetesClient.getApplications().find(_.getApplicationTag.contains(appTag)))
+    val namespacedClient = kubernetesClient.asInstanceOf[DefaultKubernetesClient].inNamespace(namespace)
+    withRetry(namespacedClient.getApplications().find(_.getApplicationTag.contains(appTag)))
     match {
       case Some(app) => Some(app)
       case None =>
@@ -686,8 +689,7 @@ private[utils] object KubernetesExtensions {
       appTagLabel: String = SPARK_APP_TAG_LABEL,
       appIdLabel: String = SPARK_APP_ID_LABEL
     ): Seq[KubernetesApplication] = {
-      client.pods.inAnyNamespace
-        .withLabels(labels.asJava)
+      client.pods.withLabels(labels.asJava)
         .withLabel(appTagLabel)
         .withLabel(appIdLabel)
         .list.getItems.asScala.map(new KubernetesApplication(_))
