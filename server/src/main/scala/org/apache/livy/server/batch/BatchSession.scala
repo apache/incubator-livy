@@ -29,8 +29,6 @@ import org.apache.livy.sessions.{FinishedSessionState, Session, SessionState}
 import org.apache.livy.sessions.Session._
 import org.apache.livy.utils.{AppInfo, SparkApp, SparkAppListener, SparkProcessBuilder}
 
-import java.io.{File, FileInputStream}
-import java.util.Properties
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class BatchRecoveryMetadata(
@@ -40,6 +38,7 @@ case class BatchRecoveryMetadata(
     appTag: String,
     owner: String,
     proxyUser: Option[String],
+    namespace: String,
     version: Int = 1)
   extends RecoveryMetadata
 
@@ -64,7 +63,7 @@ object BatchSession extends Logging {
       mockApp: Option[SparkApp] = None): BatchSession = {
     val appTag = s"livy-batch-$id-${Random.alphanumeric.take(8).mkString}".toLowerCase()
     val impersonatedUser = accessManager.checkImpersonation(proxyUser, owner)
-
+    val namespace = SparkApp.getNamespace(request.conf, livyConf)
     def createSparkApp(s: BatchSession): SparkApp = {
       val conf = SparkApp.prepareSparkConf(
         appTag,
@@ -106,17 +105,7 @@ object BatchSession extends Logging {
           childProcesses.decrementAndGet()
         }
       }
-
-      var namespace:String = request.conf.getOrElse("spark.kubernetes.namespace", "")
-      if(namespace == "") {
-        val sparkHome = livyConf.sparkHome().get //SPARK_HOME is mandatory for Livy
-        val sparkDefaultsPath = sparkHome + File.separator + "conf" + File.separator + "spark-defaults.conf"
-        val properties = new Properties()
-        properties.load(new FileInputStream(sparkDefaultsPath))
-        info(s"Reading spark defaults from $sparkDefaultsPath")
-        namespace = properties.getProperty("spark.kubernetes.namespace","default")
-      }
-      val extrasMap: Map[String, String] = Map("spark.kubernetes.namespace" -> namespace)
+      val extrasMap: Map[String, String] = Map(SparkApp.SPARK_KUBERNETES_NAMESPACE_KEY -> namespace)
       SparkApp.create(appTag, None, Option(sparkSubmit), livyConf, Option(s), extrasMap)
     }
 
@@ -131,6 +120,7 @@ object BatchSession extends Logging {
       owner,
       impersonatedUser,
       sessionStore,
+      namespace,
       mockApp.map { m => (_: BatchSession) => m }.getOrElse(createSparkApp))
   }
 
@@ -148,6 +138,7 @@ object BatchSession extends Logging {
       m.owner,
       m.proxyUser,
       sessionStore,
+      m.namespace,
       mockApp.map { m => (_: BatchSession) => m }.getOrElse { s =>
         SparkApp.create(m.appTag, m.appId, None, livyConf, Option(s), Map[String, String]())
       })
@@ -163,6 +154,7 @@ class BatchSession(
     owner: String,
     override val proxyUser: Option[String],
     sessionStore: SessionStore,
+    namespace: String,
     sparkApp: BatchSession => SparkApp)
   extends Session(id, name, owner, livyConf) with SparkAppListener {
   import BatchSession._
@@ -215,5 +207,5 @@ class BatchSession(
   override def infoChanged(appInfo: AppInfo): Unit = { this.appInfo = appInfo }
 
   override def recoveryMetadata: RecoveryMetadata =
-    BatchRecoveryMetadata(id, name, appId, appTag, owner, proxyUser)
+    BatchRecoveryMetadata(id, name, appId, appTag, owner, proxyUser, namespace)
 }

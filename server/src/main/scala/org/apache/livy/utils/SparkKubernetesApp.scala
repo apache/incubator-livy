@@ -19,7 +19,6 @@ package org.apache.livy.utils
 import java.net.URLEncoder
 import java.util.Collections
 import java.util.concurrent._
-
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent._
@@ -27,13 +26,14 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
-
 import io.fabric8.kubernetes.api.model._
 import io.fabric8.kubernetes.api.model.networking.v1.{Ingress, IngressBuilder}
 import io.fabric8.kubernetes.client.{Config, ConfigBuilder, _}
 import org.apache.commons.lang3.StringUtils
-
 import org.apache.livy.{LivyConf, Logging}
+
+import java.util
+import scala.collection.mutable
 
 object SparkKubernetesApp extends Logging {
 
@@ -52,14 +52,14 @@ object SparkKubernetesApp extends Logging {
           val iter = leakedAppTags.entrySet().iterator()
           var isRemoved = false
           val now = System.currentTimeMillis()
-          val apps = withRetry(kubernetesClient.getApplications())
+          val apps = appNamespaces.flatMap(namespace => withRetry(kubernetesClient.inNamespace(namespace).getApplications()))
           while (iter.hasNext) {
             val entry = iter.next()
             apps.find(_.getApplicationTag.contains(entry.getKey))
               .foreach({
                 app =>
                   info(s"Kill leaked app ${app.getApplicationId}")
-                  withRetry(kubernetesClient.killApplication(app))
+                  withRetry(kubernetesClient.inNamespace(app.getApplicationNamespace).killApplication(app))
                   iter.remove()
                   isRemoved = true
               })
@@ -138,6 +138,7 @@ object SparkKubernetesApp extends Logging {
   private var sessionLeakageCheckInterval: Long = _
 
   var kubernetesClient: DefaultKubernetesClient = _
+  var appNamespaces: mutable.Set[String] = mutable.Set("default")
 
   private var appLookupThreadPoolSize: Long = _
   private var appLookupMaxFailedTimes: Long = _
@@ -146,8 +147,7 @@ object SparkKubernetesApp extends Logging {
     this.livyConf = livyConf
 
     // KubernetesClient is thread safe. Create once, share it across threads.
-    kubernetesClient =
-      KubernetesClientFactory.createKubernetesClient(livyConf)
+    KubernetesClientFactory.createKubernetesClient(livyConf)
 
     cacheLogSize = livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)
     appLookupTimeout = livyConf.getTimeAsMs(LivyConf.KUBERNETES_APP_LOOKUP_TIMEOUT).milliseconds
@@ -246,7 +246,7 @@ class SparkKubernetesApp private[utils] (
   listener: Option[SparkAppListener],
   livyConf: LivyConf,
   extrasMap: Map[String, String],
-  kubernetesClient: => KubernetesClient = SparkKubernetesApp.kubernetesClient) // For unit test.
+  kubernetesClient: => DefaultKubernetesClient = SparkKubernetesApp.kubernetesClient) // For unit test.
   extends SparkApp
     with Logging {
 
@@ -263,7 +263,8 @@ class SparkKubernetesApp private[utils] (
   private var kubernetesTagToAppIdFailedTimes: Int = _
   private var kubernetesAppMonitorFailedTimes: Int = _
 
-  private var namespace: String = extrasMap("spark.kubernetes.namespace")
+  private var namespace: String = extrasMap(SparkApp.SPARK_KUBERNETES_NAMESPACE_KEY)
+  appNamespaces.add(namespace)
   private def failToMonitor(): Unit = {
     changeState(SparkApp.State.FAILED)
     process.foreach(_.destroy())
@@ -314,7 +315,7 @@ class SparkKubernetesApp private[utils] (
       listener.foreach(_.appIdKnown(appId))
 
       if (livyConf.getBoolean(LivyConf.KUBERNETES_INGRESS_CREATE)) {
-        withRetry(kubernetesClient.createSparkUIIngress(app, livyConf))
+        withRetry(kubernetesClient.inNamespace(namespace).createSparkUIIngress(app, livyConf))
       }
 
       var appInfo = AppInfo()
@@ -329,7 +330,7 @@ class SparkKubernetesApp private[utils] (
             debug(s"getApplicationReport, applicationId: ${app.getApplicationId}, " +
               s"namespace: ${app.getApplicationNamespace} " +
               s"applicationTag: ${app.getApplicationTag}")
-            val report = kubernetesClient.getApplicationReport(livyConf, app,
+            val report = kubernetesClient.inNamespace(namespace).getApplicationReport(livyConf, app,
               cacheLogSize = cacheLogSize)
             report
           }
@@ -402,7 +403,7 @@ class SparkKubernetesApp private[utils] (
     def kubernetesApplication: KubernetesApplication = applicationDetails.get.get
     if (kubernetesApplication != null && kubernetesApplication.getApplicationId != null) {
       try {
-        withRetry(kubernetesClient.killApplication(
+        withRetry(kubernetesClient.inNamespace(namespace).killApplication(
           Await.result(appPromise.future, appLookupTimeout)))
       } catch {
         // We cannot kill the Kubernetes app without the appTag.
@@ -445,8 +446,7 @@ class SparkKubernetesApp private[utils] (
     pollInterval: duration.Duration,
     deadline: Deadline, namespace: String): Option[KubernetesApplication] = {
     import KubernetesExtensions._
-    val namespacedClient = kubernetesClient.asInstanceOf[DefaultKubernetesClient].inNamespace(namespace)
-    withRetry(namespacedClient.getApplications().find(_.getApplicationTag.contains(appTag)))
+    withRetry(kubernetesClient.inNamespace(namespace).getApplications().find(_.getApplicationTag.contains(appTag)))
     match {
       case Some(app) => Some(app)
       case None =>
@@ -832,6 +832,7 @@ private[utils] object KubernetesClientFactory {
   private implicit class OptionString(val string: String) extends AnyVal {
     def toOption: Option[String] = if (string == null || string.isEmpty) None else Option(string)
   }
+
 
   def createKubernetesClient(livyConf: LivyConf): DefaultKubernetesClient = {
     val masterUrl = sparkMasterToKubernetesApi(livyConf.sparkMaster())
