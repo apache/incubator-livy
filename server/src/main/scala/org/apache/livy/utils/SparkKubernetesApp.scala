@@ -147,7 +147,7 @@ object SparkKubernetesApp extends Logging {
     this.livyConf = livyConf
 
     // KubernetesClient is thread safe. Create once, share it across threads.
-    KubernetesClientFactory.createKubernetesClient(livyConf)
+    kubernetesClient = KubernetesClientFactory.createKubernetesClient(livyConf)
 
     cacheLogSize = livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)
     appLookupTimeout = livyConf.getTimeAsMs(LivyConf.KUBERNETES_APP_LOOKUP_TIMEOUT).milliseconds
