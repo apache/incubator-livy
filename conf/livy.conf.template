@@ -67,6 +67,13 @@
 # How long a finished session state should be kept in LivyServer for query.
 # livy.server.session.state-retain.sec = 600s
 
+# Enabled to check whether TTL Livy sessions should be stopped.
+# livy.server.session.ttl-check = false
+
+# Time in milliseconds on how long Livy will wait before TTL is an inactive session.
+# Note that the inactive session could be busy running jobs.
+# livy.server.session.ttl = 8h
+
 # If livy should impersonate the requesting users when creating a new session.
 # livy.impersonation.enabled = false
 
