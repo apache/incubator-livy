@@ -21,7 +21,7 @@ env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     # TODO: Possibly point to the ./build-ci-image.yaml with the "uses" key
     container: ghcr.io/${{ github.repository_owner }}/livy-ci:latest
     strategy:
@@ -46,7 +46,7 @@ jobs:
           ${{ runner.os }}-maven-
     - 
       name: Build with Maven
-      run: mvn -Pthriftserver ${{ matrix.mvn_profile }} -DskipITs -Dmaven.javadoc.skip=true -B -V -e verify
+      run: mvn -Pthriftserver ${{ matrix.maven_profile }} -DskipITs -Dmaven.javadoc.skip=true -B -V -e verify
     -
       name: Upload coverage to codecov
       uses: codecov/codecov-action@v3

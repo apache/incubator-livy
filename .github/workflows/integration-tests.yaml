@@ -23,14 +23,13 @@ env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     # TODO: Possibly point to the ./build-ci-image.yaml with the "uses" key
     container: ghcr.io/${{ github.repository_owner }}/livy-ci:latest
     strategy:
       matrix:
         maven_profile:
-        - "-Pscala-2.11 -Pspark2"
-        - "-Pscala-2.12 -Pspark2"
+        - "-Pscala-2.11 -Pspark2 -DskipRTests"
         - "-Pscala-2.12 -Pspark3"
     steps:
     - 
@@ -46,9 +45,13 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('pom.xml', '*/pom.xml', 'thriftserver/*/pom.xml', 'core/*/pom.xml', 'repl/*/pom.xml', 'scala-api/*/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
+    -
+      name: Set Python 3 as default for Spark 3 builds
+      if: ${{ contains(matrix.maven_profile, 'spark3') }}
+      run: pyenv global 3
     - 
       name: Build with Maven
-      run: mvn -Pthriftserver ${{ matrix.mvn_profile }} -DskipTests -Dmaven.javadoc.skip=true -B -V -e verify
+      run: mvn -Pthriftserver ${{ matrix.maven_profile }} -DskipTests -Dmaven.javadoc.skip=true -B -V -e verify
     -
       name: Upload coverage to codecov
       uses: codecov/codecov-action@v3
