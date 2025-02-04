@@ -33,6 +33,7 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.livy.{LivyConf, Logging}
 
 import java.util
+import scala.collection.JavaConverters.asScalaSetConverter
 import scala.collection.mutable
 
 object SparkKubernetesApp extends Logging {
@@ -138,7 +139,7 @@ object SparkKubernetesApp extends Logging {
   private var sessionLeakageCheckInterval: Long = _
 
   var kubernetesClient: DefaultKubernetesClient = _
-  var appNamespaces: mutable.Set[String] = mutable.Set("default")
+  var appNamespaces: mutable.Set[String] = java.util.concurrent.ConcurrentHashMap.newKeySet[String]().asScala
 
   private var appLookupThreadPoolSize: Long = _
   private var appLookupMaxFailedTimes: Long = _
