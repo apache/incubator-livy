@@ -853,7 +853,7 @@ private[utils] object KubernetesClientFactory {
       .withOption(oauthTokenFile) {
         (file, configBuilder) =>
           configBuilder
-            .withOauthToken(Files.toString(new File(file), Charsets.UTF_8))
+            .withOauthTokenProvider(() => Files.toString(new File(file), Charsets.UTF_8))
       }
       .withOption(caCertFile) {
         (file, configBuilder) => configBuilder.withCaCertFile(file)
