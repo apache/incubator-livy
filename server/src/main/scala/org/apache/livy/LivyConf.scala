@@ -272,6 +272,8 @@ object LivyConf {
   val KUBERNETES_CLIENT_KEY_FILE = Entry("livy.server.kubernetes.clientKeyFile", "")
   // Kubernetes client cert file path.
   val KUBERNETES_CLIENT_CERT_FILE = Entry("livy.server.kubernetes.clientCertFile", "")
+  // Kubernetes client default namespace.
+  val KUBERNETES_DEFAULT_NAMESPACE = Entry("livy.server.kubernetes.defaultNamespace", "")
 
   // If Livy can't find the Kubernetes app within this time, consider it lost.
   val KUBERNETES_APP_LOOKUP_TIMEOUT = Entry("livy.server.kubernetes.app-lookup-timeout", "600s")

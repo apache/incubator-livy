@@ -296,6 +296,7 @@ class SparkKubernetesApp private[utils] (
       } catch {
         case e: Exception =>
           failToGetAppId()
+          error(s"Failed to get app from tag $appTag: $e")
           appPromise.failure(e)
           return
       }
@@ -686,7 +687,7 @@ private[utils] object KubernetesExtensions {
       appTagLabel: String = SPARK_APP_TAG_LABEL,
       appIdLabel: String = SPARK_APP_ID_LABEL
     ): Seq[KubernetesApplication] = {
-      client.pods.inAnyNamespace
+      client.pods
         .withLabels(labels.asJava)
         .withLabel(appTagLabel)
         .withLabel(appIdLabel)
@@ -694,7 +695,7 @@ private[utils] object KubernetesExtensions {
     }
 
     def killApplication(app: KubernetesApplication): Boolean = {
-      client.pods.inAnyNamespace.delete(app.getApplicationPod)
+      client.pods.delete(app.getApplicationPod)
     }
 
     def getApplicationReport(
@@ -714,9 +715,13 @@ private[utils] object KubernetesExtensions {
           .withName(app.getApplicationPod.getMetadata.getName)
           .tailingLines(cacheLogSize).getLog.split("\n").toIndexedSeq
       ).getOrElse(IndexedSeq.empty)
-      val ingress = client.network.v1.ingresses.inNamespace(app.getApplicationNamespace)
-        .withLabel(SPARK_APP_TAG_LABEL, app.getApplicationTag)
-        .list.getItems.asScala.headOption
+      val ingress = {
+        if (livyConf.getBoolean(LivyConf.KUBERNETES_INGRESS_CREATE)) {
+          client.network.v1.ingresses.inNamespace(app.getApplicationNamespace)
+            .withLabel(SPARK_APP_TAG_LABEL, app.getApplicationTag)
+            .list.getItems.asScala.headOption
+        } else None
+      }
       KubernetesAppReport(driver, executors, appLog, ingress, livyConf)
     }
 
@@ -843,6 +848,7 @@ private[utils] object KubernetesClientFactory {
     val caCertFile = livyConf.get(LivyConf.KUBERNETES_CA_CERT_FILE).toOption
     val clientKeyFile = livyConf.get(LivyConf.KUBERNETES_CLIENT_KEY_FILE).toOption
     val clientCertFile = livyConf.get(LivyConf.KUBERNETES_CLIENT_CERT_FILE).toOption
+    val clientNamespace = livyConf.get(LivyConf.KUBERNETES_DEFAULT_NAMESPACE).toOption
 
     val config = new ConfigBuilder()
       .withApiVersion("v1")
@@ -863,6 +869,9 @@ private[utils] object KubernetesClientFactory {
       }
       .withOption(clientCertFile) {
         (file, configBuilder) => configBuilder.withClientCertFile(file)
+      }
+      .withOption(clientNamespace) {
+        (namespace, builder) => builder.withNamespace(namespace)
       }
       .build()
     new DefaultKubernetesClient(config)
