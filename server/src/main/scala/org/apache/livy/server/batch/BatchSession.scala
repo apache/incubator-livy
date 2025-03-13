@@ -140,7 +140,7 @@ object BatchSession extends Logging {
       sessionStore,
       m.namespace,
       mockApp.map { m => (_: BatchSession) => m }.getOrElse { s =>
-        SparkApp.create(m.appTag, m.appId, None, livyConf, Option(s), Map[String, String]())
+        SparkApp.create(m.appTag, m.appId, None, livyConf, Option(s), Map(SparkApp.SPARK_KUBERNETES_NAMESPACE_KEY -> m.namespace))
       })
   }
 }
