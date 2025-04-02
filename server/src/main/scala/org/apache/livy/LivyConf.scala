@@ -339,6 +339,13 @@ object LivyConf {
   // Max creating session in livyServer
   val SESSION_MAX_CREATION = Entry("livy.server.session.max-creation", 100)
 
+  // Enabled to check whether TTL Livy sessions should be stopped.
+  val SESSION_TTL_CHECK = Entry("livy.server.session.ttl-check", false)
+
+  // Time in milliseconds on how long Livy will wait before TTL is an inactive session.
+  // Note that the inactive session could be busy running jobs.
+  val SESSION_TTL = Entry("livy.server.session.ttl", "8h")
+
   val SESSION_ALLOW_CUSTOM_CLASSPATH = Entry("livy.server.session.allow-custom-classpath", false)
 
   val SPARK_MASTER = "spark.master"
