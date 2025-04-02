@@ -103,12 +103,11 @@ class ThriftSessionState {
 
   boolean cleanupStatement(String statementId) {
     checkNotNull(statementId, "No statement ID.");
+    ctx.sc().cancelJobGroup(statementId);
     if (statements.remove(statementId) == null) {
       return false;
-    } else {
-      ctx.sc().cancelJobGroup(statementId);
-      return true;
     }
+    return true;
   }
 
   void dispose() {
