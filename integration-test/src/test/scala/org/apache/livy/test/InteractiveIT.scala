@@ -93,12 +93,13 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       }
       s.run("%table x").verifyResult(".*headers.*type.*name.*data.*")
       s.run("abcde").verifyError(ename = "NameError", evalue = "name 'abcde' is not defined")
-      s.run("raise KeyError, 'foo'").verifyError(ename = "KeyError", evalue = "'foo'")
+      s.run("raise KeyError('foo')").verifyError(ename = "KeyError", evalue = "'foo'")
       s.run("print(1)\r\nprint(1)").verifyResult("1\n1")
     }
   }
 
   test("R interactive session") {
+    assume(!sys.props.getOrElse("skipRTests", "false").toBoolean, "Skipping R tests.")
     withNewSession(SparkR) { s =>
       // R's output sometimes includes the count of statements, which makes it annoying to test
       // things. This helps a bit.
