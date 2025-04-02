@@ -251,6 +251,12 @@ class LivyServer extends Logging {
 
       })
 
+    if (livyConf.getBoolean(SECURITY_HEADERS_ENABLED)) {
+      info("Adding security headers is enabled.")
+      val securityHeadersHolder = new FilterHolder(new SecurityHeadersFilter(livyConf))
+      server.context.addFilter(securityHeadersHolder, "/*", EnumSet.allOf(classOf[DispatcherType]))
+    }
+
     livyConf.get(AUTH_TYPE) match {
       case authType @ KerberosAuthenticationHandler.TYPE =>
         val principal = SecurityUtil.getServerPrincipal(livyConf.get(AUTH_KERBEROS_PRINCIPAL),
