@@ -40,8 +40,7 @@ public class SimpleSparkApp {
       exitAfterOutput = Boolean.parseBoolean(args[1]);
     }
 
-    JavaSparkContext sc = new JavaSparkContext();
-    try {
+    try (JavaSparkContext sc = new JavaSparkContext()) {
       List<String> data = Arrays.asList("the", "quick", "brown", "fox", "jumped", "over", "the",
         "lazy", "dog");
 
@@ -54,8 +53,6 @@ public class SimpleSparkApp {
           Thread.sleep(60 * 60 * 1000);
         }
       }
-    } finally {
-      sc.close();
     }
   }
 
