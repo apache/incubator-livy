@@ -1,0 +1,18 @@
+{{- $name := include "livycluster.name" . -}}
+{{- $chart := include "livycluster.chart" . -}}
+{{- $releaseName := .Release.Name -}}
+{{- $releaseService := .Release.Service -}}
+{{- range .Values.clusterIssuers }}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .name }}
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    helm.sh/chart: {{ $chart }}
+    app.kubernetes.io/instance: {{ $releaseName }}
+    app.kubernetes.io/managed-by: {{ $releaseService }}
+spec:
+{{ toYaml .spec | indent 2 }}
+{{- end }}
