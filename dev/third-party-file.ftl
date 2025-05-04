@@ -41,7 +41,7 @@ conditions of the following licenses.
 We have listed all of these third party libraries and their licenses
 below. This file can be regenerated at any time by simply running:
 
-    mvn clean package
+    mvn clean package -DskipTests -Dgenerate-third-party
 
 ---------------------------------------------------
 Third party Java libraries listed by License type.
