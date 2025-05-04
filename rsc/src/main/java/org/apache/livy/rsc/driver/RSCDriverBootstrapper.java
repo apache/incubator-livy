@@ -54,11 +54,8 @@ public final class RSCDriverBootstrapper {
         throw new IllegalArgumentException("File name " + fileName + "is not a legal file name.");
       }
 
-      Reader r = new InputStreamReader(new FileInputStream(propertyFile), UTF_8);
-      try {
+      try (Reader r = new InputStreamReader(new FileInputStream(propertyFile), UTF_8)) {
         props.load(r);
-      } finally {
-        r.close();
       }
       break;
 
