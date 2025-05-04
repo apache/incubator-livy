@@ -121,6 +121,12 @@
       <artifactId>slf4j-reload4j</artifactId>
       <scope>provided</scope>
     </dependency>
+      <dependency>
+          <groupId>org.apache.livy</groupId>
+          <artifactId>livy-api</artifactId>
+          <version>0.8.0-incubating-SNAPSHOT</version>
+          <scope>compile</scope>
+      </dependency>
   </dependencies>
 
   <build>
