@@ -61,6 +61,7 @@ import org.apache.livy.rsc.Utils;
 import org.apache.livy.rsc.rpc.Rpc;
 import org.apache.livy.rsc.rpc.RpcDispatcher;
 import org.apache.livy.rsc.rpc.RpcServer;
+import org.apache.livy.sessions.SessionState;
 
 import static org.apache.livy.rsc.RSCConf.Entry.*;
 
@@ -399,6 +400,12 @@ public class RSCDriver extends BaseProtocol {
 
   void jobStarted(String jobId) {
     broadcast(new JobStarted(jobId));
+  }
+
+  public void idleIfActiveJobsEmpty() {
+    if (activeJobs.isEmpty()) {
+      broadcast(new BaseProtocol.ReplState(SessionState.Idle$.MODULE$.state()));
+    }
   }
 
   public void handle(ChannelHandlerContext ctx, CancelJob msg) {

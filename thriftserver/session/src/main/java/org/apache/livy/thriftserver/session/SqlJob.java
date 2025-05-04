@@ -58,6 +58,7 @@ public class SqlJob implements Job<Void> {
   @Override
   public Void call(JobContext ctx) throws Exception {
     ctx.sc().setJobGroup(statementId, statement);
+    ctx.broadcastReplState("busy");
     try {
       executeSql(ctx);
     } finally {
