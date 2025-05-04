@@ -174,6 +174,8 @@ class ScalaJobHandleTest extends FunSuite
 
 private abstract class AbstractJobHandleStub[T] private[livy] extends JobHandle[T] {
 
+  override def getId: String = null
+
   override def getState: State = null
 
   override def addListener(l: Listener[T]): Unit = {}
