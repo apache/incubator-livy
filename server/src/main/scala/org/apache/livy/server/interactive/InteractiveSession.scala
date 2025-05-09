@@ -566,13 +566,13 @@ class InteractiveSession(
   }
 
   def statements: IndexedSeq[Statement] = {
-    ensureActive()
+    ensureRunning()
     val r = client.get.getReplJobResults().get()
     r.statements.toIndexedSeq
   }
 
   def getStatement(stmtId: Int): Option[Statement] = {
-    ensureActive()
+    ensureRunning()
     val r = client.get.getReplJobResults(stmtId, 1).get()
     if (r.statements.length < 1) {
       None
@@ -625,19 +625,19 @@ class InteractiveSession(
   }
 
   def addFile(uri: URI): Unit = {
-    ensureActive()
+    ensureRunning()
     recordActivity()
     client.get.addFile(resolveURI(uri, livyConf)).get()
   }
 
   def addJar(uri: URI): Unit = {
-    ensureActive()
+    ensureRunning()
     recordActivity()
     client.get.addJar(resolveURI(uri, livyConf)).get()
   }
 
   def jobStatus(id: Long): Any = {
-    ensureActive()
+    ensureRunning()
     val clientJobId = operations(id)
     recordActivity()
     // TODO: don't block indefinitely?
@@ -646,7 +646,7 @@ class InteractiveSession(
   }
 
   def cancelJob(id: Long): Unit = {
-    ensureActive()
+    ensureRunning()
     recordActivity()
     operations.remove(id).foreach { client.get.cancel }
   }
@@ -689,7 +689,7 @@ class InteractiveSession(
   }
 
   private def performOperation(job: Array[Byte], jobType: String, sync: Boolean): Long = {
-    ensureActive()
+    ensureRunning()
     recordActivity()
     val future = client.get.bypass(ByteBuffer.wrap(job), jobType, sync)
     val opId = operationCounter.incrementAndGet()
