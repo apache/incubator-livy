@@ -629,13 +629,15 @@ class InteractiveSession(
   def addFile(uri: URI): Unit = {
     ensureRunning()
     recordActivity()
-    client.get.addFile(resolveURI(uri, livyConf)).get()
+    client.get.addFile(resolveURI(uri, livyConf)).get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
   }
 
   def addJar(uri: URI): Unit = {
     ensureRunning()
     recordActivity()
-    client.get.addJar(resolveURI(uri, livyConf)).get()
+    client.get.addJar(resolveURI(uri, livyConf)).get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
   }
 
   def jobStatus(id: Long): Any = {
@@ -643,7 +645,8 @@ class InteractiveSession(
     val clientJobId = operations(id)
     recordActivity()
     // TODO: don't block indefinitely?
-    val status = client.get.getBypassJobStatus(clientJobId).get()
+    val status = client.get.getBypassJobStatus(clientJobId).get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
     new JobStatus(id, status.state, status.result, status.error)
   }
 
