@@ -237,7 +237,7 @@ public class RSCClient implements LivyClient {
           } catch (Exception e) {
             LOG.warn("Error stopping RPC.", e);
           }
-        } else {
+        } else if (!driverRpc.isDone()){
           driverRpc.setFailure(ex);
           LOG.warn("Set driverRpc as failure in stopping RSCClient.");
         }
