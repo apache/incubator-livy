@@ -567,13 +567,15 @@ class InteractiveSession(
 
   def statements: IndexedSeq[Statement] = {
     ensureRunning()
-    val r = client.get.getReplJobResults().get()
+    val r = client.get.getReplJobResults().get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
     r.statements.toIndexedSeq
   }
 
   def getStatement(stmtId: Int): Option[Statement] = {
     ensureRunning()
-    val r = client.get.getReplJobResults(stmtId, 1).get()
+    val r = client.get.getReplJobResults(stmtId, 1).get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
     if (r.statements.length < 1) {
       None
     } else {
