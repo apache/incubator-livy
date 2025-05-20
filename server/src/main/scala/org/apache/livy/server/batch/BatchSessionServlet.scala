@@ -33,7 +33,8 @@ case class BatchSessionView(
   state: String,
   appId: Option[String],
   appInfo: AppInfo,
-  log: Seq[String])
+  log: Seq[String],
+  exceptions: Seq[String] = Seq.empty)
 
 class BatchSessionServlet(
     sessionManager: BatchSessionManager,
@@ -61,7 +62,7 @@ class BatchSessionServlet(
   override protected[batch] def clientSessionView(
       session: BatchSession,
       req: HttpServletRequest): Any = {
-    val logs =
+    val (logs, exceptions) =
       if (accessManager.hasViewAccess(session.owner,
                                       effectiveUser(req),
                                       session.proxyUser.getOrElse(""))) {
@@ -71,12 +72,19 @@ class BatchSessionServlet(
         val from = math.max(0, lines.length - size)
         val until = from + size
 
-        lines.view(from, until).toSeq
+        (lines.view(from, until), lines.filter(matchException))
       } else {
-        Nil
+        (Nil, Seq.empty)
       }
     BatchSessionView(session.id, session.name, session.owner, session.proxyUser,
-      session.state.toString, session.appId, session.appInfo, logs)
+      session.state.toString, session.appId, session.appInfo, logs, exceptions)
+  }
+
+  private def matchException(s: String): Boolean = {
+    s.contains("Exception") ||
+      s.contains("Error") ||
+      s.startsWith("\tat ") ||
+      s.startsWith("Caused by: ")
   }
 
 }
