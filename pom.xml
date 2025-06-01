@@ -1154,6 +1154,14 @@
       </properties>
     </profile>
     <profile>
+      <id>hadoop3</id>
+      <properties>
+        <hadoop.major-minor.version>3.0</hadoop.major-minor.version>
+        <hadoop.version>3.4.1</hadoop.version>
+        <hive.version>3.1.3</hive.version>
+      </properties>
+    </profile>
+    <profile>
       <id>scala-2.11</id>
       <properties>
         <scala.binary.version>2.11</scala.binary.version>
@@ -1190,11 +1198,18 @@
       </properties>
     </profile>
 
+<!--
+    <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version> 
+    <spark.scala-2.12.version>2.4.5</spark.scala-2.12.version>
+    <spark.version>${spark.scala-2.11.version}</spark.version>
+-->
     <profile>
       <id>spark3</id>
       <properties>
-        <spark.version>3.2.3</spark.version>
-        <java.version>1.8</java.version>
+        <spark.scala-2.11.version>3.4.4</spark.scala-2.11.version>
+        <spark.scala-2.12.version>3.4.4</spark.scala-2.12.version>
+        <spark.version>3.4.4</spark.version>
+        <java.version>11</java.version>
         <py4j.version>0.10.9.7</py4j.version>
         <json4s.version>3.7.0-M11</json4s.version>
         <netty.version>4.1.92.Final</netty.version>
