@@ -16,8 +16,6 @@
  */
 package org.apache.livy.utils
 
-import java.util.concurrent.TimeoutException
-
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -155,7 +153,7 @@ class SparkYarnApp private[utils] (
         // We cannot kill the YARN app without the app id.
         // There's a chance the YARN app hasn't been submitted during a livy-server failure.
         // We don't want a stuck session that can't be deleted. Emit a warning and move on.
-        case e: Exception =>
+        case NonFatal(e) =>
           warn("Deleting a session while its YARN application is not found.")
           warn(s"Reason: ${e.getClass.getSimpleName} - ${e.getMessage}")
           yarnAppMonitorThread.interrupt()
