@@ -48,7 +48,8 @@ jobs:
     -
       name: Set Python 3 as default for Spark 3 builds
       if: ${{ contains(matrix.maven_profile, 'spark3') }}
-      run: pyenv global 3
+      # This can be removed once support for Python 2 and Spark 2 is removed and the default python executable is python3
+      run: pyenv global 3 && echo "PYSPARK_PYTHON=$(which python3)" >> "$GITHUB_ENV"
     - 
       name: Build with Maven
       run: mvn -Pthriftserver ${{ matrix.maven_profile }} -DskipTests -Dmaven.javadoc.skip=true -B -V -e verify

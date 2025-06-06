@@ -170,7 +170,13 @@ abstract class PythonSessionSpec extends BaseSessionSpec(PySpark) {
   }
 }
 
-class Python2SessionSpec extends PythonSessionSpec
+class Python2SessionSpec extends PythonSessionSpec {
+
+  override protected def withFixture(test: NoArgTest): Outcome = {
+    assume(!sys.props.getOrElse("skipPySpark2Tests", "false").toBoolean, "Skipping PySpark2 tests.")
+    test()
+  }
+}
 
 class Python3SessionSpec extends PythonSessionSpec with BeforeAndAfterAll {
 

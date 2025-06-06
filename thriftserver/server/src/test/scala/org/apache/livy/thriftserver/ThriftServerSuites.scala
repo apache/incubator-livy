@@ -516,7 +516,9 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
           statement.close()
         }
       }
-      assert(caught.getMessage.contains("Database 'invalid_database' not found"))
+      val message = caught.getMessage
+      assert(message.contains("Database 'invalid_database' not found") ||
+        message.contains("The schema `invalid_database` cannot be found"))
     }
   }
 
@@ -530,8 +532,9 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
           statement.close()
         }
       }
-      assert(caught.getMessage.replaceAll("`", "")
-        .contains("Table or view not found: global_temp.invalid_table"))
+      val message = caught.getMessage.replaceAll("`", "")
+      assert(message .contains("Table or view not found: global_temp.invalid_table") ||
+        message.contains("The table or view global_temp.invalid_table cannot be found"))
     }
   }
 
