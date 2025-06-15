@@ -254,7 +254,9 @@ class ContextLauncher {
 
   private static void merge(RSCConf conf, String key, String livyConf, String sep) {
     String confValue = Utils.join(Arrays.asList(livyConf, conf.get(key)), sep);
-    conf.set(key, confValue);
+    if (confValue != null && !confValue.isEmpty()) {
+      conf.set(key, confValue);
+    }
   }
 
   /**
