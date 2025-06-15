@@ -1,0 +1,28 @@
+{{- if .Values.defaultCertificate.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "livycluster.fullname" . }}-default-tls
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    helm.sh/chart: {{ include "livycluster.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  # The name of the Kubernetes secret resource to store the signed TLS keypair
+  secretName: {{ .Values.defaultCertificate.secretName }}
+  # The Issuer to use for this certificate
+  issuerRef:
+    name: {{ .Values.defaultCertificate.issuer }}
+    kind: {{ .Values.defaultCertificate.issuerKind }}
+  # The common name (CN) for the TLS certificate
+{{- if .Values.defaultCertificate.commonName }}
+  commonName: {{ squote .Values.defaultCertificate.commonName }}
+{{- end }}
+  # A list of domains to include on the TLS certificate
+  dnsNames:
+  {{- range $key, $val := .Values.defaultCertificate.domains }}
+  - {{ squote $val }}
+  {{- end }}
+{{- end }}
