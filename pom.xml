@@ -87,13 +87,14 @@
     <spark.version>${spark.scala-2.11.version}</spark.version>
     <kubernetes.client.version>5.6.0</kubernetes.client.version>
     <hive.version>3.0.0</hive.version>
-    <commons-codec.version>1.9</commons-codec.version>
+    <commons-codec.version>1.15</commons-codec.version>
+    <commons-lang3.version>3.17.0</commons-lang3.version>
     <httpclient.version>4.5.13</httpclient.version>
     <httpcore.version>4.4.4</httpcore.version>
     <jackson.version>2.12.7</jackson.version>
     <jackson-databind.version>2.12.7.1</jackson-databind.version>
     <javax.servlet-api.version>3.1.0</javax.servlet-api.version>
-    <jetty.version>9.4.50.v20221201</jetty.version>
+    <jetty.version>9.4.56.v20240826</jetty.version>
     <junit.version>4.13.1</junit.version>
     <libthrift.version>0.9.3</libthrift.version>
     <kryo.version>4.0.2</kryo.version>
@@ -305,6 +306,12 @@
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>${commons-codec.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${commons-lang3.version}</version>
       </dependency>
 
       <dependency>
@@ -789,7 +796,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.5.0</version>
         </plugin>
 
         <plugin>
@@ -1163,7 +1170,7 @@
       <id>scala-2.12</id>
       <properties>
         <scala.binary.version>2.12</scala.binary.version>
-        <scala.version>2.12.15</scala.version>
+        <scala.version>2.12.18</scala.version>
       </properties>
     </profile>
 
@@ -1192,15 +1199,20 @@
     <profile>
       <id>spark3</id>
       <properties>
-        <spark.version>3.2.3</spark.version>
+        <spark.version>3.5.6</spark.version>
+        <hadoop.major-minor.version>3</hadoop.major-minor.version>
+        <hadoop.version>3.3.4</hadoop.version>
         <java.version>1.8</java.version>
         <py4j.version>0.10.9.7</py4j.version>
         <json4s.version>3.7.0-M11</json4s.version>
-        <netty.version>4.1.92.Final</netty.version>
+        <netty.version>4.1.96.Final</netty.version>
+        <jackson.version>2.15.2</jackson.version>
+        <jackson-databind.version>2.15.2</jackson-databind.version>
         <spark.bin.name>spark-${spark.version}-bin-hadoop${hadoop.major-minor.version}</spark.bin.name>
         <spark.bin.download.url>
-          https://archive.apache.org/dist/spark/spark-${spark.version}/${spark.bin.name}.tgz
+          https://downloads.apache.org/spark/spark-${spark.version}/${spark.bin.name}.tgz
         </spark.bin.download.url>
+        <!-- https://archive.apache.org/dist/spark/spark-${spark.version}/${spark.bin.name}.tgz -->
       </properties>
     </profile>
 
