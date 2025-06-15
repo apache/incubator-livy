@@ -67,6 +67,7 @@ object PythonInterpreter extends Logging {
     env.put("PYSPARK_PYTHON", pythonExec)
     env.put("PYTHONPATH", pythonPath.mkString(File.pathSeparator))
     env.put("PYTHONUNBUFFERED", "YES")
+    env.put("PYSPARK_GATEWAY_HOST", gatewayServer.getAddress.getHostAddress)
     env.put("PYSPARK_GATEWAY_PORT", "" + gatewayServer.getListeningPort)
     env.put("PYSPARK_GATEWAY_SECRET", secretKey)
     env.put("SPARK_HOME", sys.env.getOrElse("SPARK_HOME", "."))
