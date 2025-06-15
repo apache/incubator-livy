@@ -29,8 +29,10 @@ import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 import org.apache.livy.JobContext;
+import org.apache.livy.rsc.BaseProtocol;
 import org.apache.livy.rsc.RSCConf;
 import org.apache.livy.rsc.Utils;
+import org.apache.livy.sessions.SessionState;
 
 class JobContextImpl implements JobContext {
 
@@ -149,5 +151,10 @@ class JobContextImpl implements JobContext {
 
   public void addJarOrPyFile(String path) throws Exception {
     driver.addJarOrPyFile(path);
+  }
+
+  @Override
+  public void broadcastReplState(String sessionState) {
+    driver.broadcast(new BaseProtocol.ReplState(SessionState.apply(sessionState).state()));
   }
 }
