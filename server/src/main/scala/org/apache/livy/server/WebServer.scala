@@ -94,12 +94,15 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
 
   // Configure the access log
   val requestLogHandler = new RequestLogHandler
-  val requestLog = new NCSARequestLog(sys.env.getOrElse("LIVY_LOG_DIR",
-    sys.env("LIVY_HOME") + "/logs") + "/yyyy_mm_dd.request.log")
-  requestLog.setAppend(true)
-  requestLog.setExtended(false)
-  requestLog.setLogTimeZone("GMT")
-  requestLog.setRetainDays(livyConf.getInt(LivyConf.REQUEST_LOG_RETAIN_DAYS))
+  val logPath = sys.env.getOrElse("LIVY_LOG_DIR", 
+    sys.env("LIVY_HOME") + "/logs") + "/yyyy_mm_dd.request.log"
+  val requestLogWriter = new RequestLogWriter(logPath)
+  requestLogWriter.setAppend(true)
+  requestLogWriter.setTimeZone("GMT")
+  requestLogWriter.setRetainDays(livyConf.getInt(LivyConf.REQUEST_LOG_RETAIN_DAYS))
+
+  // Using NCSA Common Log format (without extended fields)
+  val requestLog = new CustomRequestLog(requestLogWriter, CustomRequestLog.NCSA_FORMAT)
   requestLogHandler.setRequestLog(requestLog)
   handlers.addHandler(requestLogHandler)
 
@@ -131,4 +134,3 @@ class WebServer(livyConf: LivyConf, var host: String, var port: Int) extends Log
     server.stop()
   }
 }
-
