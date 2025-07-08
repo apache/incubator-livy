@@ -35,6 +35,7 @@ RUN apt-get install -qq \
     git \
     libkrb5-dev \
     openjdk-8-jdk-headless \
+    openjdk-17-jdk-headless \
     r-base \
     maven \
     software-properties-common \
