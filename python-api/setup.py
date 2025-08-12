@@ -31,7 +31,6 @@ requirements = [
     'cloudpickle>=0.2.1',
     'configparser>=3.5.0',
     'future>=0.15.2',
-    'futures>=3.0.5',
     'mock~=3.0.5',
     'requests>=2.10.0',
     'responses>=0.5.1',
@@ -54,6 +53,9 @@ setup(
     keywords='livy pyspark development',
     classifiers=CLASSIFIERS,
     install_requires=requirements,
+    extras_require={
+        ':python_version == "2.7"': ['futures']
+    },
     setup_requires=['pytest-runner', 'flake8'],
     tests_require=['pytest']
 )
