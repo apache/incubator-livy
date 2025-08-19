@@ -74,8 +74,10 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
               Paths.get(u.toURI).getFileName.toString.contains("org.scala-lang_scala-reflect")
             }
 
-          extraJarPath.foreach { p => debug(s"Adding $p to Scala interpreter's class path...") }
-          sparkILoop.addUrlsToClassPath(extraJarPath: _*)
+          extraJarPath.foreach { p =>
+            debug(s"Adding $p to Scala interpreter's class path...")
+            sparkILoop.require(new File(p.toURI).getPath)
+          }
           classLoader = null
         } else {
           classLoader = classLoader.getParent
