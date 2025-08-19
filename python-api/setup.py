@@ -28,7 +28,7 @@ CLASSIFIERS = [
 ]
 
 requirements = [
-    'cloudpickle>=0.2.1',
+    'cloudpickle<=1.3.0',
     'configparser>=3.5.0',
     'future>=0.15.2',
     'mock~=3.0.5',
@@ -57,5 +57,5 @@ setup(
         ':python_version == "2.7"': ['futures']
     },
     setup_requires=['pytest-runner', 'flake8'],
-    tests_require=['pytest']
+    tests_require=['pytest<5']
 )
