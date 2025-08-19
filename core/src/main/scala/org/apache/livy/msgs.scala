@@ -28,7 +28,8 @@ case class Msg[T <: Content](msg_type: MsgType, content: T)
 
 sealed trait Content
 
-case class ExecuteRequest(code: String, kind: Option[String]) extends Content {
+case class ExecuteRequest(code: String, kind: Option[String],
+ interpreterGroup: Option[String] = None) extends Content {
   val msg_type = MsgType.execute_request
 }
 

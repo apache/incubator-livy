@@ -74,8 +74,9 @@ class InteractiveSessionSpec extends FunSpec
       sessionStore, None, None, mockApp)
   }
 
-  private def executeStatement(code: String, codeType: Option[String] = None): JValue = {
-    val id = session.executeStatement(ExecuteRequest(code, codeType)).id
+  private def executeStatement(code: String, codeType: Option[String] = None, interpreterGroup:
+   Option[String] = None): JValue = {
+    val id = session.executeStatement(ExecuteRequest(code, codeType, interpreterGroup)).id
     eventually(timeout(30 seconds), interval(100 millis)) {
       val s = session.getStatement(id).get
       s.state.get() shouldBe StatementState.Available
@@ -260,6 +261,28 @@ class InteractiveSessionSpec extends FunSpec
         session.state should be(SessionState.Idle)
         session.lastActivity should be > executionBeginTime
       }
+    }
+
+    withSession("should scope the execution to the interpreter group") { session =>
+      val resultFromGroup1 = executeStatement("val a=10\nprint(a)", Some("spark"),
+       Some("intpGroup1"))
+      resultFromGroup1 should equal (Extraction.decompose(Map(
+        "status" -> "ok",
+        "execution_count" -> 5,
+        "data" -> Map("text/plain" -> "res0: Int = 10\n")))
+      )
+
+      val resultFromGroup2 = executeStatement("print(a)", Some("spark"), Some("intpGroup2"))
+      resultFromGroup2 should equal (Extraction.decompose(Map(
+        "status" -> "error",
+        "execution_count" -> 6,
+        "ename" -> "NameError",
+        "evalue" -> "name 'a' is not defined",
+        "traceback" -> List(
+          "Traceback (most recent call last):\n",
+          "NameError: name 'a' is not defined\n"
+        )
+      )))
     }
 
     withSession("should error out the session if the interpreter dies") { session =>
