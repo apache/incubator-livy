@@ -57,6 +57,11 @@ public class TestClientFactory implements LivyClientFactory {
     }
 
     @Override
+    public <T> JobHandle<T> submitStatement(String code, String kind){
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public <T> JobHandle<T> submit(Job<T> job) {
       throw new UnsupportedOperationException();
     }
