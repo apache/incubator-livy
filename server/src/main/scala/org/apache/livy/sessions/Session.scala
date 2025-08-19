@@ -52,6 +52,7 @@ object Session {
    * - Verify that file URIs don't reference non-whitelisted local resources
    */
   def prepareConf(
+      owner: String,
       conf: Map[String, String],
       jars: Seq[String],
       files: Seq[String],
@@ -98,7 +99,9 @@ object Session {
     val masterConfList = Map(LivyConf.SPARK_MASTER -> livyConf.sparkMaster()) ++
       livyConf.sparkDeployMode().map(LivyConf.SPARK_DEPLOY_MODE -> _).toMap
 
-    conf ++ masterConfList ++ merged
+    val ownerConf = Map("spark.livy.owner" -> (if (owner == null) "" else owner))
+
+    conf ++ masterConfList ++ merged ++ ownerConf
   }
 
   /**
