@@ -16,6 +16,8 @@
 #
 from __future__ import absolute_import
 
+from builtins import str
+from builtins import object
 import base64
 import cloudpickle
 import os
@@ -357,7 +359,7 @@ class HttpClient(object):
         self._config.remove_option(self._CONFIG_SECTION, key)
 
     def _set_multiple_conf(self, conf_dict):
-        for key, value in conf_dict.items():
+        for key, value in list(conf_dict.items()):
             self._set_conf(key, value)
 
     def _load_config(self, load_defaults, conf_dict):

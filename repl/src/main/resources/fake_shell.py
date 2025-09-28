@@ -16,6 +16,11 @@
 #
 
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 import ast
 from collections import OrderedDict
 import datetime
@@ -35,10 +40,10 @@ import pickle
 import textwrap
 
 if sys.version >= '3':
-    unicode = str
+    str = str
 else:
-    import cStringIO
-    import StringIO
+    import io
+    import io
 
 if sys.version_info > (3,8):
     from ast import Module
@@ -85,8 +90,8 @@ def execute_reply_error(exc_type, exc_value, tb):
             break
 
     return execute_reply('error', {
-        'ename': unicode(exc_type.__name__),
-        'evalue': unicode(exc_value),
+        'ename': str(exc_type.__name__),
+        'evalue': str(exc_value),
         'traceback': formatted_tb,
     })
 
@@ -209,7 +214,7 @@ class PySparkJobProcessorImpl(object):
     def getLocalTmpDirPath(self):
         return os.path.join(job_context.get_local_tmp_dir_path(), '__livy__')
 
-    class Scala:
+    class Scala(object):
         extends = ['org.apache.livy.repl.PySparkJobProcessor']
 
 
@@ -422,8 +427,8 @@ magic_table_types = {
 # python 2.x only
 if sys.version < '3':
     magic_table_types.update({
-        long: lambda x: ('BIGINT_TYPE', x),
-        unicode: lambda x: ('STRING_TYPE', x.encode('utf-8'))
+        int: lambda x: ('BIGINT_TYPE', x),
+        str: lambda x: ('STRING_TYPE', x.encode('utf-8'))
     })
 
 
@@ -557,7 +562,7 @@ def main():
     if sys.version >= '3':
         sys.stdin = io.StringIO()
     else:
-        sys.stdin = cStringIO.StringIO()
+        sys.stdin = io.StringIO()
 
     sys.stdout = UnicodeDecodingStringIO()
     sys.stderr = UnicodeDecodingStringIO()

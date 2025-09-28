@@ -34,6 +34,9 @@
 #
 
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import json
 import os
 import re
@@ -41,8 +44,8 @@ import subprocess
 import sys
 
 if sys.version_info[0] < 3:
-    import urllib2
-    from urllib2 import HTTPError
+    import urllib.request, urllib.error, urllib.parse
+    from urllib.error import HTTPError
     input_prompt_fn = raw_input
 else:
     import urllib.request as urllib2
@@ -82,10 +85,10 @@ BRANCH_PREFIX = "PR_TOOL"
 
 def get_json(url):
     try:
-        request = urllib2.Request(url)
+        request = urllib.request.Request(url)
         if GITHUB_OAUTH_KEY:
             request.add_header('Authorization', 'token %s' % GITHUB_OAUTH_KEY)
-        return json.load(urllib2.urlopen(request))
+        return json.load(urllib.request.urlopen(request))
     except HTTPError as e:
         if "X-RateLimit-Remaining" in e.headers and e.headers["X-RateLimit-Remaining"] == '0':
             print("Exceeded the GitHub API rate limit; see the instructions in " +
@@ -126,7 +129,7 @@ def clean_up():
 
     branches = run_cmd("git branch").replace(" ", "").split("\n")
 
-    for branch in filter(lambda x: x.startswith(BRANCH_PREFIX), branches):
+    for branch in [x for x in branches if x.startswith(BRANCH_PREFIX)]:
         print("Deleting local branch %s" % branch)
         run_cmd("git branch -D %s" % branch)
 
@@ -243,7 +246,7 @@ def fix_version_from_branch(branch, versions):
         return versions[0]
     else:
         branch_ver = branch.replace("branch-", "")
-        return filter(lambda x: x.name.startswith(branch_ver), versions)[-1]
+        return [x for x in versions if x.name.startswith(branch_ver)][-1]
 
 
 def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
@@ -275,11 +278,11 @@ def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
 
     versions = asf_jira.project_versions("LIVY")
     versions = sorted(versions, key=lambda x: x.name, reverse=True)
-    versions = filter(lambda x: x.raw['released'] is False, versions)
+    versions = [x for x in versions if x.raw['released'] is False]
     # Consider only x.y.z versions
-    versions = filter(lambda x: re.match('\d+\.\d+\.\d+', x.name), versions)
+    versions = [x for x in versions if re.match('\d+\.\d+\.\d+', x.name)]
 
-    default_fix_versions = map(lambda x: fix_version_from_branch(x, versions).name, merge_branches)
+    default_fix_versions = [fix_version_from_branch(x, versions).name for x in merge_branches]
     for v in default_fix_versions:
         # Handles the case where we have forked a release branch but not yet made the release.
         # In this case, if the PR is committed to the master branch and the release branch, we
@@ -289,7 +292,7 @@ def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
         if patch == "0":
             previous = "%s.%s.%s" % (major, int(minor) - 1, 0)
             if previous in default_fix_versions:
-                default_fix_versions = filter(lambda x: x != v, default_fix_versions)
+                default_fix_versions = [x for x in default_fix_versions if x != v]
     default_fix_versions = ",".join(default_fix_versions)
 
     fix_versions = input_prompt_fn(
@@ -299,12 +302,12 @@ def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
     fix_versions = fix_versions.replace(" ", "").split(",")
 
     def get_version_json(version_str):
-        return filter(lambda v: v.name == version_str, versions)[0].raw
+        return [v for v in versions if v.name == version_str][0].raw
 
-    jira_fix_versions = map(lambda v: get_version_json(v), fix_versions)
+    jira_fix_versions = [get_version_json(v) for v in fix_versions]
 
-    resolve = filter(lambda a: a['name'] == "Resolve Issue", asf_jira.transitions(jira_id))[0]
-    resolution = filter(lambda r: r.raw['name'] == "Fixed", asf_jira.resolutions())[0]
+    resolve = [a for a in asf_jira.transitions(jira_id) if a['name'] == "Resolve Issue"][0]
+    resolution = [r for r in asf_jira.resolutions() if r.raw['name'] == "Fixed"][0]
     asf_jira.transition_issue(
         jira_id, resolve["id"], fixVersions=jira_fix_versions,
         comment=comment, resolution={'id': resolution.raw['id']})
@@ -379,7 +382,7 @@ def main():
     original_head = get_current_ref()
 
     branches = get_json("%s/branches" % GITHUB_API_BASE)
-    branch_names = filter(lambda x: x.startswith("branch-"), [x['name'] for x in branches])
+    branch_names = [x for x in [x['name'] for x in branches] if x.startswith("branch-")]
     # Assumes branch names can be sorted lexicographically
     latest_branch = sorted(branch_names, reverse=True)[0]
 
