@@ -79,6 +79,7 @@ public class RSCConf extends ClientConf<RSCConf> {
     JOB_CANCEL_TIMEOUT("job-cancel.timeout", "30s"),
 
     RETAINED_STATEMENTS("retained-statements", 100),
+    RETAINED_TASKS("retained-tasks", 100),
     RETAINED_SHARE_VARIABLES("retained.share-variables", 100),
 
     // Number of result rows to get for SQL Interpreters.

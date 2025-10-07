@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.{Random, Try}
+import scala.util.Random
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.apache.hadoop.fs.Path
@@ -37,7 +37,7 @@ import org.apache.spark.launcher.SparkLauncher
 import org.apache.livy._
 import org.apache.livy.client.common.HttpMessages._
 import org.apache.livy.rsc.{PingJob, RSCClient, RSCConf}
-import org.apache.livy.rsc.driver.Statement
+import org.apache.livy.rsc.driver.{Statement, Task, TaskState}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions._
@@ -448,6 +448,7 @@ class InteractiveSession(
   }
   private val operations = mutable.Map[Long, String]()
   private val operationCounter = new AtomicLong(0)
+  private val taskRegistry = mutable.Map[Long, String]() // Track job types for tasks
   private var rscDriverUri: Option[URI] = None
   private var sessionLog: IndexedSeq[String] = IndexedSeq.empty
   private val sessionSaveLock = new Object()
@@ -651,7 +652,29 @@ class InteractiveSession(
     operations.remove(id).foreach { client.get.cancel }
   }
 
-  private def transition(newState: SessionState) = synchronized {
+  def executeTask(job: Array[Byte]): Task = {
+    ensureRunning()
+    recordActivity()
+    val taskId = client.get.submitTask(job).get
+    new Task(taskId, TaskState.Waiting, null, null)
+  }
+
+  def tasks: IndexedSeq[Task] = {
+    ensureActive()
+    client.get.getTaskResults().get().tasks.toIndexedSeq
+  }
+
+  def getTask(taskId: Int): Option[Task] = {
+    ensureActive()
+    client.get.getTaskResults(taskId, 1).get().tasks.headOption
+  }
+
+  def cancelTask(taskId: Int): Unit = {
+    ensureActive()
+    client.get.cancelTask(taskId)
+  }
+
+  private def transition(newState: SessionState): Unit = synchronized {
     // When a statement returns an error, the session should transit to error state.
     // If the session crashed because of the error, the session should instead go to dead state.
     // Since these 2 transitions are triggered by different threads, there's a race condition.
