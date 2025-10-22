@@ -30,6 +30,11 @@ jobs:
         - "-Pscala-2.11 -Pspark2"
         - "-Pscala-2.12 -Pspark2"
         - "-Pscala-2.12 -Pspark3"
+        jdk_path:
+        - "/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java"
+        include:
+        - maven_profile: "-Pscala-2.12 -Pspark3"
+          jdk_path: "/usr/lib/jvm/java-17-openjdk-amd64/bin/java"
     steps:
     - 
       name: Checkout
@@ -44,7 +49,10 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('pom.xml', '*/pom.xml', 'thriftserver/*/pom.xml', 'core/*/pom.xml', 'repl/*/pom.xml', 'scala-api/*/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
-    - 
+    -
+      name: Set JDK version
+      run: update-alternatives --set java ${{ matrix.jdk_path }}
+    -
       name: Build with Maven
       run: mvn -Pthriftserver ${{ matrix.maven_profile }} -DskipITs -Dmaven.javadoc.skip=true -B -V -e verify
     -

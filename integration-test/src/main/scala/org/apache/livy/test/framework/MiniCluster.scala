@@ -220,6 +220,11 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
     filtered.mkString(File.pathSeparator)
   }
 
+  private def extraJavaTestArgs: Seq[String] = {
+    Option(System.getProperty("extraJavaTestArgs"))
+      .map(_.split("\\s+").toSeq).getOrElse(Nil)
+  }
+
   override def deploy(): Unit = {
     if (_tempDir.exists()) {
       FileUtils.deleteQuietly(_tempDir)
@@ -240,8 +245,10 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
 
     _configDir = mkdir("hadoop-conf")
     saveProperties(config, new File(configDir, "cluster.conf"))
-    hdfs = Some(start(MiniHdfsMain.getClass, new File(configDir, "core-site.xml")))
-    yarn = Some(start(MiniYarnMain.getClass, new File(configDir, "yarn-site.xml")))
+    hdfs = Some(start(MiniHdfsMain.getClass, new File(configDir, "core-site.xml"),
+      extraJavaTestArgs))
+    yarn = Some(start(MiniYarnMain.getClass, new File(configDir, "yarn-site.xml"),
+      extraJavaTestArgs))
     runLivy()
 
     _hdfsScrathDir = fs.makeQualified(new Path("/"))
@@ -261,7 +268,7 @@ class MiniCluster(config: Map[String, String]) extends Cluster with MiniClusterU
       .map { args =>
         Seq(args, s"-Djacoco.args=$args")
       }.getOrElse(Nil)
-    val localLivy = start(MiniLivyMain.getClass, confFile, extraJavaArgs = jacocoArgs)
+    val localLivy = start(MiniLivyMain.getClass, confFile, jacocoArgs ++ extraJavaTestArgs)
 
     val props = loadProperties(confFile)
     _livyEndpoint = config.getOrElse("livyEndpoint", props("livy.server.server-url"))

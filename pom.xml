@@ -106,6 +106,21 @@
     <scalatest.version>3.0.8</scalatest.version>
     <scalatra.version>2.6.5</scalatra.version>
     <java.version>1.8</java.version>
+    <extraJavaTestArgs>
+      -XX:+IgnoreUnrecognizedVMOptions
+      --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+      --add-opens=java.base/java.lang=ALL-UNNAMED
+      --add-opens=java.base/java.nio=ALL-UNNAMED
+      --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+      --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+      --add-opens=java.base/java.net=ALL-UNNAMED
+      --add-opens=java.base/java.io=ALL-UNNAMED
+      --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+      --add-exports=java.base/sun.net.dns=ALL-UNNAMED
+      --add-exports=java.base/sun.net.util=ALL-UNNAMED
+      --add-exports=java.base/sun.security.x509=ALL-UNNAMED
+      --add-exports=java.base/sun.security.util=ALL-UNNAMED
+    </extraJavaTestArgs>
     <test.redirectToFile>true</test.redirectToFile>
     <execution.root>${user.dir}</execution.root>
     <spark.home>${execution.root}/dev/spark</spark.home>
@@ -837,7 +852,7 @@
             </systemProperties>
             <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
             <useFile>${test.redirectToFile}</useFile>
-            <argLine>${argLine} -Xmx2g</argLine>
+            <argLine>${argLine} -Xmx2g ${extraJavaTestArgs}</argLine>
             <failIfNoTests>false</failIfNoTests>
           </configuration>
         </plugin>
@@ -845,7 +860,7 @@
         <plugin>
           <groupId>org.scalatest</groupId>
           <artifactId>scalatest-maven-plugin</artifactId>
-          <version>2.0.0</version>
+          <version>2.2.0</version>
           <configuration>
             <environmentVariables>
               <LIVY_TEST>true</LIVY_TEST>
@@ -864,12 +879,13 @@
               <skipRTests>${skipRTests}</skipRTests>
               <skipPySpark2Tests>${skipPySpark2Tests}</skipPySpark2Tests>
               <skipPySpark3Tests>${skipPySpark3Tests}</skipPySpark3Tests>
+              <extraJavaTestArgs>${extraJavaTestArgs}</extraJavaTestArgs>
             </systemProperties>
             <stdout>D</stdout>
             <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
             <junitxml>.</junitxml>
             <filereports>WDF TestSuite.txt</filereports>
-            <argLine>${argLine} -Xmx2g</argLine>
+            <argLine>${argLine} -Xmx2g ${extraJavaTestArgs}</argLine>
           </configuration>
           <executions>
             <execution>
