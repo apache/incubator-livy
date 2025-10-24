@@ -253,7 +253,8 @@ object InteractiveSession extends Logging {
               new File(sparkHome, "assembly/target/scala-2.12/jars")
             }
           case v =>
-            throw new RuntimeException(s"Unsupported Spark major version: $sparkMajorVersion (minimum 3.0 required)")
+            throw new RuntimeException(
+              s"Unsupported Spark major version: $sparkMajorVersion (minimum 3.0 required)")
         }
         val jars = if (!libdir.isDirectory) {
           Seq.empty[String]
