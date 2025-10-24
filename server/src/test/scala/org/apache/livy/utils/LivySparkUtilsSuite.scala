@@ -44,10 +44,10 @@ class LivySparkUtilsSuite extends FunSuite with Matchers with LivyBaseUnitTestSu
   }
 
   test("should recognize supported Spark versions") {
-    testSparkVersion("2.2.0")
-    testSparkVersion("2.3.0")
-    testSparkVersion("2.4.0")
     testSparkVersion("3.0.0")
+    testSparkVersion("3.1.0")
+    testSparkVersion("3.2.0")
+    testSparkVersion("3.5.0")
   }
 
   test("should complain about unsupported Spark versions") {
@@ -59,6 +59,9 @@ class LivySparkUtilsSuite extends FunSuite with Matchers with LivyBaseUnitTestSu
     intercept[IllegalArgumentException] { testSparkVersion("1.6.0") }
     intercept[IllegalArgumentException] { testSparkVersion("2.0.1") }
     intercept[IllegalArgumentException] { testSparkVersion("2.1.3") }
+    intercept[IllegalArgumentException] { testSparkVersion("2.2.0") }
+    intercept[IllegalArgumentException] { testSparkVersion("2.3.0") }
+    intercept[IllegalArgumentException] { testSparkVersion("2.4.5") }
   }
 
   test("should fail on bad version") {
@@ -85,29 +88,28 @@ class LivySparkUtilsSuite extends FunSuite with Matchers with LivyBaseUnitTestSu
   }
 
   test("defaultSparkScalaVersion() should return default Scala version") {
-    defaultSparkScalaVersion(formatSparkVersion("2.2.1")) shouldBe "2.11"
-    defaultSparkScalaVersion(formatSparkVersion("2.3.0")) shouldBe "2.11"
-    defaultSparkScalaVersion(formatSparkVersion("2.4.0")) shouldBe "2.11"
     defaultSparkScalaVersion(formatSparkVersion("3.0.0")) shouldBe "2.12"
+    defaultSparkScalaVersion(formatSparkVersion("3.1.0")) shouldBe "2.12"
+    defaultSparkScalaVersion(formatSparkVersion("3.5.0")) shouldBe "2.12"
   }
 
   test("sparkScalaVersion() should use spark-submit detected Scala version.") {
-    sparkScalaVersion(formatSparkVersion("2.0.1"), Some("2.10"), livyConf) shouldBe "2.10"
-    sparkScalaVersion(formatSparkVersion("1.6.0"), Some("2.11"), livyConf) shouldBe "2.11"
+    sparkScalaVersion(formatSparkVersion("3.0.0"), Some("2.12"), livyConf) shouldBe "2.12"
+    sparkScalaVersion(formatSparkVersion("3.1.0"), Some("2.12"), livyConf) shouldBe "2.12"
   }
 
   test("sparkScalaVersion() should throw if configured and detected Scala version mismatch.") {
     intercept[IllegalArgumentException] {
-      sparkScalaVersion(formatSparkVersion("2.0.1"), Some("2.11"), livyConf210)
+      sparkScalaVersion(formatSparkVersion("3.0.0"), Some("2.11"), livyConf210)
     }
     intercept[IllegalArgumentException] {
-      sparkScalaVersion(formatSparkVersion("1.6.1"), Some("2.10"), livyConf211)
+      sparkScalaVersion(formatSparkVersion("3.1.0"), Some("2.10"), livyConf211)
     }
   }
 
   test("sparkScalaVersion() should use default Spark Scala version.") {
-    sparkScalaVersion(formatSparkVersion("2.2.0"), None, livyConf) shouldBe "2.11"
-    sparkScalaVersion(formatSparkVersion("2.3.1"), None, livyConf) shouldBe "2.11"
     sparkScalaVersion(formatSparkVersion("3.0.0"), None, livyConf) shouldBe "2.12"
+    sparkScalaVersion(formatSparkVersion("3.1.0"), None, livyConf) shouldBe "2.12"
+    sparkScalaVersion(formatSparkVersion("3.5.0"), None, livyConf) shouldBe "2.12"
   }
 }

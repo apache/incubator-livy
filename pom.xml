@@ -82,9 +82,8 @@
     <hadoop.scope>compile</hadoop.scope>
     <slf4j.version>1.7.36</slf4j.version>
     <reload4j.version>1.2.26</reload4j.version>
-    <spark.scala-2.11.version>2.4.5</spark.scala-2.11.version>
-    <spark.scala-2.12.version>2.4.5</spark.scala-2.12.version>
-    <spark.version>${spark.scala-2.11.version}</spark.version>
+    <spark.scala-2.12.version>3.3.4</spark.scala-2.12.version>
+    <spark.version>${spark.scala-2.12.version}</spark.version>
     <kubernetes.client.version>5.6.0</kubernetes.client.version>
     <hive.version>3.0.0</hive.version>
     <commons-codec.version>1.15</commons-codec.version>
@@ -126,13 +125,10 @@
     <spark.home>${execution.root}/dev/spark</spark.home>
     <!-- profile controlled parameters, we are setting the defaults here so we can run "mvn package" with default profile values -->
     <!-- hadoop2 -->
-    <hadoop.major-minor.version>2.7</hadoop.major-minor.version>
+    <hadoop.major-minor.version>2</hadoop.major-minor.version>
     <hadoop.version>2.7.3</hadoop.version>
-    <!-- scala2.11 -->
-    <scala.binary.version>2.11</scala.binary.version>
-    <scala.version>2.11.12</scala.version>
-    <!-- spark2 -->
-    <spark.version>2.4.5</spark.version>
+    <scala.binary.version>2.12</scala.binary.version>
+    <scala.version>2.12.18</scala.version>
     <java.version>1.8</java.version>
     <py4j.version>0.10.9</py4j.version>
     <json4s.version>3.5.3</json4s.version>
@@ -147,8 +143,6 @@
     <!-- Set this to "true" to skip R tests. -->
     <skipRTests>false</skipRTests>
 
-    <!-- Set this to "true" to skip PySpark2 tests. -->
-    <skipPySpark2Tests>false</skipPySpark2Tests>
     <!-- Set this to "true" to skip PySpark3 tests. -->
     <skipPySpark3Tests>false</skipPySpark3Tests>
 
@@ -847,7 +841,6 @@
               <spark.ui.enabled>false</spark.ui.enabled>
               <project.version>${project.version}</project.version>
               <skipRTests>${skipRTests}</skipRTests>
-              <skipPySpark2Tests>${skipPySpark2Tests}</skipPySpark2Tests>
               <skipPySpark3Tests>${skipPySpark3Tests}</skipPySpark3Tests>
             </systemProperties>
             <redirectTestOutputToFile>${test.redirectToFile}</redirectTestOutputToFile>
@@ -877,7 +870,6 @@
               <spark.ui.enabled>false</spark.ui.enabled>
               <project.version>${project.version}</project.version>
               <skipRTests>${skipRTests}</skipRTests>
-              <skipPySpark2Tests>${skipPySpark2Tests}</skipPySpark2Tests>
               <skipPySpark3Tests>${skipPySpark3Tests}</skipPySpark3Tests>
               <extraJavaTestArgs>${extraJavaTestArgs}</extraJavaTestArgs>
             </systemProperties>
@@ -1193,13 +1185,6 @@
       </properties>
     </profile>
     <profile>
-      <id>scala-2.11</id>
-      <properties>
-        <scala.binary.version>2.11</scala.binary.version>
-        <scala.version>2.11.12</scala.version>
-      </properties>
-    </profile>
-    <profile>
       <id>scala-2.12</id>
       <properties>
         <scala.binary.version>2.12</scala.binary.version>
@@ -1214,19 +1199,6 @@
         <module>thriftserver/session</module>
         <module>thriftserver/client</module>
       </modules>
-    </profile>
-    <profile>
-      <id>spark2</id>
-      <properties>
-        <spark.version>2.4.5</spark.version>
-        <java.version>1.8</java.version>
-        <py4j.version>0.10.9</py4j.version>
-        <json4s.version>3.5.3</json4s.version>
-        <spark.bin.name>spark-${spark.version}-bin-hadoop${hadoop.major-minor.version}</spark.bin.name>
-        <spark.bin.download.url>
-          https://archive.apache.org/dist/spark/spark-${spark.version}/${spark.bin.name}.tgz
-        </spark.bin.download.url>
-      </properties>
     </profile>
 
     <profile>
@@ -1245,7 +1217,6 @@
         <spark.bin.download.url>
           https://archive.apache.org/dist/spark/spark-${spark.version}/${spark.bin.name}.tgz
         </spark.bin.download.url>
-        <skipPySpark2Tests>true</skipPySpark2Tests>
       </properties>
     </profile>
 

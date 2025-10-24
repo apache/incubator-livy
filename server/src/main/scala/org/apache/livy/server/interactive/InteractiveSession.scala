@@ -246,16 +246,14 @@ object InteractiveSession extends Logging {
       } else {
         val sparkHome = livyConf.sparkHome().get
         val libdir = sparkMajorVersion match {
-          case 2 | 3 =>
+          case 3 =>
             if (new File(sparkHome, "RELEASE").isFile) {
               new File(sparkHome, "jars")
-            } else if (new File(sparkHome, "assembly/target/scala-2.11/jars").isDirectory) {
-              new File(sparkHome, "assembly/target/scala-2.11/jars")
             } else {
               new File(sparkHome, "assembly/target/scala-2.12/jars")
             }
           case v =>
-            throw new RuntimeException(s"Unsupported Spark major version: $sparkMajorVersion")
+            throw new RuntimeException(s"Unsupported Spark major version: $sparkMajorVersion (minimum 3.0 required)")
         }
         val jars = if (!libdir.isDirectory) {
           Seq.empty[String]

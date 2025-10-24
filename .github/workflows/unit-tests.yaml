@@ -27,19 +27,15 @@ jobs:
     strategy:
       matrix:
         maven_profile:
-        - "-Pscala-2.11 -Pspark2"
-        - "-Pscala-2.12 -Pspark2"
         - "-Pscala-2.12 -Pspark3"
         jdk_path:
         - "/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java"
-        include:
-        - maven_profile: "-Pscala-2.12 -Pspark3"
-          jdk_path: "/usr/lib/jvm/java-17-openjdk-amd64/bin/java"
+        - "/usr/lib/jvm/java-17-openjdk-amd64/bin/java"
     steps:
-    - 
+    -
       name: Checkout
       uses: actions/checkout@v3
-    - 
+    -
       name: Cache local Maven repository
       uses: actions/cache@v3
       with:

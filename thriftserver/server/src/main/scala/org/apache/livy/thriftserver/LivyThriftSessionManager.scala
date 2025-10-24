@@ -74,7 +74,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   val supportUseDatabase: Boolean = {
     val sparkVersion = server.livyConf.get(LivyConf.LIVY_SPARK_VERSION)
     val (sparkMajorVersion, _) = LivySparkUtils.formatSparkVersion(sparkVersion)
-    sparkMajorVersion > 1 || server.livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
+    sparkMajorVersion >= 3 || server.livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
   }
 
   // Configs from Hive
