@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "livycluster.fullname" . }}-headless
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    helm.sh/chart: {{ include "livycluster.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
