@@ -145,12 +145,9 @@ public class RpcServer implements Closeable {
             final Rpc newRpc = Rpc.createServer(saslHandler, config, ch, group);
             saslHandler.rpc = newRpc;
 
-            Runnable cancelTask = new Runnable() {
-                @Override
-                public void run() {
-                  LOG.warn("Timed out waiting for hello from client.");
-                  newRpc.close();
-                }
+            Runnable cancelTask = () -> {
+              LOG.warn("Timed out waiting for hello from client.");
+              newRpc.close();
             };
             saslHandler.cancelTask = group.schedule(cancelTask,
                 config.getTimeAsMs(RPC_CLIENT_HANDSHAKE_TIMEOUT),

@@ -99,14 +99,11 @@ public class Utils {
   }
 
   public static <T> void addListener(Future<T> future, final FutureListener<T> lsnr) {
-    future.addListener(new GenericFutureListener<Future<T>>() {
-      @Override
-      public void operationComplete(Future<T> f) throws Exception {
-        if (f.isSuccess()) {
-          lsnr.onSuccess(f.get());
-        } else {
-          lsnr.onFailure(f.cause());
-        }
+    future.addListener((GenericFutureListener<Future<T>>) f -> {
+      if (f.isSuccess()) {
+        lsnr.onSuccess(f.get());
+      } else {
+        lsnr.onFailure(f.cause());
       }
     });
   }
