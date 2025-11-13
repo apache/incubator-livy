@@ -386,6 +386,7 @@ object LivyConf {
     SPARK_FILES,
     SPARK_ARCHIVES,
     SPARK_PY_FILES,
+    "spark.archives",
     "spark.yarn.archive",
     "spark.yarn.dist.files",
     "spark.yarn.dist.jars",
