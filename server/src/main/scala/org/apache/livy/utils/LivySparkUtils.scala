@@ -41,17 +41,11 @@ object LivySparkUtils extends Logging {
     // Spark 3.1 + Scala 2.12
     (3, 1) -> "2.12",
     // Spark 3.0 + Scala 2.12
-    (3, 0) -> "2.12",
-    // Spark 2.4 + Scala 2.11
-    (2, 4) -> "2.11",
-    // Spark 2.3 + Scala 2.11
-    (2, 3) -> "2.11",
-    // Spark 2.2 + Scala 2.11
-    (2, 2) -> "2.11"
+    (3, 0) -> "2.12"
   )
 
-  // Supported Spark version
-  private val MIN_VERSION = (2, 2)
+  // Supported Spark version (Spark 2.x support has been removed)
+  private val MIN_VERSION = (3, 0)
   private val MAX_VERSION = (3, 6)
 
   private val sparkVersionRegex = """version (.*)""".r.unanchored

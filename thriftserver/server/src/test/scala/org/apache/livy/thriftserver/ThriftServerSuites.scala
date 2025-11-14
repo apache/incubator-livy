@@ -29,7 +29,7 @@ import org.apache.livy.LivyConf
 
 trait CommonThriftTests {
   def hiveSupportEnabled(sparkMajorVersion: Int, livyConf: LivyConf): Boolean = {
-    sparkMajorVersion > 1 || livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
+    sparkMajorVersion >= 3 || livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
   }
 
   def dataTypesTest(statement: Statement, mapSupported: Boolean): Unit = {
