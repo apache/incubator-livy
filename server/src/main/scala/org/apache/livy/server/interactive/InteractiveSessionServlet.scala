@@ -193,6 +193,54 @@ class InteractiveSessionServlet(
       Ok(Map("msg" -> "canceled"))
     }
   }
+
+  get("/:id/tasks") {
+    withViewAccessSession { session =>
+      val order = params.get("order")
+      val tasks = if (order.map(_.trim).exists(_.equalsIgnoreCase("desc"))) {
+        session.tasks.reverse
+      } else {
+        session.tasks
+      }
+      val from = params.get("from").map(_.toInt).getOrElse(0)
+      val size = params.get("size").map(_.toInt).getOrElse(tasks.length)
+
+      Map(
+        "total_tasks" -> tasks.length,
+        "tasks" -> tasks.view(from, from + size)
+      )
+    }
+  }
+
+  // Task endpoints - allow users to submit jobs in interactive sessions
+  val getTask = get("/:id/tasks/:taskId") {
+    withViewAccessSession { session =>
+      val taskId = params("taskId").toInt
+
+      session.getTask(taskId).getOrElse(NotFound("Task not found"))
+    }
+  }
+
+  jpost[SerializedJob]("/:id/tasks") { req =>
+    withModifyAccessSession { session =>
+      require(req.job != null && req.job.length > 0, "no job provided.")
+      val task = session.executeTask(req.job)
+      Created(task,
+        headers = Map(
+          "Location" -> url(getTask,
+            "id" -> session.id.toString,
+            "taskId" -> task.id.toString)))
+    }
+  }
+
+  post("/:id/tasks/:taskId/cancel") {
+    withModifyAccessSession { session =>
+      val taskId = params("taskId").toInt
+      session.cancelTask(taskId)
+      Ok(Map("msg" -> "canceled"))
+    }
+  }
+
   // This endpoint is used by the client-http module to "connect" to an existing session and
   // update its last activity time. It performs authorization checks to make sure the caller
   // has access to the session, so even though it returns the same data, it behaves differently

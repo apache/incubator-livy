@@ -315,6 +315,25 @@ public class RSCClient implements LivyClient {
         String[].class);
   }
 
+  public Future<Integer> submitTask(byte[] serializedJob) {
+    return deferredCall(new BaseProtocol.TaskJobRequest(serializedJob), Integer.class);
+  }
+
+  /**
+   * Get task information from the driver's task registry
+   */
+  public Future<TaskResults> getTaskResults(Integer from, Integer size) throws Exception {
+    return deferredCall(new BaseProtocol.GetTaskResults(from, size), TaskResults.class);
+  }
+
+  public Future<TaskResults> getTaskResults() throws Exception {
+    return deferredCall(new BaseProtocol.GetTaskResults(), TaskResults.class);
+  }
+
+  public void cancelTask(int taskId) throws Exception {
+    deferredCall(new BaseProtocol.CancelTaskRequest(taskId), Void.class);
+  }
+
   /**
    * @return Return the repl state. If this's not connected to a repl session, it will return null.
    */

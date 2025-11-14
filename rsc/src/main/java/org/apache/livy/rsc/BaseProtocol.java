@@ -243,6 +243,47 @@ public abstract class BaseProtocol extends RpcDispatcher {
     }
   }
 
+  public static class TaskJobRequest {
+      public final byte[] serializedJob;
+
+      public TaskJobRequest(byte[] serializedJob) {
+          this.serializedJob = serializedJob;
+      }
+
+      public TaskJobRequest() {
+          this(null);
+      }
+  }
+
+  public static class GetTaskResults {
+    public boolean allResults;
+    public Integer from, size;
+
+    public GetTaskResults(Integer from, Integer size) {
+        this.allResults = false;
+        this.from = from;
+        this.size = size;
+    }
+
+    public GetTaskResults() {
+        this.allResults = true;
+        from = null;
+        size = null;
+    }
+  }
+
+  public static class CancelTaskRequest {
+      public final int taskId;
+
+      public CancelTaskRequest(int taskId) {
+          this.taskId = taskId;
+      }
+
+      public CancelTaskRequest() {
+          this(-1);
+      }
+  }
+
   public static class InitializationError {
 
     public final String stackTrace;

@@ -24,12 +24,12 @@ import org.apache.livy.JobContext;
 import org.apache.livy.client.common.BufferUtils;
 import org.apache.livy.client.common.Serializer;
 
-class BypassJob implements Job<byte[]> {
+public class BypassJob implements Job<byte[]> {
 
   private final Serializer serializer;
   private final byte[] serializedJob;
 
-  BypassJob(Serializer serializer, byte[] serializedJob) {
+  public BypassJob(Serializer serializer, byte[] serializedJob) {
     this.serializer = serializer;
     this.serializedJob = serializedJob;
   }

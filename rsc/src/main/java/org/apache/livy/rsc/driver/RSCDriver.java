@@ -52,6 +52,7 @@ import org.apache.spark.SparkContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.livy.JobContext;
 import org.apache.livy.client.common.Serializer;
 import org.apache.livy.rsc.BaseProtocol;
 import org.apache.livy.rsc.BypassJobStatus;
@@ -384,11 +385,11 @@ public class RSCDriver extends BaseProtocol {
     }
   }
 
-  JobContextImpl jobContext() {
+  protected JobContext jobContext() {
     return jc;
   }
 
-  Serializer serializer() {
+  protected Serializer serializer() {
     return serializer;
   }
 
