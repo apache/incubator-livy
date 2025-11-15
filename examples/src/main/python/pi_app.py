@@ -15,11 +15,6 @@
 # limitations under the License.
 #
 
-from __future__ import print_function
-from __future__ import division
-
-from builtins import range
-from past.utils import old_div
 import sys
 from random import random
 from operator import add
@@ -52,7 +47,7 @@ if __name__ == "__main__":
 
     def pi_job(context):
         count = context.sc.parallelize(list(range(1, samples + 1)), slices).map(f).reduce(add)
-        return old_div(4.0 * count, samples)
+        return 4.0 * count / samples
 
     pi = client.submit(pi_job).result()
 

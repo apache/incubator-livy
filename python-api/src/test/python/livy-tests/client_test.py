@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from builtins import str
+
 import os
 import pytest
 import responses
@@ -28,11 +28,10 @@ from livy.client import HttpClient
 session_id = 0
 job_id = 1
 # Make sure host name is lower case. See LIVY-582
-base_uri = 'http://{0}:{1}'.format(socket.gethostname().lower(), 8998)
+base_uri = f'http://{socket.gethostname().lower()}:{8998}'
 client_test = None
 invoked_queued_callback = False
 invoked_running_callback = False
-
 
 @responses.activate
 def mock_and_validate_create_new_session(defaults):
@@ -41,8 +40,8 @@ def mock_and_validate_create_new_session(defaults):
     app_name = 'Test App'
     conf_dict = {'spark.app.name': app_name}
     json_data = {
-        u'kind': u'pyspark', u'log': [], u'proxyUser': None,
-        u'state': u'starting', u'owner': None, u'id': session_id
+        'kind': 'pyspark', 'log': [], 'proxyUser': None,
+        'state': 'starting', 'owner': None, 'id': session_id
     }
     responses.add(responses.POST, create_session_request_mock_uri,
         json=json_data, status=201, content_type='application/json')
@@ -56,7 +55,6 @@ def mock_and_validate_create_new_session(defaults):
         assert client_test._config.get(client_test._CONFIG_SECTION,
             'spark.config') == 'override'
 
-
 def mock_submit_job_and_poll_result(
     job,
     job_state,
@@ -69,20 +67,19 @@ def mock_submit_job_and_poll_result(
         + "/jobs/" + str(job_id)
 
     post_json_data = {
-        u'state': u'SENT', u'error': None, u'id': job_id, u'result': None
+        'state': 'SENT', 'error': None, 'id': job_id, 'result': None
     }
     responses.add(responses.POST, submit_request_mock_uri, status=201,
         json=post_json_data, content_type='application/json')
 
     get_json_data = {
-        u'state': job_state, u'error': error, u'id': job_id, u'result': result
+        'state': job_state, 'error': error, 'id': job_id, 'result': result
     }
     responses.add(responses.GET, poll_request_mock_uri, status=200,
         json=get_json_data, content_type='application/json')
 
     submit_job_future = client_test.submit(job)
     return submit_job_future
-
 
 def mock_file_apis(job_command, job_func, job_func_arg):
     request_uri = base_uri + "/sessions/" + str(session_id) + \
@@ -92,34 +89,29 @@ def mock_file_apis(job_command, job_func, job_func_arg):
     test_file_api_future = job_func(job_func_arg)
     return test_file_api_future
 
-
 def simple_spark_job(context):
     elements = [10, 20, 30]
     sc = context.sc
     return sc.parallelize(elements, 2).count()
 
-
 def failure_job(context):
     return "hello" + 1
 
-
 def test_create_new_session_without_default_config():
     mock_and_validate_create_new_session(False)
-
 
 def test_create_new_session_with_default_config():
     os.environ["LIVY_CLIENT_CONF_DIR"] = \
         os.path.dirname(os.path.abspath(__file__)) + "/resources"
     mock_and_validate_create_new_session(True)
 
-
 def test_connect_to_existing_session():
     reconnect_mock_request_uri = base_uri + "/sessions/" + str(session_id) + \
         "/connect"
     reconnect_session_uri = base_uri + "/sessions/" + str(session_id)
     json_data = {
-        u'kind': u'pyspark', u'log': [], u'proxyUser': None,
-        u'state': u'starting', u'owner': None, u'id': session_id
+        'kind': 'pyspark', 'log': [], 'proxyUser': None,
+        'state': 'starting', 'owner': None, 'id': session_id
     }
     with responses.RequestsMock() as rsps:
         rsps.add(responses.POST, reconnect_mock_request_uri, json=json_data,
@@ -133,18 +125,16 @@ def test_connect_to_existing_session():
         client_reconnect._config.get(client_reconnect._CONFIG_SECTION,
             'spark.app.name') == 'Test App'
 
-
 def create_test_archive(ext):
     (fd, path) = tempfile.mkstemp(suffix=ext)
     os.close(fd)
     zipfile.ZipFile(path, mode='w').close()
     return path
 
-
 @responses.activate
 def test_submit_job_verify_running_state():
     submit_job_future = mock_submit_job_and_poll_result(simple_spark_job,
-        u'STARTED')
+        'STARTED')
     lock = threading.Event()
 
     def handle_job_running_callback(f):
@@ -155,11 +145,10 @@ def test_submit_job_verify_running_state():
     lock.wait(15)
     assert invoked_running_callback
 
-
 @responses.activate
 def test_submit_job_verify_queued_state():
     submit_job_future = mock_submit_job_and_poll_result(simple_spark_job,
-        u'QUEUED')
+        'QUEUED')
     lock = threading.Event()
 
     def handle_job_queued_callback(f):
@@ -170,23 +159,20 @@ def test_submit_job_verify_queued_state():
     lock.wait(15)
     assert invoked_queued_callback
 
-
 @responses.activate
 def test_submit_job_verify_succeeded_state():
     submit_job_future = mock_submit_job_and_poll_result(simple_spark_job,
-        u'SUCCEEDED',
+        'SUCCEEDED',
         result='Z0FKVkZGc3hNREFzSURJd01Dd2dNekF3TENBME1EQmRjUUF1')
     result = submit_job_future.result(15)
     assert result == '[100, 200, 300, 400]'
 
-
 @responses.activate
 def test_submit_job_verify_failed_state():
-    submit_job_future = mock_submit_job_and_poll_result(failure_job, u'FAILED',
+    submit_job_future = mock_submit_job_and_poll_result(failure_job, 'FAILED',
         error='Error job')
     exception = submit_job_future.exception(15)
     assert isinstance(exception, Exception)
-
 
 @responses.activate
 def test_add_file():
@@ -197,7 +183,6 @@ def test_add_file():
     add_file_future.result(15)
     assert add_file_future.done()
 
-
 @responses.activate
 def test_upload_file():
     file_path = os.path.dirname(os.path.abspath(__file__)) + \
@@ -206,7 +191,6 @@ def test_upload_file():
         file_path)
     upload_file_future.result(15)
     assert upload_file_future.done()
-
 
 @responses.activate
 def test_add_pyfile():
@@ -217,7 +201,6 @@ def test_add_pyfile():
     add_file_future.result(15)
     assert add_file_future.done()
 
-
 @responses.activate
 def test_upload_pyfile():
     file_path = create_test_archive('.zip')
@@ -225,7 +208,6 @@ def test_upload_pyfile():
         file_path)
     pyfile_future.result(15)
     assert pyfile_future.done()
-
 
 @responses.activate
 def test_add_jar():

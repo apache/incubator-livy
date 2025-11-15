@@ -33,24 +33,15 @@
 #   usage: ./merge_livy_pr.py    (see config env vars below)
 #
 
-
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
 import json
 import os
 import re
 import subprocess
 import sys
+import urllib.request
+from urllib.error import HTTPError
 
-if sys.version_info[0] < 3:
-    import urllib.request, urllib.error, urllib.parse
-    from urllib.error import HTTPError
-    input_prompt_fn = raw_input
-else:
-    import urllib.request as urllib2
-    from urllib.error import HTTPError
-    input_prompt_fn = input
+input_prompt_fn = input
 
 try:
     import jira.client
@@ -74,14 +65,12 @@ JIRA_PASSWORD = os.environ.get("JIRA_PASSWORD", "")
 # https://github.com/settings/tokens. This script only requires the "public_repo" scope.
 GITHUB_OAUTH_KEY = os.environ.get("GITHUB_OAUTH_KEY")
 
-
 GITHUB_BASE = "https://github.com/apache/incubator-livy/pull"
 GITHUB_API_BASE = "https://api.github.com/repos/apache/incubator-livy"
 JIRA_BASE = "https://issues.apache.org/jira/browse"
 JIRA_API_BASE = "https://issues.apache.org/jira"
 # Prefix added to temporary branches
 BRANCH_PREFIX = "PR_TOOL"
-
 
 def get_json(url):
     try:
@@ -98,12 +87,10 @@ def get_json(url):
             print("Unable to fetch URL, exiting: %s" % url)
         sys.exit(-1)
 
-
 def fail(msg):
     print(msg)
     clean_up()
     sys.exit(-1)
-
 
 def run_cmd(cmd):
     print(cmd)
@@ -111,17 +98,12 @@ def run_cmd(cmd):
         out_bytes = subprocess.check_output(cmd)
     else:
         out_bytes = subprocess.check_output(cmd.split(" "))
-    if sys.version_info[0] > 2:
-        return out_bytes.decode()
-    else:
-        return out_bytes
-
+    return out_bytes.decode()
 
 def continue_maybe(prompt):
     result = input_prompt_fn("\n%s (y/n): " % prompt)
     if result.lower() != "y":
         fail("Okay, exiting")
-
 
 def clean_up():
     print("Restoring head pointer to %s" % original_head)
@@ -132,7 +114,6 @@ def clean_up():
     for branch in [x for x in branches if x.startswith(BRANCH_PREFIX)]:
         print("Deleting local branch %s" % branch)
         run_cmd("git branch -D %s" % branch)
-
 
 # merge the requested PR and return the merge hash
 def merge_pr(pr_num, target_ref, title, body, pr_repo_desc):
@@ -204,7 +185,6 @@ def merge_pr(pr_num, target_ref, title, body, pr_repo_desc):
     print("Merge hash: %s" % merge_hash)
     return merge_hash
 
-
 def cherry_pick(pr_num, merge_hash, default_branch):
     pick_ref = input_prompt_fn("Enter a branch name [%s]: " % default_branch)
     if pick_ref == "":
@@ -239,7 +219,6 @@ def cherry_pick(pr_num, merge_hash, default_branch):
     print("Pick hash: %s" % pick_hash)
     return pick_ref
 
-
 def fix_version_from_branch(branch, versions):
     # Note: Assumes this is a sorted (newest->oldest) list of un-released versions
     if branch == "master":
@@ -247,7 +226,6 @@ def fix_version_from_branch(branch, versions):
     else:
         branch_ver = branch.replace("branch-", "")
         return [x for x in versions if x.name.startswith(branch_ver)][-1]
-
 
 def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
     asf_jira = jira.client.JIRA({'server': JIRA_API_BASE},
@@ -280,7 +258,7 @@ def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
     versions = sorted(versions, key=lambda x: x.name, reverse=True)
     versions = [x for x in versions if x.raw['released'] is False]
     # Consider only x.y.z versions
-    versions = [x for x in versions if re.match('\d+\.\d+\.\d+', x.name)]
+    versions = [x for x in versions if re.match(r'\d+\.\d+\.\d+', x.name)]
 
     default_fix_versions = [fix_version_from_branch(x, versions).name for x in merge_branches]
     for v in default_fix_versions:
@@ -314,7 +292,6 @@ def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
 
     print("Successfully resolved %s with fixVersions=%s!" % (jira_id, fix_versions))
 
-
 def resolve_jira_issues(title, merge_branches, comment):
     jira_ids = re.findall("LIVY-[0-9]{3,6}", title)
 
@@ -322,7 +299,6 @@ def resolve_jira_issues(title, merge_branches, comment):
         resolve_jira_issue(merge_branches, comment)
     for jira_id in jira_ids:
         resolve_jira_issue(merge_branches, comment, jira_id)
-
 
 def standardize_jira_ref(text):
     """
@@ -365,7 +341,6 @@ def standardize_jira_ref(text):
 
     return clean_text
 
-
 def get_current_ref():
     ref = run_cmd("git rev-parse --abbrev-ref HEAD").strip()
     if ref == 'HEAD':
@@ -373,7 +348,6 @@ def get_current_ref():
         return run_cmd("git rev-parse HEAD").strip()
     else:
         return ref
-
 
 def main():
     global original_head
@@ -464,7 +438,6 @@ def main():
     else:
         print("Could not find jira-python library. Run 'sudo pip install jira' to install.")
         print("Exiting without trying to close the associated JIRA.")
-
 
 if __name__ == "__main__":
     import doctest

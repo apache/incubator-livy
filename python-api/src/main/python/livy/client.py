@@ -14,10 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from __future__ import absolute_import
 
-from builtins import str
-from builtins import object
 import base64
 import cloudpickle
 import os
@@ -27,13 +24,12 @@ import threading
 import traceback
 from configparser import ConfigParser
 from concurrent.futures import ThreadPoolExecutor
-from future.moves.urllib.parse import ParseResult, urlparse
-from io import open, StringIO
+from urllib.parse import ParseResult, urlparse
+from io import StringIO
 from requests_kerberos import HTTPKerberosAuth, REQUIRED
 from livy.job_handle import JobHandle
 
-
-class HttpClient(object):
+class HttpClient:
     """A http based client for submitting Spark-based jobs to a Livy backend.
 
     Parameters
@@ -427,8 +423,7 @@ class HttpClient(object):
         return self._conn.send_request('POST', suffix_url, files=files,
             data=data, headers=headers).content
 
-
-class _LivyConnection(object):
+class _LivyConnection:
 
     _SESSIONS_URI = '/sessions'
     # Timeout in seconds

@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-from builtins import range
 import sys
 from pyspark import SparkContext
 

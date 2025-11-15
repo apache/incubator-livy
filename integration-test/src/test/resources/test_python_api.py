@@ -14,9 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
+
 import os
 import base64
 import json
@@ -61,7 +59,6 @@ upload_pyfile_url = os.environ.get("UPLOAD_PYFILE_URL")
 def after_all(request):
     request.addfinalizer(stop_session)
 
-
 def process_job(job, expected_result, is_error_job=False):
     global job_id
 
@@ -100,11 +97,9 @@ def process_job(job, expected_result, is_error_job=False):
         error = poll_response.json()['error']
         assert expected_result in error
 
-
 def delay_rerun(*args):
     time.sleep(10)
     return True
-
 
 def stop_session():
     global session_id
@@ -113,7 +108,6 @@ def stop_session():
     headers = {'X-Requested-By': 'livy'}
     response = requests.request('DELETE', request_url, headers=headers, auth=request_auth, verify=ssl_cert)
     assert response.status_code == http.client.OK
-
 
 def test_create_session():
     global session_id
@@ -127,7 +121,6 @@ def test_create_session():
     assert response.status_code == http.client.CREATED
     session_id = response.json()['id']
 
-
 @flaky(max_runs=6, rerun_filter=delay_rerun)
 def test_wait_for_session_to_become_idle():
     request_url = livy_end_point + "/sessions/" + str(session_id)
@@ -138,7 +131,6 @@ def test_wait_for_session_to_become_idle():
 
     assert session_state == 'idle'
 
-
 def test_spark_job():
     def simple_spark_job(context):
         elements = [10, 20, 30]
@@ -147,14 +139,12 @@ def test_spark_job():
 
     process_job(simple_spark_job, 3)
 
-
 def test_error_job():
     def error_job(context):
         return "hello" + 1
 
     process_job(error_job,
         "TypeError: ", True)
-
 
 def test_reconnect():
     global session_id
@@ -165,7 +155,6 @@ def test_reconnect():
 
     assert response.status_code == http.client.OK
     assert session_id == response.json()['id']
-
 
 def test_add_file():
     add_file_name = os.path.basename(add_file_url)
@@ -184,7 +173,6 @@ def test_add_file():
 
     process_job(add_file_job, "hello from addfile")
 
-
 def test_add_pyfile():
     add_pyfile_name_with_ext = os.path.basename(add_pyfile_url)
     add_pyfile_name = add_pyfile_name_with_ext.rsplit('.', 1)[0]
@@ -200,7 +188,6 @@ def test_add_pyfile():
        return pyfile_module.test_add_pyfile()
 
     process_job(add_pyfile_job, "hello from addpyfile")
-
 
 def test_upload_file():
     upload_file = open(upload_file_url)
@@ -220,7 +207,6 @@ def test_upload_file():
 
     process_job(upload_file_job, "hello from uploadfile")
 
-
 def test_upload_pyfile():
     upload_pyfile = open(upload_pyfile_url)
     upload_pyfile_name_with_ext = os.path.basename(upload_pyfile.name)
@@ -235,7 +221,6 @@ def test_upload_pyfile():
         pyfile_module = __import__ (upload_pyfile_name)
         return pyfile_module.test_upload_pyfile()
     process_job(upload_pyfile_job, "hello from uploadpyfile")
-
 
 if __name__ == '__main__':
     value = pytest.main([os.path.dirname(__file__)])

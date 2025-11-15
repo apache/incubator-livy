@@ -14,12 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from builtins import object
+
 from abc import ABCMeta, abstractproperty, abstractmethod
-from future.utils import with_metaclass
 
-
-class JobContext(with_metaclass(ABCMeta, object)):
+class JobContext(metaclass=ABCMeta):
     """
     An abstract class that holds runtime information about the job execution
     context.
