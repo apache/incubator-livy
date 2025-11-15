@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 import base64
 import cloudpickle
 import sys
@@ -29,7 +30,6 @@ CANCELLED = 'CANCELLED'
 FINISHED = 'FINISHED'
 SENT = 'SENT'
 QUEUED = 'QUEUED'
-
 
 class JobHandle(Future):
 
@@ -217,10 +217,7 @@ class JobHandle(Future):
         raise NotImplementedError("This operation is not supported.")
 
     def set_job_exception(self, exception, error_msg=None):
-        if sys.version >= '3':
-            super(JobHandle, self).set_exception(exception)
-        else:
-            super(JobHandle, self).set_exception_info(exception, error_msg)
+        super(JobHandle, self).set_exception(exception)
 
     class _RepeatedTimer(object):
         def __init__(self, interval, polling_job, executor):
