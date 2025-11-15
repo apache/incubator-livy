@@ -310,6 +310,59 @@ trait CommonThriftTests {
 
   }
 
+  def getColumnsWithCommentsTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val statement = connection.createStatement()
+    try {
+      statement.execute(
+        "CREATE TABLE test_column_comments (" +
+        "id integer COMMENT 'User identifier', " +
+        "name string COMMENT 'User full name', " +
+        "age integer COMMENT 'User age in years') USING json")
+
+      val columnsResultSet = metadata.getColumns("", "default", "test_column_comments", "%")
+
+      columnsResultSet.next()
+      assert(columnsResultSet.getString("COLUMN_NAME") == "id")
+      assert(columnsResultSet.getString("REMARKS") == "User identifier",
+        "Column 'id' should have comment 'User identifier'")
+
+      columnsResultSet.next()
+      assert(columnsResultSet.getString("COLUMN_NAME") == "name")
+      assert(columnsResultSet.getString("REMARKS") == "User full name",
+        "Column 'name' should have comment 'User full name'")
+
+      columnsResultSet.next()
+      assert(columnsResultSet.getString("COLUMN_NAME") == "age")
+      assert(columnsResultSet.getString("REMARKS") == "User age in years",
+        "Column 'age' should have comment 'User age in years'")
+
+      assert(!columnsResultSet.next())
+      columnsResultSet.close()
+
+      statement.execute(
+        "CREATE TABLE test_struct_comments (" +
+        "person struct<id:int COMMENT 'Person ID', " +
+        "name:string COMMENT 'Person name'>, " +
+        "address struct<street:string COMMENT 'Street address', " +
+        "city:string COMMENT 'City name'>) " +
+        "USING json")
+
+      val rs = statement.executeQuery("SELECT person, address FROM test_struct_comments")
+      val rsMetaData = rs.getMetaData()
+
+      assert(rsMetaData.getColumnCount == 2)
+      assert(rsMetaData.getColumnName(1) == "person")
+      assert(rsMetaData.getColumnName(2) == "address")
+
+      rs.close()
+    } finally {
+      statement.execute("DROP TABLE IF EXISTS test_column_comments")
+      statement.execute("DROP TABLE IF EXISTS test_struct_comments")
+      statement.close()
+    }
+  }
+
   def operationLogRetrievalTest(statement: Statement): Unit = {
     statement.execute("select 1")
     val logIterator = statement.asInstanceOf[HiveStatement].getQueryLog().iterator()
@@ -562,6 +615,12 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
     }
   }
 
+  test("fetch columns with comments") {
+    withJdbcConnection { connection =>
+      getColumnsWithCommentsTest(connection)
+    }
+  }
+
   test("operation log retrieval test") {
     withJdbcStatement { statement =>
       operationLogRetrievalTest(statement)
@@ -636,6 +695,12 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
   test("fetch column") {
     withJdbcConnection { connection =>
       getColumnsTest(connection)
+    }
+  }
+
+  test("fetch columns with comments") {
+    withJdbcConnection { connection =>
+      getColumnsWithCommentsTest(connection)
     }
   }
 
