@@ -93,14 +93,6 @@ version of Spark without needing to rebuild.
 
 | Flag         | Purpose                                                            |
 |--------------|--------------------------------------------------------------------|
-<<<<<<< HEAD
-| -Phadoop2    | Choose Hadoop2 based build dependencies (default configuration)    |
-| -Pspark2     | Choose Spark 2.x based build dependencies (default configuration)  |
-| -Pspark3     | Choose Spark 3.x based build dependencies                          |
-| -Pscala-2.11 | Choose Scala 2.11 based build dependencies (default configuration) |
-| -Pscala-2.12 | Choose scala 2.12 based build dependencies                         |
-=======
 | -Phadoop2    | Choose Hadoop2 based build dependencies                            |
 | -Pspark3     | Choose Spark 3.x based build dependencies (default configuration)  |
 | -Pscala-2.12 | Choose Scala 2.12 based build dependencies (default configuration) |
->>>>>>> master
