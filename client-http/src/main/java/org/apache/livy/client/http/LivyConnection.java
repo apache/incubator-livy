@@ -220,21 +220,27 @@ class LivyConnection {
             || req instanceof  HttpPatch) {
       req.addHeader("X-Requested-By", "livy");
     }
-    try (CloseableHttpResponse res = client.execute(req)) {
-      int status = (res.getStatusLine().getStatusCode() / 100) * 100;
-      HttpEntity entity = res.getEntity();
-      if (status == HttpStatus.SC_OK) {
-        if (!Void.class.equals(retType)) {
-          return mapper.readValue(entity.getContent(), retType);
-        } else {
-          return null;
+    int redirectCount = 0;
+    do {
+      try (CloseableHttpResponse res = client.execute(req)) {
+        int status = (res.getStatusLine().getStatusCode() / 100) * 100;
+        HttpEntity entity = res.getEntity();
+        if (status == HttpStatus.SC_OK) {
+          return Void.class.equals(retType) ? null :
+                  mapper.readValue(entity.getContent(), retType);
         }
-      } else {
-        String error = EntityUtils.toString(entity);
-        throw new IOException(String.format("%s: %s", res.getStatusLine().getReasonPhrase(),
-          error));
+        if (res.getStatusLine().getStatusCode() == HttpStatus.SC_TEMPORARY_REDIRECT) {
+          // Redirect to active server in case if Livy is running in HA mode
+          String redirectUrl = res.getFirstHeader("Location").getValue();
+          req.setURI(new URI(redirectUrl));
+        } else {
+          String error = EntityUtils.toString(entity);
+          throw new IOException(String.format("%s: %s",
+                  res.getStatusLine().getReasonPhrase(),
+                  error));
+        }
       }
-    }
+    } while(++redirectCount <= 1);
+    throw new IOException("Too many redirects");
   }
-
 }
