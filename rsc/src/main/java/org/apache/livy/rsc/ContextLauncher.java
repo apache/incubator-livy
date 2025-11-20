@@ -397,11 +397,11 @@ class ContextLauncher {
               fail(new IOException(String.format("Child process exited with code %d.", exitCode)));
             }
           } catch (InterruptedException ie) {
-            LOG.warn("Waiting thread interrupted, killing child process.");
+            LOG.error("Waiting thread interrupted, killing child process.", ie);
             Thread.interrupted();
             child.destroy();
           } catch (Exception e) {
-            LOG.warn("Exception while waiting for child process.", e);
+            LOG.error("Exception while waiting for child process.", e);
           } finally {
             RSCClientFactory.childProcesses().decrementAndGet();
           }
@@ -436,7 +436,7 @@ class ContextLauncher {
       try {
         monitor.join(conf.getTimeAsMs(CLIENT_SHUTDOWN_TIMEOUT));
       } catch (InterruptedException ie) {
-        LOG.debug("Interrupted before driver thread was finished.");
+        LOG.error("Interrupted before driver thread was finished.", ie);
       }
     }
 
