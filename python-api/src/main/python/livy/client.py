@@ -29,6 +29,7 @@ from io import StringIO
 from requests_kerberos import HTTPKerberosAuth, REQUIRED
 from livy.job_handle import JobHandle
 
+
 class HttpClient:
     """A http based client for submitting Spark-based jobs to a Livy backend.
 
@@ -422,6 +423,7 @@ class HttpClient:
     ):
         return self._conn.send_request('POST', suffix_url, files=files,
             data=data, headers=headers).content
+
 
 class _LivyConnection:
 

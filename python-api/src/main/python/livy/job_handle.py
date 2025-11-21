@@ -17,7 +17,6 @@
 
 import base64
 import cloudpickle
-import sys
 import threading
 import traceback
 from concurrent.futures import Future
@@ -30,6 +29,7 @@ CANCELLED = 'CANCELLED'
 FINISHED = 'FINISHED'
 SENT = 'SENT'
 QUEUED = 'QUEUED'
+
 
 class JobHandle(Future):
 

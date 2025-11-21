@@ -17,6 +17,7 @@
 
 from abc import ABCMeta, abstractproperty, abstractmethod
 
+
 class JobContext(metaclass=ABCMeta):
     """
     An abstract class that holds runtime information about the job execution
