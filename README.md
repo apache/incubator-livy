@@ -29,20 +29,20 @@ To build Livy, you will need:
 Debian/Ubuntu:
   * mvn (from ``maven`` package or maven3 tarball)
   * openjdk-8-jdk (or Oracle JDK 8)
-  * Python 2.7+
+  * Python 3.x+
   * R 3.x
 
 Redhat/CentOS:
   * mvn (from ``maven`` package or maven3 tarball)
   * java-1.8.0-openjdk (or Oracle JDK 8)
-  * Python 2.7+
+  * Python 3.x+
   * R 3.x
 
 MacOS:
   * Xcode command line tools
   * Oracle's JDK 1.8
   * Maven (Homebrew)
-  * Python 2.7+
+  * Python 3.x+
   * R 3.x
 
 Required python packages for building Livy:
