@@ -23,15 +23,13 @@ CLASSIFIERS = [
     'Development Status :: 1 - Planning',
     'Intended Audience :: Developers',
     'Operating System :: OS Independent',
-    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.9',
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 
 requirements = [
     'cloudpickle>=0.2.1',
-    'configparser>=3.5.0',
-    'future>=0.15.2',
-    'mock~=3.0.5',
     'requests>=2.10.0',
     'responses>=0.5.1',
     'requests-kerberos>=0.11.0',
