@@ -218,7 +218,7 @@ public abstract class BaseProtocol extends RpcDispatcher {
     }
   }
 
-  protected static class ReplState {
+  public static class ReplState {
 
     public final String state;
 
