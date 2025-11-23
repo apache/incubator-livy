@@ -255,7 +255,7 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val testDir = Files.createTempDirectory(tmpDir.toPath(), "python-tests-").toFile()
     val testFile = createPyTestsForPythonAPI(testDir)
 
-    val builder = new ProcessBuilder(Seq("python", testFile.getAbsolutePath()).asJava)
+    val builder = new ProcessBuilder(Seq("python3", testFile.getAbsolutePath()).asJava)
     builder.directory(testDir)
 
     val env = builder.environment()

@@ -70,32 +70,11 @@ RUN git clone https://github.com/pyenv/pyenv.git $HOME/pyenv
 ENV PYENV_ROOT=$HOME/pyenv
 ENV PATH="$HOME/pyenv/shims:$HOME/pyenv/bin:$HOME/bin:$PATH"
 
-RUN pyenv install -v 2.7.18 && \
-  pyenv install -v 3.9.21 && \
-  pyenv global 2.7.18 3.9.21 && \
+RUN pyenv install -v 3.9.21 && \
+  pyenv global 3.9.21 && \
   pyenv rehash
 
-# Add build dependencies for python2
-# - First we upgrade pip because that makes a lot of things better
-# - Then we remove the provided version of setuptools and install a different version
-# - Then we install additional dependencies
-RUN python2 -m pip install -U "pip < 21.0" && \
-        apt-get remove -y python-setuptools && \
-        python2 -m pip install "setuptools < 36" && \
-        python2 -m pip install \
-        cloudpickle \
-        codecov \
-        flake8 \
-        flaky \
-        "future>=0.15.2" \
-        "futures>=3.0.5" \
-        pytest \
-        pytest-runner \
-        requests-kerberos \
-        "requests >= 2.10.0" \
-        "responses >= 0.5.1"
-
-# Now do the same for python3
+# Install build dependencies for python3
 RUN python3 -m pip install -U pip && pip3 install \
         cloudpickle \
         codecov \
@@ -112,4 +91,3 @@ RUN pyenv rehash
 RUN apt remove -y openjdk-11-jre-headless
 
 WORKDIR /workspace
-
