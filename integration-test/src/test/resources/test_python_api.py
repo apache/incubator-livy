@@ -19,18 +19,12 @@ import os
 import base64
 import json
 import time
-try:
-    from urllib.parse import urlparse
-except ImportError:
-     from urllib.parse import urlparse
+from urllib.parse import urlparse
 import requests
 from requests_kerberos import HTTPKerberosAuth, REQUIRED, OPTIONAL
 import cloudpickle
 import pytest
-try:
-    import http.client
-except ImportError:
-    from http import HTTPStatus as httplib
+import http.client
 from flaky import flaky
 
 global session_id, job_id
