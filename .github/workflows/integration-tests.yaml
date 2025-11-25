@@ -55,12 +55,16 @@ jobs:
         python_bin="$(pyenv which python3)"
         echo "PYSPARK_PYTHON=${python_bin}" >> "$GITHUB_ENV"
         echo "PYSPARK_DRIVER_PYTHON=${python_bin}" >> "$GITHUB_ENV"
+        $python_bin -m pip install cloudpickle codecov flake8 flaky pytest pytest-runner requests-kerberos requests responses
     -
       name: Set JDK version
       run: update-alternatives --set java ${{ matrix.jdk_path }}
     -
       name: Build with Maven
-      run: mvn -Pthriftserver ${{ matrix.maven_profile }} -DskipTests -Dmaven.javadoc.skip=true -B -V -e verify
+      run: |
+        export PYSPARK_PYTHON=$(pyenv which python3)
+        export PYSPARK_DRIVER_PYTHON=$PYSPARK_PYTHON
+        mvn -Pthriftserver ${{ matrix.maven_profile }} -DskipTests -Dmaven.javadoc.skip=true -B -V -e verify
     -
       name: Upload coverage to codecov
       uses: codecov/codecov-action@v3
