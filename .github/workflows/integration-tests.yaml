@@ -48,8 +48,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
     -
-      name: Set Python 3 as default
-      run: pyenv global 3 && echo "PYSPARK_PYTHON=$(which python3)" >> "$GITHUB_ENV"
+      name: Set Python 3.10 as default
+      run: |
+        pyenv install -s 3.10.14
+        pyenv global 3.10.14
+        python_bin="$(pyenv which python3)"
+        echo "PYSPARK_PYTHON=${python_bin}" >> "$GITHUB_ENV"
+        echo "PYSPARK_DRIVER_PYTHON=${python_bin}" >> "$GITHUB_ENV"
     -
       name: Set JDK version
       run: update-alternatives --set java ${{ matrix.jdk_path }}
