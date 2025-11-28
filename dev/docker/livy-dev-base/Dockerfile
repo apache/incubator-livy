@@ -112,4 +112,3 @@ RUN pyenv rehash
 RUN apt remove -y openjdk-11-jre-headless
 
 WORKDIR /workspace
-
