@@ -48,8 +48,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
     -
-      name: Set Python 3 as default
-      run: pyenv global 3 && echo "PYSPARK_PYTHON=$(which python3)" >> "$GITHUB_ENV"
+      name: Set Python 3.9 as default
+      run: |
+        pyenv global 3.9.21
+        python_bin="$(pyenv which python3)"
+        echo "Python: $($python_bin --version) at ${python_bin}"
+        $python_bin -m pip list | grep -E "cloudpickle|pytest|requests|flaky"
+        echo "PYSPARK_PYTHON=${python_bin}" >> "$GITHUB_ENV"
+        echo "PYSPARK_DRIVER_PYTHON=${python_bin}" >> "$GITHUB_ENV"
     -
       name: Set JDK version
       run: update-alternatives --set java ${{ matrix.jdk_path }}
