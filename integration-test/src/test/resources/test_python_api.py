@@ -133,6 +133,24 @@ def test_create_session():
     session_id = response.json()['id']
 
 
+def get_yarn_logs(app_id):
+    """Fetch YARN application logs for debugging."""
+    import subprocess
+    if not app_id:
+        return "(no appId available)"
+    try:
+        result = subprocess.run(
+            ['yarn', 'logs', '-applicationId', app_id],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            return result.stdout
+        else:
+            return f"(yarn logs failed: {result.stderr[-500:]})"
+    except Exception as e:
+        return f"(failed to get yarn logs: {e})"
+
+
 @flaky(max_runs=6, rerun_filter=delay_rerun)
 def test_wait_for_session_to_become_idle():
     request_url = livy_end_point + "/sessions/" + str(session_id)
@@ -151,6 +169,13 @@ def test_wait_for_session_to_become_idle():
         log_resp = requests.request('GET', log_url, headers=header, auth=request_auth, verify=ssl_cert)
         if log_resp.status_code == httplib.OK:
             print(f"Session log: {json.dumps(log_resp.json(), indent=2)}")
+
+        # If session is dead, fetch YARN logs for root cause
+        if session_state == 'dead':
+            app_id = session_data.get('appId')
+            print(f"=== YARN Application Logs for {app_id} ===")
+            print(get_yarn_logs(app_id))
+            print("=== End YARN Logs ===")
 
     assert session_state == 'idle'
 
