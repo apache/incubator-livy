@@ -139,7 +139,18 @@ def test_wait_for_session_to_become_idle():
     header = {'X-Requested-By': 'livy'}
     response = requests.request('GET', request_url, headers=header, auth=request_auth, verify=ssl_cert)
     assert response.status_code == httplib.OK
-    session_state = response.json()['state']
+    session_data = response.json()
+    session_state = session_data['state']
+
+    # Print session details if not idle for debugging
+    if session_state != 'idle':
+        print(f"Session state: {session_state}")
+        print(f"Session data: {json.dumps(session_data, indent=2)}")
+        # Try to get session log
+        log_url = livy_end_point + "/sessions/" + str(session_id) + "/log"
+        log_resp = requests.request('GET', log_url, headers=header, auth=request_auth, verify=ssl_cert)
+        if log_resp.status_code == httplib.OK:
+            print(f"Session log: {json.dumps(log_resp.json(), indent=2)}")
 
     assert session_state == 'idle'
 
