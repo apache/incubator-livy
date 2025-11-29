@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 import os
+import sys
 import base64
 import json
 import time
@@ -26,6 +27,13 @@ import requests
 from requests_kerberos import HTTPKerberosAuth, REQUIRED, OPTIONAL
 import cloudpickle
 import pytest
+
+# Print environment info for debugging
+print(f"=== Python Environment ===")
+print(f"Python version: {sys.version}")
+print(f"Python executable: {sys.executable}")
+print(f"cloudpickle version: {cloudpickle.__version__}")
+print(f"==========================")
 try:
     import httplib
 except ImportError:
