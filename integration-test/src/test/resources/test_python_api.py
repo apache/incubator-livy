@@ -133,97 +133,6 @@ def test_create_session():
     session_id = response.json()['id']
 
 
-def get_yarn_rm_base_url(spark_ui_url):
-    """Extract YARN RM base URL from sparkUiUrl."""
-    if not spark_ui_url:
-        return None
-
-    from urllib.parse import urlparse
-    parsed = urlparse(spark_ui_url)
-    return f"http://{parsed.netloc}"
-
-
-def get_yarn_attempt_logs(app_id, rm_base_url):
-    """Fetch logs for each application attempt from YARN."""
-    if not app_id or not rm_base_url:
-        return f"(missing app_id={app_id} or rm_base_url={rm_base_url})"
-
-    output = []
-    try:
-        # Get all attempts for this application
-        attempts_url = f"{rm_base_url}/ws/v1/cluster/apps/{app_id}/appattempts"
-        output.append(f"Fetching attempts from: {attempts_url}")
-
-        resp = requests.get(attempts_url, timeout=10)
-        if resp.status_code != 200:
-            return f"(failed to get attempts: {resp.status_code} - {resp.text[:500]})"
-
-        attempts_data = resp.json()
-        attempts = attempts_data.get('appAttempts', {}).get('appAttempt', [])
-
-        if not attempts:
-            output.append("No attempts found")
-            return "\n".join(output)
-
-        output.append(f"Found {len(attempts)} attempt(s)")
-
-        for attempt in attempts:
-            attempt_id = attempt.get('appAttemptId', 'unknown')
-            container_id = attempt.get('containerId', 'unknown')
-            node_id = attempt.get('nodeId', 'unknown')
-            logs_link = attempt.get('logsLink', '')
-
-            output.append(f"\n--- Attempt: {attempt_id} ---")
-            output.append(f"Container: {container_id}")
-            output.append(f"Node: {node_id}")
-            output.append(f"State: {attempt.get('appAttemptState', 'unknown')}")
-            output.append(f"Diagnostics: {attempt.get('diagnostics', 'none')}")
-
-            # Try to fetch the actual container logs
-            if logs_link:
-                output.append(f"Logs URL: {logs_link}")
-                try:
-                    logs_resp = requests.get(logs_link, timeout=30)
-                    if logs_resp.status_code == 200:
-                        # Extract text from HTML (rough extraction)
-                        log_text = logs_resp.text
-                        # Try to find stderr/stdout sections
-                        output.append(f"Container logs (last 5000 chars):")
-                        output.append(log_text[-5000:])
-                    else:
-                        output.append(f"(logs fetch failed: {logs_resp.status_code})")
-                except Exception as e:
-                    output.append(f"(failed to fetch logs: {e})")
-            else:
-                output.append("(no logsLink available)")
-
-        return "\n".join(output)
-
-    except Exception as e:
-        return f"(failed to get attempt logs: {e})"
-
-
-def get_yarn_app_info(app_id, rm_base_url):
-    """Fetch YARN application info via REST API."""
-    if not app_id or not rm_base_url:
-        return f"(missing app_id={app_id} or rm_base_url={rm_base_url})"
-    try:
-        app_url = f"{rm_base_url}/ws/v1/cluster/apps/{app_id}"
-        resp = requests.get(app_url, timeout=10)
-        if resp.status_code == 200:
-            app_info = resp.json().get('app', {})
-            return json.dumps({
-                'state': app_info.get('state'),
-                'finalStatus': app_info.get('finalStatus'),
-                'diagnostics': app_info.get('diagnostics'),
-                'amContainerLogs': app_info.get('amContainerLogs'),
-            }, indent=2)
-        else:
-            return f"(YARN API returned {resp.status_code}: {resp.text[:500]})"
-    except Exception as e:
-        return f"(failed to get YARN app info: {e})"
-
-
 @flaky(max_runs=6, rerun_filter=delay_rerun)
 def test_wait_for_session_to_become_idle():
     request_url = livy_end_point + "/sessions/" + str(session_id)
@@ -242,21 +151,6 @@ def test_wait_for_session_to_become_idle():
         log_resp = requests.request('GET', log_url, headers=header, auth=request_auth, verify=ssl_cert)
         if log_resp.status_code == httplib.OK:
             print(f"Session log: {json.dumps(log_resp.json(), indent=2)}")
-
-        # If session is dead, fetch YARN attempt logs for root cause
-        if session_state == 'dead':
-            app_id = session_data.get('appId')
-            spark_ui_url = session_data.get('appInfo', {}).get('sparkUiUrl')
-            rm_base_url = get_yarn_rm_base_url(spark_ui_url)
-
-            print(f"=== YARN Application Info for {app_id} ===")
-            print(f"sparkUiUrl: {spark_ui_url}")
-            print(f"RM base URL: {rm_base_url}")
-            print(get_yarn_app_info(app_id, rm_base_url))
-
-            print(f"=== YARN Attempt Logs ===")
-            print(get_yarn_attempt_logs(app_id, rm_base_url))
-            print("=== End YARN Info ===")
 
     assert session_state == 'idle'
 
