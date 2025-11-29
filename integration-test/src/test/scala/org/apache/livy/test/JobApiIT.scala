@@ -256,15 +256,17 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val testFile = createPyTestsForPythonAPI(testDir)
 
     // Log Python environment for debugging
-    val pythonVersionProc = new ProcessBuilder(Seq("python", "--version").asJava).start()
-    val pythonVersion = scala.io.Source.fromInputStream(pythonVersionProc.getInputStream).mkString.trim
-    pythonVersionProc.waitFor()
+    val pyVerProc = new ProcessBuilder(Seq("python", "--version").asJava).start()
+    val pythonVersion = scala.io.Source.fromInputStream(
+      pyVerProc.getInputStream).mkString.trim
+    pyVerProc.waitFor()
     info(s"Python version: $pythonVersion")
 
-    val cloudpickleProc = new ProcessBuilder(
-      Seq("python", "-c", "import cloudpickle; print(cloudpickle.__version__)").asJava).start()
-    val cloudpickleVersion = scala.io.Source.fromInputStream(cloudpickleProc.getInputStream).mkString.trim
-    cloudpickleProc.waitFor()
+    val cpCmd = Seq("python", "-c", "import cloudpickle; print(cloudpickle.__version__)")
+    val cpProc = new ProcessBuilder(cpCmd.asJava).start()
+    val cloudpickleVersion = scala.io.Source.fromInputStream(
+      cpProc.getInputStream).mkString.trim
+    cpProc.waitFor()
     info(s"cloudpickle version: $cloudpickleVersion")
 
     val builder = new ProcessBuilder(Seq("python", testFile.getAbsolutePath()).asJava)
