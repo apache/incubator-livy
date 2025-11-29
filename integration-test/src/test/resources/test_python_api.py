@@ -133,22 +133,54 @@ def test_create_session():
     session_id = response.json()['id']
 
 
-def get_yarn_logs(app_id):
-    """Fetch YARN application logs for debugging."""
-    import subprocess
+def get_yarn_app_info(app_id):
+    """Fetch YARN application info via REST API for debugging."""
     if not app_id:
         return "(no appId available)"
     try:
-        result = subprocess.run(
-            ['yarn', 'logs', '-applicationId', app_id],
-            capture_output=True, text=True, timeout=30
-        )
-        if result.returncode == 0:
-            return result.stdout
+        # YARN ResourceManager REST API (default port 8088)
+        rm_url = f"http://localhost:8088/ws/v1/cluster/apps/{app_id}"
+        resp = requests.get(rm_url, timeout=10)
+        if resp.status_code == 200:
+            app_info = resp.json().get('app', {})
+            return json.dumps({
+                'state': app_info.get('state'),
+                'finalStatus': app_info.get('finalStatus'),
+                'diagnostics': app_info.get('diagnostics'),
+                'amContainerLogs': app_info.get('amContainerLogs'),
+                'trackingUrl': app_info.get('trackingUrl'),
+            }, indent=2)
         else:
-            return f"(yarn logs failed: {result.stderr[-500:]})"
+            return f"(YARN API returned {resp.status_code}: {resp.text[:500]})"
     except Exception as e:
-        return f"(failed to get yarn logs: {e})"
+        return f"(failed to get YARN app info: {e})"
+
+
+def get_yarn_container_logs(app_id):
+    """Fetch YARN container logs via AM logs URL."""
+    if not app_id:
+        return "(no appId available)"
+    try:
+        # First get the AM container logs URL
+        rm_url = f"http://localhost:8088/ws/v1/cluster/apps/{app_id}"
+        resp = requests.get(rm_url, timeout=10)
+        if resp.status_code != 200:
+            return f"(failed to get app info: {resp.status_code})"
+        
+        app_info = resp.json().get('app', {})
+        am_logs_url = app_info.get('amContainerLogs')
+        if not am_logs_url:
+            return "(no amContainerLogs URL available)"
+        
+        # Fetch the actual logs (HTML page, but contains log content)
+        logs_resp = requests.get(am_logs_url, timeout=30)
+        if logs_resp.status_code == 200:
+            # Return raw HTML which contains the logs
+            return logs_resp.text[-10000:]  # Last 10KB
+        else:
+            return f"(failed to fetch logs from {am_logs_url}: {logs_resp.status_code})"
+    except Exception as e:
+        return f"(failed to get container logs: {e})"
 
 
 @flaky(max_runs=6, rerun_filter=delay_rerun)
@@ -170,12 +202,14 @@ def test_wait_for_session_to_become_idle():
         if log_resp.status_code == httplib.OK:
             print(f"Session log: {json.dumps(log_resp.json(), indent=2)}")
 
-        # If session is dead, fetch YARN logs for root cause
+        # If session is dead, fetch YARN info for root cause
         if session_state == 'dead':
             app_id = session_data.get('appId')
-            print(f"=== YARN Application Logs for {app_id} ===")
-            print(get_yarn_logs(app_id))
-            print("=== End YARN Logs ===")
+            print(f"=== YARN Application Info for {app_id} ===")
+            print(get_yarn_app_info(app_id))
+            print(f"=== YARN Container Logs ===")
+            print(get_yarn_container_logs(app_id))
+            print("=== End YARN Info ===")
 
     assert session_state == 'idle'
 
