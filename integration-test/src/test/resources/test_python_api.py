@@ -133,63 +133,83 @@ def test_create_session():
     session_id = response.json()['id']
 
 
-def get_system_diagnostics():
-    """Capture system state to diagnose YARN node health issues."""
-    import subprocess
-    import shutil
-    
-    diag = []
-    
-    # Disk usage
-    diag.append("=== DISK USAGE ===")
-    try:
-        result = subprocess.run(['df', '-h'], capture_output=True, text=True, timeout=10)
-        diag.append(result.stdout)
-    except Exception as e:
-        diag.append(f"(failed to get disk usage: {e})")
-    
-    # Memory usage
-    diag.append("=== MEMORY USAGE ===")
-    try:
-        result = subprocess.run(['free', '-m'], capture_output=True, text=True, timeout=10)
-        diag.append(result.stdout)
-    except Exception as e:
-        diag.append(f"(failed to get memory: {e})")
-    
-    # System load
-    diag.append("=== LOAD AVERAGE ===")
-    try:
-        with open('/proc/loadavg', 'r') as f:
-            diag.append(f.read())
-    except Exception as e:
-        diag.append(f"(failed to get load: {e})")
-    
-    # Check /tmp usage specifically (YARN often uses /tmp)
-    diag.append("=== /tmp USAGE ===")
-    try:
-        total, used, free = shutil.disk_usage('/tmp')
-        pct = (used / total) * 100
-        diag.append(f"Total: {total // (1024**3)}GB, Used: {used // (1024**3)}GB, Free: {free // (1024**3)}GB, Usage: {pct:.1f}%")
-    except Exception as e:
-        diag.append(f"(failed: {e})")
-    
-    return "\n".join(diag)
-
-
-def get_yarn_app_info(app_id, spark_ui_url):
-    """Fetch YARN application info via REST API for debugging."""
-    if not app_id:
-        return "(no appId available)"
+def get_yarn_rm_base_url(spark_ui_url):
+    """Extract YARN RM base URL from sparkUiUrl."""
     if not spark_ui_url:
-        return "(no sparkUiUrl to derive RM address)"
+        return None
+
+    from urllib.parse import urlparse
+    parsed = urlparse(spark_ui_url)
+    return f"http://{parsed.netloc}"
+
+
+def get_yarn_attempt_logs(app_id, rm_base_url):
+    """Fetch logs for each application attempt from YARN."""
+    if not app_id or not rm_base_url:
+        return f"(missing app_id={app_id} or rm_base_url={rm_base_url})"
+
+    output = []
     try:
-        # Extract RM host:port from sparkUiUrl (e.g., http://host:45915/cluster/app/...)
-        from urllib.parse import urlparse
-        parsed = urlparse(spark_ui_url)
-        rm_base = f"http://{parsed.netloc}"
-        rm_url = f"{rm_base}/ws/v1/cluster/apps/{app_id}"
-        print(f"Fetching YARN app info from: {rm_url}")
-        resp = requests.get(rm_url, timeout=10)
+        # Get all attempts for this application
+        attempts_url = f"{rm_base_url}/ws/v1/cluster/apps/{app_id}/appattempts"
+        output.append(f"Fetching attempts from: {attempts_url}")
+
+        resp = requests.get(attempts_url, timeout=10)
+        if resp.status_code != 200:
+            return f"(failed to get attempts: {resp.status_code} - {resp.text[:500]})"
+
+        attempts_data = resp.json()
+        attempts = attempts_data.get('appAttempts', {}).get('appAttempt', [])
+
+        if not attempts:
+            output.append("No attempts found")
+            return "\n".join(output)
+
+        output.append(f"Found {len(attempts)} attempt(s)")
+
+        for attempt in attempts:
+            attempt_id = attempt.get('appAttemptId', 'unknown')
+            container_id = attempt.get('containerId', 'unknown')
+            node_id = attempt.get('nodeId', 'unknown')
+            logs_link = attempt.get('logsLink', '')
+
+            output.append(f"\n--- Attempt: {attempt_id} ---")
+            output.append(f"Container: {container_id}")
+            output.append(f"Node: {node_id}")
+            output.append(f"State: {attempt.get('appAttemptState', 'unknown')}")
+            output.append(f"Diagnostics: {attempt.get('diagnostics', 'none')}")
+
+            # Try to fetch the actual container logs
+            if logs_link:
+                output.append(f"Logs URL: {logs_link}")
+                try:
+                    logs_resp = requests.get(logs_link, timeout=30)
+                    if logs_resp.status_code == 200:
+                        # Extract text from HTML (rough extraction)
+                        log_text = logs_resp.text
+                        # Try to find stderr/stdout sections
+                        output.append(f"Container logs (last 5000 chars):")
+                        output.append(log_text[-5000:])
+                    else:
+                        output.append(f"(logs fetch failed: {logs_resp.status_code})")
+                except Exception as e:
+                    output.append(f"(failed to fetch logs: {e})")
+            else:
+                output.append("(no logsLink available)")
+
+        return "\n".join(output)
+
+    except Exception as e:
+        return f"(failed to get attempt logs: {e})"
+
+
+def get_yarn_app_info(app_id, rm_base_url):
+    """Fetch YARN application info via REST API."""
+    if not app_id or not rm_base_url:
+        return f"(missing app_id={app_id} or rm_base_url={rm_base_url})"
+    try:
+        app_url = f"{rm_base_url}/ws/v1/cluster/apps/{app_id}"
+        resp = requests.get(app_url, timeout=10)
         if resp.status_code == 200:
             app_info = resp.json().get('app', {})
             return json.dumps({
@@ -197,43 +217,11 @@ def get_yarn_app_info(app_id, spark_ui_url):
                 'finalStatus': app_info.get('finalStatus'),
                 'diagnostics': app_info.get('diagnostics'),
                 'amContainerLogs': app_info.get('amContainerLogs'),
-                'trackingUrl': app_info.get('trackingUrl'),
             }, indent=2)
         else:
             return f"(YARN API returned {resp.status_code}: {resp.text[:500]})"
     except Exception as e:
         return f"(failed to get YARN app info: {e})"
-
-
-def get_yarn_container_logs(app_id, spark_ui_url):
-    """Fetch YARN container logs via AM logs URL."""
-    if not app_id or not spark_ui_url:
-        return "(no appId or sparkUiUrl available)"
-    try:
-        # Extract RM host:port from sparkUiUrl
-        from urllib.parse import urlparse
-        parsed = urlparse(spark_ui_url)
-        rm_base = f"http://{parsed.netloc}"
-        rm_url = f"{rm_base}/ws/v1/cluster/apps/{app_id}"
-        resp = requests.get(rm_url, timeout=10)
-        if resp.status_code != 200:
-            return f"(failed to get app info: {resp.status_code})"
-
-        app_info = resp.json().get('app', {})
-        am_logs_url = app_info.get('amContainerLogs')
-        if not am_logs_url:
-            return "(no amContainerLogs URL available)"
-
-        # Fetch the actual logs (HTML page, but contains log content)
-        print(f"Fetching AM container logs from: {am_logs_url}")
-        logs_resp = requests.get(am_logs_url, timeout=30)
-        if logs_resp.status_code == 200:
-            # Return raw HTML which contains the logs
-            return logs_resp.text[-10000:]  # Last 10KB
-        else:
-            return f"(failed to fetch logs from {am_logs_url}: {logs_resp.status_code})"
-    except Exception as e:
-        return f"(failed to get container logs: {e})"
 
 
 @flaky(max_runs=6, rerun_filter=delay_rerun)
@@ -255,18 +243,20 @@ def test_wait_for_session_to_become_idle():
         if log_resp.status_code == httplib.OK:
             print(f"Session log: {json.dumps(log_resp.json(), indent=2)}")
 
-        # If session is dead, capture diagnostics for root cause analysis
+        # If session is dead, fetch YARN attempt logs for root cause
         if session_state == 'dead':
-            print("=== SYSTEM DIAGNOSTICS ===")
-            print(get_system_diagnostics())
-            
             app_id = session_data.get('appId')
             spark_ui_url = session_data.get('appInfo', {}).get('sparkUiUrl')
+            rm_base_url = get_yarn_rm_base_url(spark_ui_url)
+
             print(f"=== YARN Application Info for {app_id} ===")
-            print(get_yarn_app_info(app_id, spark_ui_url))
-            print(f"=== YARN Container Logs ===")
-            print(get_yarn_container_logs(app_id, spark_ui_url))
-            print("=== End Diagnostics ===")
+            print(f"sparkUiUrl: {spark_ui_url}")
+            print(f"RM base URL: {rm_base_url}")
+            print(get_yarn_app_info(app_id, rm_base_url))
+
+            print(f"=== YARN Attempt Logs ===")
+            print(get_yarn_attempt_logs(app_id, rm_base_url))
+            print("=== End YARN Info ===")
 
     assert session_state == 'idle'
 
