@@ -133,13 +133,62 @@ def test_create_session():
     session_id = response.json()['id']
 
 
-def get_yarn_app_info(app_id):
+def get_system_diagnostics():
+    """Capture system state to diagnose YARN node health issues."""
+    import subprocess
+    import shutil
+    
+    diag = []
+    
+    # Disk usage
+    diag.append("=== DISK USAGE ===")
+    try:
+        result = subprocess.run(['df', '-h'], capture_output=True, text=True, timeout=10)
+        diag.append(result.stdout)
+    except Exception as e:
+        diag.append(f"(failed to get disk usage: {e})")
+    
+    # Memory usage
+    diag.append("=== MEMORY USAGE ===")
+    try:
+        result = subprocess.run(['free', '-m'], capture_output=True, text=True, timeout=10)
+        diag.append(result.stdout)
+    except Exception as e:
+        diag.append(f"(failed to get memory: {e})")
+    
+    # System load
+    diag.append("=== LOAD AVERAGE ===")
+    try:
+        with open('/proc/loadavg', 'r') as f:
+            diag.append(f.read())
+    except Exception as e:
+        diag.append(f"(failed to get load: {e})")
+    
+    # Check /tmp usage specifically (YARN often uses /tmp)
+    diag.append("=== /tmp USAGE ===")
+    try:
+        total, used, free = shutil.disk_usage('/tmp')
+        pct = (used / total) * 100
+        diag.append(f"Total: {total // (1024**3)}GB, Used: {used // (1024**3)}GB, Free: {free // (1024**3)}GB, Usage: {pct:.1f}%")
+    except Exception as e:
+        diag.append(f"(failed: {e})")
+    
+    return "\n".join(diag)
+
+
+def get_yarn_app_info(app_id, spark_ui_url):
     """Fetch YARN application info via REST API for debugging."""
     if not app_id:
         return "(no appId available)"
+    if not spark_ui_url:
+        return "(no sparkUiUrl to derive RM address)"
     try:
-        # YARN ResourceManager REST API (default port 8088)
-        rm_url = f"http://localhost:8088/ws/v1/cluster/apps/{app_id}"
+        # Extract RM host:port from sparkUiUrl (e.g., http://host:45915/cluster/app/...)
+        from urllib.parse import urlparse
+        parsed = urlparse(spark_ui_url)
+        rm_base = f"http://{parsed.netloc}"
+        rm_url = f"{rm_base}/ws/v1/cluster/apps/{app_id}"
+        print(f"Fetching YARN app info from: {rm_url}")
         resp = requests.get(rm_url, timeout=10)
         if resp.status_code == 200:
             app_info = resp.json().get('app', {})
@@ -156,13 +205,16 @@ def get_yarn_app_info(app_id):
         return f"(failed to get YARN app info: {e})"
 
 
-def get_yarn_container_logs(app_id):
+def get_yarn_container_logs(app_id, spark_ui_url):
     """Fetch YARN container logs via AM logs URL."""
-    if not app_id:
-        return "(no appId available)"
+    if not app_id or not spark_ui_url:
+        return "(no appId or sparkUiUrl available)"
     try:
-        # First get the AM container logs URL
-        rm_url = f"http://localhost:8088/ws/v1/cluster/apps/{app_id}"
+        # Extract RM host:port from sparkUiUrl
+        from urllib.parse import urlparse
+        parsed = urlparse(spark_ui_url)
+        rm_base = f"http://{parsed.netloc}"
+        rm_url = f"{rm_base}/ws/v1/cluster/apps/{app_id}"
         resp = requests.get(rm_url, timeout=10)
         if resp.status_code != 200:
             return f"(failed to get app info: {resp.status_code})"
@@ -173,6 +225,7 @@ def get_yarn_container_logs(app_id):
             return "(no amContainerLogs URL available)"
 
         # Fetch the actual logs (HTML page, but contains log content)
+        print(f"Fetching AM container logs from: {am_logs_url}")
         logs_resp = requests.get(am_logs_url, timeout=30)
         if logs_resp.status_code == 200:
             # Return raw HTML which contains the logs
@@ -202,14 +255,18 @@ def test_wait_for_session_to_become_idle():
         if log_resp.status_code == httplib.OK:
             print(f"Session log: {json.dumps(log_resp.json(), indent=2)}")
 
-        # If session is dead, fetch YARN info for root cause
+        # If session is dead, capture diagnostics for root cause analysis
         if session_state == 'dead':
+            print("=== SYSTEM DIAGNOSTICS ===")
+            print(get_system_diagnostics())
+            
             app_id = session_data.get('appId')
+            spark_ui_url = session_data.get('appInfo', {}).get('sparkUiUrl')
             print(f"=== YARN Application Info for {app_id} ===")
-            print(get_yarn_app_info(app_id))
+            print(get_yarn_app_info(app_id, spark_ui_url))
             print(f"=== YARN Container Logs ===")
-            print(get_yarn_container_logs(app_id))
-            print("=== End YARN Info ===")
+            print(get_yarn_container_logs(app_id, spark_ui_url))
+            print("=== End Diagnostics ===")
 
     assert session_state == 'idle'
 

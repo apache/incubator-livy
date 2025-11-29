@@ -48,6 +48,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
     -
+      name: Check disk space
+      run: |
+        echo "=== Disk Space ==="
+        df -h
+        echo "=================="
+    -
       name: Set Python 3 as default
       run: |
         pyenv global 3
