@@ -166,12 +166,12 @@ def get_yarn_container_logs(app_id):
         resp = requests.get(rm_url, timeout=10)
         if resp.status_code != 200:
             return f"(failed to get app info: {resp.status_code})"
-        
+
         app_info = resp.json().get('app', {})
         am_logs_url = app_info.get('amContainerLogs')
         if not am_logs_url:
             return "(no amContainerLogs URL available)"
-        
+
         # Fetch the actual logs (HTML page, but contains log content)
         logs_resp = requests.get(am_logs_url, timeout=30)
         if logs_resp.status_code == 200:
