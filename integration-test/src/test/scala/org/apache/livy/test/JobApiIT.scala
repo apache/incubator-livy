@@ -255,6 +255,20 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     val testDir = Files.createTempDirectory(tmpDir.toPath(), "python-tests-").toFile()
     val testFile = createPyTestsForPythonAPI(testDir)
 
+    // Log Python environment for debugging
+    val pyVerProc = new ProcessBuilder(Seq("python", "--version").asJava).start()
+    val pythonVersion = scala.io.Source.fromInputStream(
+      pyVerProc.getInputStream).mkString.trim
+    pyVerProc.waitFor()
+    info(s"Python version: $pythonVersion")
+
+    val cpCmd = Seq("python", "-c", "import cloudpickle; print(cloudpickle.__version__)")
+    val cpProc = new ProcessBuilder(cpCmd.asJava).start()
+    val cloudpickleVersion = scala.io.Source.fromInputStream(
+      cpProc.getInputStream).mkString.trim
+    cpProc.waitFor()
+    info(s"cloudpickle version: $cloudpickleVersion")
+
     val builder = new ProcessBuilder(Seq("python", testFile.getAbsolutePath()).asJava)
     builder.directory(testDir)
 
@@ -271,13 +285,23 @@ class JobApiIT extends BaseIntegrationTestSuite with BeforeAndAfterAll with Logg
     if (sslCertPath != null && !sslCertPath.isEmpty()) { env.put("SSL_CERT", sslCertPath) }
 
     builder.redirectErrorStream(true)
-    builder.redirectOutput(new File(tmpDir, "pytest_results.log"))
+    val pytestLog = new File(tmpDir, "pytest_results.log")
+    builder.redirectOutput(pytestLog)
 
     val process = builder.start()
-
     process.waitFor()
 
-    assert(process.exitValue() === 0)
+    val exitCode = process.exitValue()
+    if (exitCode != 0) {
+      val logContent = if (pytestLog.exists()) {
+        new String(Files.readAllBytes(pytestLog.toPath()), UTF_8)
+      } else {
+        "(no pytest log file found)"
+      }
+      fail(s"Python API test failed with exit code $exitCode.\n" +
+        s"Python: $pythonVersion, cloudpickle: $cloudpickleVersion\n" +
+        s"--- pytest output ---\n$logContent")
+    }
   }
 
   private def createPyTestsForPythonAPI(testDir: File): File = {

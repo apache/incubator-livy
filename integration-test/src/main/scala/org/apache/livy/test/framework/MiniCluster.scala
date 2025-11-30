@@ -98,6 +98,7 @@ object MiniYarnMain extends MiniClusterBase {
 
   override protected def start(config: MiniClusterConfig, configPath: String): Unit = {
     val baseConfig = new YarnConfiguration()
+
     val yarnCluster = new MiniYARNCluster(getClass().getName(), config.nmCount,
       config.localDirCount, config.logDirCount)
     yarnCluster.init(baseConfig)
