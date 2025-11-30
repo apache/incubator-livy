@@ -28,12 +28,6 @@ from requests_kerberos import HTTPKerberosAuth, REQUIRED, OPTIONAL
 import cloudpickle
 import pytest
 
-# Print environment info for debugging
-print(f"=== Python Environment ===")
-print(f"Python version: {sys.version}")
-print(f"Python executable: {sys.executable}")
-print(f"cloudpickle version: {cloudpickle.__version__}")
-print(f"==========================")
 try:
     import httplib
 except ImportError:
@@ -142,15 +136,79 @@ def test_wait_for_session_to_become_idle():
     session_data = response.json()
     session_state = session_data['state']
 
-    # Print session details if not idle for debugging
     if session_state != 'idle':
         print(f"Session state: {session_state}")
-        print(f"Session data: {json.dumps(session_data, indent=2)}")
-        # Try to get session log
-        log_url = livy_end_point + "/sessions/" + str(session_id) + "/log"
-        log_resp = requests.request('GET', log_url, headers=header, auth=request_auth, verify=ssl_cert)
-        if log_resp.status_code == httplib.OK:
-            print(f"Session log: {json.dumps(log_resp.json(), indent=2)}")
+
+        # Create a debug log file
+        debug_file = os.path.join(os.getcwd(), "target", "failure_debug.log")
+        if not os.path.exists(os.path.dirname(debug_file)):
+            try:
+                os.makedirs(os.path.dirname(debug_file))
+            except:
+                pass
+
+        with open(debug_file, "w") as f:
+            f.write(f"Session State: {session_state}\n")
+            f.write(f"Session Data:\n{json.dumps(session_data, indent=2)}\n")
+
+            # Try to get session log
+            log_url = livy_end_point + "/sessions/" + str(session_id) + "/log"
+            log_resp = requests.request('GET', log_url, headers=header, auth=request_auth, verify=ssl_cert)
+            if log_resp.status_code == httplib.OK:
+                log_json = log_resp.json()
+                f.write(f"\n=== LIVY SESSION LOG ===\n{json.dumps(log_json, indent=2)}\n")
+
+                # Try to extract YARN Tracking URL from the logs if not in appInfo
+                logs_list = log_json.get('log', [])
+                full_log = "\n".join(logs_list)
+                import re
+                match = re.search(r'tracking URL: (http://[^\s]+)', full_log)
+                tracking_url = None
+                if match:
+                    tracking_url = match.group(1)
+                    if ":0/" in tracking_url:
+                         spark_ui = session_data.get('appInfo', {}).get('sparkUiUrl')
+                         if spark_ui:
+                             tracking_url = spark_ui
+
+                if not tracking_url:
+                    tracking_url = session_data.get('appInfo', {}).get('sparkUiUrl')
+
+                if tracking_url:
+                    f.write(f"\n=== TRACKING URL: {tracking_url} ===\n")
+                    try:
+                        t_resp = requests.get(tracking_url, timeout=5)
+                        f.write(f"Status: {t_resp.status_code}\n")
+                        f.write("--- Content snippet ---\n")
+                        f.write(t_resp.text[:2000])
+
+                        if "cluster/app" in tracking_url:
+                            api_url = tracking_url.replace("/cluster/app/", "/ws/v1/cluster/apps/")
+                            f.write(f"\n\n=== YARN APP API: {api_url} ===\n")
+                            api_resp = requests.get(api_url, timeout=5)
+                            if api_resp.status_code == 200:
+                                app_json = api_resp.json()
+                                f.write(json.dumps(app_json, indent=2))
+
+                                app = app_json.get('app', {})
+                                am_logs_url = app.get('amContainerLogs')
+                                if am_logs_url:
+                                    f.write(f"\n\n=== AM CONTAINER LOGS URL: {am_logs_url} ===\n")
+                                    stderr_url = f"{am_logs_url}/stderr/?start=0"
+                                    f.write(f"Fetching {stderr_url}...\n")
+                                    err_resp = requests.get(stderr_url, timeout=5)
+                                    f.write(err_resp.text)
+
+                                    stdout_url = f"{am_logs_url}/stdout/?start=0"
+                                    f.write(f"\nFetching {stdout_url}...\n")
+                                    out_resp = requests.get(stdout_url, timeout=5)
+                                    f.write(out_resp.text)
+
+                    except Exception as e:
+                        f.write(f"\nFailed to fetch tracking info: {str(e)}\n")
+
+        with open(debug_file, "r") as f:
+            print(f.read())
 
     assert session_state == 'idle'
 
