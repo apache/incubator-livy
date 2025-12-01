@@ -19,6 +19,7 @@ package org.apache.livy.sessions
 
 import java.io.InputStream
 import java.net.{URI, URISyntaxException}
+import java.nio.file.Paths
 import java.security.PrivilegedExceptionAction
 import java.util.concurrent.{Executors, LinkedBlockingQueue, ThreadFactory, ThreadPoolExecutor, TimeUnit}
 import java.util.UUID
@@ -134,7 +135,8 @@ object Session {
 
     if (resolved.getScheme() == "file") {
       // Make sure the location is whitelisted before allowing local files to be added.
-      require(livyConf.localFsWhitelist.find(resolved.getPath().startsWith).isDefined,
+      require(livyConf.localFsWhitelist.find(
+        Paths.get(resolved.getPath()).normalize.startsWith).isDefined,
         s"Local path ${uri.getPath()} cannot be added to user sessions.")
     }
 
