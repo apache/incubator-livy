@@ -51,6 +51,12 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
         Session.resolveURI(new URI(path), conf)
       }
     }
+
+    Seq("/allowed/../file", "/also_allowed/../file").foreach { path =>
+      intercept[IllegalArgumentException] {
+        Session.resolveURI(new URI(path), conf)
+      }
+    }
   }
 
   test("conf validation and preparation") {
