@@ -71,8 +71,8 @@ ENV PYENV_ROOT=$HOME/pyenv
 ENV PATH="$HOME/pyenv/shims:$HOME/pyenv/bin:$HOME/bin:$PATH"
 
 RUN pyenv install -v 2.7.18 && \
-  pyenv install -v 3.10.14 && \
-  pyenv global 2.7.18 3.10.14 && \
+  pyenv install -v 3.9.21 && \
+  pyenv global 2.7.18 3.9.21 && \
   pyenv rehash
 
 # Add build dependencies for python2
@@ -96,8 +96,7 @@ RUN python2 -m pip install -U "pip < 21.0" && \
         "responses >= 0.5.1"
 
 # Now do the same for python3
-RUN python3 -m pip install -U pip && \
-    python3 -m pip install \
+RUN python3 -m pip install -U pip && pip3 install \
         cloudpickle \
         codecov \
         flake8 \
@@ -113,3 +112,4 @@ RUN pyenv rehash
 RUN apt remove -y openjdk-11-jre-headless
 
 WORKDIR /workspace
+
