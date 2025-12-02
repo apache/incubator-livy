@@ -49,7 +49,7 @@ object PythonInterpreter extends Logging {
     val pythonExec = conf.getOption("spark.pyspark.python")
       .orElse(sys.env.get("PYSPARK_PYTHON"))
       .orElse(sys.props.get("pyspark.python")) // This java property is only used for internal UT.
-      .getOrElse("python")
+      .getOrElse("python3")
 
     val secretKey = Utils.createSecret(256)
     val gatewayServer = createGatewayServer(sparkEntries, secretKey)
