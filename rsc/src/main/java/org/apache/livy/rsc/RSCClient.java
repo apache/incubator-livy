@@ -336,10 +336,10 @@ public class RSCClient implements LivyClient {
 
     <T> JobHandleImpl<T> submit(Job<T> job) {
       final String jobId = UUID.randomUUID().toString();
-      Object msg = new JobRequest<T>(jobId, job);
+      Object msg = new JobRequest<>(jobId, job);
 
       final Promise<T> promise = eventLoopGroup.next().newPromise();
-      final JobHandleImpl<T> handle = new JobHandleImpl<T>(RSCClient.this,
+      final JobHandleImpl<T> handle = new JobHandleImpl<>(RSCClient.this,
         promise, jobId);
       jobs.put(jobId, handle);
 
@@ -358,15 +358,12 @@ public class RSCClient implements LivyClient {
           promise.tryFailure(error);
         }
       });
-      promise.addListener(new GenericFutureListener<Promise<T>>() {
-        @Override
-        public void operationComplete(Promise<T> p) {
-          if (jobId != null) {
-            jobs.remove(jobId);
-          }
-          if (p.isCancelled() && !rpc.isDone()) {
-            rpc.cancel(true);
-          }
+      promise.addListener((GenericFutureListener<Promise<T>>) p -> {
+        if (jobId != null) {
+          jobs.remove(jobId);
+        }
+        if (p.isCancelled() && !rpc.isDone()) {
+          rpc.cancel(true);
         }
       });
       return handle;
