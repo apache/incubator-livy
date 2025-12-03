@@ -115,7 +115,7 @@ start_livy_server() {
   LIVY_SERVER_JAVA_OPTS+=" --add-exports=java.base/sun.net.dns=ALL-UNNAMED"
   LIVY_SERVER_JAVA_OPTS+=" --add-exports=java.base/sun.net.util=ALL-UNNAMED"
   LIVY_SERVER_JAVA_OPTS+=" --add-exports=java.base/sun.security.x509=ALL_UNNAMED"
-  LIVY_SERVER_JAVA_OPTS+=" --add-exports=java.base/sun.security.util=ALL-UNNAMED
+  LIVY_SERVER_JAVA_OPTS+=" --add-exports=java.base/sun.security.util=ALL-UNNAMED"
 
   command="$RUNNER $LIVY_SERVER_JAVA_OPTS -cp $LIVY_CLASSPATH:$CLASSPATH org.apache.livy.server.LivyServer"
 
