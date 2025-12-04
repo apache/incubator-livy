@@ -170,8 +170,6 @@ abstract class PythonSessionSpec extends BaseSessionSpec(PySpark) {
   }
 }
 
-class Python2SessionSpec extends PythonSessionSpec
-
 class Python3SessionSpec extends PythonSessionSpec with BeforeAndAfterAll {
 
   override protected def withFixture(test: NoArgTest): Outcome = {
