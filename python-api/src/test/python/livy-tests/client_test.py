@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 import os
 import pytest
 import responses
@@ -27,7 +28,7 @@ from livy.client import HttpClient
 session_id = 0
 job_id = 1
 # Make sure host name is lower case. See LIVY-582
-base_uri = 'http://{0}:{1}'.format(socket.gethostname().lower(), 8998)
+base_uri = f'http://{socket.gethostname().lower()}:{8998}'
 client_test = None
 invoked_queued_callback = False
 invoked_running_callback = False
@@ -40,8 +41,8 @@ def mock_and_validate_create_new_session(defaults):
     app_name = 'Test App'
     conf_dict = {'spark.app.name': app_name}
     json_data = {
-        u'kind': u'pyspark', u'log': [], u'proxyUser': None,
-        u'state': u'starting', u'owner': None, u'id': session_id
+        'kind': 'pyspark', 'log': [], 'proxyUser': None,
+        'state': 'starting', 'owner': None, 'id': session_id
     }
     responses.add(responses.POST, create_session_request_mock_uri,
         json=json_data, status=201, content_type='application/json')
@@ -68,13 +69,13 @@ def mock_submit_job_and_poll_result(
         + "/jobs/" + str(job_id)
 
     post_json_data = {
-        u'state': u'SENT', u'error': None, u'id': job_id, u'result': None
+        'state': 'SENT', 'error': None, 'id': job_id, 'result': None
     }
     responses.add(responses.POST, submit_request_mock_uri, status=201,
         json=post_json_data, content_type='application/json')
 
     get_json_data = {
-        u'state': job_state, u'error': error, u'id': job_id, u'result': result
+        'state': job_state, 'error': error, 'id': job_id, 'result': result
     }
     responses.add(responses.GET, poll_request_mock_uri, status=200,
         json=get_json_data, content_type='application/json')
@@ -117,8 +118,8 @@ def test_connect_to_existing_session():
         "/connect"
     reconnect_session_uri = base_uri + "/sessions/" + str(session_id)
     json_data = {
-        u'kind': u'pyspark', u'log': [], u'proxyUser': None,
-        u'state': u'starting', u'owner': None, u'id': session_id
+        'kind': 'pyspark', 'log': [], 'proxyUser': None,
+        'state': 'starting', 'owner': None, 'id': session_id
     }
     with responses.RequestsMock() as rsps:
         rsps.add(responses.POST, reconnect_mock_request_uri, json=json_data,
@@ -143,7 +144,7 @@ def create_test_archive(ext):
 @responses.activate
 def test_submit_job_verify_running_state():
     submit_job_future = mock_submit_job_and_poll_result(simple_spark_job,
-        u'STARTED')
+        'STARTED')
     lock = threading.Event()
 
     def handle_job_running_callback(f):
@@ -158,7 +159,7 @@ def test_submit_job_verify_running_state():
 @responses.activate
 def test_submit_job_verify_queued_state():
     submit_job_future = mock_submit_job_and_poll_result(simple_spark_job,
-        u'QUEUED')
+        'QUEUED')
     lock = threading.Event()
 
     def handle_job_queued_callback(f):
@@ -173,7 +174,7 @@ def test_submit_job_verify_queued_state():
 @responses.activate
 def test_submit_job_verify_succeeded_state():
     submit_job_future = mock_submit_job_and_poll_result(simple_spark_job,
-        u'SUCCEEDED',
+        'SUCCEEDED',
         result='Z0FKVkZGc3hNREFzSURJd01Dd2dNekF3TENBME1EQmRjUUF1')
     result = submit_job_future.result(15)
     assert result == '[100, 200, 300, 400]'
@@ -181,7 +182,7 @@ def test_submit_job_verify_succeeded_state():
 
 @responses.activate
 def test_submit_job_verify_failed_state():
-    submit_job_future = mock_submit_job_and_poll_result(failure_job, u'FAILED',
+    submit_job_future = mock_submit_job_and_poll_result(failure_job, 'FAILED',
         error='Error job')
     exception = submit_job_future.exception(15)
     assert isinstance(exception, Exception)

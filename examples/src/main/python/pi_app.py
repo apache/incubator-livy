@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from __future__ import print_function
-
 import sys
 from random import random
 from operator import add
@@ -48,7 +46,7 @@ if __name__ == "__main__":
         return 1 if x ** 2 + y ** 2 <= 1 else 0
 
     def pi_job(context):
-        count = context.sc.parallelize(range(1, samples + 1), slices).map(f).reduce(add)
+        count = context.sc.parallelize(list(range(1, samples + 1)), slices).map(f).reduce(add)
         return 4.0 * count / samples
 
     pi = client.submit(pi_job).result()

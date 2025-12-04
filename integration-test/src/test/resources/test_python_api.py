@@ -14,22 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 import os
 import base64
 import json
 import time
-try:
-    from urllib.parse import urlparse
-except ImportError:
-     from urlparse import urlparse
+from urllib.parse import urlparse
 import requests
 from requests_kerberos import HTTPKerberosAuth, REQUIRED, OPTIONAL
 import cloudpickle
 import pytest
-try:
-    import httplib
-except ImportError:
-    from http import HTTPStatus as httplib
+import http.client
 from flaky import flaky
 
 global session_id, job_id
@@ -58,7 +53,6 @@ upload_pyfile_url = os.environ.get("UPLOAD_PYFILE_URL")
 def after_all(request):
     request.addfinalizer(stop_session)
 
-
 def process_job(job, expected_result, is_error_job=False):
     global job_id
 
@@ -69,7 +63,7 @@ def process_job(job, expected_result, is_error_job=False):
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
     response = requests.request('POST', request_url, headers=header, data=base64_pickled_job_json, auth=request_auth, verify=ssl_cert)
 
-    assert response.status_code == httplib.CREATED
+    assert response.status_code == http.client.CREATED
     job_id = response.json()['id']
 
     poll_time = 1
@@ -85,7 +79,7 @@ def process_job(job, expected_result, is_error_job=False):
         poll_time *= 2
 
     assert poll_response.json()['id'] == job_id
-    assert poll_response.status_code == httplib.OK
+    assert poll_response.status_code == http.client.OK
     if not is_error_job:
         assert poll_response.json()['error'] is None
         result = poll_response.json()['result']
@@ -97,11 +91,9 @@ def process_job(job, expected_result, is_error_job=False):
         error = poll_response.json()['error']
         assert expected_result in error
 
-
 def delay_rerun(*args):
     time.sleep(10)
     return True
-
 
 def stop_session():
     global session_id
@@ -109,8 +101,7 @@ def stop_session():
     request_url = livy_end_point + "/sessions/" + str(session_id)
     headers = {'X-Requested-By': 'livy'}
     response = requests.request('DELETE', request_url, headers=headers, auth=request_auth, verify=ssl_cert)
-    assert response.status_code == httplib.OK
-
+    assert response.status_code == http.client.OK
 
 def test_create_session():
     global session_id
@@ -121,20 +112,18 @@ def test_create_session():
     json_data = json.dumps({'kind': 'pyspark', 'conf': {'livy.uri': uri.geturl()}})
     response = requests.request('POST', request_url, headers=header, data=json_data, auth=request_auth, verify=ssl_cert)
 
-    assert response.status_code == httplib.CREATED
+    assert response.status_code == http.client.CREATED
     session_id = response.json()['id']
-
 
 @flaky(max_runs=6, rerun_filter=delay_rerun)
 def test_wait_for_session_to_become_idle():
     request_url = livy_end_point + "/sessions/" + str(session_id)
     header = {'X-Requested-By': 'livy'}
     response = requests.request('GET', request_url, headers=header, auth=request_auth, verify=ssl_cert)
-    assert response.status_code == httplib.OK
+    assert response.status_code == http.client.OK
     session_state = response.json()['state']
 
     assert session_state == 'idle'
-
 
 def test_spark_job():
     def simple_spark_job(context):
@@ -144,14 +133,12 @@ def test_spark_job():
 
     process_job(simple_spark_job, 3)
 
-
 def test_error_job():
     def error_job(context):
         return "hello" + 1
 
     process_job(error_job,
         "TypeError: ", True)
-
 
 def test_reconnect():
     global session_id
@@ -160,9 +147,8 @@ def test_reconnect():
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
     response = requests.request('POST', request_url, headers=header, auth=request_auth, verify=ssl_cert)
 
-    assert response.status_code == httplib.OK
+    assert response.status_code == http.client.OK
     assert session_id == response.json()['id']
-
 
 def test_add_file():
     add_file_name = os.path.basename(add_file_url)
@@ -171,7 +157,7 @@ def test_add_file():
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
     response = requests.request('POST', request_url, headers=header, data=json_data, auth=request_auth, verify=ssl_cert)
 
-    assert response.status_code == httplib.OK
+    assert response.status_code == http.client.OK
 
     def add_file_job(context):
         from pyspark import SparkFiles
@@ -181,7 +167,6 @@ def test_add_file():
 
     process_job(add_file_job, "hello from addfile")
 
-
 def test_add_pyfile():
     add_pyfile_name_with_ext = os.path.basename(add_pyfile_url)
     add_pyfile_name = add_pyfile_name_with_ext.rsplit('.', 1)[0]
@@ -190,14 +175,13 @@ def test_add_pyfile():
     header = {'Content-Type': 'application/json', 'X-Requested-By': 'livy'}
     response_add_pyfile = requests.request('POST', request_url, headers=header, data=json_data, auth=request_auth, verify=ssl_cert)
 
-    assert response_add_pyfile.status_code == httplib.OK
+    assert response_add_pyfile.status_code == http.client.OK
 
     def add_pyfile_job(context):
        pyfile_module = __import__ (add_pyfile_name)
        return pyfile_module.test_add_pyfile()
 
     process_job(add_pyfile_job, "hello from addpyfile")
-
 
 def test_upload_file():
     upload_file = open(upload_file_url)
@@ -207,7 +191,7 @@ def test_upload_file():
     header = {'X-Requested-By': 'livy'}
     response = requests.request('POST', request_url, headers=header, files=files, auth=request_auth, verify=ssl_cert)
 
-    assert response.status_code == httplib.OK
+    assert response.status_code == http.client.OK
 
     def upload_file_job(context):
         from pyspark import SparkFiles
@@ -217,7 +201,6 @@ def test_upload_file():
 
     process_job(upload_file_job, "hello from uploadfile")
 
-
 def test_upload_pyfile():
     upload_pyfile = open(upload_pyfile_url)
     upload_pyfile_name_with_ext = os.path.basename(upload_pyfile.name)
@@ -226,13 +209,12 @@ def test_upload_pyfile():
     files = {'file': upload_pyfile}
     header = {'X-Requested-By': 'livy'}
     response = requests.request('POST', request_url, headers=header, files=files, auth=request_auth, verify=ssl_cert)
-    assert response.status_code == httplib.OK
+    assert response.status_code == http.client.OK
 
     def upload_pyfile_job(context):
         pyfile_module = __import__ (upload_pyfile_name)
         return pyfile_module.test_upload_pyfile()
     process_job(upload_pyfile_job, "hello from uploadpyfile")
-
 
 if __name__ == '__main__':
     value = pytest.main([os.path.dirname(__file__)])
