@@ -60,7 +60,7 @@ object LivyConf {
 
   val SERVER_HOST = Entry("livy.server.host", "0.0.0.0")
   val SERVER_PORT = Entry("livy.server.port", 8998)
-  val SERVER_BASE_PATH = Entry("livy.ui.basePath", "")
+  val SERVER_BASE_PATH = Entry("livy.server.basePath", "")
 
   val UI_ENABLED = Entry("livy.ui.enabled", true)
 
@@ -412,7 +412,8 @@ object LivyConf {
     YARN_APP_LEAKAGE_CHECK_TIMEOUT.key ->
       DepConf("livy.server.yarn.app-leakage.check_timeout", "0.4"),
     YARN_APP_LEAKAGE_CHECK_INTERVAL.key ->
-      DepConf("livy.server.yarn.app-leakage.check_interval", "0.4")
+      DepConf("livy.server.yarn.app-leakage.check_interval", "0.4"),
+    SERVER_BASE_PATH.key -> DepConf("livy.ui.basePath", "0.7")
   )
 
   private val deprecatedConfigs: Map[String, DeprecatedConf] = {
