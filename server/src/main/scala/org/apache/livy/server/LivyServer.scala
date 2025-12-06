@@ -30,7 +30,7 @@ import scala.concurrent.Future
 import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hadoop.security.authentication.server._
 import org.eclipse.jetty.servlet.FilterHolder
-import org.scalatra.{NotFound, ScalatraServlet}
+import org.scalatra.{ApiFormats, NotFound, ScalatraServlet}
 import org.scalatra.metrics.MetricsBootstrap
 import org.scalatra.metrics.MetricsSupportExtensions._
 import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
@@ -179,14 +179,26 @@ class LivyServer extends Logging {
     // Servlet for hosting static files such as html, css, and js
     // Necessary since Jetty cannot set it's resource base inside a jar
     // Returns 404 if the file does not exist
-    val staticResourceServlet = new ScalatraServlet {
+    val staticResourceServlet = new ScalatraServlet with ApiFormats {
+
+      addMimeMapping("image/png", "png")
+      addMimeMapping("application/vnd.ms-fontobject", "eot")
+      addMimeMapping("image/svg+xml", "svg")
+      addMimeMapping("font/ttf", "ttf")
+      addMimeMapping("font/woff", "woff")
+      addMimeMapping("font/woff2", "woff2")
+
       get("/*") {
         val fileName = params("splat")
         val notFoundMsg = "File not found"
 
         if (!fileName.isEmpty) {
           getClass.getResourceAsStream(s"ui/static/$fileName") match {
-            case is: InputStream => new BufferedInputStream(is)
+            case is: InputStream => {
+              val extension = fileName.split("\\.").last
+              contentType = formats(extension)
+              new BufferedInputStream(is)
+            }
             case null => NotFound(notFoundMsg)
           }
         } else {
