@@ -377,6 +377,96 @@ Returns code completion candidates for the specified code in the session.
   </tr>
 </table>
 
+### POST /sessions/{sessionId}/tasks
+
+Submits a pre-compiled Spark job (task) to run in an interactive session. This endpoint allows you to execute compiled Java/Scala Spark jobs within the context of an existing interactive session, providing an alternative to submitting code snippets via statements.
+
+Unlike statements which execute code strings, tasks run pre-compiled Job implementations that have been serialized and sent to the session. This is useful for running complex, pre-compiled Spark applications while maintaining the interactive session context.
+
+#### Request Body
+
+<table class="table">
+  <tr><th>Name</th><th>Description</th><th>Type</th></tr>
+  <tr>
+    <td>job</td>
+    <td>Serialized job data (base64 encoded byte array representing a compiled Job implementation)</td>
+    <td>byte array (required)</td>
+  </tr>
+  <tr>
+    <td>jobType</td>
+    <td>The type of job being submitted (e.g., "spark" for Scala/Java jobs)</td>
+    <td>string</td>
+  </tr>
+</table>
+
+#### Response Body
+
+The <a href="#task">task</a> object.
+
+### GET /sessions/{sessionId}/tasks
+
+Returns all tasks submitted to this session.
+
+#### Request Parameters
+
+<table class="table">
+  <tr><th>Name</th><th>Description</th><th>Type</th></tr>
+  <tr>
+    <td>from</td>
+    <td>The start index to fetch tasks</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>size</td>
+    <td>Number of tasks to fetch</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>order</td>
+    <td>Provide value as "desc" to get tasks in descending order (by default, tasks are in ascending order)</td>
+    <td>string</td>
+  </tr>
+</table>
+
+#### Response Body
+
+<table class="table">
+  <tr><th>Name</th><th>Description</th><th>Type</th></tr>
+  <tr>
+    <td>total_tasks</td>
+    <td>Total number of tasks in this session</td>
+    <td>int</td>
+  </tr>
+  <tr>
+    <td>tasks</td>
+    <td><a href="#task">Task</a> list</td>
+    <td>list</td>
+  </tr>
+</table>
+
+### GET /sessions/{sessionId}/tasks/{taskId}
+
+Returns the status and result of a specific submitted task.
+
+#### Response Body
+
+The <a href="#task">task</a> object.
+
+### POST /sessions/{sessionId}/tasks/{taskId}/cancel
+
+Cancels the specified task in this session. If the task is currently running, Livy will attempt to cancel the associated Spark job group. If the task is waiting, it will be cancelled immediately.
+
+#### Response Body
+
+<table class="table">
+  <tr><th>Name</th><th>Description</th><th>Type</th></tr>
+  <tr>
+    <td>msg</td>
+    <td>is always "canceled"</td>
+    <td>string</td>
+  </tr>
+</table>
+
 ### GET /batches
 
 Returns all the active batch sessions.
@@ -892,6 +982,99 @@ A statement represents the result of an execution statement.
     ``application/json``, the value is a JSON value.</td>
   </tr>
 </table>
+
+### Task
+
+A task represents a pre-compiled job submitted to an interactive session. Tasks provide a way to execute compiled Spark applications (implementing the `org.apache.livy.Job` interface) within an interactive session context, combining the benefits of pre-compiled code with the flexibility of interactive sessions.
+
+**Key differences between Tasks and Statements:**
+- **Statements** execute code strings (Scala, Python, R, or SQL) interactively
+- **Tasks** execute pre-compiled, serialized Job implementations
+
+Tasks are useful when you have complex Spark logic that has been compiled and tested, but you want to run it in the context of an existing interactive session without creating a separate batch job.
+
+<table class="table">
+  <tr><th>Name</th><th>Description</th><th>Type</th></tr>
+  <tr>
+    <td>id</td>
+    <td>The task id (unique within the session)</td>
+    <td>integer</td>
+  </tr>
+  <tr>
+    <td>state</td>
+    <td>The current execution state of the task</td>
+    <td><a href="#task-state">task state</a></td>
+  </tr>
+  <tr>
+    <td>output</td>
+    <td>The serialized task result as a byte array (if completed successfully)</td>
+    <td>byte array</td>
+  </tr>
+  <tr>
+    <td>error</td>
+    <td>The error message (if the task failed)</td>
+    <td>string</td>
+  </tr>
+  <tr>
+    <td>serializedException</td>
+    <td>The serialized exception object (if the task failed)</td>
+    <td>byte array</td>
+  </tr>
+  <tr>
+    <td>progress</td>
+    <td>The execution progress (0.0 to 1.0)</td>
+    <td>double</td>
+  </tr>
+  <tr>
+    <td>submitted</td>
+    <td>Timestamp when the task was submitted (milliseconds since epoch)</td>
+    <td>long</td>
+  </tr>
+  <tr>
+    <td>completed</td>
+    <td>Timestamp when the task completed (milliseconds since epoch)</td>
+    <td>long</td>
+  </tr>
+</table>
+
+#### Task State
+
+<table class="table">
+  <tr><th>Value</th><th>Description</th></tr>
+  <tr>
+    <td>waiting</td>
+    <td>Task has been submitted and is waiting to start execution</td>
+  </tr>
+  <tr>
+    <td>running</td>
+    <td>Task is currently executing in the Spark context</td>
+  </tr>
+  <tr>
+    <td>available</td>
+    <td>Task completed successfully and results are available</td>
+  </tr>
+  <tr>
+    <td>failed</td>
+    <td>Task execution failed with an error</td>
+  </tr>
+  <tr>
+    <td>cancelling</td>
+    <td>Task cancellation has been requested and is in progress</td>
+  </tr>
+  <tr>
+    <td>cancelled</td>
+    <td>Task was successfully cancelled before completion</td>
+  </tr>
+</table>
+
+**Valid State Transitions:**
+- `waiting` → `running` (task starts execution)
+- `waiting` → `cancelled` (task cancelled before starting)
+- `running` → `available` (task completes successfully)
+- `running` → `failed` (task encounters an error)
+- `running` → `cancelling` (cancellation requested)
+- `cancelling` → `cancelled` (cancellation completes)
+- `cancelling` → `failed` (task fails during cancellation)
 
 ### Batch
 
