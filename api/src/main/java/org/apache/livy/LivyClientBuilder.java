@@ -85,11 +85,8 @@ public final class LivyClientBuilder {
       for (String file : confFiles) {
         URL url = classLoader().getResource(file);
         if (url != null) {
-          Reader r = new InputStreamReader(url.openStream(), UTF_8);
-          try {
+          try (Reader r = new InputStreamReader(url.openStream(), UTF_8)) {
             config.load(r);
-          } finally {
-            r.close();
           }
         }
       }

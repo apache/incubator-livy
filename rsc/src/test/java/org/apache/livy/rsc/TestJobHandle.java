@@ -38,7 +38,7 @@ public class TestJobHandle {
 
   @Test
   public void testStateChanges() throws Exception {
-    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, "job");
+    JobHandleImpl<Object> handle = new JobHandleImpl<>(client, promise, "job");
     handle.addListener(listener);
 
     assertTrue(handle.changeState(JobHandle.State.QUEUED));
@@ -57,7 +57,7 @@ public class TestJobHandle {
 
   @Test
   public void testFailedJob() throws Exception {
-    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, "job");
+    JobHandleImpl<Object> handle = new JobHandleImpl<>(client, promise, "job");
     handle.addListener(listener);
 
     Throwable cause = new Exception();
@@ -70,7 +70,7 @@ public class TestJobHandle {
 
   @Test
   public void testSucceededJob() throws Exception {
-    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, "job");
+    JobHandleImpl<Object> handle = new JobHandleImpl<>(client, promise, "job");
     handle.addListener(listener);
 
     Object result = new Exception();
@@ -83,7 +83,7 @@ public class TestJobHandle {
 
   @Test
   public void testImmediateCallback() throws Exception {
-    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, "job");
+    JobHandleImpl<Object> handle = new JobHandleImpl<>(client, promise, "job");
     assertTrue(handle.changeState(JobHandle.State.QUEUED));
     handle.addListener(listener);
     verify(listener).onJobQueued(handle);
