@@ -184,6 +184,7 @@ class Session(
         if (Thread.interrupted()) {
           logWarning(s"Thread was interrupted during execution of statement $statementId; interrupt flag cleared.")
         }
+      }
     }(interpreterExecutor)
 
     statementId
