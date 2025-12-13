@@ -189,8 +189,6 @@
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
 
-    <!-- Exclude test and provided licenses when generating the THIRD-PARTY license file -->
-    <license.excludedScopes>test,provided</license.excludedScopes>
   </properties>
 
   <repositories>
