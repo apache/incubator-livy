@@ -17,6 +17,10 @@
 
 package org.apache.livy.repl
 
+import java.io.File
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+
 import org.apache.spark.SparkConf
 import org.json4s.{DefaultFormats, JNull, JValue}
 import org.json4s.JsonDSL._
@@ -274,6 +278,30 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
         )
         response shouldBe a[Interpreter.ExecuteSuccess]
       }
+    }
+  }
+
+  it should "open files localized via spark.files by relative path" in {
+    val tmp = File.createTempFile("livy-files-test", ".txt")
+    Files.write(tmp.toPath, "hello-files".getBytes(StandardCharsets.UTF_8))
+
+    val conf = new SparkConf()
+      .set("spark.files", tmp.getAbsolutePath)
+      .set("spark.livy.forceSparkFilesTest", "true")
+    val intp = PythonInterpreter(conf, new SparkEntries(conf))
+    try {
+      intp.start()
+      val code =
+        s"""with open("${tmp.getName}", "r") as f:
+           |    data = f.read().strip()
+           |data
+           |""".stripMargin
+      val response = intp.execute(code)
+      response should equal (Interpreter.ExecuteSuccess(
+        TEXT_PLAIN -> "'hello-files'"
+      ))
+    } finally {
+      intp.close()
     }
   }
 }

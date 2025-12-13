@@ -71,6 +71,10 @@ object PythonInterpreter extends Logging {
     env.put("PYSPARK_GATEWAY_SECRET", secretKey)
     env.put("SPARK_HOME", sys.env.getOrElse("SPARK_HOME", "."))
     env.put("LIVY_SPARK_MAJOR_VERSION", conf.get("spark.livy.spark_major_version", "1"))
+    if (conf.getBoolean("spark.livy.forceSparkFilesTest", false)) {
+      // Allow tests to override LIVY_TEST so the Python process performs real Spark init
+      env.put("LIVY_TEST", "false")
+    }
     builder.redirectError(Redirect.PIPE)
     val process = builder.start()
     new PythonInterpreter(process, gatewayServer)
