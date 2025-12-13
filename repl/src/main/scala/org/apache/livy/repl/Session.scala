@@ -182,7 +182,7 @@ class Session(
         statementThreads.remove(statementId, currentThread)
         // Clear the interrupt flag, but log if the thread was interrupted.
         if (Thread.interrupted()) {
-          logWarning(s"Thread was interrupted during execution of statement $statementId; " +
+          warn(s"Thread was interrupted during execution of statement $statementId; " +
             "interrupt flag cleared.")
         }
       }
