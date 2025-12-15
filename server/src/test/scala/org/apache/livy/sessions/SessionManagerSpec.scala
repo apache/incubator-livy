@@ -261,6 +261,27 @@ class SessionManagerSpec extends FunSpec with Matchers with LivyBaseUnitTestSuit
       sm.size shouldBe validMetadata.size
     }
 
+    it("should lazy recover sessions") {
+      val conf = new LivyConf()
+      conf.set(LivyConf.LIVY_SPARK_MASTER.key, "yarn-cluster")
+      conf.set(LivyConf.HA_MODE.key, LivyConf.HA_MODE_MULTI_ACTIVE)
+
+      val sessionType = "batch"
+      val id = 99
+
+      val sessionStore = mock[SessionStore]
+      when(sessionStore.get[BatchRecoveryMetadata](sessionType, id))
+        .thenReturn(Some(makeMetadata(id, "t1")))
+
+      val sm = new BatchSessionManager(conf, sessionStore)
+      val session = sm.get(id).get
+      session.id shouldBe id
+
+      when(sessionStore.get[BatchRecoveryMetadata](sessionType, 0))
+        .thenReturn(None)
+      sm.get(0) shouldBe None
+    }
+
     it("should delete sessions from state store") {
       val conf = new LivyConf()
 

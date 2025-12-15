@@ -90,7 +90,9 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   private[this] final val sessionStateRetainedInSec =
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_STATE_RETAIN_TIME))
 
-  mockSessions.getOrElse(recover()).foreach(register)
+  if (livyConf.get(LivyConf.HA_MODE) != LivyConf.HA_MODE_MULTI_ACTIVE) {
+    mockSessions.getOrElse(recover()).foreach(register)
+  }
   new GarbageCollector().start()
 
   def nextId(): Int = synchronized {
@@ -119,7 +121,14 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     session
   }
 
-  def get(id: Int): Option[S] = sessions.get(id)
+  def get(id: Int): Option[S] = {
+    val session = sessions.get(id)
+    if (session.isEmpty && livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
+      recover(id).map(register(_))
+    } else {
+      session
+    }
+  }
 
   def get(sessionName: String): Option[S] = sessionsByName.get(sessionName)
 
@@ -227,6 +236,10 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
     recoveryFailure.foreach(ex => error(ex.getMessage, ex.getCause))
 
     recoveredSessions
+  }
+
+  private def recover(id: Int): Option[S] = {
+    sessionStore.get[R](sessionType, id).map(sessionRecovery)
   }
 
   private class GarbageCollector extends Thread("session gc thread") {
