@@ -57,6 +57,11 @@ public class TestClientFactory implements LivyClientFactory {
     }
 
     @Override
+    public int getSessionId() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public <T> JobHandle<T> submit(Job<T> job) {
       throw new UnsupportedOperationException();
     }
