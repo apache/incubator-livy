@@ -218,6 +218,25 @@ object LivyConf {
    * zookeeper: Store state in a Zookeeper instance.
    */
   val RECOVERY_STATE_STORE = Entry("livy.server.recovery.state-store", null)
+
+  /**
+  * High Availability mode of Livy. Possible values:
+  * off: Default. Turn off High Availability.
+  * on: Livy uses Zookeeper as a state store to ensure a livy server is always available with the
+  *     correct state.
+  * Must set livy.server.ha.zookeeper-url to configure HA
+  */
+  val HA_MODE = Entry("livy.server.ha.mode", "off")
+
+  // For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+  val HA_ZOOKEEPER_URL = Entry("livy.server.ha.zookeeper-url", "")
+
+  // The ids of all servers used in HA
+  val HA_SERVER_IDS = Entry("livy.server.ha.server-ids", "")
+
+  // The hostnames of all servers used in HA
+  val HA_SERVER_HOSTNAMES = Entry("livy.server.ha.server-hostnames", "")
+
   /**
    * For filesystem state store, the path of the state store directory. Please don't use a
    * filesystem that doesn't support atomic rename (e.g. S3). e.g. file:///tmp/livy or hdfs:///.
@@ -510,3 +529,4 @@ class LivyConf(loadDefaults: Boolean) extends ClientConf[LivyConf](null) {
   }
 
 }
+
