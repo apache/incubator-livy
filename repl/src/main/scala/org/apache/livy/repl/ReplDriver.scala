@@ -25,8 +25,8 @@ import org.apache.spark.SparkConf
 
 import org.apache.livy.{EOLUtils, Logging}
 import org.apache.livy.client.common.ClientConf
-import org.apache.livy.rsc.{BaseProtocol, ReplJobResults, RSCConf}
-import org.apache.livy.rsc.BaseProtocol.ReplState
+import org.apache.livy.rsc.{BaseProtocol, ReplJobResults, RSCConf, TaskResults}
+import org.apache.livy.rsc.BaseProtocol.{CancelTaskRequest, GetTaskResults, ReplState}
 import org.apache.livy.rsc.driver._
 import org.apache.livy.rsc.rpc.Rpc
 import org.apache.livy.sessions._
@@ -81,7 +81,7 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
         session.statements.get(msg.from).toArray
       } else {
         val until = msg.from + msg.size
-        session.statements.filterKeys(id => id >= msg.from && id < until).values.toArray
+        session.statements.filterKeys(id => id >= msg.from).take(until).values.toArray
       }
     }
 
@@ -91,6 +91,42 @@ class ReplDriver(conf: SparkConf, livyConf: RSCConf)
     }
 
     new ReplJobResults(statements.sortBy(_.id))
+  }
+
+  def handle(ctx: ChannelHandlerContext, msg: BaseProtocol.TaskJobRequest): Int = {
+    val context = jobContext()
+    val serializer = this.serializer()
+    val job = new BypassJob(serializer, msg.serializedJob)
+    session.submitTask(job, context)
+  }
+
+  /**
+   * Return a specific task by ID from the session's task registry
+   */
+  def handle(ctx: ChannelHandlerContext, msg: GetTaskResults): TaskResults = {
+    val tasks = if (msg.allResults) {
+      session.tasks.values.toArray
+    } else {
+      assert(msg.from != null)
+      assert(msg.size != null)
+      if (msg.size == 1) {
+        session.tasks.get(msg.from).toArray
+      } else {
+        val until = msg.from + msg.size
+        session.tasks.filterKeys(id => id >= msg.from).take(until).values.toArray
+      }
+    }
+
+    // Update progress of statements when queried
+    tasks.foreach { s =>
+      s.updateProgress(session.progressOfTask(s.id))
+    }
+
+    new TaskResults(tasks.sortBy(_.id))
+  }
+
+  def handle(ctx: ChannelHandlerContext, msg: CancelTaskRequest): Unit = {
+    session.cancelTask(msg.taskId)
   }
 
   override protected def createWrapper(msg: BaseProtocol.BypassJobRequest): BypassJobWrapper = {

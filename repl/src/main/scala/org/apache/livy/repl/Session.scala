@@ -33,9 +33,10 @@ import org.json4s.jackson.JsonMethods.{compact, render}
 import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
 
-import org.apache.livy.Logging
+import org.apache.livy.{Job, JobContext, Logging}
+import org.apache.livy.client.common.Serializer
 import org.apache.livy.rsc.RSCConf
-import org.apache.livy.rsc.driver.{SparkEntries, Statement, StatementState}
+import org.apache.livy.rsc.driver.{SparkEntries, Statement, StatementState, Task, TaskState}
 import org.apache.livy.sessions._
 
 object Session {
@@ -70,13 +71,23 @@ class Session(
   // Number of statements kept in driver's memory
   private val numRetainedStatements = livyConf.getInt(RSCConf.Entry.RETAINED_STATEMENTS)
 
+  // Number of tasks kept in driver's memory
+  private val numRetainedTasks = livyConf.getInt(RSCConf.Entry.RETAINED_TASKS)
+
   private val _statements = new JLinkedHashMap[Int, Statement] {
     protected override def removeEldestEntry(eldest: Entry[Int, Statement]): Boolean = {
       size() > numRetainedStatements
     }
   }.asScala
 
-  private val newStatementId = new AtomicInteger(0)
+  // Number of tasks kept in driver's memory (use same config as statements)
+  private val _tasks = new JLinkedHashMap[Int, Task] {
+    protected override def removeEldestEntry(eldest: Entry[Int, Task]): Boolean = {
+      size() > numRetainedTasks
+    }
+  }.asScala
+
+  private val newId = new AtomicInteger(0)
 
   private val defaultInterpKind = Kind(livyConf.get(RSCConf.Entry.SESSION_KIND))
 
@@ -86,7 +97,7 @@ class Session(
 
   stateChangedCallback(_state)
 
-  private def sc: SparkContext = {
+  private[repl] def sc: SparkContext = {
     require(entries != null)
     entries.sc().sc
   }
@@ -156,12 +167,12 @@ class Session(
       throw new IllegalArgumentException(s"Code type should be specified if session kind is shared")
     }
 
-    val statementId = newStatementId.getAndIncrement()
+    val statementId = newId.getAndIncrement()
     val statement = new Statement(statementId, code, StatementState.Waiting, null)
     _statements.synchronized { _statements(statementId) = statement }
 
     Future {
-      setJobGroup(tpe, statementId)
+      setJobGroup(tpe, statementIdToJobGroup(statementId))
       statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
       if (statement.state.get() == StatementState.Running) {
@@ -232,11 +243,110 @@ class Session(
     interpGroup.values.foreach(_.close())
   }
 
+  def tasks: collection.Map[Int, Task] = _tasks.synchronized {
+    _tasks.toMap
+  }
+
+  def submitTask(job: Job[Array[Byte]], jc: JobContext): Int = {
+      val taskId = newId.getAndIncrement()
+      val task = new Task(taskId, TaskState.Waiting, null, null)
+      task.submitted = System.currentTimeMillis()
+      _tasks.synchronized { _tasks(taskId) = task }
+
+    Future {
+      task.compareAndTransit(TaskState.Waiting, TaskState.Running)
+
+      try {
+        if (task.state.get() == TaskState.Running) {
+          task.submitted = System.currentTimeMillis()
+          jc.sc().setJobGroup(task.id.toString, s"Job group for task ${task.id}")
+          task.output = job.call(jc)
+          task.compareAndTransit(TaskState.Running, TaskState.Available)
+        }
+      } catch {
+        case e: Throwable =>
+          task.error = e.toString
+          task.serializedException = new Serializer().serialize(e).array()
+          task.compareAndTransit(TaskState.Running, TaskState.Failed)
+      }
+
+      task.compareAndTransit(TaskState.Cancelling, TaskState.Cancelled)
+      task.updateProgress(1.0)
+      task.completed = System.currentTimeMillis()
+    }(interpreterExecutor)
+    taskId
+  }
+
+  def getTask(taskId: Integer): Option[Task] = _tasks.synchronized {
+    _tasks.get(taskId)
+  }
+
+  def cancelTask(taskId: Int): Unit = {
+    val taskOpt = _tasks.synchronized { _tasks.get(taskId) }
+    if (taskOpt.isEmpty) {
+      return
+    }
+
+    val task = taskOpt.get
+    if (task.state.get().isOneOf(
+      TaskState.Available, TaskState.Cancelled, TaskState.Cancelling)) {
+      return
+    } else {
+      // statement 1 is running and statement 2 is waiting. User cancels
+      // statement 2 then cancels statement 1. The 2nd cancel call will loop and block the 1st
+      // cancel call since cancelExecutor is single threaded. To avoid this, set the statement
+      // state to cancelled when cancelling a waiting statement.
+      task.compareAndTransit(TaskState.Waiting, TaskState.Cancelled)
+      task.compareAndTransit(TaskState.Running, TaskState.Cancelling)
+    }
+
+    info(s"Cancelling task $taskId...")
+
+    Future {
+      val deadline = livyConf.getTimeAsMs(RSCConf.Entry.JOB_CANCEL_TIMEOUT).millis.fromNow
+
+      while (task.state.get() == TaskState.Cancelling) {
+        if (deadline.isOverdue()) {
+          info(s"Failed to cancel task $taskId.")
+          task.compareAndTransit(TaskState.Cancelling, TaskState.Cancelled)
+        } else {
+          sc.cancelJobGroup(taskId.toString)
+          if (task.state.get() == TaskState.Cancelling) {
+            Thread.sleep(livyConf.getTimeAsMs(RSCConf.Entry.JOB_CANCEL_TRIGGER_INTERVAL))
+          }
+        }
+      }
+
+      if (task.state.get() == TaskState.Cancelled) {
+        task.completed = System.currentTimeMillis()
+        info(s"Task $taskId cancelled.")
+      }
+    }(cancelExecutor)
+  }
+
   /**
    * Get the current progress of given statement id.
    */
   def progressOfStatement(stmtId: Int): Double = {
     val jobGroup = statementIdToJobGroup(stmtId)
+
+    val jobIds = sc.statusTracker.getJobIdsForGroup(jobGroup)
+    val jobs = jobIds.flatMap { id => sc.statusTracker.getJobInfo(id) }
+    val stages = jobs.flatMap { job =>
+      job.stageIds().flatMap(sc.statusTracker.getStageInfo)
+    }
+
+    val taskCount = stages.map(_.numTasks).sum
+    val completedTaskCount = stages.map(_.numCompletedTasks).sum
+    if (taskCount == 0) {
+      0.0
+    } else {
+      completedTaskCount.toDouble / taskCount
+    }
+  }
+
+  def progressOfTask(taskId: Int): Double = {
+    val jobGroup = taskIdToJobGroup(taskId)
 
     val jobIds = sc.statusTracker.getJobIdsForGroup(jobGroup)
     val jobs = jobIds.flatMap { id => sc.statusTracker.getJobInfo(id) }
@@ -266,7 +376,7 @@ class Session(
     changeState(SessionState.Busy)
 
     def transitToIdle() = {
-      val executingLastStatement = executionCount == newStatementId.intValue() - 1
+      val executingLastStatement = executionCount == newId.intValue() - 1
       if (_statements.isEmpty || executingLastStatement) {
         changeState(SessionState.Idle)
       }
@@ -333,32 +443,36 @@ class Session(
     compact(render(resultInJson))
   }
 
-  private def setJobGroup(codeType: Kind, statementId: Int): String = {
-    val jobGroup = statementIdToJobGroup(statementId)
+  private def setJobGroup(codeType: Kind, jobGroupId: String): String = {
     val (cmd, tpe) = codeType match {
       case Spark | SQL =>
         // A dummy value to avoid automatic value binding in scala REPL.
-        (s"""val _livyJobGroup$jobGroup = sc.setJobGroup("$jobGroup",""" +
-          s""""Job group for statement $jobGroup")""",
+        (s"""val _livyJobGroup$jobGroupId = sc.setJobGroup("$jobGroupId",""" +
+          s""""Job group for statement $jobGroupId")""",
          Spark)
       case PySpark =>
-        (s"""sc.setJobGroup("$jobGroup", "Job group for statement $jobGroup")""", PySpark)
+        (s"""sc.setJobGroup("$jobGroupId", "Job group for statement $jobGroupId")""", PySpark)
       case SparkR =>
         sc.getConf.get("spark.livy.spark_major_version", "1") match {
           case "1" =>
-            (s"""setJobGroup(sc, "$jobGroup", "Job group for statement $jobGroup", FALSE)""",
+            (s"""setJobGroup(sc, "$jobGroupId", "Job group for statement $jobGroupId", FALSE)""",
              SparkR)
           case "2" | "3" =>
-            (s"""setJobGroup("$jobGroup", "Job group for statement $jobGroup", FALSE)""", SparkR)
+            (s"""setJobGroup("$jobGroupId", "Job group for statement $jobGroupId", FALSE)""",
+              SparkR)
           case v =>
             throw new IllegalArgumentException(s"Unknown Spark major version [$v]")
         }
     }
     // Set the job group
-    executeCode(interpreter(tpe), statementId, cmd)
+    executeCode(interpreter(tpe), jobGroupId.toInt, cmd)
   }
 
   private def statementIdToJobGroup(statementId: Int): String = {
     statementId.toString
+  }
+
+  private def taskIdToJobGroup(taskId: Int): String = {
+    taskId.toString
   }
 }

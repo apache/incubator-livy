@@ -18,10 +18,12 @@
 package org.apache.livy.server.interactive
 
 import java.net.URI
+import java.nio.ByteBuffer
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.math.random
 
 import org.apache.spark.launcher.SparkLauncher
 import org.json4s.{DefaultFormats, Extraction, JValue}
@@ -33,9 +35,10 @@ import org.scalatest.{BeforeAndAfterAll, FunSpec, Matchers}
 import org.scalatest.concurrent.Eventually._
 import org.scalatestplus.mockito.MockitoSugar.mock
 
-import org.apache.livy.{ExecuteRequest, JobHandle, LivyBaseUnitTestSuite, LivyConf}
+import org.apache.livy._
+import org.apache.livy.client.common.Serializer
 import org.apache.livy.rsc.{PingJob, RSCClient, RSCConf}
-import org.apache.livy.rsc.driver.StatementState
+import org.apache.livy.rsc.driver.{StatementState, TaskState}
 import org.apache.livy.server.AccessManager
 import org.apache.livy.server.recovery.SessionStore
 import org.apache.livy.sessions.{PySpark, SessionState, Spark}
@@ -262,6 +265,69 @@ class InteractiveSessionSpec extends FunSpec
       }
     }
 
+    withSession("should get task progress along with task result") { session =>
+      val job = new Job[Int]() {
+        override def call(jc: JobContext): Int = 1234567
+      }
+      val serializer = new Serializer()
+      val task = session.executeTask(serializer.serialize(job).array())
+      task.progress should be (0.0)
+
+      eventually(timeout(10 seconds), interval(100 millis)) {
+        val t = session.getTask(task.id).get
+        t.state.get() shouldBe TaskState.Available
+        t.progress should be (1.0)
+      }
+
+      val result = serializer.deserialize(ByteBuffer.wrap(session.getTask(task.id).get.output))
+        .asInstanceOf[Int]
+      result should be (1234567)
+    }
+
+    withSession("should return None for non-existent tasks") { session =>
+      session.getTask(9999999) should be (None)
+    }
+
+    withSession("should cancel tasks") { session =>
+      val computePi: Job[Double] = new Job[Double]() {
+        override def call(jc: JobContext): Double = {
+          val slices = 100
+          val n = math.min(1000000L * slices, Int.MaxValue).toInt
+          val xs = 1 until n
+          val rdd = jc.sc.parallelize(xs, slices)
+            .setName("'Initial rdd'")
+          val sample = rdd.map { _ =>
+            val x = random * 2 - 1
+            val y = random * 2 - 1
+            (x, y)
+          }.setName("'Random points sample'")
+
+          val inside = sample.filter { case (x, y) => x * x + y * y < 1 }
+            .setName("'Random points inside circle'")
+
+          val count = inside.count()
+
+          4.0 * count / n
+        }
+      }
+      val serializer = new Serializer()
+      val task = session.executeTask(serializer.serialize(computePi).array())
+
+      // Wait for the task to start.
+      eventually(timeout(10 seconds), interval(100 millis)) {
+        val t = session.getTask(task.id).get
+        t.state.get() shouldBe TaskState.Running
+      }
+
+      session.cancelTask(task.id)
+
+      // Wait for the task to be canceled.
+      eventually(timeout(30 seconds), interval(100 millis)) {
+        val t = session.getTask(task.id).get
+        t.state.get() shouldBe TaskState.Cancelled
+      }
+    }
+
     withSession("should error out the session if the interpreter dies") { session =>
       session.executeStatement(ExecuteRequest("import os; os._exit(666)", None))
       eventually(timeout(30 seconds), interval(100 millis)) {
@@ -322,4 +388,5 @@ class InteractiveSessionSpec extends FunSpec
       s.logLines().mkString should include("RSCDriver URI is unknown")
     }
   }
+
 }
