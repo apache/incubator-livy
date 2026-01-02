@@ -82,8 +82,8 @@ class LivyRestClient(val httpClient: CloseableHttpClient, val livyEndpoint: Stri
     def snapshot(): SessionSnapshot = {
       val httpGet = new HttpGet(url)
       val r = httpClient.execute(httpGet)
-      val statusLine = r.getStatusLine()
-      val responseBody = r.getEntity().getContent
+      val statusLine = r.getStatusLine
+      val responseBody = r.getEntity.getContent
       val sessionSnapshot = mapper.readValue(responseBody, classOf[SessionSnapshot])
       r.close()
 

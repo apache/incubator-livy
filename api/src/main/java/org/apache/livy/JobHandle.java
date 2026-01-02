@@ -43,7 +43,7 @@ public interface JobHandle<T> extends Future<T> {
   /**
    * The current state of the submitted job.
    */
-  static enum State {
+  enum State {
     SENT,
     QUEUED,
     STARTED,
@@ -56,7 +56,7 @@ public interface JobHandle<T> extends Future<T> {
    * A listener for monitoring the state of the job in the remote context. Callbacks are called
    * when the corresponding state change occurs.
    */
-  static interface Listener<T> {
+  interface Listener<T> {
 
     /**
      * Notifies when a job has been queued for execution on the remote context. Note that it is
