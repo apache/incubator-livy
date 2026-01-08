@@ -88,7 +88,7 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
 
         val createBuilder = mock[CreateBuilder]
         when(f.curatorClient.create()).thenReturn(createBuilder)
-        val p = mock[ProtectACLCreateModePathAndBytesable[String]]
+        val p = mock[ProtectACLCreateModeStatPathAndBytesable[String]]
         when(createBuilder.creatingParentsIfNeeded()).thenReturn(p)
 
         f.stateStore.set("key", 1.asInstanceOf[Object])
