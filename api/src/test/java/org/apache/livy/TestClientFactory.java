@@ -19,13 +19,14 @@ package org.apache.livy;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TestClientFactory implements LivyClientFactory {
 
-  private static AtomicLong instanceCount = new AtomicLong();
+  private static final AtomicLong instanceCount = new AtomicLong();
   public static long getInstanceCount() {
     return instanceCount.get();
   }
@@ -35,16 +36,14 @@ public class TestClientFactory implements LivyClientFactory {
   }
 
   @Override
-  public LivyClient createClient(URI uri, Properties config) {
+  public Optional<LivyClient> createClient(URI uri, Properties config) {
     switch (uri.getPath()) {
       case "match":
-        return new Client(config);
-
+        return Optional.of(new Client(config));
       case "error":
         throw new IllegalStateException("error");
-
       default:
-        return null;
+        return Optional.empty();
     }
   }
 

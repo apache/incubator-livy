@@ -23,11 +23,8 @@ import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.ServiceLoader;
+import java.util.*;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -134,20 +131,24 @@ public final class LivyClientBuilder {
 
     LivyClient client = null;
     if (CLIENT_FACTORIES.isEmpty()) {
-      throw new IllegalStateException("No LivyClientFactory implementation was found.");
+      throw new IllegalStateException("No LivyClientFactory implementations were found.");
     }
 
     for (LivyClientFactory factory : CLIENT_FACTORIES) {
       try {
-        client = factory.createClient(uri, config);
-      } catch (Exception e) {
-        if (!(e instanceof RuntimeException)) {
-          e = new RuntimeException(e);
+        Optional<LivyClient> found = factory.createClient(uri, config);
+        if (found.isPresent()){
+          client = found.get();
+          break;
         }
-        throw (RuntimeException) e;
-      }
-      if (client != null) {
-        break;
+      } catch (Exception e){
+        //Note: the compiler identifies this as impossible. The initial author might
+        // believe the factories sneaky throw other exceptions
+        if (e instanceof RuntimeException){
+          throw e;
+        } else {
+          throw new RuntimeException(e);
+        }
       }
     }
 

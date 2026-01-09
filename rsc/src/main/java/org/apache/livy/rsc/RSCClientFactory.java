@@ -19,6 +19,7 @@ package org.apache.livy.rsc;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,7 +38,7 @@ public final class RSCClientFactory implements LivyClientFactory {
   private final AtomicInteger refCount = new AtomicInteger();
   private RpcServer server = null;
   // interactive session child processes number
-  private static AtomicInteger iscpn = new AtomicInteger();
+  private static final AtomicInteger iscpn = new AtomicInteger();
 
   public static AtomicInteger childProcesses() {
     return iscpn;
@@ -53,13 +54,12 @@ public final class RSCClientFactory implements LivyClientFactory {
    * Otherwise, a new Spark context will be started with the given configuration.
    */
   @Override
-  public LivyClient createClient(URI uri, Properties config) {
+  public Optional<LivyClient> createClient(URI uri, Properties config) {
     if (!"rsc".equals(uri.getScheme())) {
-      return null;
+      return Optional.empty();
     }
 
     RSCConf lconf = new RSCConf(config);
-
     boolean needsServer = false;
     try {
       Promise<ContextInfo> info;
@@ -73,7 +73,7 @@ public final class RSCClientFactory implements LivyClientFactory {
         info = processInfo.getContextInfo();
         driverProcess = processInfo.getDriverProcess();
       }
-      return new RSCClient(lconf, info, driverProcess);
+      return Optional.of(new RSCClient(lconf, info, driverProcess));
     } catch (Exception e) {
       if (needsServer) {
         unref();
