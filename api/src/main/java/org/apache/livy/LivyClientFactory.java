@@ -18,6 +18,7 @@
 package org.apache.livy;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.Properties;
 
 import org.apache.livy.annotations.Private;
@@ -39,8 +40,9 @@ public interface LivyClientFactory {
    *
    * @param uri URI pointing at the livy backend to use.
    * @param config Livy client configs.
-   * @return The newly created LivyClient or null if an unsupported URI
+   * @return Some if the factory understands the URI
+   * @throws RuntimeException if they supports the scheme but fail to create a client
    */
-  LivyClient createClient(URI uri, Properties config);
+  Optional<LivyClient> createClient(URI uri, Properties config);
 
 }
