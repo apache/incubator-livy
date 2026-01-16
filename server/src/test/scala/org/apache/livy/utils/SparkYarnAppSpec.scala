@@ -284,7 +284,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
 
         val mockSparkSubmit = mock[LineBufferedProcess]
         when(mockSparkSubmit.isAlive).thenReturn(false)
-        when(mockSparkSubmit.exitValue).thenReturn(-1)
+        when(mockSparkSubmit.exitValue()).thenReturn(-1)
 
         val listener = new SparkAppListener {
           var nStateChanged = 0

@@ -150,8 +150,8 @@
     <apacheds.version>2.0.0.AM26</apacheds.version>
     <ldap-api.version>2.1.2</ldap-api.version>
 
-    <curator.version>2.7.1</curator.version>
-    <zookeeper.version>3.4.6</zookeeper.version>
+    <curator.version>5.9.0</curator.version>
+    <zookeeper.version>3.9.4</zookeeper.version>
 
     <!--
       Properties for the copyright header style checks. Modules that use the ASF header
