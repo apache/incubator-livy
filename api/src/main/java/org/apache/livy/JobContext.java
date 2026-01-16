@@ -27,7 +27,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 /**
  * Holds runtime information about the job execution context.
- *
+ * <br>
  * An instance of this class is kept on the node hosting a remote Spark context and is made
  * available to jobs being executed via RemoteSparkContext#submit().
  */

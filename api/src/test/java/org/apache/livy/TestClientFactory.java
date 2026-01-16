@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class TestClientFactory implements LivyClientFactory {
 
-  private static AtomicLong instanceCount = new AtomicLong();
+  private static final AtomicLong instanceCount = new AtomicLong();
   public static long getInstanceCount() {
     return instanceCount.get();
   }

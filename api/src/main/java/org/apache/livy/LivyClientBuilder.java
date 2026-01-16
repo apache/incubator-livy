@@ -65,7 +65,7 @@ public final class LivyClientBuilder {
   /**
    * Creates a new builder that will optionally load the default Livy and Spark configuration
    * from the classpath.
-   *
+   * <br>
    * Livy client configuration is stored in a file called "livy-client.conf", and Spark client
    * configuration is stored in a file called "spark-defaults.conf", both in the root of the
    * application's classpath. Livy configuration takes precedence over Spark's (in case
@@ -85,12 +85,9 @@ public final class LivyClientBuilder {
       for (String file : confFiles) {
         URL url = classLoader().getResource(file);
         if (url != null) {
-          Reader r = new InputStreamReader(url.openStream(), UTF_8);
-          try {
-            config.load(r);
-          } finally {
-            r.close();
-          }
+            try (Reader r = new InputStreamReader(url.openStream(), UTF_8)) {
+                config.load(r);
+            }
         }
       }
     }
@@ -123,7 +120,7 @@ public final class LivyClientBuilder {
   public LivyClient build() {
     String uriStr = config.getProperty(LIVY_URI_KEY);
     if (uriStr == null) {
-      throw new IllegalArgumentException("URI must be provided.");
+      throw new IllegalArgumentException("URI must be provided in " + LIVY_URI_KEY + ".");
     }
     URI uri;
     try {
@@ -138,14 +135,7 @@ public final class LivyClientBuilder {
     }
 
     for (LivyClientFactory factory : CLIENT_FACTORIES) {
-      try {
-        client = factory.createClient(uri, config);
-      } catch (Exception e) {
-        if (!(e instanceof RuntimeException)) {
-          e = new RuntimeException(e);
-        }
-        throw (RuntimeException) e;
-      }
+      client = factory.createClient(uri, config);
       if (client != null) {
         break;
       }

@@ -23,6 +23,8 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -231,9 +233,9 @@ public class TestSparkClient {
           // Test that adding a jar to the remote context makes it show up in the classpath.
           jar = File.createTempFile("test", ".jar");
 
-          JarOutputStream jarFile = new JarOutputStream(new FileOutputStream(jar));
+          JarOutputStream jarFile = new JarOutputStream(Files.newOutputStream(jar.toPath()));
           jarFile.putNextEntry(new ZipEntry("test.resource"));
-          jarFile.write("test resource".getBytes("UTF-8"));
+          jarFile.write("test resource".getBytes(StandardCharsets.UTF_8));
           jarFile.closeEntry();
           jarFile.close();
 
@@ -256,7 +258,7 @@ public class TestSparkClient {
           file = File.createTempFile("test", ".file");
 
           FileOutputStream fileStream = new FileOutputStream(file);
-          fileStream.write("test file".getBytes("UTF-8"));
+          fileStream.write("test file".getBytes(StandardCharsets.UTF_8));
           fileStream.close();
 
           client.addJar(new URI("file:" + file.getAbsolutePath()))
@@ -403,54 +405,52 @@ public class TestSparkClient {
   public void testKillServerWhileSparkSubmitIsRunning() throws Exception {
     Properties conf = createConf(true);
     LivyClient client = null;
-    PipedInputStream stubStream = new PipedInputStream(new PipedOutputStream());
-    try {
-      Process mockSparkSubmit = mock(Process.class);
-      when(mockSparkSubmit.getInputStream()).thenReturn(stubStream);
-      when(mockSparkSubmit.getErrorStream()).thenReturn(stubStream);
+      try (PipedInputStream stubStream = new PipedInputStream(new PipedOutputStream())) {
+          Process mockSparkSubmit = mock(Process.class);
+          when(mockSparkSubmit.getInputStream()).thenReturn(stubStream);
+          when(mockSparkSubmit.getErrorStream()).thenReturn(stubStream);
 
-      // Block waitFor until process.destroy() is called.
-      final CountDownLatch waitForCalled = new CountDownLatch(1);
-      when(mockSparkSubmit.waitFor()).thenAnswer(new Answer<Integer>() {
-        @Override
-        public Integer answer(InvocationOnMock invocation) throws Throwable {
-          waitForCalled.await();
-          return 0;
-        }
-      });
+          // Block waitFor until process.destroy() is called.
+          final CountDownLatch waitForCalled = new CountDownLatch(1);
+          when(mockSparkSubmit.waitFor()).thenAnswer(new Answer<Integer>() {
+              @Override
+              public Integer answer(InvocationOnMock invocation) throws Throwable {
+                  waitForCalled.await();
+                  return 0;
+              }
+          });
 
-      // Verify process.destroy() is called.
-      final CountDownLatch destroyCalled = new CountDownLatch(1);
-      doAnswer(new Answer<Void>() {
-        @Override
-        public Void answer(InvocationOnMock invocation) throws Throwable {
-          destroyCalled.countDown();
-          return null;
-        }
-      }).when(mockSparkSubmit).destroy();
+          // Verify process.destroy() is called.
+          final CountDownLatch destroyCalled = new CountDownLatch(1);
+          doAnswer(new Answer<Void>() {
+              @Override
+              public Void answer(InvocationOnMock invocation) throws Throwable {
+                  destroyCalled.countDown();
+                  return null;
+              }
+          }).when(mockSparkSubmit).destroy();
 
-      ContextLauncher.mockSparkSubmit = mockSparkSubmit;
+          ContextLauncher.mockSparkSubmit = mockSparkSubmit;
 
-      client = new LivyClientBuilder(false).setURI(new URI("rsc:/"))
-        .setAll(conf)
-        .build();
+          client = new LivyClientBuilder(false).setURI(new URI("rsc:/"))
+                  .setAll(conf)
+                  .build();
 
-      client.stop(true);
+          client.stop(true);
 
-      assertTrue(destroyCalled.await(5, TimeUnit.SECONDS));
-      waitForCalled.countDown();
-    } catch (Exception e) {
-      // JUnit prints not so useful backtraces in test summary reports, and we don't see the
-      // actual source line of the exception, so print the exception to the logs.
-      LOG.error("Test threw exception.", e);
-      throw e;
-    } finally {
-      ContextLauncher.mockSparkSubmit = null;
-      stubStream.close();
-      if (client != null) {
-        client.stop(true);
+          assertTrue(destroyCalled.await(5, TimeUnit.SECONDS));
+          waitForCalled.countDown();
+      } catch (Exception e) {
+          // JUnit prints not so useful backtraces in test summary reports, and we don't see the
+          // actual source line of the exception, so print the exception to the logs.
+          LOG.error("Test threw exception.", e);
+          throw e;
+      } finally {
+          ContextLauncher.mockSparkSubmit = null;
+          if (client != null) {
+              client.stop(true);
+          }
       }
-    }
   }
 
   @Test
