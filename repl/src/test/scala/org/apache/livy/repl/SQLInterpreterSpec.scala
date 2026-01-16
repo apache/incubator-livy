@@ -193,7 +193,7 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
     assert(resp.isInstanceOf[Interpreter.ExecuteError])
     val error = resp.asInstanceOf[Interpreter.ExecuteError]
     error.ename should be ("Error")
-    assert(error.evalue.contains("not found") || error.evalue.contains("cannot be found"))
+    assert(error.evalue.contains("not found") || error.evalue.contains("TABLE_OR_VIEW_NOT_FOUND") || error.evalue.contains("cannot be found"))
   }
 
   it should "fail if submitting multiple queries" in withInterpreter { interpreter =>
