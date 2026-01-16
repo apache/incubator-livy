@@ -108,7 +108,7 @@ public class TestRpc {
       client.call(new ErrorCall(errorMsg)).get(10, TimeUnit.SECONDS);
     } catch (ExecutionException ee) {
       assertTrue(ee.getCause() instanceof RpcException);
-      assertTrue(ee.getCause().getMessage().indexOf(errorMsg) >= 0);
+      assertTrue(ee.getCause().getMessage().contains(errorMsg));
     }
 
     // Test from server to client too.
@@ -169,7 +169,7 @@ public class TestRpc {
       client.call(new NotDeserializable(42)).get(10, TimeUnit.SECONDS);
     } catch (ExecutionException ee) {
       assertTrue(ee.getCause() instanceof RpcException);
-      assertTrue(ee.getCause().getMessage().indexOf("KryoException") >= 0);
+      assertTrue(ee.getCause().getMessage().contains("KryoException"));
     }
   }
 

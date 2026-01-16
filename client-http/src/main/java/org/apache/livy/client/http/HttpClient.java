@@ -84,13 +84,10 @@ class HttpClient implements LivyClient {
 
     // Because we only have one connection to the server, we don't need more than a single
     // threaded executor here.
-    this.executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-      @Override
-      public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "HttpClient-" + sessionId);
-        t.setDaemon(true);
-        return t;
-      }
+    this.executor = Executors.newSingleThreadScheduledExecutor(r -> {
+      Thread t = new Thread(r, "HttpClient-" + sessionId);
+      t.setDaemon(true);
+      return t;
     });
 
     this.serializer = new Serializer();
@@ -146,31 +143,25 @@ class HttpClient implements LivyClient {
   }
 
   private Future<?> uploadResource(final File file, final String command, final String paramName) {
-    Callable<Void> task = new Callable<Void>() {
-      @Override
-      public Void call() throws Exception {
-        conn.post(file, Void.class,  paramName, "/%d/%s", sessionId, command);
-        return null;
-      }
+    Callable<Void> task = () -> {
+      conn.post(file, Void.class,  paramName, "/%d/%s", sessionId, command);
+      return null;
     };
     return executor.submit(task);
   }
 
   private Future<?> addResource(final String command, final URI resource) {
-    Callable<Void> task = new Callable<Void>() {
-      @Override
-      public Void call() throws Exception {
-        ClientMessage msg = new AddResource(resource.toString());
-        conn.post(msg, Void.class, "/%d/%s", sessionId, command);
-        return null;
-      }
+    Callable<Void> task = () -> {
+      ClientMessage msg = new AddResource(resource.toString());
+      conn.post(msg, Void.class, "/%d/%s", sessionId, command);
+      return null;
     };
     return executor.submit(task);
   }
 
   private <T> JobHandleImpl<T> sendJob(final String command, Job<T> job) {
     final ByteBuffer serializedJob = serializer.serialize(job);
-    JobHandleImpl<T> handle = new JobHandleImpl<T>(config, conn, sessionId, executor, serializer);
+    JobHandleImpl<T> handle = new JobHandleImpl<>(config, conn, sessionId, executor, serializer);
     handle.start(command, serializedJob);
     return handle;
   }

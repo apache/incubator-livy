@@ -168,7 +168,7 @@ public class RSCConf extends ClientConf<RSCConf> {
   // Maps deprecated key to DeprecatedConf with the same key.
   // There are no deprecated configs without alternatives currently.
   private static final Map<String, DeprecatedConf> deprecatedConfigs
-    = Collections.unmodifiableMap(new HashMap<String, DeprecatedConf>());
+    = Collections.unmodifiableMap(new HashMap<>());
 
   protected Map<String, DeprecatedConf> getConfigsWithAlternatives() {
     return configsWithAlternatives;

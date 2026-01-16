@@ -134,38 +134,32 @@ class JobHandleImpl<T> extends AbstractJobHandle<T> {
   }
 
   void start(final String command, final ByteBuffer serializedJob) {
-    Runnable task = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          ClientMessage msg = new SerializedJob(BufferUtils.toByteArray(serializedJob), "spark");
-          JobStatus status = conn.post(msg, JobStatus.class, "/%d/%s", sessionId, command);
+    Runnable task = () -> {
+      try {
+        ClientMessage msg = new SerializedJob(BufferUtils.toByteArray(serializedJob), "spark");
+        JobStatus status = conn.post(msg, JobStatus.class, "/%d/%s", sessionId, command);
 
-          if (isCancelPending) {
-            sendCancelRequest(status.id);
-          }
-
-          jobId = status.id;
-
-          pollTask = executor.schedule(new JobPollTask(initialPollInterval),
-            initialPollInterval, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-          setResult(null, e, State.FAILED);
+        if (isCancelPending) {
+          sendCancelRequest(status.id);
         }
+
+        jobId = status.id;
+
+        pollTask = executor.schedule(new JobPollTask(initialPollInterval),
+          initialPollInterval, TimeUnit.MILLISECONDS);
+      } catch (Exception e) {
+        setResult(null, e, State.FAILED);
       }
     };
     executor.submit(task);
   }
 
   private void sendCancelRequest(final long id) {
-    executor.submit(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          conn.post(null, Void.class, "/%d/jobs/%d/cancel", sessionId, id);
-        } catch (Exception e) {
-          setResult(null, e, State.FAILED);
-        }
+    executor.submit(() -> {
+      try {
+        conn.post(null, Void.class, "/%d/jobs/%d/cancel", sessionId, id);
+      } catch (Exception e) {
+        setResult(null, e, State.FAILED);
       }
     });
   }

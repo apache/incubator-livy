@@ -206,16 +206,13 @@ public class RSCDriver extends BaseProtocol {
     });
 
     // The RPC library takes care of timing out this.
-    Rpc callbackRpc = Rpc.createClient(livyConf, server.getEventLoopGroup(),
-      launcherAddress, launcherPort, clientId, secret, this).get();
-    try {
+    try (Rpc callbackRpc = Rpc.createClient(livyConf, server.getEventLoopGroup(),
+            launcherAddress, launcherPort, clientId, secret, this).get()) {
       callbackRpc.call(new RemoteDriverAddress(server.getAddress(), server.getPort())).get(
         livyConf.getTimeAsMs(RPC_CLIENT_HANDSHAKE_TIMEOUT), TimeUnit.MILLISECONDS);
     } catch (TimeoutException te) {
       LOG.warn("Timed out sending address to Livy server, shutting down.");
       throw te;
-    } finally {
-      callbackRpc.close();
     }
 
     // At this point we install the idle timeout handler, in case the Livy server fails to connect
@@ -245,12 +242,9 @@ public class RSCDriver extends BaseProtocol {
       return;
     }
 
-    Runnable timeoutTask = new Runnable() {
-      @Override
-      public void run() {
-        LOG.warn("Shutting down RSC due to idle timeout ({}).", livyConf.get(SERVER_IDLE_TIMEOUT));
-        shutdown();
-      }
+    Runnable timeoutTask = () -> {
+      LOG.warn("Shutting down RSC due to idle timeout ({}).", livyConf.get(SERVER_IDLE_TIMEOUT));
+      shutdown();
     };
     ScheduledFuture<?> timeout = server.getEventLoopGroup().schedule(timeoutTask,
       livyConf.getTimeAsMs(SERVER_IDLE_TIMEOUT), TimeUnit.MILLISECONDS);
@@ -394,7 +388,7 @@ public class RSCDriver extends BaseProtocol {
 
   <T> void jobFinished(String jobId, T result, Throwable error) {
     LOG.debug("Send job({}) result to Client.", jobId);
-    broadcast(new JobResult<T>(jobId, result, error));
+    broadcast(new JobResult<>(jobId, result, error));
   }
 
   void jobStarted(String jobId) {
