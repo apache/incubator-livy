@@ -17,6 +17,9 @@
 
 package org.apache.livy.test
 
+import java.io.File
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
 
@@ -92,6 +95,25 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       s.run("abcde").verifyError(ename = "NameError", evalue = "name 'abcde' is not defined")
       s.run("raise KeyError('foo')").verifyError(ename = "KeyError", evalue = "'foo'")
       s.run("print(1)\r\nprint(1)").verifyResult("1\n1")
+    }
+  }
+
+  test("pyspark should open files localized via spark.files by relative path") {
+    val tmp = File.createTempFile("livy-files-test", ".txt")
+    try {
+      Files.write(tmp.toPath, "hello-files".getBytes(StandardCharsets.UTF_8))
+      val hdfsPath = uploadToHdfs(tmp)
+      val sparkConf = Map("spark.files" -> hdfsPath)
+      withNewSession(PySpark, sparkConf) { s =>
+        val code =
+          s"""with open("${tmp.getName}", "r") as f:
+             |    data = f.read().strip()
+             |data
+             |""".stripMargin
+        s.run(code).verifyResult("'hello-files'")
+      }
+    } finally {
+      tmp.delete()
     }
   }
 
