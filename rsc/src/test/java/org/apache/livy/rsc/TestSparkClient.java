@@ -92,6 +92,7 @@ public class TestSparkClient {
         JobHandle<String> handle = client.submit(new Echo<>("hello"));
         handle.addListener(listener);
         assertEquals("hello", handle.get(TIMEOUT, TimeUnit.SECONDS));
+        assertNotNull(handle.getJobId());
 
         // Try an invalid state transition on the handle. This ensures that the actual state
         // change we're interested in actually happened, since internally the handle serializes
@@ -111,6 +112,7 @@ public class TestSparkClient {
       public void call(LivyClient client) throws Exception {
         JobHandle<Long> handle = client.submit(new SmallCount(5));
         assertEquals(Long.valueOf(5L), handle.get(TIMEOUT, TimeUnit.SECONDS));
+        assertNotNull(handle.getJobId());
       }
     });
   }
@@ -185,6 +187,7 @@ public class TestSparkClient {
           assertTrue(ee.getCause().getMessage().contains(
             Failure.JobFailureException.class.getName()));
         }
+        assertNotNull(handle.getJobId());
 
         // Try an invalid state transition on the handle. This ensures that the actual state
         // change we're interested in actually happened, since internally the handle serializes
@@ -215,6 +218,7 @@ public class TestSparkClient {
       public void call(LivyClient client) throws Exception {
         JobHandle<Long> handle = client.submit(new SmallCount(5));
         assertEquals(Long.valueOf(5L), handle.get(TIMEOUT, TimeUnit.SECONDS));
+        assertNotNull(handle.getJobId());
       }
     });
   }

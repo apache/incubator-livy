@@ -58,6 +58,11 @@ class ScalaClientTest extends FunSuite
     }
   }
 
+  test("return current session id") {
+    configureClient(true)
+    assertResult(-1)(client.sessionId())
+  }
+
   test("test Job Submission") {
     configureClient(true)
     val jobHandle = client.submit(ScalaClientTestUtils.helloJob)

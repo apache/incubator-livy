@@ -31,6 +31,8 @@ import org.apache.livy.JobHandle;
 @RunWith(MockitoJUnitRunner.class)
 public class TestJobHandle {
 
+  private static final String jobId = "jobId";
+
   @Mock private RSCClient client;
   @Mock private Promise<Object> promise;
   @Mock private JobHandle.Listener<Object> listener;
@@ -38,7 +40,7 @@ public class TestJobHandle {
 
   @Test
   public void testStateChanges() throws Exception {
-    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, "job");
+    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, jobId);
     handle.addListener(listener);
 
     assertTrue(handle.changeState(JobHandle.State.QUEUED));
@@ -57,26 +59,28 @@ public class TestJobHandle {
 
   @Test
   public void testFailedJob() throws Exception {
-    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, "job");
+    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, jobId);
     handle.addListener(listener);
 
     Throwable cause = new Exception();
     when(promise.cause()).thenReturn(cause);
 
     assertTrue(handle.changeState(JobHandle.State.FAILED));
+    assertEquals(handle.getJobId(), jobId);
     verify(promise).cause();
     verify(listener).onJobFailed(handle, cause);
   }
 
   @Test
   public void testSucceededJob() throws Exception {
-    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, "job");
+    JobHandleImpl<Object> handle = new JobHandleImpl<Object>(client, promise, jobId);
     handle.addListener(listener);
 
     Object result = new Exception();
     when(promise.getNow()).thenReturn(result);
 
     assertTrue(handle.changeState(JobHandle.State.SUCCEEDED));
+    assertEquals(handle.getJobId(), jobId);
     verify(promise).getNow();
     verify(listener).onJobSucceeded(handle, result);
   }

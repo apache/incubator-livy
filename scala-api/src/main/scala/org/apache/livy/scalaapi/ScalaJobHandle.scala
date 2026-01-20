@@ -50,7 +50,12 @@ class ScalaJobHandle[T] private[livy] (jobHandle: JobHandle[T]) extends Future[T
   /**
    * Return the current state of the job.
    */
-  def state: State = jobHandle.getState()
+  def state: State = jobHandle.getState
+
+  /**
+   * Return the current id of the job.
+   */
+  def jobId: String = jobHandle.getJobId
 
   /**
    *  When the job is completed, either through an exception, or a value,
