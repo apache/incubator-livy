@@ -30,5 +30,12 @@
     <version>0.10.0-incubating-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.module</groupId>
+      <artifactId>jackson-module-scala_2.12</artifactId>
+      <version>2.13.4</version>
+    </dependency>
+  </dependencies>
 
 </project>

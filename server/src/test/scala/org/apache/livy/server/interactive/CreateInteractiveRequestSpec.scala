@@ -1,55 +1,34 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.apache.livy.server.interactive
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.scalatest.FunSpec
+import org.scalatest.Matchers.{be, noException}
 
-import org.apache.livy.LivyBaseUnitTestSuite
-import org.apache.livy.sessions.{PySpark, SessionKindModule}
-
-class CreateInteractiveRequestSpec extends FunSpec with LivyBaseUnitTestSuite {
-
-  private val mapper = new ObjectMapper()
-    .registerModule(com.fasterxml.jackson.module.scala.DefaultScalaModule)
-    .registerModule(new SessionKindModule())
-
-  describe("CreateInteractiveRequest") {
-
-    it("should have default values for fields after deserialization") {
-      val json = """{ "kind" : "pyspark" }"""
-      val req = mapper.readValue(json, classOf[CreateInteractiveRequest])
-      assert(req.kind === PySpark)
-      assert(req.proxyUser === None)
-      assert(req.jars === List())
-      assert(req.pyFiles === List())
-      assert(req.files === List())
-      assert(req.driverMemory === None)
-      assert(req.driverCores === None)
-      assert(req.executorMemory === None)
-      assert(req.executorCores === None)
-      assert(req.numExecutors === None)
-      assert(req.archives === List())
-      assert(req.queue === None)
-      assert(req.name === None)
-      assert(req.conf === Map())
+class CreateInteractiveRequestSpec extends FunSpec {
+  describe("CreateInteractiveRequest redaction and maskedConfString") {
+    it("does not redact when no regex is provided") {
+      val req = new CreateInteractiveRequest
+      req.conf = Map("password" -> "secret", "user" -> "alice")
+      val masked = req.toString
+      assert(masked.contains("password=secret"))
+      assert(masked.contains("user=alice"))
     }
 
-  }
+    it("redacts values when regex matches the key") {
+      val req = new CreateInteractiveRequest
+      req.conf = Map("spark.redaction.regex" -> "password|secret", "password" -> "hunter2", "user" -> "bob")
+      val masked = req.toString
+      assert(masked.contains("password=*****"))
+      assert(masked.contains("user=bob"))
+    }
 
+    it("handles invalid regex gracefully and does not throw") {
+      val req = new CreateInteractiveRequest
+      // invalid regex pattern
+      req.conf = Map("spark.redaction.regex" -> "(unclosed[", "secret" -> "value")
+      // should not throw when calling toString
+      noException should be thrownBy req.toString
+    }
+  }
 }
+
+

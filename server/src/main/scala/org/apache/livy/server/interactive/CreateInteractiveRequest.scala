@@ -18,6 +18,8 @@
 package org.apache.livy.server.interactive
 
 import org.apache.livy.sessions.{Kind, Shared}
+import scala.util.Try
+import scala.util.matching.Regex
 
 class CreateInteractiveRequest {
   var kind: Kind = Shared
@@ -38,6 +40,22 @@ class CreateInteractiveRequest {
   var ttl: Option[String] = None
   var idleTimeout: Option[String] = None
 
+  // Read redaction regex from the request's conf map (if provided). Use flatMap + Try to safely compile.
+  private def redactionPatternOption: Option[Regex] =
+    conf.get("spark.redaction.regex").flatMap(s => Try(s.r).toOption)
+
+  // Produce a masked conf string for logging using a nested redact function.
+  private def maskedConfString: String = {
+    val patternOpt = redactionPatternOption
+
+    def redact(key: String, value: String): String = patternOpt match {
+      case Some(r) if r.findFirstIn(key).isDefined || r.findFirstIn(value).isDefined => "*****"
+      case _ => value
+    }
+
+    if (conf.nonEmpty) conf.map { case (k, v) => s"$k=${redact(k, v)}" }.mkString(",") else ""
+  }
+
   override def toString: String = {
     s"[kind: $kind, proxyUser: $proxyUser, " +
       (if (jars.nonEmpty) s"jars: ${jars.mkString(",")}, " else "") +
@@ -51,7 +69,7 @@ class CreateInteractiveRequest {
       (if (numExecutors.isDefined) s"numExecutors: ${numExecutors.get}, " else "") +
       (if (queue.isDefined) s"queue: ${queue.get}, " else "") +
       (if (name.isDefined) s"name: ${name.get}, " else "") +
-      (if (conf.nonEmpty) s"conf: ${conf.mkString(",")}, " else "") +
+      (if (conf.nonEmpty) s"conf: $maskedConfString, " else "") +
       s"heartbeatTimeoutInSecond: $heartbeatTimeoutInSecond, " +
       (if (ttl.isDefined) s"ttl: ${ttl.get}, " else "") +
       (if (idleTimeout.isDefined) s"idleTimeout: ${idleTimeout.get}]" else "]")
