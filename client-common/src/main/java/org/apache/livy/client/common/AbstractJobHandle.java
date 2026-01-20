@@ -17,12 +17,11 @@
 
 package org.apache.livy.client.common;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.apache.livy.JobHandle;
 import org.apache.livy.annotations.Private;
+
+import java.util.LinkedList;
+import java.util.List;
 
 @Private
 public abstract class AbstractJobHandle<T> implements JobHandle<T> {
@@ -33,6 +32,10 @@ public abstract class AbstractJobHandle<T> implements JobHandle<T> {
   protected AbstractJobHandle() {
     this.listeners = new LinkedList<>();
     this.state = State.SENT;
+  }
+
+  public String getId(){
+    throw new UnsupportedOperationException();
   }
 
   @Override

@@ -17,11 +17,11 @@
 
 package org.apache.livy.client.common;
 
-import java.util.List;
-import java.util.Map;
-
 import org.apache.livy.JobHandle.State;
 import org.apache.livy.annotations.Private;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * There are the Java representations of the JSON messages used by the client protocol.
@@ -110,6 +110,22 @@ public class HttpMessages {
     private SessionInfo() {
       this(-1, null, null, null, null, null, null, null, null, null, null, 0, null, 0, null, null,
               null, 0, null, 0, null, null, null);
+    }
+
+  }
+
+  public static class SerializedStatement implements ClientMessage {
+
+    public final String code;
+    public final String kind;
+
+    public SerializedStatement(String code, String kind) {
+      this.code = code;
+      this.kind = kind;
+    }
+
+    private SerializedStatement() {
+      this(null, null);
     }
 
   }
