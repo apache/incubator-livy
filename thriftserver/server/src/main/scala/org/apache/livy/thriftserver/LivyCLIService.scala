@@ -359,7 +359,8 @@ class LivyCLIService(server: LivyThriftServer)
       authFactory: AuthFactory,
       owner: String,
       renewer: String): String = {
-    throw new HiveSQLException("Operation not yet supported.")
+    debug(sessionHandle + ": getDelegationToken()")
+    authFactory.getDelegationToken(owner, renewer)
   }
 
   @throws[HiveSQLException]
@@ -371,14 +372,16 @@ class LivyCLIService(server: LivyThriftServer)
       sessionHandle: SessionHandle,
       authFactory: AuthFactory,
       tokenStr: String): Unit = {
-    throw new HiveSQLException("Operation not yet supported.")
+    debug(sessionHandle + ": cancelDelegationToken()")
+    authFactory.cancelDelegationToken(tokenStr)
   }
 
   def renewDelegationToken(
       sessionHandle: SessionHandle,
       authFactory: AuthFactory,
       tokenStr: String): Unit = {
-    throw new HiveSQLException("Operation not yet supported.")
+    debug(sessionHandle + ": renewDelegationToken()")
+    authFactory.renewDelegationToken(tokenStr)
   }
 
   @throws[HiveSQLException]

@@ -150,6 +150,55 @@ class AuthFactory(val conf: LivyConf) extends Logging {
         throw new HiveSQLException(msg, "08S01", e)
     }
   }
+
+  @throws[HiveSQLException]
+  def cancelDelegationToken(delegationToken: String): Unit = {
+    if (secretManager.isEmpty) {
+      throw new HiveSQLException(
+        "Delegation token only supported over kerberos authentication", "08S01")
+    }
+    try {
+      secretManager.get.cancelDelegationToken(delegationToken)
+    } catch {
+      case e: IOException =>
+        val msg = s"Error canceling delegation token $delegationToken"
+        error(msg, e)
+        throw new HiveSQLException(msg, "08S01", e)
+    }
+  }
+
+  @throws[HiveSQLException]
+  def getDelegationToken(ownerStr: String, renewer: String): String = {
+    if (secretManager.isEmpty) {
+      throw new HiveSQLException(
+        "Delegation token only supported over kerberos authentication", "08S01")
+    }
+    try {
+      secretManager.get.getDelegationToken(ownerStr, renewer)
+    } catch {
+      case e: IOException =>
+        val msg = s"Error getting delegation owner $ownerStr"
+        error(msg, e)
+        throw new HiveSQLException(msg, "08S01", e)
+    }
+  }
+
+  @throws[HiveSQLException]
+  def renewDelegationToken(delegationToken: String): Unit = {
+    if (secretManager.isEmpty) {
+      throw new HiveSQLException(
+        "Delegation token only supported over kerberos authentication", "08S01")
+    }
+    try {
+      secretManager.get.renewDelegationToken(delegationToken)
+    } catch {
+      case e: IOException =>
+        val msg = s"Error renewing delegation token $delegationToken"
+        error(msg, e)
+        throw new HiveSQLException(msg, "08S01", e)
+    }
+  }
+
 }
 
 class SQLPlainProcessorFactory(val service: Iface) extends TProcessorFactory(null) {
