@@ -334,17 +334,19 @@ object InteractiveSession extends Logging {
       }
     }
 
-    def mergeHiveSiteAndHiveDeps(sparkMajorVersion: Int): Unit = {
-      val sparkFiles = conf.get("spark.files").map(_.split(",")).getOrElse(Array.empty[String])
-      hiveSiteFile(sparkFiles, livyConf) match {
+    def mergeHiveSiteAndHiveDeps(sparkMajorVersion: Int,
+                                 files: Array[String],
+                                 mergeJarsConf: String,
+                                 mergeFilesConf: String): Unit = {
+      hiveSiteFile(files, livyConf) match {
         case (_, true) =>
           debug("Enable HiveContext because hive-site.xml is found in user request.")
-          mergeConfList(datanucleusJars(livyConf, sparkMajorVersion), LivyConf.SPARK_JARS)
+          mergeConfList(datanucleusJars(livyConf, sparkMajorVersion), mergeJarsConf)
         case (Some(file), false) =>
           debug("Enable HiveContext because hive-site.xml is found under classpath, "
             + file.getAbsolutePath)
-          mergeConfList(List(file.getAbsolutePath), LivyConf.SPARK_FILES)
-          mergeConfList(datanucleusJars(livyConf, sparkMajorVersion), LivyConf.SPARK_JARS)
+          mergeConfList(List(file.getAbsolutePath), mergeFilesConf)
+          mergeConfList(datanucleusJars(livyConf, sparkMajorVersion), mergeJarsConf)
         case (None, false) =>
           warn("Enable HiveContext but no hive-site.xml found under" +
             " classpath or user request.")
@@ -381,6 +383,25 @@ object InteractiveSession extends Logging {
       LivySparkUtils.formatSparkVersion(livyConf.get(LivyConf.LIVY_SPARK_VERSION))
     val scalaVersion = livyConf.get(LivyConf.LIVY_SPARK_SCALA_VERSION)
 
+    // Detect which config we should use and merge jars and files to that config.
+    // Please notice that if we set both spark.X config values and the spark.yarn.X config values
+    // the spark.yarn.X config will be ignored by Spark
+    val yarnFiles = conf.get(LivyConf.SPARK_YARN_DIST_FILES)
+      .map(_.split(",")).getOrElse(Array.empty[String])
+    val sparkFiles = conf.get(LivyConf.SPARK_FILES)
+      .map(_.split(",")).getOrElse(Array.empty[String])
+    val mergeJarsConf = if (conf.get(LivyConf.SPARK_JARS).isDefined ||
+      conf.get(LivyConf. SPARK_YARN_JARS).isEmpty) {
+      LivyConf.SPARK_JARS
+    } else {
+      LivyConf.SPARK_YARN_JARS
+    }
+    val (files, mergeFilesConf) = if (!sparkFiles.isEmpty || yarnFiles.isEmpty) {
+      (sparkFiles, LivyConf.SPARK_FILES)
+    } else {
+      (yarnFiles, LivyConf.SPARK_YARN_DIST_FILES)
+    }
+
     mergeConfList(livyJars(livyConf, scalaVersion), LivyConf.SPARK_JARS)
     val enableHiveContext = livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
     // pass spark.livy.spark_major_version to driver
@@ -390,7 +411,7 @@ object InteractiveSession extends Logging {
     builderProperties.put("spark.sql.catalogImplementation", confVal)
 
     if (enableHiveContext) {
-      mergeHiveSiteAndHiveDeps(sparkMajorVersion)
+      mergeHiveSiteAndHiveDeps(sparkMajorVersion, files, mergeJarsConf, mergeFilesConf)
     }
 
     // Pick all the RSC-specific configs that have not been explicitly set otherwise, and
