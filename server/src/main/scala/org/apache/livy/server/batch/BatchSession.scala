@@ -101,6 +101,7 @@ object BatchSession extends Logging {
             case 0 =>
             case exitCode =>
               warn(s"spark-submit exited with code $exitCode")
+              s.stateChanged(SparkApp.State.STARTING, SparkApp.State.FAILED)
           }
         } finally {
           childProcesses.decrementAndGet()
