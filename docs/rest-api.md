@@ -241,8 +241,8 @@ Gets the log lines from this session.
     <td>int</td>
   </tr>
   <tr>
-    <td>size</td>
-    <td>Max number of log lines</td>
+    <td>total</td>
+    <td>The total number of log lines that exist</td>
     <td>int</td>
   </tr>
   <tr>
@@ -582,8 +582,8 @@ Gets the log lines from this batch.
     <td>int</td>
   </tr>
   <tr>
-    <td>size</td>
-    <td>Number of log lines</td>
+    <td>total</td>
+    <td>The total number of log lines that exist</td>
     <td>int</td>
   </tr>
   <tr>
