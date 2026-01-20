@@ -15,21 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Very bare bones shell for driving a Livy session. Usage:
-#
-#   livy-shell url [option=value ...]
-#
-# Options are set directly in the session creation request, so they must match the names of fields
-# in the CreateInteractiveRequest structure. Option values should be python-like objects (should be
-# parseable by python's "eval" function; naked strings are allowed). For example:
-#
-#   kind=spark
-#   jars=[ '/foo.jar', '/bar.jar' ]
-#   conf={ foo : bar, 'spark.option' : opt_value }
+# Very bare bones shell for driving a Livy session. Run livy-shell -h for usage
+# information.
 #
 # By default, a Spark (Scala) session is created.
 #
 
+import argparse
 import json
 import readline
 import signal
@@ -40,14 +32,6 @@ import urlparse
 
 class ControlCInterrupt(Exception):
   pass
-
-
-def check(condition, msg, *args):
-  if not condition:
-    if args:
-      msg = msg % args
-    print >> sys.stderr, msg
-    sys.exit(1)
 
 
 def message(msg, *args):
@@ -72,8 +56,14 @@ def request(method, uri, body):
   kwargs = { 'headers': { 'Content-Type' : 'application/json', 'X-Requested-By': 'livy' } }
   if body:
     kwargs['json'] = body
-  resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), **kwargs)
-  resp.raise_for_status()
+  resp = requests.request(method.upper(), urlparse.urljoin(url.geturl(), uri), auth=auth, **kwargs)
+  if resp.status_code >= requests.codes.bad_request:
+    if resp.status_code == requests.codes.unauthorized:
+      message("ERROR: Unauthorized response received from Livy. Please ensure that Kerberos is enabled " +
+        "(via the --enable_kerberos argument) and this user has an up to date ticket.\n")
+    else:
+      message("ERROR: %s\n", resp.text)
+    resp.raise_for_status()
   if resp.status_code < requests.codes.multiple_choices and resp.status_code != requests.codes.no_content:
     return resp.json()
   return None
@@ -91,12 +81,11 @@ def delete(uri):
   return request('DELETE', uri, None)
 
 
-def create_session():
+def create_session(extra_args=[]):
   request = {
     "kind" : "spark"
   }
-  for opt in sys.argv[2:]:
-    check(opt.find('=') > 0, "Invalid option: %s.", opt)
+  for opt in extra_args:
     key, value = opt.split('=', 1)
     request[key] = eval(value, LiteralDict())
 
@@ -152,7 +141,7 @@ def monitor_statement(sid, s):
 
 
 def run_shell(sid, session_kind):
-  prompt = "{} ({}) > ".format(session_kind, sid)
+  prompt = "{0} ({1}) > ".format(session_kind, sid)
   def ctrl_c_handler(signal, frame):
     message("\nPlease type quit() to exit the livy shell.")
     raise ControlCInterrupt()
@@ -170,18 +159,35 @@ def run_shell(sid, session_kind):
     monitor_statement(sid, statement)
 
 
+def valid_extra_arg(s):
+    if not s.find("=") > 0:
+        raise argparse.ArgumentTypeError("All --option values must be in the form <key>=<value>. The provided value is invalid: {0}.".format(s))
+    return s
+
 #
 # main()
 #
 
-check(len(sys.argv) > 1, "Missing arguments.")
+parser = argparse.ArgumentParser(description="A REPL for connecting to Livy.")
+parser.add_argument("livy_url", type=str, help="The full URL to the Livy server.")
+parser.add_argument("--enable_kerberos", action="store_true", help="Enable kerberos authentication when communicating with Livy.")
+parser.add_argument("--option", type=valid_extra_arg, action="append", default=[], help="Additional options to send when creating the session in Livy. Should be in the form 'key=value', for example --option kind=pyspark.")
+args = parser.parse_args()
 
-url = urlparse.urlparse(sys.argv[1])
+url = urlparse.urlparse(args.livy_url)
 sid = -1
+auth = None
+if args.enable_kerberos:
+  try:
+    from requests_kerberos import HTTPKerberosAuth
+    auth = HTTPKerberosAuth()
+  except ImportError:
+    message("Could not import requests_kerberos module which is required for Kerberos authentication.")
+    sys.exit(1)
 
 try:
   message("Creating new session...")
-  session = create_session()
+  session = create_session(args.option)
   sid = int(session['id'])
   message("New session (id = %d, kind = %s), waiting for idle state...", sid, session['kind'])
   wait_for_idle(sid)
