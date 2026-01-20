@@ -25,7 +25,7 @@ import scala.collection.JavaConverters._
 
 import org.apache.hadoop.conf.Configuration
 
-import org.apache.livy.client.common.ClientConf
+import org.apache.livy.client.common.{ClientConf, OperatingSystemUtils}
 import org.apache.livy.client.common.ClientConf.ConfEntry
 import org.apache.livy.client.common.ClientConf.DeprecatedConf
 
@@ -475,7 +475,12 @@ class LivyConf(loadDefaults: Boolean) extends ClientConf[LivyConf](null) {
 
   /** Return the path to the spark-submit executable. */
   def sparkSubmit(): String = {
-    sparkHome().map { _ + File.separator + "bin" + File.separator + "spark-submit" }.get
+    val sparkSubmit = OperatingSystemUtils
+      .getBasedOnOS(
+        "spark-submit",
+        "spark-submit.cmd",
+        "Getting Spark Submit");
+    sparkHome().map { _ + File.separator + "bin" + File.separator + sparkSubmit }.get
   }
 
   private val configDir: Option[File] = {
