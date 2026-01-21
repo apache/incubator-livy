@@ -17,12 +17,9 @@
 
 package org.apache.livy.rsc;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -66,7 +63,6 @@ class ContextLauncher {
   private static final Logger LOG = LoggerFactory.getLogger(ContextLauncher.class);
   private static final AtomicInteger CHILD_IDS = new AtomicInteger();
 
-  private static final String SPARK_DEPLOY_MODE = "spark.submit.deployMode";
   private static final String SPARK_JARS_KEY = "spark.jars";
   private static final String SPARK_ARCHIVES_KEY = "spark.yarn.dist.archives";
   private static final String SPARK_HOME_ENV = "SPARK_HOME";
@@ -95,9 +91,6 @@ class ContextLauncher {
     final RegistrationHandler handler = new RegistrationHandler();
     try {
       factory.getServer().registerClient(clientId, secret, handler);
-      String replMode = conf.get("repl");
-      boolean repl = replMode != null && replMode.equals("true");
-
       // In some scenarios the user may need to configure this endpoint setting explicitly.
       String address = conf.get(LAUNCHER_ADDRESS);
       // If not specified, use the RPC server address; otherwise use the specified address.
@@ -112,7 +105,7 @@ class ContextLauncher {
       Utils.addListener(promise, new FutureListener<ContextInfo>() {
         @Override
         public void onFailure(Throwable error) throws Exception {
-          // If promise is cancelled or failed, make sure spark-submit is not leaked.
+          // If promise is canceled or failed, make sure spark-submit is not leaked.
           if (child != null) {
             child.kill();
           }
@@ -181,13 +174,16 @@ class ContextLauncher {
       }
 
       Utils.checkState(rscJars.isDirectory(),
-        "Cannot find rsc jars directory under LIVY_HOME.");
+        "Cannot find rsc jars directory: " + rscJars.getAbsolutePath());
       allJars.add(rscJars);
 
       List<String> jars = new ArrayList<>();
       for (File dir : allJars) {
-        for (File f : dir.listFiles()) {
-           jars.add(f.getAbsolutePath());
+        File [] list = dir.listFiles();
+        if (list != null) {
+          for (File f : list) {
+            jars.add(f.getAbsolutePath());
+          }
         }
       }
       livyJars = Utils.join(jars, ",");
@@ -226,14 +222,11 @@ class ContextLauncher {
     } else if (conf.getBoolean(CLIENT_IN_PROCESS)) {
       // Mostly for testing things quickly. Do not do this in production.
       LOG.warn("!!!! Running remote driver in-process. !!!!");
-      Runnable child = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            RSCDriverBootstrapper.main(new String[] { confFile.getAbsolutePath() });
-          } catch (Exception e) {
-            throw Utils.propagate(e);
-          }
+      Runnable child = () -> {
+        try {
+          RSCDriverBootstrapper.main(new String[] { confFile.getAbsolutePath() });
+        } catch (Exception e) {
+          throw Utils.propagate(e);
         }
       };
       return new ChildProcess(conf, promise, child, confFile);
@@ -261,7 +254,7 @@ class ContextLauncher {
    * Write the configuration to a file readable only by the process's owner. Livy properties
    * are written with an added prefix so that they can be loaded using SparkConf on the driver
    * side.
-   *
+   * <br>
    * The default Spark configuration (from either SPARK_HOME or SPARK_CONF_DIR) is merged into
    * the user configuration, so that defaults set by Livy's admin take effect when not overridden
    * by the user.
@@ -286,13 +279,10 @@ class ContextLauncher {
       File sparkDefaults = new File(confDir + File.separator + "spark-defaults.conf");
       if (sparkDefaults.isFile()) {
         Properties sparkConf = new Properties();
-        Reader r = new InputStreamReader(new FileInputStream(sparkDefaults), UTF_8);
-        try {
-          sparkConf.load(r);
-        } finally {
-          r.close();
+        try (Reader r = new InputStreamReader(
+                Files.newInputStream(sparkDefaults.toPath()), UTF_8)) {
+            sparkConf.load(r);
         }
-
         for (String key : sparkConf.stringPropertyNames()) {
           if (!confView.containsKey(key)) {
             confView.put(key, sparkConf.getProperty(key));
@@ -303,15 +293,9 @@ class ContextLauncher {
 
     File file = File.createTempFile("livyConf", ".properties");
     Files.setPosixFilePermissions(file.toPath(), EnumSet.of(OWNER_READ, OWNER_WRITE));
-    //file.deleteOnExit();
-
-    Writer writer = new OutputStreamWriter(new FileOutputStream(file), UTF_8);
-    try {
-      confView.store(writer, "Livy App Context Configuration");
-    } finally {
-      writer.close();
+    try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), UTF_8)) {
+        confView.store(writer, "Livy App Context Configuration");
     }
-
     return file;
   }
 
@@ -340,14 +324,16 @@ class ContextLauncher {
       }
     }
 
-    private void handle(ChannelHandlerContext ctx, RemoteDriverAddress msg) {
+    //Note. Your compiler or IDE may identify this method as unused
+    //tests fail without it
+    public void handle(ChannelHandlerContext ctx, RemoteDriverAddress msg) {
       InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
       String ip = insocket.getAddress().getHostAddress();
       ContextInfo info = new ContextInfo(ip, msg.port, clientId, secret);
       if (promise.trySuccess(info)) {
         timeout.cancel(true);
         LOG.debug("Received driver info for client {}: {}/{}.", client.getChannel(),
-          msg.host, msg.port);
+                msg.host, msg.port);
       } else {
         LOG.warn("Connection established but promise is already finalized.");
       }
@@ -398,7 +384,7 @@ class ContextLauncher {
             }
           } catch (InterruptedException ie) {
             LOG.warn("Waiting thread interrupted, killing child process.");
-            Thread.interrupted();
+            boolean ignored = Thread.interrupted();
             child.destroy();
           } catch (Exception e) {
             LOG.warn("Exception while waiting for child process.", e);
@@ -436,34 +422,32 @@ class ContextLauncher {
       try {
         monitor.join(conf.getTimeAsMs(CLIENT_SHUTDOWN_TIMEOUT));
       } catch (InterruptedException ie) {
-        LOG.debug("Interrupted before driver thread was finished.");
+        LOG.debug("Interrupted before driver thread was finished.", ie);
       }
     }
 
     private Thread monitor(final Runnable task, int childId) {
-      Runnable wrappedTask = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            task.run();
-          } finally {
-            confFile.delete();
-          }
+      Runnable wrappedTask = () -> {
+        try {
+          task.run();
+        } finally {
+          boolean ignored = confFile.delete();
         }
       };
       Thread thread = new Thread(wrappedTask);
       thread.setDaemon(true);
       thread.setName("ContextLauncher-" + childId);
-      thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-        @Override
-        public void uncaughtException(Thread t, Throwable e) {
-          LOG.warn("Child task threw exception.", e);
-          fail(e);
-        }
+      thread.setUncaughtExceptionHandler((t, e) -> {
+        LOG.warn("Child task threw exception.", e);
+        fail(e);
       });
       thread.start();
       return thread;
     }
+  }
+
+  public RSCConf getConf() {
+    return conf;
   }
 
   // Just for testing.

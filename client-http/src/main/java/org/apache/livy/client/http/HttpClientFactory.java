@@ -18,6 +18,7 @@
 package org.apache.livy.client.http;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.Properties;
 
 import org.apache.livy.LivyClient;
@@ -29,12 +30,11 @@ import org.apache.livy.LivyClientFactory;
 public final class HttpClientFactory implements LivyClientFactory {
 
   @Override
-  public LivyClient createClient(URI uri, Properties config) {
+  public Optional<LivyClient> createClient(URI uri, Properties config) {
     if (!"http".equals(uri.getScheme()) && !"https".equals(uri.getScheme())) {
-      return null;
+      return Optional.empty();
     }
-
-    return new HttpClient(uri, new HttpConf(config));
+    return Optional.of(new HttpClient(uri, new HttpConf(config)));
   }
 
 }

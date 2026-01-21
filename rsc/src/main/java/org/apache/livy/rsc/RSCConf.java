@@ -37,7 +37,7 @@ public class RSCConf extends ClientConf<RSCConf> {
 
   public static final String RSC_CONF_PREFIX = "livy.rsc.";
 
-  public static enum Entry implements ConfEntry {
+  public enum Entry implements ConfEntry {
     CLIENT_ID("client.auth.id", null),
     CLIENT_SECRET("client.auth.secret", null),
     CLIENT_IN_PROCESS("client.do-not-use.run-driver-in-process", false),
@@ -87,7 +87,7 @@ public class RSCConf extends ClientConf<RSCConf> {
     private final String key;
     private final Object dflt;
 
-    private Entry(String key, Object dflt) {
+    Entry(String key, Object dflt) {
       this.key = RSC_CONF_PREFIX + key;
       this.dflt = dflt;
     }
@@ -178,7 +178,7 @@ public class RSCConf extends ClientConf<RSCConf> {
     return deprecatedConfigs;
   }
 
-  static enum DepConf implements DeprecatedConf {
+  enum DepConf implements DeprecatedConf {
     CLIENT_IN_PROCESS("client.do_not_use.run_driver_in_process", "0.4"),
     CLIENT_SHUTDOWN_TIMEOUT("client.shutdown_timeout", "0.4"),
     DRIVER_CLASS("driver_class", "0.4"),
@@ -194,11 +194,11 @@ public class RSCConf extends ClientConf<RSCConf> {
     private final String version;
     private final String deprecationMessage;
 
-    private DepConf(String key, String version) {
+    DepConf(String key, String version) {
       this(key, version, "");
     }
 
-    private DepConf(String key, String version, String deprecationMessage) {
+    DepConf(String key, String version, String deprecationMessage) {
       this.key = RSC_CONF_PREFIX + key;
       this.version = version;
       this.deprecationMessage = deprecationMessage;
