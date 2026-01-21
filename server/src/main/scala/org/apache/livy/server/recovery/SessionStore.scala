@@ -46,6 +46,19 @@ class SessionStore(
     store.set(sessionPath(sessionType, m.id), m)
   }
 
+  /**
+   * Get a session from the session state store
+   */
+  def get[T <: RecoveryMetadata : ClassTag](sessionType: String, id: Int): Option[T] = {
+    try {
+      store.get[T](sessionPath(sessionType, id))
+    } catch {
+      case NonFatal(e) =>
+        error(e.getMessage, e.getCause)
+        None
+    }
+  }
+
   def saveNextSessionId(sessionType: String, id: Int): Unit = {
     store.set(sessionManagerPath(sessionType), SessionManagerState(id))
   }
