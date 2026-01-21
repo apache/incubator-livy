@@ -16,6 +16,7 @@
  */
 package org.apache.livy.utils
 
+import java.util
 import java.util.concurrent.TimeoutException
 
 import scala.annotation.tailrec
@@ -27,8 +28,8 @@ import scala.language.postfixOps
 import scala.util.Try
 import scala.util.control.NonFatal
 
+import org.apache.hadoop.yarn.api.protocolrecords.GetApplicationsRequest
 import org.apache.hadoop.yarn.api.records.{ApplicationId, ApplicationReport, FinalApplicationStatus, YarnApplicationState}
-import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.exceptions.ApplicationAttemptNotFoundException
 import org.apache.hadoop.yarn.util.ConverterUtils
@@ -37,7 +38,7 @@ import org.apache.livy.{LivyConf, Logging, Utils}
 
 object SparkYarnApp extends Logging {
 
-  def init(livyConf: LivyConf, client: Option[YarnClient] = None): Unit = {
+  def init(livyConf: LivyConf, client: Option[YarnClientExt] = None): Unit = {
     mockYarnClient = client
     sessionLeakageCheckInterval = livyConf.getTimeAsMs(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL)
     sessionLeakageCheckTimeout = livyConf.getTimeAsMs(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT)
@@ -46,11 +47,15 @@ object SparkYarnApp extends Logging {
     leakedAppsGCThread.start()
   }
 
-  private var mockYarnClient: Option[YarnClient] = None
+  private var mockYarnClient: Option[YarnClientExt] = None
 
   // YarnClient is thread safe. Create once, share it across threads.
   lazy val yarnClient = {
-    val c = YarnClient.createYarnClient()
+    // Initialize an instance of YarnClientExt. This extends YarnClientImpl
+    // such that list of applications can be queried based on GetApplicationsRequest
+    // which helps in avoiding load on Yarn cluster and on the Livy server in client
+    // side filtering if there are large number of Spark applications running in Yarn cluster.
+    val c = new YarnClientExt
     c.init(new YarnConfiguration())
     c.start()
     c
@@ -84,8 +89,8 @@ object SparkYarnApp extends Logging {
           // kill the app if found it and remove it if exceeding a threshold
           val iter = leakedAppTags.entrySet().iterator()
           val now = System.currentTimeMillis()
-          val apps = client.getApplications(appType).asScala
-
+          val request = createGetApplicationsRequest(leakedAppTags.keySet())
+          val apps = yarnClient.getApplications(request).asScala
           while(iter.hasNext) {
             var isRemoved = false
             val entry = iter.next()
@@ -111,7 +116,19 @@ object SparkYarnApp extends Logging {
     }
   }
 
-
+  /**
+   * Generates GetApplicationsRequest for Spark Job type. Application tags
+   * provided via appTags are added in the GetApplicationRequest.
+   * @param appTags Set[String]
+   * @return GetApplicationsRequest
+   */
+  private def createGetApplicationsRequest(appTags: util.Set[String])
+  : GetApplicationsRequest = {
+    val request: GetApplicationsRequest =
+      GetApplicationsRequest.newInstance(appType)
+    request.setApplicationTags(appTags)
+    request
+  }
 }
 
 /**
@@ -130,7 +147,7 @@ class SparkYarnApp private[utils] (
     process: Option[LineBufferedProcess],
     listener: Option[SparkAppListener],
     livyConf: LivyConf,
-    yarnClient: => YarnClient = SparkYarnApp.yarnClient) // For unit test.
+    yarnClient: => YarnClientExt = SparkYarnApp.yarnClient) // For unit test.
   extends SparkApp
   with Logging {
   import SparkYarnApp._
@@ -198,9 +215,11 @@ class SparkYarnApp private[utils] (
 
     val appTagLowerCase = appTag.toLowerCase()
 
-    // FIXME Should not loop thru all YARN applications but YarnClient doesn't offer an API.
-    // Consider calling rmClient in YarnClient directly.
-    yarnClient.getApplications(appType).asScala.find(_.getApplicationTags.contains(appTagLowerCase))
+    val appTags: util.Set[String] = util.Collections.singleton(appTag)
+    val request = createGetApplicationsRequest(appTags)
+    val applicationReports = yarnClient.getApplications(request)
+
+    applicationReports.asScala.find(_.getApplicationTags.contains(appTagLowerCase))
     match {
       case Some(app) => app.getApplicationId
       case None =>

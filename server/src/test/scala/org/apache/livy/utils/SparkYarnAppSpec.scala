@@ -59,7 +59,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
 
     it("should poll YARN state and terminate") {
       Clock.withSleepMethod(mockSleep) {
-        val mockYarnClient = mock[YarnClient]
+        val mockYarnClient = mock[YarnClientExt]
         val mockAppListener = mock[SparkAppListener]
 
         val mockAppReport = mock[ApplicationReport]
@@ -127,7 +127,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
     it("should kill yarn app") {
       Clock.withSleepMethod(mockSleep) {
         val diag = "DIAG"
-        val mockYarnClient = mock[YarnClient]
+        val mockYarnClient = mock[YarnClientExt]
 
         val mockAppReport = mock[ApplicationReport]
         when(mockAppReport.getApplicationId).thenReturn(appId)
@@ -164,7 +164,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
 
     it("should return spark-submit log") {
       Clock.withSleepMethod(mockSleep) {
-        val mockYarnClient = mock[YarnClient]
+        val mockYarnClient = mock[YarnClientExt]
         val mockSparkSubmit = mock[LineBufferedProcess]
         val sparkSubmitInfoLog = IndexedSeq("SPARK-SUBMIT", "LOG")
         val sparkSubmitErrorLog = IndexedSeq("SPARK-SUBMIT", "error log")
@@ -212,10 +212,10 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         when(mockAppReport.getFinalApplicationStatus).thenReturn(FinalApplicationStatus.SUCCEEDED)
         when(mockAppReport.getYarnApplicationState).thenReturn(RUNNING)
 
-        val mockYarnClient = mock[YarnClient]
+        val mockYarnClient = mock[YarnClientExt]
         when(mockYarnClient.getApplicationReport(appId)).thenReturn(mockAppReport)
 
-        val mockSparkSubmit = mock[LineBufferedProcess]
+       val mockSparkSubmit = mock[LineBufferedProcess]
 
         val sparkSubmitRunningLatch = new CountDownLatch(1)
         // Simulate a running spark-submit
@@ -381,7 +381,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
 
     it("should get App Id") {
       Clock.withSleepMethod(mockSleep) {
-        val mockYarnClient = mock[YarnClient]
+        val mockYarnClient = mock[YarnClientExt]
         val mockAppReport = mock[ApplicationReport]
 
         when(mockAppReport.getApplicationTags).thenReturn(Set(appTag.toLowerCase).asJava)
@@ -410,7 +410,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
 
     it("should expose driver log url and Spark UI url") {
       Clock.withSleepMethod(mockSleep) {
-        val mockYarnClient = mock[YarnClient]
+        val mockYarnClient = mock[YarnClientExt]
         val driverLogUrl = "DRIVER LOG URL"
         val sparkUiUrl = "SPARK UI URL"
 
@@ -591,7 +591,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
 
     it("should not die on YARN-4411") {
       Clock.withSleepMethod(mockSleep) {
-        val mockYarnClient = mock[YarnClient]
+        val mockYarnClient = mock[YarnClientExt]
 
         // Block test until getApplicationReport is called 10 times.
         val pollCountDown = new CountDownLatch(10)
@@ -616,7 +616,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
 
     it("should not die on ApplicationAttemptNotFoundException") {
       Clock.withSleepMethod(mockSleep) {
-        val mockYarnClient = mock[YarnClient]
+        val mockYarnClient = mock[YarnClientExt]
         val mockAppReport = mock[ApplicationReport]
         val mockApplicationAttemptId = mock[ApplicationAttemptId]
         val done = new AtomicBoolean(false)
@@ -672,7 +672,7 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_INTERVAL, "100ms")
         livyConf.set(LivyConf.YARN_APP_LEAKAGE_CHECK_TIMEOUT, "1000ms")
 
-        val client = mock[YarnClient]
+        val client = mock[YarnClientExt]
         when(client.getApplications(SparkYarnApp.appType)).
           thenReturn(new ArrayList[ApplicationReport]())
 
