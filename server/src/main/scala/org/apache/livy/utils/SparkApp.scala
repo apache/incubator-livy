@@ -17,12 +17,12 @@
 
 package org.apache.livy.utils
 
+import java.io.{File, FileInputStream}
+import java.util.Properties
+
 import scala.collection.JavaConverters._
 
 import org.apache.livy.LivyConf
-
-import java.io.{File, FileInputStream}
-import java.util.Properties
 
 object AppInfo {
   val DRIVER_LOG_URL_NAME = "driverLogUrl"
@@ -31,10 +31,12 @@ object AppInfo {
 }
 
 case class AppInfo(
-  var driverLogUrl: Option[String] = None,
-  var sparkUiUrl: Option[String] = None,
-  var executorLogUrls: Option[String] = None) {
+                    var driverLogUrl: Option[String] = None,
+                    var sparkUiUrl: Option[String] = None,
+                    var executorLogUrls: Option[String] = None) {
+
   import AppInfo._
+
   def asJavaMap: java.util.Map[String, String] =
     Map(
       DRIVER_LOG_URL_NAME -> driverLogUrl.orNull,
@@ -60,22 +62,26 @@ trait SparkAppListener {
 object SparkApp {
   private val SPARK_YARN_TAG_KEY = "spark.yarn.tags"
   val SPARK_KUBERNETES_NAMESPACE_KEY = "spark.kubernetes.namespace"
+
   object State extends Enumeration {
     val STARTING, RUNNING, FINISHED, FAILED, KILLED = Value
   }
+
   type State = State.Value
 
   def getNamespace(conf: Map[String, String], livyConf: LivyConf): String = {
-    var namespace:String = conf.getOrElse(SPARK_KUBERNETES_NAMESPACE_KEY, "")
-    if(namespace == "") {
-      val sparkHome = livyConf.sparkHome().get //SPARK_HOME is mandatory for Livy
-      val sparkDefaultsPath = sparkHome + File.separator + "conf" + File.separator + "spark-defaults.conf"
+    var namespace: String = conf.getOrElse(SPARK_KUBERNETES_NAMESPACE_KEY, "")
+    if (namespace == "") {
+      val sparkHome = livyConf.sparkHome().get // SPARK_HOME is mandatory for Livy
+      val sparkDefaultsPath =
+        sparkHome + File.separator + "conf" + File.separator + "spark-defaults.conf"
       val properties = new Properties()
       properties.load(new FileInputStream(sparkDefaultsPath))
-      namespace = properties.getProperty(SPARK_KUBERNETES_NAMESPACE_KEY,"default")
+      namespace = properties.getProperty(SPARK_KUBERNETES_NAMESPACE_KEY, "default")
     }
     namespace
   }
+
   /**
    * Return cluster manager dependent SparkConf.
    *
@@ -84,9 +90,9 @@ object SparkApp {
    * @param sparkConf
    */
   def prepareSparkConf(
-      uniqueAppTag: String,
-      livyConf: LivyConf,
-      sparkConf: Map[String, String]): Map[String, String] = {
+                        uniqueAppTag: String,
+                        livyConf: LivyConf,
+                        sparkConf: Map[String, String]): Map[String, String] = {
     if (livyConf.isRunningOnYarn()) {
       val userYarnTags = sparkConf.get(SPARK_YARN_TAG_KEY).map("," + _).getOrElse("")
       val mergedYarnTags = uniqueAppTag + userYarnTags
@@ -112,12 +118,12 @@ object SparkApp {
    * @param uniqueAppTag A tag that can uniquely identify the application.
    */
   def create(
-      uniqueAppTag: String,
-      appId: Option[String],
-      process: Option[LineBufferedProcess],
-      livyConf: LivyConf,
-      listener: Option[SparkAppListener],
-      extrasMap: Map[String, String]): SparkApp = {
+              uniqueAppTag: String,
+              appId: Option[String],
+              process: Option[LineBufferedProcess],
+              livyConf: LivyConf,
+              listener: Option[SparkAppListener],
+              extrasMap: Map[String, String]): SparkApp = {
     if (livyConf.isRunningOnYarn()) {
       new SparkYarnApp(uniqueAppTag, appId, process, listener, livyConf)
     } else if (livyConf.isRunningOnKubernetes()) {
@@ -135,5 +141,6 @@ object SparkApp {
  */
 abstract class SparkApp {
   def kill(): Unit
+
   def log(): IndexedSeq[String]
 }

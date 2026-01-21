@@ -30,6 +30,7 @@ import org.apache.livy.rsc.RSCConf
 import org.apache.livy.rsc.driver.SparkEntries
 
 case class People(name: String, age: Int)
+
 case class Person(name: String, birthday: Date)
 
 class SQLInterpreterSpec extends BaseInterpreterSpec {
@@ -72,7 +73,9 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
         )))
     )
 
-    val result = Try { resp1 should equal(expectedResult)}
+    val result = Try {
+      resp1 should equal(expectedResult)
+    }
     if (result.isFailure) {
       fail(s"$resp1 doesn't equal to expected result")
     }
@@ -104,7 +107,9 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
         )))
     )
 
-    val result = Try { resp1 should equal(expectedResult)}
+    val result = Try {
+      resp1 should equal(expectedResult)
+    }
     if (result.isFailure) {
       fail(s"$resp1 doesn't equal to expected result")
     }
@@ -139,7 +144,7 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
     )
 
     // Test empty result
-     val resp2 = interpreter.execute(
+    val resp2 = interpreter.execute(
       """
         |SELECT name FROM people WHERE age > 22
       """.stripMargin)
@@ -192,8 +197,10 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
 
     assert(resp.isInstanceOf[Interpreter.ExecuteError])
     val error = resp.asInstanceOf[Interpreter.ExecuteError]
-    error.ename should be ("Error")
-    assert(error.evalue.contains("not found") || error.evalue.contains("TABLE_OR_VIEW_NOT_FOUND") || error.evalue.contains("cannot be found"))
+    error.ename should be("Error")
+    assert(error.evalue.contains("not found")
+      || error.evalue.contains("TABLE_OR_VIEW_NOT_FOUND")
+      || error.evalue.contains("cannot be found"))
   }
 
   it should "fail if submitting multiple queries" in withInterpreter { interpreter =>
@@ -204,6 +211,6 @@ class SQLInterpreterSpec extends BaseInterpreterSpec {
       """.stripMargin)
 
     assert(resp.isInstanceOf[Interpreter.ExecuteError])
-    resp.asInstanceOf[Interpreter.ExecuteError].ename should be ("Error")
+    resp.asInstanceOf[Interpreter.ExecuteError].ename should be("Error")
   }
 }

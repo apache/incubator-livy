@@ -471,7 +471,9 @@ class InteractiveSession(
       val namespace = SparkApp.getNamespace(conf, livyConf)
       val extrasMap: Map[String, String] = Map(SparkApp.SPARK_KUBERNETES_NAMESPACE_KEY -> namespace)
         if (!livyConf.isRunningOnKubernetes()) {
-        driverProcess.map(_ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this), extrasMap))
+        driverProcess.map(_ =>
+          SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this), extrasMap)
+        )
       } else {
         // Create SparkApp for Kubernetes anyway
         Some(SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this), extrasMap))

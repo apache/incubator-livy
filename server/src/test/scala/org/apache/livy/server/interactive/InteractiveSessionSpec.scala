@@ -364,7 +364,7 @@ class InteractiveSessionSpec extends FunSpec
       val m = InteractiveRecoveryMetadata(
           78, None, None, "appTag", Spark, 0, null, None, None, None,
           None, None, None, Map.empty[String, String], List.empty[String], List.empty[String],
-          List.empty[String], None, List.empty[String], None, None, Some(URI.create("")),"")
+          List.empty[String], None, List.empty[String], None, None, Some(URI.create("")), "")
       val s = InteractiveSession.recover(m, conf, sessionStore, None, Some(mockClient))
       s.start()
 
@@ -381,7 +381,7 @@ class InteractiveSessionSpec extends FunSpec
       val m = InteractiveRecoveryMetadata(
         78, None, Some("appId"), "appTag", Spark, 0, null, None, None, None,
           None, None, None, Map.empty[String, String], List.empty[String], List.empty[String],
-          List.empty[String], None, List.empty[String], None, None, None,"")
+          List.empty[String], None, List.empty[String], None, None, None, "")
       val s = InteractiveSession.recover(m, conf, sessionStore, None)
       s.start()
       s.state shouldBe a[SessionState.Dead]

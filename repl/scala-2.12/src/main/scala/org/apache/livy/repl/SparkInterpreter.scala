@@ -107,14 +107,14 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
     sparkILoop.interpret(code)
   }
 
-  override protected def completeCandidates(code: String, cursor: Int) : Array[String] = {
-    val completer : Completion = {
+  override protected def completeCandidates(code: String, cursor: Int): Array[String] = {
+    val completer: Completion = {
       try {
         val cls = Class.forName("scala.tools.nsc.interpreter.PresentationCompilerCompleter")
         cls.getDeclaredConstructor(classOf[IMain]).newInstance(sparkILoop.intp)
           .asInstanceOf[Completion]
       } catch {
-        case e : ClassNotFoundException => NoCompletion
+        case e: ClassNotFoundException => NoCompletion
       }
     }
     completer.complete(code, cursor).candidates.toArray
@@ -126,9 +126,9 @@ class SparkInterpreter(protected override val conf: SparkConf) extends AbstractS
   }
 
   override protected def bind(name: String,
-      tpe: String,
-      value: Object,
-      modifier: List[String]): Unit = {
+                              tpe: String,
+                              value: Object,
+                              modifier: List[String]): Unit = {
     sparkILoop.beQuietDuring {
       sparkILoop.bind(name, tpe, value, modifier)
     }
