@@ -103,4 +103,11 @@ public interface JobContext {
    * @throws Exception If SparkSession does not exist
    */
   <E> E sparkSession() throws Exception;
+
+  /**
+   * Broadcast repl-state to clients.
+   * @param sessionState {@link org.apache.livy.sessions.SessionState}
+   *
+   */
+  void broadcastReplState(String sessionState);
 }
