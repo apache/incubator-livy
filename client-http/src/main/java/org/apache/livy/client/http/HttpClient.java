@@ -44,7 +44,7 @@ class HttpClient implements LivyClient {
 
   private final HttpConf config;
   private final LivyConnection conn;
-  private final int sessionId;
+  private final SessionInfo session;
   private final ScheduledExecutorService executor;
   private final Serializer serializer;
 
@@ -66,8 +66,8 @@ class HttpClient implements LivyClient {
           m.group(1), uri.getQuery(), uri.getFragment());
 
         this.conn = new LivyConnection(base, httpConf);
-        this.sessionId = Integer.parseInt(m.group(2));
-        conn.post(null, SessionInfo.class, "/%d/connect", sessionId);
+        int sessionId = Integer.parseInt(m.group(2));
+        session = conn.post(null, SessionInfo.class, "/%d/connect", sessionId);
       } else {
         Map<String, String> sessionConf = new HashMap<>();
         for (Map.Entry<String, String> e : config) {
@@ -76,7 +76,7 @@ class HttpClient implements LivyClient {
 
         ClientMessage create = new CreateClientRequest(sessionConf);
         this.conn = new LivyConnection(uri, httpConf);
-        this.sessionId = conn.post(create, SessionInfo.class, "/").id;
+        this.session = conn.post(create, SessionInfo.class, "/");
       }
     } catch (Exception e) {
       throw propagate(e);
@@ -87,7 +87,7 @@ class HttpClient implements LivyClient {
     this.executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
       @Override
       public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "HttpClient-" + sessionId);
+        Thread t = new Thread(r, "HttpClient-" + session.id);
         t.setDaemon(true);
         return t;
       }
@@ -112,7 +112,7 @@ class HttpClient implements LivyClient {
       executor.shutdownNow();
       try {
         if (shutdownContext) {
-          conn.delete(Map.class, "/%s", sessionId);
+          conn.delete(Map.class, "/%s", session.id);
         }
       } catch (Exception e) {
         throw propagate(e);
@@ -149,7 +149,7 @@ class HttpClient implements LivyClient {
     Callable<Void> task = new Callable<Void>() {
       @Override
       public Void call() throws Exception {
-        conn.post(file, Void.class,  paramName, "/%d/%s", sessionId, command);
+        conn.post(file, Void.class,  paramName, "/%d/%s", session.id, command);
         return null;
       }
     };
@@ -161,7 +161,7 @@ class HttpClient implements LivyClient {
       @Override
       public Void call() throws Exception {
         ClientMessage msg = new AddResource(resource.toString());
-        conn.post(msg, Void.class, "/%d/%s", sessionId, command);
+        conn.post(msg, Void.class, "/%d/%s", session.id, command);
         return null;
       }
     };
@@ -170,7 +170,7 @@ class HttpClient implements LivyClient {
 
   private <T> JobHandleImpl<T> sendJob(final String command, Job<T> job) {
     final ByteBuffer serializedJob = serializer.serialize(job);
-    JobHandleImpl<T> handle = new JobHandleImpl<T>(config, conn, sessionId, executor, serializer);
+    JobHandleImpl<T> handle = new JobHandleImpl<T>(config, conn, session.id, executor, serializer);
     handle.start(command, serializedJob);
     return handle;
   }
@@ -183,9 +183,12 @@ class HttpClient implements LivyClient {
     }
   }
 
-  // For testing.
-  int getSessionId() {
-    return sessionId;
+
+  public int getSessionId() {
+    return session.id;
   }
+
+
+  public String getSessionAppId() { return session.appId;}
 
 }

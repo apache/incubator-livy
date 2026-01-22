@@ -90,6 +90,11 @@ public class TestClientFactory implements LivyClientFactory {
       throw new UnsupportedOperationException();
     }
 
+    @Override
+    public int getSessionId(){throw new UnsupportedOperationException();}
+
+    @Override
+    public String getSessionAppId(){throw new UnsupportedOperationException();}
   }
 
 }

@@ -107,4 +107,18 @@ public interface LivyClient {
    */
   Future<?> addFile(URI uri);
 
+  /**
+   *  Retrieves the session id internally created by Livy.
+   *
+   * @return An integer representing the session id of the running session
+   */
+  int getSessionId();
+
+  /**
+   * Retrieves the internally generated session app id.
+   *
+   * @return A string representing the livy session app id.
+   */
+  String getSessionAppId();
+
 }
