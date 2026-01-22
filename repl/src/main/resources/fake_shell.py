@@ -527,6 +527,7 @@ def main():
             from py4j.java_gateway import java_import, JavaGateway, GatewayClient
             from pyspark.conf import SparkConf
             from pyspark.context import SparkContext
+            from pyspark import SparkFiles
             from pyspark.sql import SQLContext, HiveContext, Row
             # Connect to the gateway
             gateway_port = int(os.environ["PYSPARK_GATEWAY_PORT"])
@@ -552,34 +553,19 @@ def main():
 
             jsc = gateway.entry_point.sc()
             jconf = gateway.entry_point.sc().getConf()
-            jsqlc = gateway.entry_point.hivectx() if gateway.entry_point.hivectx() is not None \
-                else gateway.entry_point.sqlctx()
 
             conf = SparkConf(_jvm = gateway.jvm, _jconf = jconf)
             sc = SparkContext(jsc=jsc, gateway=gateway, conf=conf)
             global_dict['sc'] = sc
 
-            if spark_major_version >= "2":
-                from pyspark.sql import SparkSession
-                spark_session = SparkSession(sc, gateway.entry_point.sparkSession())
-                sqlc = SQLContext(sc, spark_session, jsqlc)
-                global_dict['sqlContext'] = sqlc
-                global_dict['spark'] = spark_session
-            else:
-                sqlc = SQLContext(sc, jsqlc)
-                global_dict['sqlContext'] = sqlc
+            from pyspark.sql import SparkSession
+            spark_session = SparkSession(sc, gateway.entry_point.sparkSession())
+            sqlc = SQLContext.getOrCreate(sc)
+            global_dict['sqlContext'] = sqlc
+            global_dict['spark'] = spark_session
 
-                # LIVY-294, need to check whether HiveContext can work properly,
-                # fallback to SQLContext if HiveContext can not be initialized successfully.
-                # Only for spark-1.
-                code = textwrap.dedent("""
-                    import py4j
-                    from pyspark.sql import SQLContext
-                    try:
-                      sqlContext.tables()
-                    except py4j.protocol.Py4JError:
-                      sqlContext = SQLContext(sc)""")
-                exec(code, global_dict)
+            root_dir = SparkFiles.getRootDirectory()
+            os.chdir(root_dir)
 
             #Start py4j callback server
             from py4j.protocol import ENTRY_POINT_OBJECT_ID
