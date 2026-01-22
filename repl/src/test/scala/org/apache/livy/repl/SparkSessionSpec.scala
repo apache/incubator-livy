@@ -236,6 +236,33 @@ class SparkSessionSpec extends BaseSessionSpec(Spark) {
     }
   }
 
+  it should "cancel driver code without spark jobs" in withSession { session =>
+    val stmtId = session.execute(
+      """
+        |Thread.sleep(5000)
+        |val r = 1 + 1
+        |r
+      """.stripMargin)
+
+    eventually(timeout(30 seconds), interval(100 millis)) {
+      assert(session.statements(stmtId).state.get() == StatementState.Running)
+    }
+
+    session.cancel(stmtId)
+
+    eventually(timeout(30 seconds), interval(100 millis)) {
+      val statement = session.statements(stmtId)
+      assert(statement.state.get() == StatementState.Cancelled)
+      val resultJson = parse(statement.output)
+      (resultJson \ "status").extract[String] should equal ("error")
+      statement.output should not include ("r: Int = 2")
+    }
+
+    val followUp = execute(session)("r")
+    val followUpResult = parse(followUp.output)
+    (followUpResult \ "status").extract[String] should equal ("error")
+  }
+
   it should "correctly calculate progress" in withSession { session =>
     val executeCode =
       """

@@ -19,7 +19,7 @@ package org.apache.livy.repl
 
 import java.util.{LinkedHashMap => JLinkedHashMap}
 import java.util.Map.Entry
-import java.util.concurrent.Executors
+import java.util.concurrent.{ConcurrentHashMap, Executors}
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
@@ -62,6 +62,8 @@ class Session(
 
   private val cancelExecutor = ExecutionContext.fromExecutorService(
     Executors.newSingleThreadExecutor())
+
+  private val statementThreads = new ConcurrentHashMap[Int, Thread]()
 
   private implicit val formats = DefaultFormats
 
@@ -161,18 +163,29 @@ class Session(
     _statements.synchronized { _statements(statementId) = statement }
 
     Future {
-      setJobGroup(tpe, statementId)
-      statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
+      val currentThread = Thread.currentThread()
+      statementThreads.put(statementId, currentThread)
+      try {
+        setJobGroup(tpe, statementId)
+        statement.compareAndTransit(StatementState.Waiting, StatementState.Running)
 
-      if (statement.state.get() == StatementState.Running) {
-        statement.started = System.currentTimeMillis()
-        statement.output = executeCode(interpreter(tpe), statementId, code)
+        if (statement.state.get() == StatementState.Running) {
+          statement.started = System.currentTimeMillis()
+          statement.output = executeCode(interpreter(tpe), statementId, code)
+        }
+
+        statement.compareAndTransit(StatementState.Running, StatementState.Available)
+        statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
+        statement.updateProgress(1.0)
+        statement.completed = System.currentTimeMillis()
+      } finally {
+        statementThreads.remove(statementId, currentThread)
+        // Clear the interrupt flag, but log if the thread was interrupted.
+        if (Thread.interrupted()) {
+          warn(s"Thread was interrupted during execution of statement $statementId; " +
+            "interrupt flag cleared.")
+        }
       }
-
-      statement.compareAndTransit(StatementState.Running, StatementState.Available)
-      statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
-      statement.updateProgress(1.0)
-      statement.completed = System.currentTimeMillis()
     }(interpreterExecutor)
 
     statementId
@@ -212,6 +225,7 @@ class Session(
           info(s"Failed to cancel statement $statementId.")
           statement.compareAndTransit(StatementState.Cancelling, StatementState.Cancelled)
         } else {
+          Option(statementThreads.get(statementId)).foreach(_.interrupt())
           sc.cancelJobGroup(statementId.toString)
           if (statement.state.get() == StatementState.Cancelling) {
             Thread.sleep(livyConf.getTimeAsMs(RSCConf.Entry.JOB_CANCEL_TRIGGER_INTERVAL))
