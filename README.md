@@ -77,7 +77,7 @@ You can also use the provided [Dockerfile](./dev/docker/livy-dev-base/Dockerfile
 git clone https://github.com/apache/incubator-livy.git
 cd incubator-livy
 docker build -t livy-ci dev/docker/livy-dev-base/
-docker run --rm -it -v $(pwd):/workspace -v $HOME/.m2:/root/.m2 livy-ci mvn package
+docker run --rm -it -v $(pwd):/workspace -v $HOME/.m2:/root/.m2 livy-ci mvn package -Pspark3 -Pscala-2.12
 ```
 
 > **Note**: The `docker run` command maps the maven repository to your host machine's maven cache so subsequent runs will not need to download dependencies.
@@ -91,8 +91,9 @@ version of Spark without needing to rebuild.
 
 ### Build Profiles
 
-| Flag         | Purpose                                                            |
-|--------------|--------------------------------------------------------------------|
-| -Phadoop2    | Choose Hadoop2 based build dependencies                            |
-| -Pspark3     | Choose Spark 3.x based build dependencies (default configuration)  |
-| -Pscala-2.12 | Choose Scala 2.12 based build dependencies (default configuration) |
+| Flag           | Purpose                                    |
+|----------------|--------------------------------------------|
+| -Phadoop2      | Choose Hadoop2 based build dependencies    |
+| -Pthriftserver | Build and test Livy Thrift Server modules  |
+| -Pspark3       | Choose Spark 3.x based build dependencies  |
+| -Pscala-2.12   | Choose Scala 2.12 based build dependencies |
