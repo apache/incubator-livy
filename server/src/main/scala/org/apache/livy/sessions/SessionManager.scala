@@ -76,7 +76,6 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   protected[this] final val sessions = mutable.LinkedHashMap[Int, S]()
   private[this] final val sessionsByName = mutable.HashMap[String, S]()
 
-
   private[this] final val sessionTimeoutCheck = livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK)
   private[this] final val sessionTimeoutCheckSkipBusy =
     livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK_SKIP_BUSY)
@@ -90,8 +89,15 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   private[this] final val sessionStateRetainedInSec =
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_STATE_RETAIN_TIME))
 
-  mockSessions.getOrElse(recover()).foreach(register)
   new GarbageCollector().start()
+  recoverSessions()
+
+  def recoverSessions(): Unit = {
+    idCounter.set(0)
+    sessions.clear()
+    sessionsByName.clear()
+    mockSessions.getOrElse(recover()).foreach(register)
+  }
 
   def nextId(): Int = synchronized {
     val id = idCounter.getAndIncrement()
@@ -239,7 +245,5 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
         Thread.sleep(60 * 1000)
       }
     }
-
   }
-
 }
