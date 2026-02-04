@@ -20,8 +20,6 @@ package org.apache.livy.client.http;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.concurrent.TimeUnit;
 
@@ -104,15 +102,15 @@ class LivyConnection {
     Credentials credentials;
     // If user info is specified in the url, pass them to the CredentialsProvider.
     if (uri.getUserInfo() != null) {
-      String[] userInfo = uri.getUserInfo().split(":");
+      String[] userInfo = uri.getUserInfo().split(":", 2);
       if (userInfo.length < 1) {
         throw new IllegalArgumentException("Malformed user info in the url.");
       }
       try {
-        String username = URLDecoder.decode(userInfo[0], StandardCharsets.UTF_8.name());
+        String username = userInfo[0];
         String password = "";
         if (userInfo.length > 1) {
-          password = URLDecoder.decode(userInfo[1], StandardCharsets.UTF_8.name());
+          password = userInfo[1];
         }
         credentials = new UsernamePasswordCredentials(username, password);
       } catch (Exception e) {
