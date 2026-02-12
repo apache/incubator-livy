@@ -154,6 +154,16 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
     this
   }
 
+  /**
+   * Return the arg after escaping backticks, it also unescape the backticks first
+   * then escape it again to avoid double escaping
+   * @param arg
+   */
+  def escapeBackTicks(arg: String): String = {
+    val unescapedArg = arg.replace("\\`", "`")
+    unescapedArg.replace("`", "\\`")
+  }
+
   def start(file: Option[String], args: Traversable[String]): LineBufferedProcess = {
     var arguments = ArrayBuffer(_executable)
 
@@ -194,6 +204,11 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
 
     arguments += file.getOrElse("spark-internal")
     arguments ++= args
+
+    if (livyConf.getBoolean(LivyConf.SPARK_SUBMIT_ESCAPE_BACKTICKS)) {
+      debug("Escaping backticks if present in spark-submit arguments")
+      arguments = arguments.map(escapeBackTicks(_))
+    }
 
     val argsString = arguments
       .map("'" + _.replace("'", "\\'") + "'")
