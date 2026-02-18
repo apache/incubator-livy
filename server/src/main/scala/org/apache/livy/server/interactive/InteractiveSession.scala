@@ -479,15 +479,15 @@ class InteractiveSession(
         client.get.getServerUri.get()
       }(sessionManageExecutors)
 
-      uriFuture.onSuccess { case url =>
+      uriFuture.foreach { url =>
         rscDriverUri = Option(url)
         sessionSaveLock.synchronized {
           sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
         }
       }(sessionManageExecutors)
 
-      uriFuture.onFailure {
-        case e => warn("Fail to get rsc uri", e)
+      uriFuture.failed.foreach {
+        e => warn("Fail to get rsc uri", e)
       }(sessionManageExecutors)
 
       // Send a dummy job that will return once the client is ready to be used, and set the

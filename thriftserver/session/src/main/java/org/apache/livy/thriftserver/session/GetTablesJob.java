@@ -20,7 +20,7 @@ package org.apache.livy.thriftserver.session;
 import java.util.ArrayList;
 import java.util.List;
 
-import static scala.collection.JavaConversions.seqAsJavaList;
+import static scala.collection.JavaConverters.seqAsJavaListConverter;
 
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -54,10 +54,11 @@ public class GetTablesJob extends SparkCatalogJob {
   @Override
   protected List<Row> fetchCatalogObjects(SessionCatalog catalog) {
     List<Row> tableList = new ArrayList<Row>();
-    List<String> databases = seqAsJavaList(catalog.listDatabases(databasePattern));
+    List<String> databases =
+      seqAsJavaListConverter(catalog.listDatabases(databasePattern)).asJava();
     for (String db : databases) {
       List<TableIdentifier> tableIdentifiers =
-        seqAsJavaList(catalog.listTables(db, tablePattern));
+        seqAsJavaListConverter(catalog.listTables(db, tablePattern)).asJava();
       for (TableIdentifier tableIdentifier : tableIdentifiers) {
         CatalogTable table = catalog.getTempViewOrPermanentTableMetadata(tableIdentifier);
         String type = convertTableType(table.tableType().name());

@@ -123,6 +123,7 @@ SRC_ARCHIVE="$ARCHIVE_NAME_PREFIX-src.zip"
 BIN_ARCHIVE="${ARCHIVE_NAME_PREFIX}-bin.zip"
 SCALA_2_12_PROFILES="-Pscala-2.12"
 SCALA_2_11_PROFILES="-Pscala-2.11"
+SCALA_2_13_PROFILES="-Pscala-2.13 -Pspark3"
 
 if [[ "$1" == "package" ]]; then
   # Source and binary tarballs
@@ -152,9 +153,10 @@ if [[ "$1" == "package" ]]; then
     cd ..
   }
 
-  # Package both scala 2.11 and scala 2.12 packages
+  # Package scala 2.11, scala 2.12, and scala 2.13 packages
   make_binary_release "2.11" $SCALA_2_11_PROFILES
   make_binary_release "2.12" $SCALA_2_12_PROFILES
+  make_binary_release "2.13" $SCALA_2_13_PROFILES
 
   rm -rf ${ARCHIVE_NAME_PREFIX}-bin/
 
@@ -197,6 +199,7 @@ if [[ "$1" == "publish-release" ]]; then
 
   $MVN -Dmaven.repo.local=$tmp_repo -DskipTests -DskipITs $SCALA_2_11_PROFILES clean install
   $MVN -Dmaven.repo.local=$tmp_repo -DskipTests -DskipITs $SCALA_2_12_PROFILES install
+  $MVN -Dmaven.repo.local=$tmp_repo -DskipTests -DskipITs $SCALA_2_13_PROFILES install
 
   pushd $tmp_repo/org/apache/livy
 

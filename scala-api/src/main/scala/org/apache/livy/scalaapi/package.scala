@@ -42,7 +42,7 @@ package object scalaapi {
   private[livy] def getJavaFutureResult[T](jFuture: JFuture[T],
                                            atMost: Duration = Duration.Undefined): T = {
     try {
-      if (!atMost.isFinite()) jFuture.get else jFuture.get(atMost.toMillis, TimeUnit.MILLISECONDS)
+      if (!atMost.isFinite) jFuture.get else jFuture.get(atMost.toMillis, TimeUnit.MILLISECONDS)
     } catch {
       case executionException: ExecutionException => throw executionException.getCause
     }

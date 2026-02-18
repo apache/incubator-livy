@@ -137,7 +137,7 @@ class Session(
       entries
     }(interpreterExecutor)
 
-    future.onFailure { case _ => changeState(SessionState.Error()) }(interpreterExecutor)
+    future.failed.foreach { _ => changeState(SessionState.Error()) }(interpreterExecutor)
     future
   }
 
