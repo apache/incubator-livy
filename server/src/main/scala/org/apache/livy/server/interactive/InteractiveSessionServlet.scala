@@ -89,7 +89,7 @@ class InteractiveSessionServlet(
             val from = math.max(0, lines.length - size)
             val until = from + size
 
-            lines.view(from, until)
+            lines.slice(from, until)
           }
           .getOrElse(Nil)
       } else {

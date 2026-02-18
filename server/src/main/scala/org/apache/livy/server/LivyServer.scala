@@ -229,7 +229,7 @@ class LivyServer extends Logging {
         override def contextInitialized(sce: ServletContextEvent): Unit = {
           try {
             val context = sce.getServletContext()
-            context.initParameters(org.scalatra.EnvironmentKey) = livyConf.get(ENVIRONMENT)
+            context.setInitParameter(org.scalatra.EnvironmentKey, livyConf.get(ENVIRONMENT))
 
             val interactiveServlet = new InteractiveSessionServlet(
               interactiveSessionManager, sessionStore, livyConf, accessManager)

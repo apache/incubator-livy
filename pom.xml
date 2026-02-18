@@ -1339,6 +1339,35 @@
     </profile>
 
     <profile>
+      <id>scala-2.13</id>
+      <properties>
+        <scala.binary.version>2.13</scala.binary.version>
+        <scala.version>2.13.8</scala.version>
+        <scalatra.version>2.8.4</scalatra.version>
+        <json4s.version>3.7.0-M11</json4s.version>
+        <metrics.version>4.2.3</metrics.version>
+      </properties>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>net.alchim31.maven</groupId>
+              <artifactId>scala-maven-plugin</artifactId>
+              <configuration>
+                <args>
+                  <arg>-unchecked</arg>
+                  <arg>-feature</arg>
+                  <arg>-Wconf:cat=deprecation:ws</arg>
+                  <arg>-Wconf:cat=unused-imports:ws</arg>
+                </args>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+
+    <profile>
       <id>thriftserver</id>
       <modules>
         <module>thriftserver/server</module>

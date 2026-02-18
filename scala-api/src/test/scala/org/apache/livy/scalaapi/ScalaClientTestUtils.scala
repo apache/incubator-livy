@@ -43,7 +43,7 @@ object ScalaClientTestUtils extends FunSuite with LivyBaseUnitTestSuite {
     for (a <- 1 to count) {
       buffer += r.nextInt()
     }
-    context.sc.parallelize(buffer, partitions).count()
+    context.sc.parallelize(buffer.toSeq, partitions).count()
   }
 
   def assertAwait(lock: CountDownLatch): Unit = {
@@ -51,7 +51,7 @@ object ScalaClientTestUtils extends FunSuite with LivyBaseUnitTestSuite {
   }
 
   def assertTestPassed[T](future: Future[T], expectedValue: T): Unit = {
-    val result = Await.result(future, Timeout second)
+    val result = Await.result(future, Timeout.second)
     assert(result === expectedValue)
   }
 }

@@ -205,6 +205,6 @@ class LivyExecuteStatementOperation(
     }
     val res = new mutable.ListBuffer[String]
     while (fetchNext(res)) {}
-    res
+    res.toSeq
   }
 }

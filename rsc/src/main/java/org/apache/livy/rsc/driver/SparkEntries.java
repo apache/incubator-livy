@@ -68,7 +68,7 @@ public class SparkEntries {
             SparkConf conf = sc().getConf();
             String catalog = conf.get("spark.sql.catalogImplementation", "in-memory").toLowerCase();
 
-            if (catalog.equals("hive") && SparkSession$.MODULE$.hiveClassesArePresent()) {
+            if (catalog.equals("hive") && hiveClassesArePresent()) {
               ClassLoader loader = Thread.currentThread().getContextClassLoader() != null ?
                 Thread.currentThread().getContextClassLoader() : getClass().getClassLoader();
               if (loader.getResource("hive-site.xml") == null) {
@@ -128,6 +128,23 @@ public class SparkEntries {
       }
     }
     return hivectx;
+  }
+
+  /**
+   * Spark 3.x has SparkSession$.hiveClassesArePresent(); Spark 4.0 removed it
+   * (Hive support is always built-in). Use reflection for cross-version compat.
+   */
+  private static boolean hiveClassesArePresent() {
+    try {
+      java.lang.reflect.Method m =
+        SparkSession$.class.getMethod("hiveClassesArePresent");
+      return (Boolean) m.invoke(SparkSession$.MODULE$);
+    } catch (NoSuchMethodException e) {
+      return true;
+    } catch (Exception e) {
+      LOG.warn("Failed to check hive classes, assuming present", e);
+      return true;
+    }
   }
 
   public synchronized void stop() {
