@@ -61,6 +61,11 @@
       <includes>
         <include>*</include>
       </includes>
+      <excludes>
+        <exclude>kryo-shaded-*.jar</exclude>
+        <exclude>minlog-*.jar</exclude>
+        <exclude>objenesis-*.jar</exclude>
+      </excludes>
     </fileSet>
     <fileSet>
       <directory>${project.parent.basedir}/server/target/jars</directory>
