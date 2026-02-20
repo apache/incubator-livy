@@ -72,7 +72,10 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
     val from = params.get("from").map(_.toInt).getOrElse(0)
     val size = params.get("size").map(_.toInt).getOrElse(100)
 
-    val sessions = sessionManager.all()
+    val sessions = sessionManager.all().filter(
+      session => accessManager.hasViewAccess(session.owner,
+        effectiveUser(request), session.proxyUser.getOrElse(""))
+    )
 
     Map(
       "from" -> from,
@@ -82,13 +85,13 @@ abstract class SessionServlet[S <: Session, R <: RecoveryMetadata](
   }
 
   val getSession = get("/:id") {
-    withUnprotectedSession { session =>
+    withViewAccessSession { session =>
       clientSessionView(session, request)
     }
   }
 
   get("/:id/state") {
-    withUnprotectedSession { session =>
+    withViewAccessSession { session =>
       Map("id" -> session.id, "state" -> session.state.toString)
     }
   }
