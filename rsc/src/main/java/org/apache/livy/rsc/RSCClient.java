@@ -230,19 +230,23 @@ public class RSCClient implements LivyClient {
         LOG.warn("Exception while waiting for end session reply.", e);
         Utils.propagate(e);
       } finally {
+        IOException ex = new IOException("RSCClient instance stopped.");
         if (driverRpc.isSuccess()) {
           try {
             driverRpc.get().close();
           } catch (Exception e) {
             LOG.warn("Error stopping RPC.", e);
           }
+        } else if (!driverRpc.isDone()){
+          driverRpc.setFailure(ex);
+          LOG.warn("Set driverRpc as failure in stopping RSCClient.");
         }
 
         // Report failure for all pending jobs, so that clients can react.
         for (Map.Entry<String, JobHandleImpl<?>> e : jobs.entrySet()) {
           LOG.info("Failing pending job {} due to shutdown.", e.getKey());
           try {
-            e.getValue().setFailure(new IOException("RSCClient instance stopped."));
+            e.getValue().setFailure(ex);
           } catch (Exception e2) {
             LOG.info("Job " + e.getKey() + " already failed.", e2);
           }

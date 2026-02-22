@@ -565,14 +565,16 @@ class InteractiveSession(
   }
 
   def statements: IndexedSeq[Statement] = {
-    ensureActive()
-    val r = client.get.getReplJobResults().get()
+    ensureRunning()
+    val r = client.get.getReplJobResults().get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
     r.statements.toIndexedSeq
   }
 
   def getStatement(stmtId: Int): Option[Statement] = {
-    ensureActive()
-    val r = client.get.getReplJobResults(stmtId, 1).get()
+    ensureRunning()
+    val r = client.get.getReplJobResults(stmtId, 1).get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
     if (r.statements.length < 1) {
       None
     } else {
@@ -624,28 +626,31 @@ class InteractiveSession(
   }
 
   def addFile(uri: URI): Unit = {
-    ensureActive()
+    ensureRunning()
     recordActivity()
-    client.get.addFile(resolveURI(uri, livyConf)).get()
+    client.get.addFile(resolveURI(uri, livyConf)).get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
   }
 
   def addJar(uri: URI): Unit = {
-    ensureActive()
+    ensureRunning()
     recordActivity()
-    client.get.addJar(resolveURI(uri, livyConf)).get()
+    client.get.addJar(resolveURI(uri, livyConf)).get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
   }
 
   def jobStatus(id: Long): Any = {
-    ensureActive()
+    ensureRunning()
     val clientJobId = operations(id)
     recordActivity()
     // TODO: don't block indefinitely?
-    val status = client.get.getBypassJobStatus(clientJobId).get()
+    val status = client.get.getBypassJobStatus(clientJobId).get(
+      livyConf.getTimeAsMs(LivyConf.REQUEST_TIMEOUT), TimeUnit.MILLISECONDS)
     new JobStatus(id, status.state, status.result, status.error)
   }
 
   def cancelJob(id: Long): Unit = {
-    ensureActive()
+    ensureRunning()
     recordActivity()
     operations.remove(id).foreach { client.get.cancel }
   }
@@ -688,7 +693,7 @@ class InteractiveSession(
   }
 
   private def performOperation(job: Array[Byte], jobType: String, sync: Boolean): Long = {
-    ensureActive()
+    ensureRunning()
     recordActivity()
     val future = client.get.bypass(ByteBuffer.wrap(job), jobType, sync)
     val opId = operationCounter.incrementAndGet()

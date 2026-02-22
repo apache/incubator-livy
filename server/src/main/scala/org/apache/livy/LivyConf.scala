@@ -363,6 +363,8 @@ object LivyConf {
 
   val SESSION_ALLOW_CUSTOM_CLASSPATH = Entry("livy.server.session.allow-custom-classpath", false)
 
+  val REQUEST_TIMEOUT = Entry("livy.server.request.timeout", "3s")
+
   val SPARK_MASTER = "spark.master"
   val SPARK_DEPLOY_MODE = "spark.submit.deployMode"
   val SPARK_JARS = "spark.jars"
