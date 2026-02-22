@@ -30,3 +30,6 @@ logs/*
 docs/**/*.html
 docs/**/JB/**
 venv/*
+dev/helmchart/templates/*.yaml
+dev/helmchart/templates/*.tpl
+dev/helmchart/requirements.lock

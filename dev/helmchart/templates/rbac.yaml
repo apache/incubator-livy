@@ -1,0 +1,87 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ if .namespace }}Role{{- else }}ClusterRole{{- end }}
+metadata:
+  name: {{ include "livycluster.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    helm.sh/chart: {{ include "livycluster.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["*"]
+- apiGroups: ["", "extensions"]
+  resources: ["configmaps", "services"]
+  verbs: ["create", "update", "get", "list", "patch"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list"]
+- apiGroups: ["", "rbac.authorization.k8s.io"]
+  resources: ["serviceaccounts", "rolebindings"]
+  verbs: ["create", "update"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["create", "update", "get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ if .namespace }}RoleBinding{{- else }}ClusterRoleBinding{{- end }}
+metadata:
+  name: {{ include "livycluster.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    helm.sh/chart: {{ include "livycluster.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{ if .namespace }}Role{{- else }}ClusterRole{{- end }}
+  name: {{ template "livycluster.fullname" . }}
+subjects:
+- name: {{ template "livycluster.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  kind: ServiceAccount
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ if .namespace }}Role{{- else }}ClusterRole{{- end }}
+metadata:
+  name: {{ include "livycluster.fullname" . }}-spark
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    helm.sh/chart: {{ include "livycluster.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services"]
+  verbs: ["*"]
+- apiGroups: ["", "extensions"]
+  resources: ["configmaps", "services"]
+  verbs: ["create", "update", "get", "list", "delete", "patch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["create", "update", "get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ if .namespace }}RoleBinding{{- else }}ClusterRoleBinding{{- end }}
+metadata:
+  name: {{ include "livycluster.fullname" . }}-spark
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    helm.sh/chart: {{ include "livycluster.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{ if .namespace }}Role{{- else }}ClusterRole{{- end }}
+  name: {{ template "livycluster.fullname" . }}-spark
+subjects:
+- name: {{ template "livycluster.fullname" . }}-spark
+  namespace: {{ .Release.Namespace }}
+  kind: ServiceAccount
+{{- end -}}

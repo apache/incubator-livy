@@ -1,0 +1,152 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "livycluster.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    helm.sh/chart: {{ include "livycluster.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  serviceName: {{ include "livycluster.fullname" . }}-headless
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "livycluster.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "livycluster.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ include "livycluster.fullname" . }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.livy.repository }}:{{ .Values.image.livy.tag }}"
+        imagePullPolicy: {{ .Values.image.livy.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8998
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /version
+            port: http
+        readinessProbe:
+          httpGet:
+            path: /version
+            port: http
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        env:
+        {{- if .Values.rbac.create }}
+        - name: LIVY_SPARK_KUBERNETES_AUTHENTICATE_DRIVER_SERVICE1ACCOUNT1NAME
+          value: {{ include "livycluster.fullname" . }}-spark
+        - name: LIVY_SPARK_KUBERNETES_NAMESPACE
+          value: {{ .Release.Namespace }}
+        {{- end }}
+        - name: HTTP2_DISABLE
+          value: "true"
+        - name: LIVY_CONF_DIR
+          value: "/conf"
+        - name: SPARK_CONF_DIR
+          value: "/conf"
+        - name: LIVY_FILE_LOCAL_DIR_WHITELIST
+          value: "/opt/jars"
+        - name: LIVY_LOG_DIR
+          value: "/opt/livy/logs"
+        - name: LIVY_SERVER_JAVA_OPTS
+          value: "-agentlib:jdwp=transport=dt_socket,server=y,address=9010,suspend=n"
+        - name: SPARK_DIVER_CORES
+          value: "1"
+        - name: SPARK_DRIVER_MEMORY
+          value: 1g
+        - name: SPARK_MASTER_ENDPOINT
+          value: "k8s://kubernetes.default.svc.cluster.local:443"
+        volumeMounts:
+        {{- if .Values.persistence.enabled }}
+        - name: livy-store
+          mountPath: /tmp/livy/store
+          {{- if .Values.persistence.subPath }}
+          subPath: {{ .Values.persistence.subPath }}
+          {{- end }}
+        {{- end }}
+        - name: cluster-conf-cm
+          mountPath: /conf
+      volumes:
+      - name: cluster-conf-cm
+        configMap:
+          name: cluster-config
+      - name: livy-store
+        {{- if .Values.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.existingClaim | default (include "livycluster.fullname" .) }}
+        {{- else }}
+        emptyDir: {}
+        {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: spark-history
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "livycluster.name" . }}
+    helm.sh/chart: {{ include "livycluster.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  serviceName: spark-history
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-history
+  template:
+    metadata:
+      labels:
+        app: spark-history
+    spec:
+      containers:
+        - name: spark-history-server
+          image: "{{ .Values.image.spark.repository }}:{{ .Values.image.spark.tag }}"
+          imagePullPolicy: {{ .Values.image.spark.pullPolicy }}
+          env:
+            - name: SPARK_LOG_DIR
+              value: /spark-history
+            - name: SPARK_NO_DAEMONIZE
+              value: "false"
+          args:
+            - /bin/bash
+            - -c
+            - |
+              /opt/spark/sbin/start-history-server.sh
+          ports:
+            - containerPort: 18080
+          volumeMounts:
+            - name: spark-history-data
+              mountPath: /tmp/spark-events
+      volumes:
+        - name: spark-history-data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (include "livycluster.fullname" .) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

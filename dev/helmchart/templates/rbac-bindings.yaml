@@ -1,0 +1,26 @@
+{{- if .Values.rbac.enabled }}
+{{- $name := include "livycluster.name" . -}}
+{{- $chart := include "livycluster.chart" . -}}
+{{- $releaseName := .Release.Name -}}
+{{- $releaseNamespace := .Release.Namespace -}}
+{{- $releaseService := .Release.Service -}}
+{{- range .Values.rbac.bindings }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ if .namespace }}RoleBinding{{- else }}ClusterRoleBinding{{- end }}
+metadata:
+  name: {{ $name }}-{{ .role }}{{ if .namespace }}-{{ .namespace }}{{- end }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    helm.sh/chart: {{ $chart }}
+    app.kubernetes.io/instance: {{ $releaseName }}
+    app.kubernetes.io/managed-by: {{ $releaseService }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{ if .cluster }}ClusterRole{{- else }}Role{{- end }}
+  name: {{ .role }}
+subjects:
+{{ toYaml .subjects | indent 2}}
+{{- end }}
+{{- end }}
