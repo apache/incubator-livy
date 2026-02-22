@@ -686,5 +686,30 @@ class SparkYarnAppSpec extends FunSpec with LivyBaseUnitTestSuite {
         }
       }
     }
+
+    it("should mark app as failed when throwing exception") {
+      Clock.withSleepMethod(mockSleep) {
+        val mockYarnClient = mock[YarnClient]
+        val mockSparkSubmit = mock[LineBufferedProcess]
+        when(mockSparkSubmit.isAlive).thenReturn(false)
+        when(mockSparkSubmit.exitValue).thenReturn(-1)
+        val mockListener = mock[SparkAppListener]
+
+        val app = new SparkYarnApp(
+          appTag, None, Some(mockSparkSubmit), Some(mockListener), livyConf, mockYarnClient)
+        Utils.waitUntil({ () => app.isRunning }, Duration(10, TimeUnit.SECONDS))
+
+        cleanupThread(app.yarnAppMonitorThread) {
+          app.kill()
+          app.yarnAppMonitorThread.join(TEST_TIMEOUT.toMillis)
+
+          assert(!app.yarnAppMonitorThread.isAlive,
+            "YarnAppMonitorThread should terminate after spark-submit failure.")
+
+          assert(app.state == SparkApp.State.FAILED,
+            "SparkYarnApp should end with state failed when spark submit failed")
+        }
+      }
+    }
   }
 }
