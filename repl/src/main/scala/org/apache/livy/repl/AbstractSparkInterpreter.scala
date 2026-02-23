@@ -297,6 +297,9 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
   }
 
   private def executeLine(code: String): Interpreter.ExecuteResponse = {
+    if (code.trim.isEmpty) {
+      return Interpreter.ExecuteSuccess(TEXT_PLAIN -> "")
+    }
     code match {
       case MAGIC_REGEX(magic, rest) =>
         executeMagic(magic, rest)
