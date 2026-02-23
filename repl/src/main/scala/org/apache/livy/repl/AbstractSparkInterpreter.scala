@@ -297,7 +297,9 @@ abstract class AbstractSparkInterpreter extends Interpreter with Logging {
   }
 
   private def executeLine(code: String): Interpreter.ExecuteResponse = {
-    if (code.trim.isEmpty) {
+    val trimmed = code.trim
+    if (trimmed.isEmpty || trimmed.startsWith("//") ||
+        (trimmed.startsWith("/*") && trimmed.endsWith("*/"))) {
       return Interpreter.ExecuteSuccess(TEXT_PLAIN -> "")
     }
     code match {
