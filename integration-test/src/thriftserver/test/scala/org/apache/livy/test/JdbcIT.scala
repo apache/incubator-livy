@@ -19,6 +19,7 @@ package org.apache.livy.test
 
 import java.sql.Date
 
+import org.apache.livy.sessions.SessionState
 import org.apache.livy.test.framework.BaseThriftIntegrationTestSuite
 
 class JdbcIT extends BaseThriftIntegrationTestSuite {
@@ -60,6 +61,14 @@ class JdbcIT extends BaseThriftIntegrationTestSuite {
           assert(resultSet.getString(2) == "{\"col1\":\"a\",\"col2\":1,\"col3\":1.5}")
           assert(resultSet.getString(3) == "{1:\"a\",2:\"b\"}")
           assert(!resultSet.next())
+      }
+
+      checkQuery(c, "DESC LIVY SESSION") { resultSet =>
+        resultSet.next()
+        assert(resultSet.getString("id").toInt >= 0)
+        assert(resultSet.getString("appId").startsWith("application_"))
+        assert(resultSet.getString("state").nonEmpty)
+        assert(resultSet.getString("logs").contains(resultSet.getString("appId")))
       }
     }
   }
