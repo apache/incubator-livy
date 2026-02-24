@@ -33,13 +33,15 @@
 #   usage: ./merge_livy_pr.py    (see config env vars below)
 #
 
-
 import json
 import os
 import re
 import subprocess
 import sys
-import urllib2
+import urllib.request
+from urllib.error import HTTPError
+
+input_prompt_fn = input
 
 try:
     import jira.client
@@ -63,7 +65,6 @@ JIRA_PASSWORD = os.environ.get("JIRA_PASSWORD", "")
 # https://github.com/settings/tokens. This script only requires the "public_repo" scope.
 GITHUB_OAUTH_KEY = os.environ.get("GITHUB_OAUTH_KEY")
 
-
 GITHUB_BASE = "https://github.com/apache/incubator-livy/pull"
 GITHUB_API_BASE = "https://api.github.com/repos/apache/incubator-livy"
 JIRA_BASE = "https://issues.apache.org/jira/browse"
@@ -71,14 +72,13 @@ JIRA_API_BASE = "https://issues.apache.org/jira"
 # Prefix added to temporary branches
 BRANCH_PREFIX = "PR_TOOL"
 
-
 def get_json(url):
     try:
-        request = urllib2.Request(url)
+        request = urllib.request.Request(url)
         if GITHUB_OAUTH_KEY:
             request.add_header('Authorization', 'token %s' % GITHUB_OAUTH_KEY)
-        return json.load(urllib2.urlopen(request))
-    except urllib2.HTTPError as e:
+        return json.load(urllib.request.urlopen(request))
+    except HTTPError as e:
         if "X-RateLimit-Remaining" in e.headers and e.headers["X-RateLimit-Remaining"] == '0':
             print("Exceeded the GitHub API rate limit; see the instructions in " +
                   "dev/merge_livy_pr.py to configure an OAuth token for making authenticated " +
@@ -87,26 +87,23 @@ def get_json(url):
             print("Unable to fetch URL, exiting: %s" % url)
         sys.exit(-1)
 
-
 def fail(msg):
     print(msg)
     clean_up()
     sys.exit(-1)
 
-
 def run_cmd(cmd):
     print(cmd)
     if isinstance(cmd, list):
-        return subprocess.check_output(cmd)
+        out_bytes = subprocess.check_output(cmd)
     else:
-        return subprocess.check_output(cmd.split(" "))
-
+        out_bytes = subprocess.check_output(cmd.split(" "))
+    return out_bytes.decode()
 
 def continue_maybe(prompt):
-    result = raw_input("\n%s (y/n): " % prompt)
+    result = input_prompt_fn("\n%s (y/n): " % prompt)
     if result.lower() != "y":
         fail("Okay, exiting")
-
 
 def clean_up():
     print("Restoring head pointer to %s" % original_head)
@@ -114,10 +111,9 @@ def clean_up():
 
     branches = run_cmd("git branch").replace(" ", "").split("\n")
 
-    for branch in filter(lambda x: x.startswith(BRANCH_PREFIX), branches):
+    for branch in [x for x in branches if x.startswith(BRANCH_PREFIX)]:
         print("Deleting local branch %s" % branch)
         run_cmd("git branch -D %s" % branch)
-
 
 # merge the requested PR and return the merge hash
 def merge_pr(pr_num, target_ref, title, body, pr_repo_desc):
@@ -141,7 +137,7 @@ def merge_pr(pr_num, target_ref, title, body, pr_repo_desc):
                              '--pretty=format:%an <%ae>']).split("\n")
     distinct_authors = sorted(set(commit_authors),
                               key=lambda x: commit_authors.count(x), reverse=True)
-    primary_author = raw_input(
+    primary_author = input_prompt_fn(
         "Enter primary author in the format of \"name <email>\" [%s]: " %
         distinct_authors[0])
     if primary_author == "":
@@ -189,9 +185,8 @@ def merge_pr(pr_num, target_ref, title, body, pr_repo_desc):
     print("Merge hash: %s" % merge_hash)
     return merge_hash
 
-
 def cherry_pick(pr_num, merge_hash, default_branch):
-    pick_ref = raw_input("Enter a branch name [%s]: " % default_branch)
+    pick_ref = input_prompt_fn("Enter a branch name [%s]: " % default_branch)
     if pick_ref == "":
         pick_ref = default_branch
 
@@ -224,21 +219,19 @@ def cherry_pick(pr_num, merge_hash, default_branch):
     print("Pick hash: %s" % pick_hash)
     return pick_ref
 
-
 def fix_version_from_branch(branch, versions):
     # Note: Assumes this is a sorted (newest->oldest) list of un-released versions
     if branch == "master":
         return versions[0]
     else:
         branch_ver = branch.replace("branch-", "")
-        return filter(lambda x: x.name.startswith(branch_ver), versions)[-1]
-
+        return [x for x in versions if x.name.startswith(branch_ver)][-1]
 
 def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
     asf_jira = jira.client.JIRA({'server': JIRA_API_BASE},
                                 basic_auth=(JIRA_USERNAME, JIRA_PASSWORD))
 
-    jira_id = raw_input("Enter a JIRA id [%s]: " % default_jira_id)
+    jira_id = input_prompt_fn("Enter a JIRA id [%s]: " % default_jira_id)
     if jira_id == "":
         jira_id = default_jira_id
 
@@ -263,11 +256,11 @@ def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
 
     versions = asf_jira.project_versions("LIVY")
     versions = sorted(versions, key=lambda x: x.name, reverse=True)
-    versions = filter(lambda x: x.raw['released'] is False, versions)
+    versions = [x for x in versions if x.raw['released'] is False]
     # Consider only x.y.z versions
-    versions = filter(lambda x: re.match('\d+\.\d+\.\d+', x.name), versions)
+    versions = [x for x in versions if re.match(r'\d+\.\d+\.\d+', x.name)]
 
-    default_fix_versions = map(lambda x: fix_version_from_branch(x, versions).name, merge_branches)
+    default_fix_versions = [fix_version_from_branch(x, versions).name for x in merge_branches]
     for v in default_fix_versions:
         # Handles the case where we have forked a release branch but not yet made the release.
         # In this case, if the PR is committed to the master branch and the release branch, we
@@ -277,27 +270,27 @@ def resolve_jira_issue(merge_branches, comment, default_jira_id=""):
         if patch == "0":
             previous = "%s.%s.%s" % (major, int(minor) - 1, 0)
             if previous in default_fix_versions:
-                default_fix_versions = filter(lambda x: x != v, default_fix_versions)
+                default_fix_versions = [x for x in default_fix_versions if x != v]
     default_fix_versions = ",".join(default_fix_versions)
 
-    fix_versions = raw_input("Enter comma-separated fix version(s) [%s]: " % default_fix_versions)
+    fix_versions = input_prompt_fn(
+        "Enter comma-separated fix version(s) [%s]: " % default_fix_versions)
     if fix_versions == "":
         fix_versions = default_fix_versions
     fix_versions = fix_versions.replace(" ", "").split(",")
 
     def get_version_json(version_str):
-        return filter(lambda v: v.name == version_str, versions)[0].raw
+        return [v for v in versions if v.name == version_str][0].raw
 
-    jira_fix_versions = map(lambda v: get_version_json(v), fix_versions)
+    jira_fix_versions = [get_version_json(v) for v in fix_versions]
 
-    resolve = filter(lambda a: a['name'] == "Resolve Issue", asf_jira.transitions(jira_id))[0]
-    resolution = filter(lambda r: r.raw['name'] == "Fixed", asf_jira.resolutions())[0]
+    resolve = [a for a in asf_jira.transitions(jira_id) if a['name'] == "Resolve Issue"][0]
+    resolution = [r for r in asf_jira.resolutions() if r.raw['name'] == "Fixed"][0]
     asf_jira.transition_issue(
         jira_id, resolve["id"], fixVersions=jira_fix_versions,
         comment=comment, resolution={'id': resolution.raw['id']})
 
     print("Successfully resolved %s with fixVersions=%s!" % (jira_id, fix_versions))
-
 
 def resolve_jira_issues(title, merge_branches, comment):
     jira_ids = re.findall("LIVY-[0-9]{3,6}", title)
@@ -306,7 +299,6 @@ def resolve_jira_issues(title, merge_branches, comment):
         resolve_jira_issue(merge_branches, comment)
     for jira_id in jira_ids:
         resolve_jira_issue(merge_branches, comment, jira_id)
-
 
 def standardize_jira_ref(text):
     """
@@ -349,7 +341,6 @@ def standardize_jira_ref(text):
 
     return clean_text
 
-
 def get_current_ref():
     ref = run_cmd("git rev-parse --abbrev-ref HEAD").strip()
     if ref == 'HEAD':
@@ -358,7 +349,6 @@ def get_current_ref():
     else:
         return ref
 
-
 def main():
     global original_head
 
@@ -366,11 +356,11 @@ def main():
     original_head = get_current_ref()
 
     branches = get_json("%s/branches" % GITHUB_API_BASE)
-    branch_names = filter(lambda x: x.startswith("branch-"), [x['name'] for x in branches])
+    branch_names = [x for x in [x['name'] for x in branches] if x.startswith("branch-")]
     # Assumes branch names can be sorted lexicographically
     latest_branch = sorted(branch_names, reverse=True)[0]
 
-    pr_num = raw_input("Which pull request would you like to merge? (e.g. 34): ")
+    pr_num = input_prompt_fn("Which pull request would you like to merge? (e.g. 34): ")
     pr = get_json("%s/pulls/%s" % (GITHUB_API_BASE, pr_num))
     pr_events = get_json("%s/issues/%s/events" % (GITHUB_API_BASE, pr_num))
 
@@ -382,7 +372,7 @@ def main():
         print("I've re-written the title as follows to match the standard format:")
         print("Original: %s" % pr["title"])
         print("Modified: %s" % modified_title)
-        result = raw_input("Would you like to use the modified title? (y/n): ")
+        result = input_prompt_fn("Would you like to use the modified title? (y/n): ")
         if result.lower() == "y":
             title = modified_title
             print("Using modified title:")
@@ -433,7 +423,7 @@ def main():
     merge_hash = merge_pr(pr_num, target_ref, title, body, pr_repo_desc)
 
     pick_prompt = "Would you like to pick %s into another branch?" % merge_hash
-    while raw_input("\n%s (y/n): " % pick_prompt).lower() == "y":
+    while input_prompt_fn("\n%s (y/n): " % pick_prompt).lower() == "y":
         merged_refs = merged_refs + [cherry_pick(pr_num, merge_hash, latest_branch)]
 
     if JIRA_IMPORTED:

@@ -76,6 +76,7 @@ class BatchIT extends BaseIntegrationTestSuite with BeforeAndAfterAll {
   }
 
   test("submit a SparkR application") {
+    assume(!sys.props.getOrElse("skipRTests", "false").toBoolean, "Skipping R tests.")
     val hdfsPath = uploadResource("rtest.R")
     withScript(hdfsPath, List.empty) { s =>
       s.verifySessionSuccess()

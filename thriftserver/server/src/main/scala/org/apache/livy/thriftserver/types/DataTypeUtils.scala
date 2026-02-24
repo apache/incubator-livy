@@ -42,13 +42,28 @@ object DataTypeUtils {
       case "array" => ArrayType(toFieldType(sparkType \ "elementType"))
       case "struct" =>
         val fields = (sparkType \ "fields").children.map { f =>
-          // TODO: get comment from metadata
-          Field((f \ "name").extract[String], toFieldType(f \ "type"), "")
+          val comment = extractComment(f \ "metadata")
+          Field((f \ "name").extract[String], toFieldType(f \ "type"), comment)
         }
         StructType(fields.toArray)
       case "map" =>
         MapType(toFieldType(sparkType \ "keyType"), toFieldType(sparkType \ "valueType"))
       case "udt" => toFieldType(sparkType \ "sqlType")
+    }
+  }
+
+  /**
+   * Extracts comment from Spark field metadata JSON.
+   * Spark stores comments in metadata under the "comment" key.
+   */
+  private def extractComment(metadata: JValue): String = {
+    metadata match {
+      case JObject(fields) =>
+        fields.find(_._1 == "comment") match {
+          case Some((_, JString(comment))) => comment
+          case _ => ""
+        }
+      case _ => ""
     }
   }
 
@@ -65,8 +80,8 @@ object DataTypeUtils {
     val fields = schema.children.map { field =>
       val name = (field \ "name").extract[String]
       val hiveType = toFieldType(field \ "type")
-      // TODO: retrieve comment from metadata
-      Field(name, hiveType, "")
+      val comment = extractComment(field \ "metadata")
+      Field(name, hiveType, comment)
     }
     Schema(fields.toArray)
   }

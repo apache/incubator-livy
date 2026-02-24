@@ -29,7 +29,7 @@ import org.apache.livy.LivyConf
 
 trait CommonThriftTests {
   def hiveSupportEnabled(sparkMajorVersion: Int, livyConf: LivyConf): Boolean = {
-    sparkMajorVersion > 1 || livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
+    sparkMajorVersion >= 3 || livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
   }
 
   def dataTypesTest(statement: Statement, mapSupported: Boolean): Unit = {
@@ -310,6 +310,59 @@ trait CommonThriftTests {
 
   }
 
+  def getColumnsWithCommentsTest(connection: Connection): Unit = {
+    val metadata = connection.getMetaData
+    val statement = connection.createStatement()
+    try {
+      statement.execute(
+        "CREATE TABLE test_column_comments (" +
+        "id integer COMMENT 'User identifier', " +
+        "name string COMMENT 'User full name', " +
+        "age integer COMMENT 'User age in years') USING json")
+
+      val columnsResultSet = metadata.getColumns("", "default", "test_column_comments", "%")
+
+      columnsResultSet.next()
+      assert(columnsResultSet.getString("COLUMN_NAME") == "id")
+      assert(columnsResultSet.getString("REMARKS") == "User identifier",
+        "Column 'id' should have comment 'User identifier'")
+
+      columnsResultSet.next()
+      assert(columnsResultSet.getString("COLUMN_NAME") == "name")
+      assert(columnsResultSet.getString("REMARKS") == "User full name",
+        "Column 'name' should have comment 'User full name'")
+
+      columnsResultSet.next()
+      assert(columnsResultSet.getString("COLUMN_NAME") == "age")
+      assert(columnsResultSet.getString("REMARKS") == "User age in years",
+        "Column 'age' should have comment 'User age in years'")
+
+      assert(!columnsResultSet.next())
+      columnsResultSet.close()
+
+      statement.execute(
+        "CREATE TABLE test_struct_comments (" +
+        "person struct<id:int COMMENT 'Person ID', " +
+        "name:string COMMENT 'Person name'>, " +
+        "address struct<street:string COMMENT 'Street address', " +
+        "city:string COMMENT 'City name'>) " +
+        "USING json")
+
+      val rs = statement.executeQuery("SELECT person, address FROM test_struct_comments")
+      val rsMetaData = rs.getMetaData()
+
+      assert(rsMetaData.getColumnCount == 2)
+      assert(rsMetaData.getColumnName(1) == "person")
+      assert(rsMetaData.getColumnName(2) == "address")
+
+      rs.close()
+    } finally {
+      statement.execute("DROP TABLE IF EXISTS test_column_comments")
+      statement.execute("DROP TABLE IF EXISTS test_struct_comments")
+      statement.close()
+    }
+  }
+
   def operationLogRetrievalTest(statement: Statement): Unit = {
     statement.execute("select 1")
     val logIterator = statement.asInstanceOf[HiveStatement].getQueryLog().iterator()
@@ -516,7 +569,9 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
           statement.close()
         }
       }
-      assert(caught.getMessage.contains("Database 'invalid_database' not found"))
+      val message = caught.getMessage
+      assert(message.contains("Database 'invalid_database' not found") ||
+        message.contains("The schema `invalid_database` cannot be found"))
     }
   }
 
@@ -530,8 +585,9 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
           statement.close()
         }
       }
-      assert(caught.getMessage.replaceAll("`", "")
-        .contains("Table or view not found: global_temp.invalid_table"))
+      val message = caught.getMessage.replaceAll("`", "")
+      assert(message .contains("Table or view not found: global_temp.invalid_table") ||
+        message.contains("The table or view global_temp.invalid_table cannot be found"))
     }
   }
 
@@ -556,6 +612,12 @@ class BinaryThriftServerSuite extends ThriftServerBaseTest with CommonThriftTest
   test("fetch column") {
     withJdbcConnection { connection =>
       getColumnsTest(connection)
+    }
+  }
+
+  test("fetch columns with comments") {
+    withJdbcConnection { connection =>
+      getColumnsWithCommentsTest(connection)
     }
   }
 
@@ -633,6 +695,12 @@ class HttpThriftServerSuite extends ThriftServerBaseTest with CommonThriftTests 
   test("fetch column") {
     withJdbcConnection { connection =>
       getColumnsTest(connection)
+    }
+  }
+
+  test("fetch columns with comments") {
+    withJdbcConnection { connection =>
+      getColumnsWithCommentsTest(connection)
     }
   }
 

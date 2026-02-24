@@ -48,7 +48,7 @@ class BatchSessionSpec
     try {
       writer.write(
         """
-          |print "hello world"
+          |print("hello world")
         """.stripMargin)
     } finally {
       writer.close()

@@ -21,6 +21,7 @@ import org.apache.spark.SparkConf
 import org.json4s.{DefaultFormats, JNull, JValue}
 import org.json4s.JsonDSL._
 import org.scalatest._
+import org.scalatest.Inside.inside
 
 import org.apache.livy.rsc.driver.SparkEntries
 import org.apache.livy.sessions._
@@ -228,16 +229,16 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
         |'
       """.stripMargin)
 
-    response should equal(Interpreter.ExecuteError(
-      "SyntaxError",
-      "EOL while scanning string literal (<stdin>, line 2)",
-      List(
-        "  File \"<stdin>\", line 2\n",
-        "    '\n",
-        "    ^\n",
-        "SyntaxError: EOL while scanning string literal\n"
-      )
-    ))
+    inside (response) {
+      case Interpreter.ExecuteError(ename, evalue, traceback) => {
+        ename shouldBe "SyntaxError"
+        evalue should (startWith("EOL while scanning string literal")
+          or startWith("unterminated string literal"))
+        traceback.last should (startWith("SyntaxError: EOL while scanning string literal")
+          or startWith("SyntaxError: unterminated string literal"))
+      }
+      case _ => fail()
+    }
 
     response = intp.execute("x")
     response should equal(Interpreter.ExecuteError(
@@ -249,34 +250,35 @@ abstract class PythonBaseInterpreterSpec extends BaseInterpreterSpec {
       )
     ))
   }
-}
 
-class Python2InterpreterSpec extends PythonBaseInterpreterSpec {
-
-  implicit val formats = DefaultFormats
-
-  override def createInterpreter(): Interpreter = {
-    val sparkConf = new SparkConf()
-    PythonInterpreter(sparkConf, new SparkEntries(sparkConf))
+  it should "work when interpreter exit with json stdout" in {
+    noException should be thrownBy {
+      withInterpreter { intp =>
+        val response = intp.execute(
+          """import atexit, sys
+            |atexit.register(sys.stdout.write, '{}')
+            |""".stripMargin
+        )
+        response shouldBe a[Interpreter.ExecuteSuccess]
+      }
+    }
   }
 
-  // Scalastyle is treating unicode escape as non ascii characters. Turn off the check.
-  // scalastyle:off non.ascii.character.disallowed
-  it should "print unicode correctly" in withInterpreter { intp =>
-    intp.execute("print(u\"\u263A\")") should equal(Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "\u263A"
-    ))
-    intp.execute("""print(u"\u263A")""") should equal(Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "\u263A"
-    ))
-    intp.execute("""print("\xE2\x98\xBA")""") should equal(Interpreter.ExecuteSuccess(
-      TEXT_PLAIN -> "\u263A"
-    ))
+  it should "work when interpreter exit with non-json stdout" in {
+    noException should be thrownBy {
+      withInterpreter { intp =>
+        val response = intp.execute(
+          """import atexit, sys
+            |atexit.register(sys.stdout.write, 'line1\nline2')
+            |""".stripMargin
+        )
+        response shouldBe a[Interpreter.ExecuteSuccess]
+      }
+    }
   }
-  // scalastyle:on non.ascii.character.disallowed
 }
 
-class Python3InterpreterSpec extends PythonBaseInterpreterSpec with BeforeAndAfterAll {
+class PythonInterpreterSpec extends PythonBaseInterpreterSpec with BeforeAndAfterAll {
 
   implicit val formats = DefaultFormats
 

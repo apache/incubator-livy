@@ -20,7 +20,7 @@ package org.apache.livy.server.interactive
 import java.io.{File, InputStream}
 import java.net.URI
 import java.nio.ByteBuffer
-import java.nio.file.{Files, Paths}
+import java.nio.file.{DirectoryStream, Files, Paths}
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
@@ -54,6 +54,20 @@ case class InteractiveRecoveryMetadata(
     kind: Kind,
     heartbeatTimeoutS: Int,
     owner: String,
+    ttl: Option[String],
+    idleTimeout: Option[String],
+    driverMemory: Option[String],
+    driverCores: Option[Int],
+    executorMemory: Option[String],
+    executorCores: Option[Int],
+    conf: Map[String, String],
+    archives: List[String],
+    files: List[String],
+    jars: List[String],
+    numExecutors: Option[Int],
+    pyFiles: List[String],
+    queue: Option[String],
+    // proxyUser is deprecated. It is available here only for backward compatibility
     proxyUser: Option[String],
     rscDriverUri: Option[URI],
     version: Int = 1)
@@ -73,9 +87,11 @@ object InteractiveSession extends Logging {
       accessManager: AccessManager,
       request: CreateInteractiveRequest,
       sessionStore: SessionStore,
+      ttl: Option[String],
+      idleTimeout: Option[String],
       mockApp: Option[SparkApp] = None,
       mockClient: Option[RSCClient] = None): InteractiveSession = {
-    val appTag = s"livy-session-$id-${Random.alphanumeric.take(8).mkString}"
+    val appTag = s"livy-session-$id-${Random.alphanumeric.take(8).mkString}".toLowerCase()
     val impersonatedUser = accessManager.checkImpersonation(proxyUser, owner)
 
     val client = mockClient.orElse {
@@ -123,7 +139,20 @@ object InteractiveSession extends Logging {
       livyConf,
       owner,
       impersonatedUser,
+      ttl,
+      idleTimeout,
       sessionStore,
+      request.driverMemory,
+      request.driverCores,
+      request.executorMemory,
+      request.executorCores,
+      request.conf,
+      request.archives,
+      request.files,
+      request.jars,
+      request.numExecutors,
+      request.pyFiles,
+      request.queue,
       mockApp)
   }
 
@@ -150,7 +179,20 @@ object InteractiveSession extends Logging {
       livyConf,
       metadata.owner,
       metadata.proxyUser,
+      metadata.ttl,
+      metadata.idleTimeout,
       sessionStore,
+      metadata.driverMemory,
+      metadata.driverCores,
+      metadata.executorMemory,
+      metadata.executorCores,
+      metadata.conf,
+      metadata.archives,
+      metadata.files,
+      metadata.jars,
+      metadata.numExecutors,
+      metadata.pyFiles,
+      metadata.queue,
       mockApp)
   }
 
@@ -204,16 +246,15 @@ object InteractiveSession extends Logging {
       } else {
         val sparkHome = livyConf.sparkHome().get
         val libdir = sparkMajorVersion match {
-          case 2 | 3 =>
+          case 3 =>
             if (new File(sparkHome, "RELEASE").isFile) {
               new File(sparkHome, "jars")
-            } else if (new File(sparkHome, "assembly/target/scala-2.11/jars").isDirectory) {
-              new File(sparkHome, "assembly/target/scala-2.11/jars")
             } else {
               new File(sparkHome, "assembly/target/scala-2.12/jars")
             }
           case v =>
-            throw new RuntimeException(s"Unsupported Spark major version: $sparkMajorVersion")
+            throw new RuntimeException(
+              s"Unsupported Spark major version: $sparkMajorVersion (minimum 3.0 required)")
         }
         val jars = if (!libdir.isDirectory) {
           Seq.empty[String]
@@ -255,21 +296,27 @@ object InteractiveSession extends Logging {
           sys.env.get("SPARK_HOME") .map { case sparkHome =>
             val pyLibPath = Seq(sparkHome, "python", "lib").mkString(File.separator)
             val pyArchivesFile = new File(pyLibPath, "pyspark.zip")
-            val py4jFile = Try {
-              Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
-                .iterator()
+            var py4jZip: DirectoryStream[java.nio.file.Path] = null;
+            var py4jFile: File = null;
+            try {
+              py4jZip = Files.newDirectoryStream(Paths.get(pyLibPath), "py4j-*-src.zip")
+              py4jFile = py4jZip.iterator()
                 .next()
                 .toFile
-            }.toOption
-
+            }
+            finally {
+              if (py4jZip != null) {
+                py4jZip.close()
+              }
+            }
             if (!pyArchivesFile.exists()) {
               warn("pyspark.zip not found; cannot start pyspark interpreter.")
               Seq.empty
-            } else if (py4jFile.isEmpty || !py4jFile.get.exists()) {
+            } else if (!py4jFile.exists()) {
               warn("py4j-*-src.zip not found; can start pyspark interpreter.")
               Seq.empty
             } else {
-              Seq(pyArchivesFile.getAbsolutePath, py4jFile.get.getAbsolutePath)
+              Seq(pyArchivesFile.getAbsolutePath, py4jFile.getAbsolutePath)
             }
           }.getOrElse(Seq())
         }
@@ -367,13 +414,26 @@ class InteractiveSession(
     val client: Option[RSCClient],
     initialState: SessionState,
     val kind: Kind,
-    heartbeatTimeoutS: Int,
+    val heartbeatTimeoutS: Int,
     livyConf: LivyConf,
     owner: String,
     override val proxyUser: Option[String],
+    ttl: Option[String],
+    idleTimeout: Option[String],
     sessionStore: SessionStore,
+    val driverMemory: Option[String],
+    val driverCores: Option[Int],
+    val executorMemory: Option[String],
+    val executorCores: Option[Int],
+    val conf: Map[String, String],
+    val archives: List[String],
+    val files: List[String],
+    val jars: List[String],
+    val numExecutors: Option[Int],
+    val pyFiles: List[String],
+    val queue: Option[String],
     mockApp: Option[SparkApp]) // For unit test.
-  extends Session(id, name, owner, livyConf)
+  extends Session(id, name, owner, ttl, idleTimeout, livyConf)
   with SessionHeartbeat
   with SparkAppListener {
 
@@ -401,11 +461,11 @@ class InteractiveSession(
     app = mockApp.orElse {
       val driverProcess = client.flatMap { c => Option(c.getDriverProcess) }
         .map(new LineBufferedProcess(_, livyConf.getInt(LivyConf.SPARK_LOGS_SIZE)))
-
-      if (livyConf.isRunningOnYarn() || driverProcess.isDefined) {
-        Some(SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)))
+      if (!livyConf.isRunningOnKubernetes()) {
+        driverProcess.map(_ => SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)))
       } else {
-        None
+        // Create SparkApp for Kubernetes anyway
+        Some(SparkApp.create(appTag, appId, driverProcess, livyConf, Some(this)))
       }
     }
 
@@ -415,15 +475,20 @@ class InteractiveSession(
       info(msg)
       sessionLog = IndexedSeq(msg)
     } else {
-      val uriFuture = Future { client.get.getServerUri.get() }
+      val uriFuture = Future {
+        client.get.getServerUri.get()
+      }(sessionManageExecutors)
 
       uriFuture.onSuccess { case url =>
         rscDriverUri = Option(url)
         sessionSaveLock.synchronized {
           sessionStore.save(RECOVERY_SESSION_TYPE, recoveryMetadata)
         }
-      }
-      uriFuture.onFailure { case e => warn("Fail to get rsc uri", e) }
+      }(sessionManageExecutors)
+
+      uriFuture.onFailure {
+        case e => warn("Fail to get rsc uri", e)
+      }(sessionManageExecutors)
 
       // Send a dummy job that will return once the client is ready to be used, and set the
       // state to "idle" at that point.
@@ -458,13 +523,18 @@ class InteractiveSession(
         }
       })
     }
+    startedOn = Some(System.nanoTime())
+    info(s"Started $this")
   }
 
   override def logLines(): IndexedSeq[String] = app.map(_.log()).getOrElse(sessionLog)
 
   override def recoveryMetadata: RecoveryMetadata =
     InteractiveRecoveryMetadata(id, name, appId, appTag, kind,
-      heartbeatTimeout.toSeconds.toInt, owner, proxyUser, rscDriverUri)
+      heartbeatTimeout.toSeconds.toInt, owner, ttl, idleTimeout,
+      driverMemory, driverCores, executorMemory, executorCores, conf,
+      archives, files, jars, numExecutors, pyFiles, queue,
+      proxyUser, rscDriverUri)
 
   override def state: SessionState = {
     if (serverSideState == SessionState.Running) {
@@ -481,6 +551,8 @@ class InteractiveSession(
       transition(SessionState.ShuttingDown)
       sessionStore.remove(RECOVERY_SESSION_TYPE, id)
       client.foreach { _.stop(true) }
+      // We need to call #kill here explicitly to delete Interactive pods from the cluster
+      if (livyConf.isRunningOnKubernetes()) app.foreach(_.kill())
     } catch {
       case _: Exception =>
         app.foreach {
@@ -508,7 +580,7 @@ class InteractiveSession(
     }
   }
 
-  def interrupt(): Future[Unit] = {
+  def interrupt(): Future[AnyVal] = {
     stop()
   }
 

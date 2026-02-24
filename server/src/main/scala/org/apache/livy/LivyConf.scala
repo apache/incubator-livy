@@ -67,7 +67,24 @@ object LivyConf {
   val REQUEST_HEADER_SIZE = Entry("livy.server.request-header.size", 131072)
   val RESPONSE_HEADER_SIZE = Entry("livy.server.response-header.size", 131072)
 
+  val SEND_SERVER_VERSION = Entry("livy.server.send-server-version", false)
+
   val CSRF_PROTECTION = Entry("livy.server.csrf-protection.enabled", false)
+
+  val SECURITY_HEADERS_ENABLED = Entry("livy.server.security-headers.enabled", true)
+  val SECURITY_HEADERS_XSS_PROTECTION =
+    Entry("livy.server.http.header.X-XSS-Protection", "1; mode=block")
+  val SECURITY_HEADERS_FRAME_OPTIONS =
+    Entry("livy.server.http.header.X-Frame-Options", "SAMEORIGIN")
+  val SECURITY_HEADERS_CONTENT_TYPE_OPTIONS =
+    Entry("livy.server.http.header.X-Content-Type-Options", "nosniff")
+  val SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY =
+    Entry("livy.server.http.header.Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains")
+  val SECURITY_HEADERS_CONTENT_SECURITY_POLICY =
+    Entry("livy.server.http.header.Content-Security-Policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self'; " +
+        "frame-src 'self';")
 
   val IMPERSONATION_ENABLED = Entry("livy.impersonation.enabled", false)
   val SUPERUSERS = Entry("livy.superusers", null)
@@ -83,6 +100,7 @@ object LivyConf {
   val SSL_KEYSTORE = Entry("livy.keystore", null)
   val SSL_KEYSTORE_PASSWORD = Entry("livy.keystore.password", null)
   val SSL_KEY_PASSWORD = Entry("livy.key-password", null)
+  val SSL_KEYSTORE_TYPE = Entry("livy.keystore.type", "JKS")
 
   val HADOOP_CREDENTIAL_PROVIDER_PATH = Entry("livy.hadoop.security.credential.provider.path", null)
 
@@ -135,6 +153,10 @@ object LivyConf {
     Entry("livy.server.thrift.async.exec.wait.queue.size", 100)
   val THRIFT_ASYNC_EXEC_KEEPALIVE_TIME =
     Entry("livy.server.thrift.async.exec.keepalive.time", "10s")
+  val SESSION_MANAGE_THREADS = Entry("livy.server.session.manage.threads", 200)
+  val SESSION_MANAGE_SHUTDOWN_TIMEOUT = Entry("livy.server.session.manage.shutdown.timeout", "10s")
+  val SESSION_MANAGE_WAIT_QUEUE_SIZE = Entry("livy.server.session.manage.wait.queue.size", 100)
+  val SESSION_MANAGE_KEEPALIVE_TIME = Entry("livy.server.session.manage.keepalive.time", "10s")
   val THRIFT_BIND_HOST = Entry("livy.server.thrift.bind.host", null)
   val THRIFT_WORKER_KEEPALIVE_TIME = Entry("livy.server.thrift.worker.keepalive.time", "60s")
   val THRIFT_MIN_WORKER_THREADS = Entry("livy.server.thrift.min.worker.threads", 5)
@@ -249,6 +271,76 @@ object LivyConf {
   // how often to check livy session leakage
   val YARN_APP_LEAKAGE_CHECK_INTERVAL = Entry("livy.server.yarn.app-leakage.check-interval", "60s")
 
+  // value specifies interval to check safe mode in hdfs filesystem
+  val HDFS_SAFE_MODE_INTERVAL_IN_SECONDS = Entry("livy.server.hdfs.safe-mode.interval", 5)
+
+  // value specifies max attempts to retry when safe mode is ON in hdfs filesystem
+  val HDFS_SAFE_MODE_MAX_RETRY_ATTEMPTS = Entry("livy.server.hdfs.safe-mode.max.retry.attempts", 12)
+
+  // Kubernetes oauth token file path.
+  val KUBERNETES_OAUTH_TOKEN_FILE = Entry("livy.server.kubernetes.oauthTokenFile", "")
+  // Kubernetes oauth token string value.
+  val KUBERNETES_OAUTH_TOKEN_VALUE = Entry("livy.server.kubernetes.oauthTokenValue", "")
+  // Kubernetes CA cert file path.
+  val KUBERNETES_CA_CERT_FILE = Entry("livy.server.kubernetes.caCertFile", "")
+  // Kubernetes client key file path.
+  val KUBERNETES_CLIENT_KEY_FILE = Entry("livy.server.kubernetes.clientKeyFile", "")
+  // Kubernetes client cert file path.
+  val KUBERNETES_CLIENT_CERT_FILE = Entry("livy.server.kubernetes.clientCertFile", "")
+
+  // If Livy can't find the Kubernetes app within this time, consider it lost.
+  val KUBERNETES_APP_LOOKUP_TIMEOUT = Entry("livy.server.kubernetes.app-lookup-timeout", "600s")
+  // If Livy can't find the Kubernetes app within this max times, consider it lost.
+  val KUBERNETES_APP_LOOKUP_MAX_FAILED_TIMES =
+    Entry("livy.server.kubernetes.app-lookup.max-failed.times", 120)
+  // The size of thread pool to monitor all Kubernetes apps.
+  val KUBERNETES_APP_LOOKUP_THREAD_POOL_SIZE =
+    Entry("livy.server.kubernetes.app-lookup.thread-pool.size", 4)
+
+  // How often Livy polls Kubernetes to refresh Kubernetes app state.
+  val KUBERNETES_POLL_INTERVAL = Entry("livy.server.kubernetes.poll-interval", "15s")
+
+  // How long to check livy session leakage.
+  val KUBERNETES_APP_LEAKAGE_CHECK_TIMEOUT =
+    Entry("livy.server.kubernetes.app-leakage.check-timeout", "600s")
+  // How often to check livy session leakage.
+  val KUBERNETES_APP_LEAKAGE_CHECK_INTERVAL =
+    Entry("livy.server.kubernetes.app-leakage.check-interval", "60s")
+
+  // Weather to create Kubernetes Nginx Ingress for Spark UI.
+  val KUBERNETES_INGRESS_CREATE = Entry("livy.server.kubernetes.ingress.create", false)
+  // Kubernetes Ingress class name.
+  val KUBERNETES_INGRESS_CLASS_NAME = Entry("livy.server.kubernetes.ingress.className", "")
+  // Kubernetes Nginx Ingress protocol.
+  val KUBERNETES_INGRESS_PROTOCOL = Entry("livy.server.kubernetes.ingress.protocol", "http")
+  // Kubernetes Nginx Ingress host.
+  val KUBERNETES_INGRESS_HOST = Entry("livy.server.kubernetes.ingress.host", "localhost")
+  // Kubernetes Nginx Ingress additional configuration snippet.
+  val KUBERNETES_INGRESS_ADDITIONAL_CONF_SNIPPET =
+    Entry("livy.server.kubernetes.ingress.additionalConfSnippet", "")
+  // Kubernetes Nginx Ingress additional annotations: key1=value1;key2=value2;... .
+  val KUBERNETES_INGRESS_ADDITIONAL_ANNOTATIONS =
+    Entry("livy.server.kubernetes.ingress.additionalAnnotations", "")
+  // Kubernetes secret name for Nginx Ingress TLS.
+  // Is omitted if 'livy.server.kubernetes.ingress.protocol' value doesn't end with 's'
+  val KUBERNETES_INGRESS_TLS_SECRET_NAME =
+    Entry("livy.server.kubernetes.ingress.tls.secretName", "spark-cluster-tls")
+
+  val KUBERNETES_GRAFANA_LOKI_ENABLED = Entry("livy.server.kubernetes.grafana.loki.enabled", false)
+  val KUBERNETES_GRAFANA_URL = Entry("livy.server.kubernetes.grafana.url", "http://localhost:3000")
+  val KUBERNETES_GRAFANA_LOKI_DATASOURCE =
+    Entry("livy.server.kubernetes.grafana.loki.datasource", "loki")
+  val KUBERNETES_GRAFANA_TIME_RANGE = Entry("livy.server.kubernetes.grafana.timeRange", "6h")
+
+  // side car container for spark pods enabled?
+  val KUBERNETES_SPARK_SIDECAR_ENABLED =
+    Entry("livy.server.kubernetes.spark.sidecar.enabled", true)
+  // container name to identify spark pod if running with sidecar containers
+  val KUBERNETES_SPARK_CONTAINER_NAME =
+    Entry("livy.server.kubernetes.spark.container.name", "spark-container")
+
+  val UI_HISTORY_SERVER_URL = Entry("livy.ui.history-server-url", "http://spark-history-server")
+
   // Whether session timeout should be checked, by default it will be checked, which means inactive
   // session will be stopped after "livy.server.session.timeout"
   val SESSION_TIMEOUT_CHECK = Entry("livy.server.session.timeout-check", true)
@@ -261,6 +353,15 @@ object LivyConf {
   val SESSION_STATE_RETAIN_TIME = Entry("livy.server.session.state-retain.sec", "600s")
   // Max creating session in livyServer
   val SESSION_MAX_CREATION = Entry("livy.server.session.max-creation", 100)
+
+  // Enabled to check whether TTL Livy sessions should be stopped.
+  val SESSION_TTL_CHECK = Entry("livy.server.session.ttl-check", false)
+
+  // Time in milliseconds on how long Livy will wait before TTL is an inactive session.
+  // Note that the inactive session could be busy running jobs.
+  val SESSION_TTL = Entry("livy.server.session.ttl", "8h")
+
+  val SESSION_ALLOW_CUSTOM_CLASSPATH = Entry("livy.server.session.allow-custom-classpath", false)
 
   val SPARK_MASTER = "spark.master"
   val SPARK_DEPLOY_MODE = "spark.submit.deployMode"
@@ -285,6 +386,7 @@ object LivyConf {
     SPARK_FILES,
     SPARK_ARCHIVES,
     SPARK_PY_FILES,
+    "spark.archives",
     "spark.yarn.archive",
     "spark.yarn.dist.files",
     "spark.yarn.dist.jars",
@@ -359,6 +461,9 @@ class LivyConf(loadDefaults: Boolean) extends ClientConf[LivyConf](null) {
 
   /** Return true if spark master starts with yarn. */
   def isRunningOnYarn(): Boolean = sparkMaster().startsWith("yarn")
+
+  /** Return true if spark master starts with k8s. */
+  def isRunningOnKubernetes(): Boolean = sparkMaster().startsWith("k8s")
 
   /** Return the spark deploy mode Livy sessions should use. */
   def sparkDeployMode(): Option[String] = Option(get(LIVY_SPARK_DEPLOY_MODE)).filterNot(_.isEmpty)

@@ -51,6 +51,12 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
         Session.resolveURI(new URI(path), conf)
       }
     }
+
+    Seq("/allowed/../file", "/also_allowed/../file").foreach { path =>
+      intercept[IllegalArgumentException] {
+        Session.resolveURI(new URI(path), conf)
+      }
+    }
   }
 
   test("conf validation and preparation") {
@@ -65,6 +71,18 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
     intercept[IllegalArgumentException] {
       Session.prepareConf(Map("spark.do_not_set" -> "1"), Nil, Nil, Nil, Nil, conf)
     }
+
+    // Test for "spark.submit.deployMode".
+    intercept[IllegalArgumentException] {
+      Session.prepareConf(Map("spark.submit.deployMode" -> "standalone"), Nil, Nil, Nil, Nil, conf)
+    }
+
+    // Test for "spark.submit.proxyUser.allowCustomClasspathInClusterMode".
+    intercept[IllegalArgumentException] {
+      Session.prepareConf(Map("spark.submit.proxyUser.allowCustomClasspathInClusterMode"
+                -> "false"), Nil, Nil, Nil, Nil, conf)
+    }
+
     conf.sparkFileLists.foreach { key =>
       intercept[IllegalArgumentException] {
         Session.prepareConf(Map(key -> "file:/not_allowed"), Nil, Nil, Nil, Nil, conf)
@@ -93,6 +111,22 @@ class SessionSpec extends FunSuite with LivyBaseUnitTestSuite {
     val baseConf = userLists.map { key => (key -> base) }.toMap
     val result = Session.prepareConf(baseConf, other, other, other, other, conf)
     userLists.foreach { key => assert(result.get(key) === expected) }
+  }
+
+
+  test("conf validation to allow custom classpath") {
+    val conf = new LivyConf(false)
+    conf.set(LivyConf.SESSION_ALLOW_CUSTOM_CLASSPATH, true)
+
+    // Test for "spark.submit.deployMode".
+    assert(Session.prepareConf(Map("spark.submit.deployMode" -> "standalone"), Nil, Nil, Nil,
+      Nil, conf) === Map("spark.submit.deployMode" -> "standalone", "spark.master" -> "local"))
+
+    // Test for "spark.submit.proxyUser.allowCustomClasspathInClusterMode".
+    assert(Session.prepareConf(Map("spark.submit.proxyUser.allowCustomClasspathInClusterMode" ->
+      "false"), Nil, Nil, Nil, Nil, conf) === Map("spark.master" -> "local",
+      "spark.submit.proxyUser.allowCustomClasspathInClusterMode" -> "false"))
+
   }
 
 }

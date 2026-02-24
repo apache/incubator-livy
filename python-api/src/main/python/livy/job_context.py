@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 from abc import ABCMeta, abstractproperty, abstractmethod
 
 
-class JobContext:
+class JobContext(metaclass=ABCMeta):
     """
     An abstract class that holds runtime information about the job execution
     context.
@@ -27,8 +28,6 @@ class JobContext:
     RemoteSparkContext#submit().
 
     """
-
-    __metaclass__ = ABCMeta
 
     @abstractproperty
     def sc(self):

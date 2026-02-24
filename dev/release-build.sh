@@ -81,11 +81,16 @@ if [ -z "$ASF_PASSWORD" ]; then
   echo
 fi
 
+if [ -z "$GPG_PASSPHRASE" ]; then
+  read -s -p "GPG passphrase: " GPG_PASSPHRASE
+  echo
+fi
+
 # Destination directory on remote server
 RELEASE_STAGING_LOCATION="https://dist.apache.org/repos/dist/dev/incubator/livy"
 
 LIVY_REPO=${LIVY_REPO:-https://gitbox.apache.org/repos/asf/incubator-livy.git}
-GPG="gpg --no-tty --batch"
+GPG="gpg --no-tty --batch --pinentry-mode loopback"
 NEXUS_ROOT=https://repository.apache.org/service/local/staging
 NEXUS_PROFILE=91529f2f65d84e # Profile for Livy staging uploads
 BASE_DIR=$(pwd)
@@ -115,41 +120,49 @@ cd ..
 
 ARCHIVE_NAME_PREFIX="apache-livy-$LIVY_VERSION"
 SRC_ARCHIVE="$ARCHIVE_NAME_PREFIX-src.zip"
-BIN_ARCHIVE="$ARCHIVE_NAME_PREFIX-bin.zip"
+BIN_ARCHIVE="${ARCHIVE_NAME_PREFIX}-bin.zip"
+SCALA_2_12_PROFILES="-Pscala-2.12"
+SCALA_2_11_PROFILES="-Pscala-2.11"
 
 if [[ "$1" == "package" ]]; then
   # Source and binary tarballs
   echo "Packaging release tarballs"
   cp -r incubator-livy $ARCHIVE_NAME_PREFIX
   zip -r $SRC_ARCHIVE $ARCHIVE_NAME_PREFIX
-  echo "" | $GPG --passphrase-fd 0 --armour --output $SRC_ARCHIVE.asc --detach-sig $SRC_ARCHIVE
-  echo "" | $GPG --passphrase-fd 0 --print-md SHA512 $SRC_ARCHIVE > $SRC_ARCHIVE.sha512
+  echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --armour --output $SRC_ARCHIVE.asc --detach-sig $SRC_ARCHIVE
+  shasum -a 512 $SRC_ARCHIVE > $SRC_ARCHIVE.sha512
   rm -rf $ARCHIVE_NAME_PREFIX
 
   # Updated for binary build
   make_binary_release() {
+    BIN_ARCHIVE="${ARCHIVE_NAME_PREFIX}_$1-bin.zip"
+    MVN_FLAGS="clean package -DskipITs -DskipTests -Dgenerate-third-party -e $2"
+
     cp -r incubator-livy $ARCHIVE_NAME_PREFIX-bin
     cd $ARCHIVE_NAME_PREFIX-bin
 
-    $MVN clean package -DskipTests -Dgenerate-third-party
+    $MVN $MVN_FLAGS
 
     echo "Copying and signing regular binary distribution"
     cp assembly/target/$BIN_ARCHIVE .
-    echo "" | $GPG --passphrase-fd 0 --armour --output $BIN_ARCHIVE.asc --detach-sig $BIN_ARCHIVE
-    echo "" | $GPG --passphrase-fd 0 --print-md SHA512 $BIN_ARCHIVE > $BIN_ARCHIVE.sha512
+    echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --armour --output $BIN_ARCHIVE.asc --detach-sig $BIN_ARCHIVE
+    shasum -a 512 $BIN_ARCHIVE > $BIN_ARCHIVE.sha512
 
     cp $BIN_ARCHIVE* ../
     cd ..
   }
 
-  make_binary_release
+  # Package both scala 2.11 and scala 2.12 packages
+  make_binary_release "2.11" $SCALA_2_11_PROFILES
+  make_binary_release "2.12" $SCALA_2_12_PROFILES
+
+  rm -rf ${ARCHIVE_NAME_PREFIX}-bin/
 
   svn co --depth=empty $RELEASE_STAGING_LOCATION svn-livy
   mkdir -p svn-livy/$LIVY_VERSION-$RELEASE_RC
 
   echo "Copying release tarballs to local svn directory"
-  cp ./$SRC_ARCHIVE* svn-livy/$LIVY_VERSION-$RELEASE_RC/
-  cp ./$BIN_ARCHIVE* svn-livy/$LIVY_VERSION-$RELEASE_RC/
+  cp "${ARCHIVE_NAME_PREFIX}"* svn-livy/$LIVY_VERSION-$RELEASE_RC/
 
   cd svn-livy
   svn add $LIVY_VERSION-$RELEASE_RC
@@ -182,7 +195,8 @@ if [[ "$1" == "publish-release" ]]; then
   staged_repo_id=$(echo $out | sed -e "s/.*\(orgapachelivy-[0-9]\{4\}\).*/\1/")
   echo "Created Nexus staging repository: $staged_repo_id"
 
-  $MVN -Dmaven.repo.local=$tmp_repo -DskipTests -DskipITs clean install
+  $MVN -Dmaven.repo.local=$tmp_repo -DskipTests -DskipITs $SCALA_2_11_PROFILES clean install
+  $MVN -Dmaven.repo.local=$tmp_repo -DskipTests -DskipITs $SCALA_2_12_PROFILES install
 
   pushd $tmp_repo/org/apache/livy
 
@@ -192,16 +206,8 @@ if [[ "$1" == "publish-release" ]]; then
   echo "Creating hash and signature files"
   for file in $(find . -type f)
   do
-    echo "" | $GPG --passphrase-fd 0 --output $file.asc \
-      --detach-sig --armour $file;
-    if [ $(command -v md5) ]; then
-      # Available on OS X; -q to keep only hash
-      md5 -q $file > $file.md5
-    else
-      # Available on Linux; cut to keep only hash
-      md5sum $file | cut -f1 -d' ' > $file.md5
-    fi
-    sha1sum $file | cut -f1 -d' ' > $file.sha1
+    echo $GPG_PASSPHRASE | $GPG --passphrase-fd 0 --armour --output $file.asc --detach-sig $file
+    shasum -a 512 $file > $file.sha512
   done
 
   nexus_upload=$NEXUS_ROOT/deployByRepositoryId/$staged_repo_id

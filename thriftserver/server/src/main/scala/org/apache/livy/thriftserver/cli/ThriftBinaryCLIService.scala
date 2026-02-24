@@ -77,8 +77,9 @@ class ThriftBinaryCLIService(override val cliService: LivyCLIService, val oomHoo
             s"${LivyConf.SSL_KEYSTORE.key} Not configured for SSL connection")
         }
         val keyStorePassword = getKeyStorePassword()
+        val keystoreType = livyConf.get(LivyConf.SSL_KEYSTORE_TYPE)
         val params = new TSSLTransportFactory.TSSLTransportParameters
-        params.setKeyStore(keyStorePath, keyStorePassword)
+        params.setKeyStore(keyStorePath, keyStorePassword, null, keystoreType)
         serverSocket =
           TSSLTransportFactory.getServerSocket(portNum, 0, serverAddress.getAddress, params)
         if (serverSocket.getServerSocket.isInstanceOf[SSLServerSocket]) {

@@ -41,6 +41,12 @@ td .progress {
   margin: 0;
 }
 
+.with-scroll-bar {
+  display: block;
+  overflow-y: scroll;
+  max-height: 200px;
+}
+
 #session-summary {
   margin: 20px 0;
 }

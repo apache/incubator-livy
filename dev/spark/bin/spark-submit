@@ -82,5 +82,26 @@ if [ -n "$HADOOP_CONF_DIR" ]; then
   DRIVER_CP="$HADOOP_CONF_DIR:$DRIVER_CP"
 fi
 
-echo "Running Spark: " $JAVA_HOME/bin/java $DRIVER_OPTS org.apache.spark.deploy.SparkSubmit "$@" >&2
+# Taken from Spark's extraJavaTestArgs / JavaModuleOptions
+# Since we are skipping SparkContext.supplementJavaModuleOptions(), we need to add these
+DRIVER_OPTS+=" -XX:+IgnoreUnrecognizedVMOptions"
+DRIVER_OPTS+=" --add-opens=java.base/java.lang=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/java.io=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/java.net=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/java.nio=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/java.util=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/java.util.concurrent=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/sun.nio.cs=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/sun.security.action=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-opens=java.base/sun.util.calendar=ALL-UNNAMED"
+DRIVER_OPTS+=" -Djdk.reflect.useDirectMethodHandle=false"
+DRIVER_OPTS+=" --add-exports=java.base/sun.net.dns=ALL-UNNAMED"
+DRIVER_OPTS+=" --add-exports=java.base/sun.net.util=ALL-UNNAMED"
+
+echo "Running Spark: " $JAVA_HOME/bin/java $DRIVER_OPTS -cp "$DRIVER_CP" org.apache.spark.deploy.SparkSubmit "$@" >&2
 exec $JAVA_HOME/bin/java $DRIVER_OPTS -cp "$DRIVER_CP" org.apache.spark.deploy.SparkSubmit "$@"

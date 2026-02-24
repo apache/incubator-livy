@@ -49,7 +49,7 @@ object PythonInterpreter extends Logging {
     val pythonExec = conf.getOption("spark.pyspark.python")
       .orElse(sys.env.get("PYSPARK_PYTHON"))
       .orElse(sys.props.get("pyspark.python")) // This java property is only used for internal UT.
-      .getOrElse("python")
+      .getOrElse("python3")
 
     val secretKey = Utils.createSecret(256)
     val gatewayServer = createGatewayServer(sparkEntries, secretKey)
@@ -269,11 +269,21 @@ private class PythonInterpreter(
   }
 
   override protected def sendShutdownRequest(): Unit = {
-    sendRequest(Map(
+    stdin.println(write(Map(
       "msg_type" -> "shutdown_request",
       "content" -> ()
-    )).foreach { case rep =>
-      warn(f"process failed to shut down while returning $rep")
+    )))
+    stdin.flush()
+
+    // Pyspark prints profile info to stdout when enabling spark.python.profile. see SPARK-37443
+    var lines = Seq[String]()
+    var line = stdout.readLine()
+    while(line != null) {
+      lines :+= line
+      line = stdout.readLine()
+    }
+    if (lines.nonEmpty) {
+      warn(f"python process shut down while returning ${lines.mkString("\n")}")
     }
   }
 

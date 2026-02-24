@@ -50,7 +50,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   extends ThriftService(classOf[LivyThriftSessionManager].getName) with Logging {
 
   private[thriftserver] val operationManager = new LivyOperationManager(this)
-  private val sessionHandleToLivySession =
+  private[thriftserver] val sessionHandleToLivySession =
     new ConcurrentHashMap[SessionHandle, Future[InteractiveSession]]()
   // A map which returns how many incoming connections are open for a Livy session.
   // This map tracks only the sessions created by the Livy thriftserver and not those which have
@@ -74,7 +74,7 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   val supportUseDatabase: Boolean = {
     val sparkVersion = server.livyConf.get(LivyConf.LIVY_SPARK_VERSION)
     val (sparkMajorVersion, _) = LivySparkUtils.formatSparkVersion(sparkVersion)
-    sparkMajorVersion > 1 || server.livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
+    sparkMajorVersion >= 3 || server.livyConf.getBoolean(LivyConf.ENABLE_HIVE_CONTEXT)
   }
 
   // Configs from Hive
@@ -95,12 +95,12 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
     if (!future.isCompleted) {
       Try(Await.result(future, maxSessionWait)) match {
         case Success(session) => session
-        case Failure(e) => throw e.getCause
+        case Failure(e) => throw Option(e.getCause).getOrElse(e)
       }
     } else {
       future.value match {
         case Some(Success(session)) => session
-        case Some(Failure(e)) => throw e.getCause
+        case Some(Failure(e)) => throw Option(e.getCause).getOrElse(e)
         case None => throw new RuntimeException("Future cannot be None when it is completed")
       }
     }
@@ -155,12 +155,13 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
   }
 
   /**
-   * If the user specified an existing sessionId to use, the corresponding session is returned,
-   * otherwise a new session is created and returned.
+   * If the user specified an existing sessionId or session name to use, the corresponding session
+   * is returned, otherwise a new session is created and returned.
    */
-  private def getOrCreateLivySession(
+  def getOrCreateLivySession(
       sessionHandle: SessionHandle,
       sessionId: Option[Int],
+      sessionName: Option[String],
       username: String,
       createLivySession: () => InteractiveSession): InteractiveSession = {
     sessionId match {
@@ -183,7 +184,27 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
             }
         }
       case None =>
-        createLivySession()
+        sessionName match {
+          case Some(name) =>
+            server.livySessionManager.get(name) match {
+              case None =>
+                createLivySession()
+              case Some(session) if !server.isAllowedToUse(username, session) =>
+                warn(s"$username has no modify permissions to InteractiveSession $name.")
+                throw new IllegalAccessException(
+                  s"$username is not allowed to use InteractiveSession $name.")
+              case Some(session) =>
+                if (session.state.isActive) {
+                  info(s"Reusing Session $name for $sessionHandle.")
+                  session
+                } else {
+                  warn(s"InteractiveSession $name is not active anymore.")
+                  throw new IllegalArgumentException(s"Session $name is not active anymore.")
+                }
+            }
+          case None =>
+            createLivySession()
+        }
     }
   }
 
@@ -235,7 +256,9 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
         server.livyConf,
         server.accessManager,
         createInteractiveRequest,
-        server.sessionStore)
+        server.sessionStore,
+        None,
+        None)
       onLivySessionOpened(newSession)
       newSession
     }
@@ -246,7 +269,8 @@ class LivyThriftSessionManager(val server: LivyThriftServer, val livyConf: LivyC
         livyServiceUGI.doAs(new PrivilegedExceptionAction[InteractiveSession] {
           override def run(): InteractiveSession = {
             livySession =
-              getOrCreateLivySession(sessionHandle, sessionId, username, createLivySession)
+              getOrCreateLivySession(sessionHandle, sessionId, createInteractiveRequest.name,
+                username, createLivySession)
             synchronized {
               managedLivySessionActiveUsers.get(livySession.id).foreach { numUsers =>
                 managedLivySessionActiveUsers(livySession.id) = numUsers + 1

@@ -87,18 +87,16 @@ class InteractiveIT extends BaseIntegrationTestSuite {
       s.run("from pyspark.sql.types import Row").verifyResult("")
       s.run("x = [Row(age=1, name=u'a'), Row(age=2, name=u'b'), Row(age=3, name=u'c')]")
         .verifyResult("")
-      // Check if we're running with Spark2.
-      if (s.run("spark").result().isLeft) {
-        s.run("sqlContext.sparkSession").verifyResult(".*pyspark\\.sql\\.session\\.SparkSession.*")
-      }
+      s.run("spark").verifyResult(".*pyspark\\.sql\\.session\\.SparkSession.*")
       s.run("%table x").verifyResult(".*headers.*type.*name.*data.*")
       s.run("abcde").verifyError(ename = "NameError", evalue = "name 'abcde' is not defined")
-      s.run("raise KeyError, 'foo'").verifyError(ename = "KeyError", evalue = "'foo'")
+      s.run("raise KeyError('foo')").verifyError(ename = "KeyError", evalue = "'foo'")
       s.run("print(1)\r\nprint(1)").verifyResult("1\n1")
     }
   }
 
   test("R interactive session") {
+    assume(!sys.props.getOrElse("skipRTests", "false").toBoolean, "Skipping R tests.")
     withNewSession(SparkR) { s =>
       // R's output sometimes includes the count of statements, which makes it annoying to test
       // things. This helps a bit.

@@ -27,6 +27,7 @@ import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 import org.apache.livy.{LivyConf, Logging}
+import org.apache.livy.client.common.ClientConf
 import org.apache.livy.server.batch.{BatchRecoveryMetadata, BatchSession}
 import org.apache.livy.server.interactive.{InteractiveRecoveryMetadata, InteractiveSession, SessionHeartbeatWatchdog}
 import org.apache.livy.server.recovery.SessionStore
@@ -79,8 +80,13 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   private[this] final val sessionTimeoutCheck = livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK)
   private[this] final val sessionTimeoutCheckSkipBusy =
     livyConf.getBoolean(LivyConf.SESSION_TIMEOUT_CHECK_SKIP_BUSY)
-  private[this] final val sessionTimeout =
-    TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_TIMEOUT))
+
+  private[this] final val sessionTimeout = livyConf.getTimeAsMs(LivyConf.SESSION_TIMEOUT)
+
+  private[this] final val sessionTtlCheck = livyConf.getBoolean(LivyConf.SESSION_TTL_CHECK)
+
+  private[this] final val sessionTtl = livyConf.getTimeAsMs(LivyConf.SESSION_TTL)
+
   private[this] final val sessionStateRetainedInSec =
     TimeUnit.MILLISECONDS.toNanos(livyConf.getTimeAsMs(LivyConf.SESSION_STATE_RETAIN_TIME))
 
@@ -126,7 +132,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
   }
 
   def delete(session: S): Future[Unit] = {
-    info(s"Deleting session ${session.id}")
+    info(s"Deleting ${session}")
     session.stop().map { case _ =>
       try {
         sessionStore.remove(sessionType, session.id)
@@ -139,7 +145,7 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
           error("Exception was thrown during stop session:", e)
           throw e
       } finally {
-        info(s"Deleted session ${session.id}")
+        info(s"Deleted ${session}")
       }
     }
   }
@@ -168,13 +174,37 @@ class SessionManager[S <: Session, R <: RecoveryMetadata : ClassTag](
             false
           } else {
             val currentTime = System.nanoTime()
-            currentTime - session.lastActivity > sessionTimeout
+            var calculatedTimeout = sessionTimeout;
+            if (session.idleTimeout.isDefined) {
+              calculatedTimeout = ClientConf.getTimeAsMs(session.idleTimeout.get)
+            }
+            calculatedTimeout = TimeUnit.MILLISECONDS.toNanos(calculatedTimeout)
+            if (currentTime - session.lastActivity > calculatedTimeout) {
+              return true
+            }
+            if (sessionTtlCheck && session.startedOn.isDefined) {
+              if (session.ttl.isDefined) {
+                calculatedTimeout = TimeUnit.MILLISECONDS.toNanos(
+                  ClientConf.getTimeAsMs(session.ttl.get))
+              } else {
+                calculatedTimeout = TimeUnit.MILLISECONDS.toNanos(sessionTtl)
+              }
+              if (currentTime - session.startedOn.get > calculatedTimeout) {
+                return true
+              }
+            }
+            false
           }
       }
     }
 
     Future.sequence(all().filter(expired).map { s =>
-      info(s"Deleting $s because it was inactive for more than ${sessionTimeout / 1e6} ms.")
+      s.state match {
+        case _: FinishedSessionState =>
+          info(s"Deleting $s because it finished before ${sessionStateRetainedInSec / 1e9} secs.")
+        case _ =>
+          info(s"Deleting $s because it was inactive for more than ${sessionTimeout / 1e9} secs.")
+      }
       delete(s)
     })
   }

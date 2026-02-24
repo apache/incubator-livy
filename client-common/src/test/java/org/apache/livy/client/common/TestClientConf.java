@@ -37,6 +37,26 @@ public class TestClientConf {
     assertEquals(42, conf.getInt(TestConf.Entry.INT));
     assertEquals(84L, conf.getLong(TestConf.Entry.LONG));
     assertEquals(168L, conf.getTimeAsMs(TestConf.Entry.TIME));
+    assertEquals(60000L, TestConf.getTimeAsMs("1m"));
+    assertEquals(80L, TestConf.getTimeAsMs("  80    "));
+    try {
+      TestConf.getTimeAsMs("invalid");
+      fail("Should have failed to getTimeAsMs for invalid ttl.");
+    } catch (IllegalArgumentException ie) {
+      // Expected.
+    }
+    try {
+      TestConf.getTimeAsMs("30b");
+      fail("Should have failed to getTimeAsMs for invalid ttl suffix.");
+    } catch (IllegalArgumentException ie) {
+      // Expected.
+    }
+    try {
+      TestConf.getTimeAsMs("-1m");
+      fail("Should have failed to getTimeAsMs for invalid ttl value.");
+    } catch (IllegalArgumentException ie) {
+      // Expected.
+    }
 
     try {
       conf.get(TestConf.Entry.INT);
