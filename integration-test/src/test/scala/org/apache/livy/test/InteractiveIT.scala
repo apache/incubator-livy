@@ -95,6 +95,14 @@ class InteractiveIT extends BaseIntegrationTestSuite {
     }
   }
 
+  test("pyspark session should set working directory to SparkFiles root") {
+    withNewSession(PySpark) { s =>
+      s.run("import os").verifyResult("")
+      s.run("from pyspark import SparkFiles").verifyResult("")
+      s.run("os.getcwd() == SparkFiles.getRootDirectory()").verifyResult("True")
+    }
+  }
+
   test("R interactive session") {
     assume(!sys.props.getOrElse("skipRTests", "false").toBoolean, "Skipping R tests.")
     withNewSession(SparkR) { s =>
