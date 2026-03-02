@@ -33,6 +33,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public final class LivyClientBuilder {
 
   public static final String LIVY_URI_KEY = "livy.uri";
+  public static final String LIVY_SESSION_ID_KEY = "livy.sessionId";
 
   private static final ServiceLoader<LivyClientFactory> CLIENT_FACTORY_LOADER =
     ServiceLoader.load(LivyClientFactory.class, classLoader());
@@ -93,8 +94,29 @@ public final class LivyClientBuilder {
     }
   }
 
+  /**
+   * Sets the URI of the Livy server the client will connect to. If the URI contains
+   * <pre>sessions/{sessionId}</pre>, the client will connect to the specified existing session;
+   * otherwise it will create a new session.
+   *
+   * @param uri The URI of Livy server.
+   * @return The builder itself.
+   */
   public LivyClientBuilder setURI(URI uri) {
     config.setProperty(LIVY_URI_KEY, uri.toString());
+    return this;
+  }
+
+  /**
+   * Sets the session ID the client will connect to. If a session ID is set, the chosen session
+   * will be used with its own configurations, so Spark configurations will be ignored. If not set,
+   * a new session will be created when the client is built.
+   *
+   * @param sessionId The ID of the session to attach to.
+   * @return the builder itself.
+   */
+  public LivyClientBuilder setSessionId(int sessionId) {
+    config.setProperty(LIVY_SESSION_ID_KEY, String.valueOf(sessionId));
     return this;
   }
 
