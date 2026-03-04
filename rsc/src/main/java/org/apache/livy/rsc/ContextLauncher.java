@@ -88,7 +88,7 @@ class ContextLauncher {
     this.conf = conf;
     this.factory = factory;
 
-    final RegistrationHandler handler = new RegistrationHandler();
+    final RegistrationHandler handler = new RegistrationHandler(conf);
     try {
       factory.getServer().registerClient(clientId, secret, handler);
       // In some scenarios the user may need to configure this endpoint setting explicitly.
@@ -303,6 +303,12 @@ class ContextLauncher {
   private class RegistrationHandler extends BaseProtocol
     implements RpcServer.ClientCallback {
 
+    private final RSCConf conf;
+
+    private RegistrationHandler(RSCConf conf) {
+      this.conf = conf;
+    }
+
     volatile RemoteDriverAddress driverAddress;
 
     private Rpc client;
@@ -327,9 +333,12 @@ class ContextLauncher {
     //Note. Your compiler or IDE may identify this method as unused
     //tests fail without it
     public void handle(ChannelHandlerContext ctx, RemoteDriverAddress msg) {
-      InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
-      String ip = insocket.getAddress().getHostAddress();
-      ContextInfo info = new ContextInfo(ip, msg.port, clientId, secret);
+      String host = msg.host;
+      if(conf.getBoolean(RPC_CLIENT_GET_DRIVER_IP_FROM_CONNECTION)) {
+        InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
+        host = insocket.getAddress().getHostAddress();
+      }
+      ContextInfo info = new ContextInfo(host, msg.port, clientId, secret);
       if (promise.trySuccess(info)) {
         timeout.cancel(true);
         LOG.debug("Received driver info for client {}: {}/{}.", client.getChannel(),
