@@ -44,6 +44,11 @@ class JobHandleImpl<T> extends AbstractJobHandle<T> {
     this.promise = promise;
   }
 
+  @Override
+  public String getJobId() {
+    return jobId;
+  }
+
   /** Requests a running job to be cancelled. */
   @Override
   public boolean cancel(boolean mayInterrupt) {
