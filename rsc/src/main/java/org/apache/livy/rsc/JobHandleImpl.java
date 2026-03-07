@@ -17,16 +17,12 @@
 
 package org.apache.livy.rsc;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import io.netty.util.concurrent.Promise;
+import org.apache.livy.client.common.AbstractJobHandle;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import io.netty.util.concurrent.Promise;
-
-import org.apache.livy.JobHandle;
-import org.apache.livy.client.common.AbstractJobHandle;
 
 /**
  * A handle to a submitted job. Allows for monitoring and controlling of the running remote job.
@@ -101,6 +97,10 @@ class JobHandleImpl<T> extends AbstractJobHandle<T> {
       promise.setFailure(error);
       changeState(State.FAILED);
     }
+  }
+  @Override
+  public String getId() {
+    return jobId;
   }
 
 }

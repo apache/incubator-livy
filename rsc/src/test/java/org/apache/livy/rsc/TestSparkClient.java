@@ -17,19 +17,11 @@
 
 package org.apache.livy.rsc;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.jar.JarOutputStream;
-import java.util.zip.ZipEntry;
-
 import org.apache.commons.io.FileUtils;
+import org.apache.livy.*;
+import org.apache.livy.client.common.Serializer;
+import org.apache.livy.rsc.rpc.RpcException;
+import org.apache.livy.test.jobs.*;
 import org.apache.spark.launcher.SparkLauncher;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.junit.Test;
@@ -37,18 +29,24 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Properties;
+import java.util.concurrent.*;
+import java.util.jar.JarOutputStream;
+import java.util.zip.ZipEntry;
+
+import static org.apache.livy.rsc.RSCConf.Entry.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-
-import org.apache.livy.Job;
-import org.apache.livy.JobContext;
-import org.apache.livy.JobHandle;
-import org.apache.livy.LivyClient;
-import org.apache.livy.LivyClientBuilder;
-import org.apache.livy.client.common.Serializer;
-import org.apache.livy.rsc.rpc.RpcException;
-import org.apache.livy.test.jobs.*;
-import static org.apache.livy.rsc.RSCConf.Entry.*;
 
 public class TestSparkClient {
 
@@ -103,6 +101,26 @@ public class TestSparkClient {
       }
     });
   }
+
+//  public void testStatementSubmission() throws Exception {
+//    runTest(true, new TestFunction() {
+//      @Override
+//      public void call(LivyClient client) throws Exception {
+//        JobHandle.Listener<String> listener = newListener();
+//        JobHandle<String> handle = client.submit(new Echo<>("hello"));
+//        handle.addListener(listener);
+//        assertEquals("hello", handle.get(TIMEOUT, TimeUnit.SECONDS));
+//
+//        // Try an invalid state transition on the handle. This ensures that the actual state
+//        // change we're interested in actually happened, since internally the handle serializes
+//        // state changes.
+//        assertFalse(((JobHandleImpl<String>)handle).changeState(JobHandle.State.SENT));
+//
+//        verify(listener).onJobStarted(handle);
+//        verify(listener).onJobSucceeded(same(handle), eq(handle.get()));
+//      }
+//    });
+//  }
 
   @Test
   public void testSimpleSparkJob() throws Exception {

@@ -17,7 +17,6 @@
 
 package org.apache.livy;
 
-import java.util.List;
 import java.util.concurrent.Future;
 
 /**
@@ -31,6 +30,13 @@ public interface JobHandle<T> extends Future<T> {
    * @return The current State of this job
    */
   State getState();
+
+  /**
+   * Return the current state of the job.
+   *
+   * @return The current State of this job
+   */
+  String getId();
 
   /**
    * Add a listener to the job handle. If the job's state is not SENT, a callback for the
@@ -47,6 +53,7 @@ public interface JobHandle<T> extends Future<T> {
     SENT,
     QUEUED,
     STARTED,
+    CANCELLING,
     CANCELLED,
     FAILED,
     SUCCEEDED;

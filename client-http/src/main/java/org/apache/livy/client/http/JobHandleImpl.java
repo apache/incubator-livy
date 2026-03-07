@@ -17,17 +17,13 @@
 
 package org.apache.livy.client.http;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.apache.livy.client.common.AbstractJobHandle;
 import org.apache.livy.client.common.BufferUtils;
 import org.apache.livy.client.common.Serializer;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.*;
+
 import static org.apache.livy.client.common.HttpMessages.*;
 
 class JobHandleImpl<T> extends AbstractJobHandle<T> {
@@ -131,6 +127,10 @@ class JobHandleImpl<T> extends AbstractJobHandle<T> {
   @Override
   protected Throwable error() {
     return error;
+  }
+
+  public String getId() {
+    return Long.toString(jobId);
   }
 
   void start(final String command, final ByteBuffer serializedJob) {
