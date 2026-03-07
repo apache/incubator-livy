@@ -36,6 +36,7 @@ import org.scalatra.metrics.MetricsSupportExtensions._
 import org.scalatra.servlet.{MultipartConfig, ServletApiImplicits}
 
 import org.apache.livy._
+import org.apache.livy.cluster.{ClusterManager, ZKClusterManager}
 import org.apache.livy.server.auth.LdapAuthenticationHandlerImpl
 import org.apache.livy.server.batch.BatchSessionServlet
 import org.apache.livy.server.interactive.InteractiveSessionServlet
@@ -61,6 +62,7 @@ class LivyServer extends Logging {
   private var _thriftServerFactory: Option[ThriftServerFactory] = None
 
   private var zkManager: Option[ZooKeeperManager] = None
+  private var clusterManager: Option[ClusterManager] = None
 
   private var ugi: UserGroupInformation = _
 
@@ -150,9 +152,14 @@ class LivyServer extends Logging {
       SparkKubernetesApp.init(livyConf)
     }
 
-    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper") {
+    if (livyConf.get(LivyConf.RECOVERY_STATE_STORE) == "zookeeper" ||
+      livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
       zkManager = Some(new ZooKeeperManager(livyConf))
       zkManager.foreach(_.start())
+    }
+
+    if (livyConf.get(LivyConf.HA_MODE) == LivyConf.HA_MODE_MULTI_ACTIVE) {
+      clusterManager = Some(new ZKClusterManager(livyConf, zkManager.get))
     }
 
     StateStore.init(livyConf, zkManager)
@@ -358,6 +365,8 @@ class LivyServer extends Logging {
 
     _serverUrl = Some(s"${server.protocol}://${server.host}:${server.port}")
     sys.props("livy.server.server-url") = _serverUrl.get
+
+    clusterManager.foreach(_.register())
   }
 
   def runKinit(keytab: String, principal: String): Boolean = {
