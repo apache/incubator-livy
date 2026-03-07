@@ -20,6 +20,8 @@ package org.apache.livy.thriftserver.session;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -29,11 +31,13 @@ import org.apache.spark.launcher.SparkLauncher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
 
 import org.apache.livy.Job;
 import org.apache.livy.LivyClient;
 import org.apache.livy.LivyClientBuilder;
+import org.apache.livy.rsc.RSCClient;
 import static org.apache.livy.rsc.RSCConf.Entry.*;
 
 public class ThriftSessionTest {
@@ -190,6 +194,27 @@ public class ThriftSessionTest {
 
     // Tear down the session.
     waitFor(new UnregisterSessionJob(s3));
+  }
+
+  @Test
+  public void testSessionState() throws Exception {
+    RSCClient rscClient = (RSCClient)livy;
+    rscClient.setTest(true);
+    String s1 = nextSession();
+    String st1 = nextStatement();
+    waitFor(new RegisterSessionJob(s1));
+    await().atMost(10, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS)
+        .until(() -> rscClient.getReplStateChangedHistoryInTest()
+            .equals(Collections.singletonList("idle")));
+
+    waitFor(newSqlJob(s1, st1, "select 1"));
+    await().atMost(10, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS)
+        .until(() -> rscClient.getReplStateChangedHistoryInTest()
+            .equals(Arrays.asList("idle", "busy", "idle")));
+
+    // Tear down the session.
+    waitFor(new UnregisterSessionJob(s1));
+    rscClient.setTest(false);
   }
 
   private String nextSession() {
