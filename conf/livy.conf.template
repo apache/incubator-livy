@@ -166,6 +166,12 @@
 # The dir in zk to store the data about session.
 # livy.server.recovery.zk-state-store.key-prefix = livy
 
+# Enable SASL authentication for ZooKeeper connections.
+# livy.server.zk.sasl.enabled = false
+
+# JAAS login context name for ZooKeeper SASL authentication.
+# livy.server.zk.sasl.login-context = Client
+
 # If Livy can't find the yarn app within this time, consider it lost.
 # livy.server.yarn.app-lookup-timeout = 120s
 # When the cluster is busy, we may fail to launch yarn app in app-lookup-timeout, then it would

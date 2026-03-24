@@ -245,6 +245,10 @@ object LivyConf {
    */
   val ZK_RETRY_POLICY = Entry("livy.server.zk.retry-policy", null)
 
+  val ZK_SASL_ENABLED = Entry("livy.server.zk.sasl.enabled", false)
+
+  val ZK_SASL_LOGIN_CONTEXT = Entry("livy.server.zk.sasl.login-context", "Client")
+
   // The dir in zookeeper to store the data about session.
   val RECOVERY_ZK_STATE_STORE_KEY_PREFIX =
     Entry("livy.server.recovery.zk-state-store.key-prefix", "livy")
