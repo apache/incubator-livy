@@ -63,7 +63,19 @@ class ZooKeeperManager(
   }
 
   private val curatorClient = mockCuratorClient.getOrElse {
-    CuratorFrameworkFactory.newClient(zkAddress, retryPolicy)
+    if (livyConf.getBoolean(LivyConf.ZK_SASL_ENABLED)) {
+      System.setProperty("zookeeper.sasl.client", "true")
+      val loginContext = livyConf.get(LivyConf.ZK_SASL_LOGIN_CONTEXT)
+      if (loginContext != null) {
+        System.setProperty("zookeeper.sasl.clientconfig", loginContext)
+      }
+      info(s"ZooKeeper SASL authentication enabled with login context: " +
+        s"${Option(loginContext).getOrElse("Client")}")
+    }
+    CuratorFrameworkFactory.builder()
+      .connectString(zkAddress)
+      .retryPolicy(retryPolicy)
+      .build()
   }
 
   curatorClient.getUnhandledErrorListenable().addListener(new UnhandledErrorListener {

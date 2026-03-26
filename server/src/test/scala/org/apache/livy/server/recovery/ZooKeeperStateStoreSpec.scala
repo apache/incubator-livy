@@ -173,5 +173,31 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
         verify(g).forPath(prefixedKey)
       }
     }
+
+    it("should set SASL system properties when ZK SASL is enabled") {
+      val saslConf = new LivyConf()
+      saslConf.set(LivyConf.RECOVERY_STATE_STORE_URL, "host")
+      saslConf.set(LivyConf.ZK_SASL_ENABLED, true)
+
+      val zkManager = new ZooKeeperManager(saslConf, None)
+      zkManager.stop()
+
+      System.getProperty("zookeeper.sasl.client") shouldBe "true"
+      System.getProperty("zookeeper.sasl.clientconfig") shouldBe "Client"
+    }
+
+    it("should not set SASL system properties when ZK SASL is disabled") {
+      System.clearProperty("zookeeper.sasl.client")
+      System.clearProperty("zookeeper.sasl.clientconfig")
+
+      val noSaslConf = new LivyConf()
+      noSaslConf.set(LivyConf.RECOVERY_STATE_STORE_URL, "host")
+
+      val zkManager = new ZooKeeperManager(noSaslConf, None)
+      zkManager.stop()
+
+      System.getProperty("zookeeper.sasl.client") shouldBe null
+      System.getProperty("zookeeper.sasl.clientconfig") shouldBe null
+    }
   }
 }
