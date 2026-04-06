@@ -90,7 +90,7 @@ object SparkKubernetesApp extends Logging {
         var newAccessToken = new String
         val newestConfig = Config.autoConfigure(currentContextName)
         newAccessToken = newestConfig.getOauthToken
-        info(s"Refresh a new token ${newAccessToken}")
+        info("Refreshed Kubernetes service account token.")
 
         config.setOauthToken(newAccessToken)
         kubernetesClient = new DefaultKubernetesClient(config)

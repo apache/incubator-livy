@@ -59,7 +59,7 @@ class ThriftHttpServlet(
   private val signer: CookieSigner = if (isCookieAuthEnabled) {
       // Generate the signer with secret.
       val secret = ThriftHttpServlet.RAN.nextLong.toString
-      debug("Using the random number as the secret for cookie generation " + secret)
+      debug("Generated a random secret for cookie signing.")
       new CookieSigner(secret.getBytes())
     } else {
       null
@@ -192,7 +192,7 @@ class ThriftHttpServlet(
       if (value != null) {
         val userName = HttpAuthUtils.getUserNameFromCookieToken(value)
         if (userName == null) {
-          warn("Invalid cookie token " + value)
+          warn("Invalid cookie token.")
         } else {
           // We have found a valid cookie in the client request.
           if (logger.isDebugEnabled()) {
@@ -247,7 +247,7 @@ class ThriftHttpServlet(
    */
   private def createCookie(str: String): Cookie = {
     if (logger.isDebugEnabled()) {
-      debug(s"Cookie name = ${ThriftHttpServlet.AUTH_COOKIE} value = $str")
+      debug(s"Cookie name = ${ThriftHttpServlet.AUTH_COOKIE} value = [REDACTED]")
     }
     val cookie = new Cookie(ThriftHttpServlet.AUTH_COOKIE, str)
 

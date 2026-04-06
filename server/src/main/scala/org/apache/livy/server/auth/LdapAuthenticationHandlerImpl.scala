@@ -106,7 +106,7 @@ class LdapAuthenticationHandlerImpl extends AuthenticationHandler with Logging {
       if (authorization == null) {
         trace("Basic auth starting")
       } else {
-        warn(s"Authorization does not start with Basic : ${authorization} ")
+        warn("Authorization header does not start with Basic.")
       }
     }
     token
