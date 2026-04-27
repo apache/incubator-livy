@@ -22,7 +22,9 @@ import scala.collection.JavaConverters._
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api._
 import org.apache.curator.framework.listen.Listenable
+import org.apache.curator.framework.state.{ConnectionState, ConnectionStateListener}
 import org.apache.zookeeper.data.Stat
+import org.mockito.ArgumentCaptor
 import org.mockito.Mockito._
 import org.scalatest.FunSpec
 import org.scalatest.Matchers._
@@ -43,6 +45,8 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
       val curatorClient = mock[CuratorFramework]
       when(curatorClient.getUnhandledErrorListenable())
         .thenReturn(mock[Listenable[UnhandledErrorListener]])
+      when(curatorClient.getConnectionStateListenable())
+        .thenReturn(mock[Listenable[ConnectionStateListener]])
       val zkManager = new ZooKeeperManager(conf, Some(curatorClient))
       zkManager.start()
       val stateStore = new ZooKeeperStateStore(conf, zkManager)
@@ -184,6 +188,22 @@ class ZooKeeperStateStoreSpec extends FunSpec with LivyBaseUnitTestSuite {
 
       System.getProperty("zookeeper.sasl.client") shouldBe "true"
       System.getProperty("zookeeper.sasl.clientconfig") shouldBe "Client"
+    }
+
+    it("should register a ConnectionStateListener that handles all connection states") {
+      val curatorClient = mock[CuratorFramework]
+      when(curatorClient.getUnhandledErrorListenable())
+        .thenReturn(mock[Listenable[UnhandledErrorListener]])
+      val listenable = mock[Listenable[ConnectionStateListener]]
+      when(curatorClient.getConnectionStateListenable()).thenReturn(listenable)
+
+      new ZooKeeperManager(conf, Some(curatorClient))
+
+      val captor = ArgumentCaptor.forClass(classOf[ConnectionStateListener])
+      verify(listenable).addListener(captor.capture())
+      ConnectionState.values.foreach { state =>
+        captor.getValue.stateChanged(curatorClient, state)
+      }
     }
 
     it("should not set SASL system properties when ZK SASL is disabled") {

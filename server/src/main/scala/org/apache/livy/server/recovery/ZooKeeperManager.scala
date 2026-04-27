@@ -23,6 +23,7 @@ import scala.reflect.ClassTag
 import org.apache.curator.framework.api.UnhandledErrorListener
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
+import org.apache.curator.framework.state.{ConnectionState, ConnectionStateListener}
 import org.apache.curator.retry.RetryNTimes
 import org.apache.zookeeper.KeeperException.NoNodeException
 
@@ -82,6 +83,22 @@ class ZooKeeperManager(
     def unhandledError(message: String, e: Throwable): Unit = {
       error(s"Fatal Zookeeper error: ${message}.", e)
       throw new LivyUncaughtException(e.getMessage)
+    }
+  })
+
+  curatorClient.getConnectionStateListenable.addListener(new ConnectionStateListener {
+    override def stateChanged(client: CuratorFramework, newState: ConnectionState): Unit = {
+      newState match {
+        case ConnectionState.SUSPENDED =>
+          warn("ZooKeeper connection suspended; recovery state operations will block " +
+            "until the connection is re-established.")
+        case ConnectionState.RECONNECTED =>
+          info("ZooKeeper connection re-established within the session timeout.")
+        case ConnectionState.LOST =>
+          error("ZooKeeper session lost; ephemeral nodes and watches held by this client " +
+            "have been discarded. Subsequent operations will run against a new session.")
+        case _ =>
+      }
     }
   })
 
