@@ -127,6 +127,25 @@
 # on user request and then livy server classpath automatically.
 # livy.repl.enable-hive-context =
 
+# High Availability mode of Livy. Possible values:
+# off: Default. Turn off High Availability. 
+# on: Livy uses Zookeeper as a state store to ensure a livy server is always available with the
+#     correct state.
+# Must set livy.server.ha.zookeeper-url to configure HA
+# livy.server.ha.mode = off
+
+# For zookeeper, the address to the Zookeeper servers. e.g. host1:port1,host2:port2
+# livy.server.ha.zookeeper-url =
+
+# The list of ids for all livy servers used for HA
+# livy.server.ha.server-ids =
+
+# The list of hostnames for all livy servers used for HA
+# livy.server.ha.server-hostnames =
+
+# The list of server addresses for all livy servers used for HA
+# livy.server.ha.server-addresses =
+
 # Recovery mode of Livy. Possible values:
 # off: Default. Turn off recovery. Every time Livy shuts down, it stops and forgets all sessions.
 # recovery: Livy persists session info to the state store. When Livy restarts, it recovers
