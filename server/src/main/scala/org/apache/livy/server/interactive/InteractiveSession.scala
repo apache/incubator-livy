@@ -361,8 +361,6 @@ object InteractiveSession extends Logging {
       builderProperties.put(SPARK_YARN_IS_PYTHON, "true")
     }
 
-    mergeConfList(pySparkFiles, LivyConf.SPARK_PY_FILES)
-
     val sparkRArchive = if (!LivyConf.TEST_MODE) findSparkRArchive() else None
     sparkRArchive.foreach { archive =>
       builderProperties.put(RSCConf.Entry.SPARKR_PACKAGE.key(), archive + "#sparkr")
