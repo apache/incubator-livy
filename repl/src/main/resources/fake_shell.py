@@ -444,7 +444,7 @@ def magic_table(name):
     for row in value:
         cols = []
         data.append(cols)
-        
+
         if 'Row' == row.__class__.__name__:
             row = row.asDict()
 
@@ -577,13 +577,26 @@ def main():
             from pyspark.sql import SQLContext, HiveContext, Row
             # Connect to the gateway
             gateway_port = int(os.environ["PYSPARK_GATEWAY_PORT"])
+            # --- START DYNAMIC IPV4/IPV6 DISCOVERY ---
+            import socket
+            loopback_addr = '127.0.0.1'
+            try:
+                # Probe IPv4. If Java bound to IPv6, this raises an Exception
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect(('127.0.0.1', gateway_port))
+                s.close()
+            except Exception:
+                loopback_addr = '::1'
+            # --- END DYNAMIC IPV4/IPV6 DISCOVERY ---
             try:
                 from py4j.java_gateway import GatewayParameters
                 gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
                 gateway = JavaGateway(gateway_parameters=GatewayParameters(
+                    address=loopback_addr,
                     port=gateway_port, auth_token=gateway_secret, auto_convert=True))
             except:
-                gateway = JavaGateway(GatewayClient(port=gateway_port), auto_convert=True)
+                gateway = JavaGateway(GatewayClient(
+                    address=loopback_addr, port=gateway_port), auto_convert=True)
 
             # Import the classes used by PySpark
             java_import(gateway.jvm, "org.apache.spark.SparkConf")
@@ -636,10 +649,12 @@ def main():
                 gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
                 gateway.start_callback_server(
                     callback_server_parameters=CallbackServerParameters(
+                        address=loopback_addr,
                         port=0, auth_token=gateway_secret))
             except:
                 gateway.start_callback_server(
-                    callback_server_parameters=CallbackServerParameters(port=0))
+                    callback_server_parameters=CallbackServerParameters(
+                        address=loopback_addr, port=0))
 
             socket_info = gateway._callback_server.server_socket.getsockname()
             listening_port = socket_info[1]
