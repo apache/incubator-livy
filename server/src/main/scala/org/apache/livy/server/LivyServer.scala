@@ -27,6 +27,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+import org.apache.curator.utils.CloseableUtils
 import org.apache.hadoop.security.{SecurityUtil, UserGroupInformation}
 import org.apache.hadoop.security.authentication.server._
 import org.eclipse.jetty.servlet.FilterHolder
@@ -62,9 +63,13 @@ class LivyServer extends Logging {
 
   private var zkManager: Option[ZooKeeperManager] = None
 
+  private var interactiveSessionManager: InteractiveSessionManager = _
+  private var batchSessionManager: BatchSessionManager = _
+  private var sessionStore: SessionStore = _
+
   private var ugi: UserGroupInformation = _
 
-  def start(): Unit = {
+  def init(): Unit = {
     livyConf = new LivyConf().loadFromFile("livy.conf")
     accessManager = new AccessManager(livyConf)
 
@@ -156,9 +161,9 @@ class LivyServer extends Logging {
     }
 
     StateStore.init(livyConf, zkManager)
-    val sessionStore = new SessionStore(livyConf)
-    val batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
-    val interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)
+    sessionStore = new SessionStore(livyConf)
+    batchSessionManager = new BatchSessionManager(livyConf, sessionStore)
+    interactiveSessionManager = new InteractiveSessionManager(livyConf, sessionStore)
 
     server = new WebServer(livyConf, host, port)
     server.context.setResourceBase("src/main/org/apache/livy/server")
@@ -340,7 +345,22 @@ class LivyServer extends Logging {
       val accessHolder = new FilterHolder(new AccessFilter(accessManager))
       server.context.addFilter(accessHolder, "/*", EnumSet.allOf(classOf[DispatcherType]))
     }
+  }
 
+  def initHa(electorService: CuratorElectorService): Unit = {
+    // Start server HA leader election service if applicable
+    if (livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON) {
+      info("Starting HA connection")
+
+      val redirectHolder = new FilterHolder(new DomainRedirectionFilter(electorService))
+      server.context.addFilter(redirectHolder, "/*", EnumSet.allOf(classOf[DispatcherType]))
+    }
+  }
+
+  def start(): Unit = {
+    info("Starting HA connection")
+    interactiveSessionManager.recoverSessions()
+    batchSessionManager.recoverSessions()
     server.start()
 
     _thriftServerFactory.foreach {
@@ -349,10 +369,7 @@ class LivyServer extends Logging {
 
     Runtime.getRuntime().addShutdownHook(new Thread("Livy Server Shutdown") {
       override def run(): Unit = {
-        info("Shutting down Livy server.")
-        zkManager.foreach(_.stop())
-        server.stop()
-        _thriftServerFactory.foreach(_.stop())
+        stop()
       }
     })
 
@@ -411,8 +428,19 @@ class LivyServer extends Logging {
 
   def stop(): Unit = {
     if (server != null) {
-      server.stop()
+        info("Shutting down Livy server.")
+        server.stop()
+        _thriftServerFactory.foreach(_.stop())
+        if (livyConf.get(LivyConf.HA_MODE) != HighAvailabilitySettings.HA_ON) {
+          zkManager.foreach(_.stop())
+        }
     }
+  }
+
+  def restart(): Unit =
+  {
+    stop()
+    start()
   }
 
   def serverUrl(): String = {
@@ -443,16 +471,31 @@ class LivyServer extends Logging {
   }
 }
 
+object HighAvailabilitySettings {
+  val HA_ON = "on"
+  val HA_OFF = "off"
+}
+
 object LivyServer {
 
   def main(args: Array[String]): Unit = {
     val server = new LivyServer()
-    try {
-      server.start()
-      server.join()
-    } finally {
-      server.stop()
+    val livyConf = new LivyConf().loadFromFile("livy.conf")
+
+    server.init()
+    if(livyConf.get(LivyConf.HA_MODE) == HighAvailabilitySettings.HA_ON) {
+      info("Starting HA connection")
+      val electorService: CuratorElectorService = new CuratorElectorService(livyConf, server)
+      electorService.start()
+    }
+    else {
+      try {
+        server.start()
+        server.join()
+      } finally {
+        server.stop()
+      }
     }
   }
-
 }
+
