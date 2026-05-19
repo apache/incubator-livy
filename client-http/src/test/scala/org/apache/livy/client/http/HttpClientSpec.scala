@@ -181,13 +181,32 @@ class HttpClientSpec extends FunSpecLike with BeforeAndAfterAll with LivyBaseUni
       testJob(false, response = Some(null))
     }
 
-    withClient("should connect to existing sessions") {
-      var sid = client.asInstanceOf[HttpClient].getSessionId()
+    withClient("should connect to existing sessions using the URI") {
+      val sid = client.asInstanceOf[HttpClient].getSessionId()
       val uri = s"http://${InetAddress.getLocalHost.getHostAddress}:${server.port}" +
         s"${LivyConnection.SESSIONS_URI}/$sid"
       val newClient = new LivyClientBuilder(false).setURI(new URI(uri)).build()
       newClient.stop(false)
       verify(session, never()).stop()
+    }
+
+    withClient("should connect to existing sessions using the conf") {
+      val sid = client.asInstanceOf[HttpClient].getSessionId()
+      val uri = s"http://${InetAddress.getLocalHost.getHostAddress}:${server.port}"
+      val newClient = new LivyClientBuilder(false).setURI(new URI(uri)).setSessionId(sid).build()
+      newClient.stop(false)
+      verify(session, never()).stop()
+    }
+
+    withClient("should throw an exception if the sessionId is set through conf and URI") {
+      val sid = client.asInstanceOf[HttpClient].getSessionId()
+      val uri = s"http://${InetAddress.getLocalHost.getHostAddress}:${server.port}" +
+        s"${LivyConnection.SESSIONS_URI}/$sid"
+      intercept[IllegalArgumentException]{
+        val newClient = new LivyClientBuilder(false).setURI(new URI(uri)).setSessionId(sid).build()
+        newClient.stop(false)
+        verify(session, never()).stop()
+      }
     }
 
     withClient("should tear down clients") {

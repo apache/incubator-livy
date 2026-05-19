@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 import org.apache.livy.Job;
 import org.apache.livy.JobHandle;
 import org.apache.livy.LivyClient;
+import org.apache.livy.LivyClientBuilder;
 import org.apache.livy.client.common.Serializer;
 import static org.apache.livy.client.common.HttpMessages.*;
 
@@ -59,9 +60,17 @@ class HttpClient implements LivyClient {
     // unused.
     Matcher m = Pattern.compile("(.*)" + LivyConnection.SESSIONS_URI + "/([0-9]+)")
       .matcher(uri.getPath());
+    String sessionIdFromConf = httpConf.get(LivyClientBuilder.LIVY_SESSION_ID_KEY);
 
     try {
-      if (m.matches()) {
+      if (sessionIdFromConf != null && m.matches()) {
+        throw new IllegalArgumentException(
+          "Cannot set existing session both from URI and configuration");
+      } else if (sessionIdFromConf != null) {
+        this.conn = new LivyConnection(uri, httpConf);
+        this.sessionId = Integer.parseInt(sessionIdFromConf);
+        conn.post(null, SessionInfo.class, "/%d/connect", sessionId);
+      } else if (m.matches()) {
         URI base = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(),
           m.group(1), uri.getQuery(), uri.getFragment());
 
