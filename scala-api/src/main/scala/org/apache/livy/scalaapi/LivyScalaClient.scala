@@ -42,6 +42,13 @@ class LivyScalaClient(livyJavaClient: LivyClient) {
   })
 
   /**
+   * Returns the current id of the session.
+   */
+  def sessionId(): Int = {
+    livyJavaClient.getSessionId
+  }
+
+  /**
    * Submits a job for asynchronous execution.
    *
    * @param fn The job to be executed. It is a function that takes in a ScalaJobContext and

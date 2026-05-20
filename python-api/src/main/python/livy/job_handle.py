@@ -53,6 +53,9 @@ class JobHandle(Future):
         self._running_callbacks = []
         self._queued_callbacks = []
 
+    def job_id(self):
+        return self._job_id
+
     def _start(self, command, serialized_job):
         self._executor.submit(self._send_job_task, command, serialized_job)
 

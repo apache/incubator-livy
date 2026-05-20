@@ -97,6 +97,11 @@ class HttpClient implements LivyClient {
   }
 
   @Override
+  public int getSessionId() {
+    return sessionId;
+  }
+
+  @Override
   public <T> JobHandle<T> submit(Job<T> job) {
     return sendJob("submit-job", job);
   }
@@ -181,11 +186,6 @@ class HttpClient implements LivyClient {
     } else {
       throw new RuntimeException(cause);
     }
-  }
-
-  // For testing.
-  int getSessionId() {
-    return sessionId;
   }
 
 }
